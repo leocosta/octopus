@@ -35,7 +35,7 @@ How Octopus delivers content to each Code Assistant:
 
 ```bash
 # 1. Add octopus as a submodule
-git submodule add git@github.com:your-org/octopus.git octopus
+git submodule add git@github.com:leocosta/octopus.git octopus
 git submodule update --init
 
 # 2. Configure
