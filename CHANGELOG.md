@@ -2,14 +2,6 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.1.0] - 2026-03-23
 
-### Added
-- Initial repository structure
-- Core content placeholders (guidelines, architecture, commit conventions, PR workflow, task management)
-- Stack-specific placeholders (Node, Python, .NET, Next.js, Angular, React)
-- Agent configurations (Claude Code, Copilot, Codex, Antigravity, Kilo Code)
-- MCP server configs (Notion, GitHub, Slack, Postgres)
-- setup.sh for consumer repo configuration
-- .octopus.example.yml template
-- .env.example template
+✨ This is the initial release of the **Octopus** project. The base repository structure was added, including directory layout, placeholders for coding guidelines, architecture, commit conventions, PR workflow, and task management. Configurations for agents (Claude Code, Copilot, Codex, among others), MCP servers (Notion, GitHub, Slack, Postgres), and configuration templates such as `.octopus.example.yml` and `.env.example` were also included. The setup script (`setup.sh`) was updated and new configuration files were added.
