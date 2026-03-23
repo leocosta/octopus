@@ -1,0 +1,13 @@
+name: antigravity
+output: ANTIGRAVITY.md
+content_mode: concatenate
+
+capabilities:
+  native_rules: false
+  native_skills: false
+  native_hooks: false
+  native_commands: false
+  native_agents: false
+  native_mcp: false
+
+gitignore_extra: []

@@ -1,0 +1,9 @@
+{
+  "github": {
+    "command": "npx",
+    "args": ["@anthropic/mcp-github"],
+    "env": {
+      "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+    }
+  }
+}

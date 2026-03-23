@@ -1,0 +1,10 @@
+{
+  "slack": {
+    "command": "npx",
+    "args": ["@anthropic/mcp-slack"],
+    "env": {
+      "SLACK_BOT_TOKEN": "${SLACK_BOT_TOKEN}",
+      "SLACK_TEAM_ID": "${SLACK_TEAM_ID}"
+    }
+  }
+}

@@ -1,0 +1,22 @@
+name: copilot
+output: .github/copilot-instructions.md
+content_mode: concatenate
+
+capabilities:
+  native_rules: false
+  native_skills: false
+  native_hooks: false
+  native_commands: false
+  native_agents: false
+  native_mcp: true
+
+delivery:
+  mcp:
+    method: vscode_json
+    target: .vscode/mcp.json
+
+mcp_extra:
+  - method: copilot_cli
+    target: ~/.copilot/mcp-config.json
+
+gitignore_extra: []

@@ -1,0 +1,70 @@
+# Octopus Configuration
+# Copy this file to .octopus.yml in your repo root and customize.
+
+# Language rules (multi-file, symlinked to .claude/rules/)
+# Available: common (always included), csharp, typescript, python
+# Note: 'common' is always included automatically
+rules:
+  - typescript
+
+# Skills (symlinked to .claude/skills/)
+# Available: context-budget, backend-patterns, adr, e2e-testing, security-scan
+# skills:
+#   - adr
+#   - e2e-testing
+
+# Hooks (injected into .claude/settings.json)
+# Options: true (enable all), false (disable), or profile name
+# Environment variables:
+#   OCTOPUS_DISABLED_HOOKS=hook-id-1,hook-id-2  (disable specific hooks)
+# hooks: true
+
+# Which AI agents should be configured?
+# Available: claude, copilot, codex, antigravity, kilocode
+# Use short form for defaults, or long form to override output path:
+#   - name: antigravity
+#     output: custom/path.md
+agents:
+  - claude
+  - copilot
+
+# Which MCP servers should be configured?
+# Available: notion, github, slack, postgres (or any .json file in mcp/)
+# Environment variables required per server:
+#   notion  — uses OAuth (no env vars needed)
+#   github  — GITHUB_TOKEN
+#   slack   — SLACK_BOT_TOKEN, SLACK_TEAM_ID
+#   postgres — DATABASE_URL
+mcp: []
+
+# Enable workflow commands (branch, PR, review, merge)
+# Requires: gh (GitHub CLI) >= 2.0 installed and authenticated
+# workflow: true
+
+# GitHub reviewers for PRs (used by /octopus:pr-review)
+# reviewers:
+#   - github-username-1
+#   - github-username-2
+
+# Roles/personas (templates from octopus/roles/)
+# Available: product-manager, backend-specialist, frontend-specialist
+# Requires: .octopus-context.md in repo root (or custom path via context:)
+# roles:
+#   - product-manager
+#   - backend-specialist
+
+# Path to project context file (default: .octopus-context.md)
+# context: docs/project-context.md
+
+# Custom project commands
+# Each command becomes a slash command with octopus: prefix
+# commands:
+#   - name: db-reset
+#     description: Reset the database (drop, recreate migration, update)
+#     run: make db-reset
+#   - name: api-start
+#     description: Start the API container
+#     run: make api-start
+
+# DEPRECATED: 'stacks:' is replaced by 'rules:'. If present, stacks are
+# auto-migrated to rules (node/nextjs/angular/react -> typescript, dotnet -> csharp)

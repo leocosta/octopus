@@ -1,0 +1,9 @@
+{
+  "server-name": {
+    "command": "npx",
+    "args": ["@scope/mcp-server-name"],
+    "env": {
+      "API_TOKEN": "${API_TOKEN}"
+    }
+  }
+}

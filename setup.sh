@@ -1,0 +1,1127 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+OCTOPUS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$OCTOPUS_DIR/.." && pwd)"
+
+# (Agent output paths are now read from agents/<name>/manifest.yml)
+
+# Parsed config arrays
+declare -a OCTOPUS_STACKS=()
+declare -a OCTOPUS_RULES=()
+declare -a OCTOPUS_SKILLS=()
+OCTOPUS_HOOKS="false"
+declare -a OCTOPUS_AGENTS=()
+declare -A OCTOPUS_AGENT_OUTPUT=()
+declare -a OCTOPUS_MCP=()
+declare -a OCTOPUS_CMD_NAMES=()
+declare -a OCTOPUS_CMD_DESCS=()
+declare -a OCTOPUS_CMD_RUNS=()
+OCTOPUS_WORKFLOW=false
+declare -a OCTOPUS_ROLES=()
+declare -a OCTOPUS_REVIEWERS=()
+OCTOPUS_CONTEXT=""
+
+parse_octopus_yml() {
+  local file="$1"
+  local current_section=""
+  local pending_agent_name=""
+  local pending_cmd_name=""
+  local pending_cmd_desc=""
+  local pending_cmd_run=""
+
+  _flush_pending_cmd() {
+    if [[ -n "$pending_cmd_name" ]]; then
+      OCTOPUS_CMD_NAMES+=("$pending_cmd_name")
+      OCTOPUS_CMD_DESCS+=("$pending_cmd_desc")
+      OCTOPUS_CMD_RUNS+=("$pending_cmd_run")
+      pending_cmd_name=""
+      pending_cmd_desc=""
+      pending_cmd_run=""
+    fi
+  }
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    # Skip empty lines and comments
+    [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+
+    # Handle inline boolean: workflow: true/false
+    if [[ "$line" =~ ^([a-z]+):[[:space:]]+(true|false)[[:space:]]*$ ]]; then
+      local key="${BASH_REMATCH[1]}"
+      local val="${BASH_REMATCH[2]}"
+      case "$key" in
+        workflow) OCTOPUS_WORKFLOW="$val" ;;
+        hooks)   OCTOPUS_HOOKS="$val" ;;
+      esac
+      current_section=""
+      continue
+    fi
+
+    # Handle inline string value: context: path/to/file
+    if [[ "$line" =~ ^([a-z]+):[[:space:]]+([^#\[]+)[[:space:]]*$ ]]; then
+      local key="${BASH_REMATCH[1]}"
+      local val="${BASH_REMATCH[2]}"
+      # Trim trailing whitespace
+      val="${val%"${val##*[![:space:]]}"}"
+      case "$key" in
+        context) OCTOPUS_CONTEXT="$val" ;;
+        hooks)   OCTOPUS_HOOKS="$val" ;;
+      esac
+      # Don't set current_section — this is an inline value, not a section
+      continue
+    fi
+
+    # Detect section headers (top-level keys ending with :)
+    # Handle inline empty arrays like "mcp: []"
+    if [[ "$line" =~ ^([a-z]+):[[:space:]]*\[\][[:space:]]*$ ]]; then
+      _flush_pending_cmd
+      current_section="${BASH_REMATCH[1]}"
+      continue
+    fi
+    if [[ "$line" =~ ^([a-z]+):$ ]]; then
+      _flush_pending_cmd
+      current_section="${BASH_REMATCH[1]}"
+      continue
+    fi
+
+    # Handle list items (  - value)
+    if [[ "$line" =~ ^[[:space:]]+-[[:space:]]+(.+)$ ]]; then
+      local value="${BASH_REMATCH[1]}"
+
+      # Check if it's a "name: value" entry
+      if [[ "$value" =~ ^name:[[:space:]]+(.+)$ ]]; then
+        if [[ "$current_section" == "commands" ]]; then
+          _flush_pending_cmd
+          pending_cmd_name="${BASH_REMATCH[1]}"
+        else
+          pending_agent_name="${BASH_REMATCH[1]}"
+        fi
+        continue
+      fi
+
+      case "$current_section" in
+        stacks)    OCTOPUS_STACKS+=("$value") ;;
+        rules)     OCTOPUS_RULES+=("$value") ;;
+        skills)    OCTOPUS_SKILLS+=("$value") ;;
+        agents)    OCTOPUS_AGENTS+=("$value") ;;
+        mcp)       OCTOPUS_MCP+=("$value") ;;
+        roles)     OCTOPUS_ROLES+=("$value") ;;
+        reviewers) OCTOPUS_REVIEWERS+=("$value") ;;
+      esac
+      continue
+    fi
+
+    # Handle indented key: value (for agent output override)
+    if [[ "$line" =~ ^[[:space:]]+output:[[:space:]]+(.+)$ && -n "$pending_agent_name" ]]; then
+      OCTOPUS_AGENTS+=("$pending_agent_name")
+      OCTOPUS_AGENT_OUTPUT["$pending_agent_name"]="${BASH_REMATCH[1]}"
+      pending_agent_name=""
+      continue
+    fi
+
+    # Handle indented key: value (for command fields)
+    if [[ "$current_section" == "commands" && -n "$pending_cmd_name" ]]; then
+      if [[ "$line" =~ ^[[:space:]]+description:[[:space:]]+(.+)$ ]]; then
+        pending_cmd_desc="${BASH_REMATCH[1]}"
+        continue
+      fi
+      if [[ "$line" =~ ^[[:space:]]+run:[[:space:]]+(.+)$ ]]; then
+        pending_cmd_run="${BASH_REMATCH[1]}"
+        continue
+      fi
+    fi
+  done < "$file"
+
+  # Flush any pending entries
+  if [[ -n "$pending_agent_name" ]]; then
+    OCTOPUS_AGENTS+=("$pending_agent_name")
+    pending_agent_name=""
+  fi
+  _flush_pending_cmd
+}
+
+# Manifest variables (populated by load_manifest)
+MANIFEST_OUTPUT=""
+MANIFEST_CONTENT_MODE=""
+MANIFEST_CAP_RULES="false"
+MANIFEST_CAP_SKILLS="false"
+MANIFEST_CAP_HOOKS="false"
+MANIFEST_CAP_COMMANDS="false"
+MANIFEST_CAP_AGENTS="false"
+MANIFEST_CAP_MCP="false"
+MANIFEST_DELIVERY_RULES_METHOD=""
+MANIFEST_DELIVERY_RULES_TARGET=""
+MANIFEST_DELIVERY_SKILLS_METHOD=""
+MANIFEST_DELIVERY_SKILLS_TARGET=""
+MANIFEST_DELIVERY_HOOKS_METHOD=""
+MANIFEST_DELIVERY_HOOKS_TARGET=""
+MANIFEST_DELIVERY_COMMANDS_METHOD=""
+MANIFEST_DELIVERY_COMMANDS_TARGET=""
+MANIFEST_DELIVERY_COMMANDS_PREFIX=""
+MANIFEST_DELIVERY_AGENTS_METHOD=""
+MANIFEST_DELIVERY_AGENTS_TARGET=""
+MANIFEST_DELIVERY_MCP_METHOD=""
+MANIFEST_DELIVERY_MCP_TARGET=""
+MANIFEST_DELIVERY_MCP_COMMAND=""
+declare -a MANIFEST_MCP_EXTRA_METHODS=()
+declare -a MANIFEST_MCP_EXTRA_TARGETS=()
+declare -a MANIFEST_GITIGNORE_EXTRA=()
+
+load_manifest() {
+  local agent="$1"
+  local manifest="$OCTOPUS_DIR/agents/$agent/manifest.yml"
+
+  if [[ ! -f "$manifest" ]]; then
+    echo "ERROR: No manifest found for agent '$agent'. Create agents/$agent/manifest.yml."
+    exit 1
+  fi
+
+  # Reset manifest variables
+  MANIFEST_OUTPUT=""
+  MANIFEST_CONTENT_MODE=""
+  MANIFEST_CAP_RULES="false"
+  MANIFEST_CAP_SKILLS="false"
+  MANIFEST_CAP_HOOKS="false"
+  MANIFEST_CAP_COMMANDS="false"
+  MANIFEST_CAP_AGENTS="false"
+  MANIFEST_CAP_MCP="false"
+  MANIFEST_DELIVERY_RULES_METHOD=""
+  MANIFEST_DELIVERY_RULES_TARGET=""
+  MANIFEST_DELIVERY_SKILLS_METHOD=""
+  MANIFEST_DELIVERY_SKILLS_TARGET=""
+  MANIFEST_DELIVERY_HOOKS_METHOD=""
+  MANIFEST_DELIVERY_HOOKS_TARGET=""
+  MANIFEST_DELIVERY_COMMANDS_METHOD=""
+  MANIFEST_DELIVERY_COMMANDS_TARGET=""
+  MANIFEST_DELIVERY_COMMANDS_PREFIX=""
+  MANIFEST_DELIVERY_AGENTS_METHOD=""
+  MANIFEST_DELIVERY_AGENTS_TARGET=""
+  MANIFEST_DELIVERY_MCP_METHOD=""
+  MANIFEST_DELIVERY_MCP_TARGET=""
+  MANIFEST_DELIVERY_MCP_COMMAND=""
+  MANIFEST_MCP_EXTRA_METHODS=()
+  MANIFEST_MCP_EXTRA_TARGETS=()
+  MANIFEST_GITIGNORE_EXTRA=()
+
+  local current_section=""
+  local current_delivery=""
+  local in_mcp_extra=false
+  local in_gitignore_extra=false
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    # Skip empty lines and comments
+    [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+
+    # Top-level key: value (or inline empty array like "gitignore_extra: []")
+    if [[ "$line" =~ ^([a-z_]+):[[:space:]]+(.+)$ ]]; then
+      local key="${BASH_REMATCH[1]}"
+      local val="${BASH_REMATCH[2]}"
+      in_mcp_extra=false
+      in_gitignore_extra=false
+      case "$key" in
+        output) MANIFEST_OUTPUT="$val" ;;
+        content_mode) MANIFEST_CONTENT_MODE="$val" ;;
+        name) ;; # informational only
+        gitignore_extra) ;; # inline empty array, nothing to do
+        mcp_extra) ;; # inline empty array, nothing to do
+      esac
+      continue
+    fi
+
+    # Section headers
+    if [[ "$line" =~ ^([a-z_]+):$ ]]; then
+      current_section="${BASH_REMATCH[1]}"
+      current_delivery=""
+      in_mcp_extra=false
+      in_gitignore_extra=false
+      if [[ "$current_section" == "mcp_extra" ]]; then
+        in_mcp_extra=true
+      elif [[ "$current_section" == "gitignore_extra" ]]; then
+        in_gitignore_extra=true
+      fi
+      continue
+    fi
+
+    # Delivery sub-section (e.g., "  rules:")
+    if [[ "$line" =~ ^[[:space:]]{2}([a-z_]+):$ && "$current_section" == "delivery" ]]; then
+      current_delivery="${BASH_REMATCH[1]}"
+      continue
+    fi
+
+    # Capability values (e.g., "  native_rules: true")
+    if [[ "$line" =~ ^[[:space:]]+([a-z_]+):[[:space:]]+(true|false)$ && "$current_section" == "capabilities" ]]; then
+      local cap_key="${BASH_REMATCH[1]}"
+      local cap_val="${BASH_REMATCH[2]}"
+      case "$cap_key" in
+        native_rules)    MANIFEST_CAP_RULES="$cap_val" ;;
+        native_skills)   MANIFEST_CAP_SKILLS="$cap_val" ;;
+        native_hooks)    MANIFEST_CAP_HOOKS="$cap_val" ;;
+        native_commands) MANIFEST_CAP_COMMANDS="$cap_val" ;;
+        native_agents)   MANIFEST_CAP_AGENTS="$cap_val" ;;
+        native_mcp)      MANIFEST_CAP_MCP="$cap_val" ;;
+      esac
+      continue
+    fi
+
+    # Delivery key: value (e.g., "    method: symlink")
+    if [[ "$line" =~ ^[[:space:]]+([a-z_]+):[[:space:]]+(.+)$ && "$current_section" == "delivery" && -n "$current_delivery" ]]; then
+      local dkey="${BASH_REMATCH[1]}"
+      local dval="${BASH_REMATCH[2]}"
+      # Remove surrounding quotes
+      dval="${dval%\"}"
+      dval="${dval#\"}"
+      case "${current_delivery}_${dkey}" in
+        rules_method)    MANIFEST_DELIVERY_RULES_METHOD="$dval" ;;
+        rules_target)    MANIFEST_DELIVERY_RULES_TARGET="$dval" ;;
+        skills_method)   MANIFEST_DELIVERY_SKILLS_METHOD="$dval" ;;
+        skills_target)   MANIFEST_DELIVERY_SKILLS_TARGET="$dval" ;;
+        hooks_method)    MANIFEST_DELIVERY_HOOKS_METHOD="$dval" ;;
+        hooks_target)    MANIFEST_DELIVERY_HOOKS_TARGET="$dval" ;;
+        commands_method) MANIFEST_DELIVERY_COMMANDS_METHOD="$dval" ;;
+        commands_target) MANIFEST_DELIVERY_COMMANDS_TARGET="$dval" ;;
+        commands_prefix) MANIFEST_DELIVERY_COMMANDS_PREFIX="$dval" ;;
+        agents_method)   MANIFEST_DELIVERY_AGENTS_METHOD="$dval" ;;
+        agents_target)   MANIFEST_DELIVERY_AGENTS_TARGET="$dval" ;;
+        mcp_method)      MANIFEST_DELIVERY_MCP_METHOD="$dval" ;;
+        mcp_target)      MANIFEST_DELIVERY_MCP_TARGET="$dval" ;;
+        mcp_command)     MANIFEST_DELIVERY_MCP_COMMAND="$dval" ;;
+      esac
+      continue
+    fi
+
+    # mcp_extra section
+    if [[ "$line" =~ ^mcp_extra:$ ]]; then
+      in_mcp_extra=true
+      in_gitignore_extra=false
+      current_section="mcp_extra"
+      continue
+    fi
+
+    # mcp_extra list items (method/target)
+    if [[ "$in_mcp_extra" == true ]]; then
+      if [[ "$line" =~ ^[[:space:]]+-[[:space:]]+method:[[:space:]]+(.+)$ ]]; then
+        MANIFEST_MCP_EXTRA_METHODS+=("${BASH_REMATCH[1]}")
+        continue
+      fi
+      if [[ "$line" =~ ^[[:space:]]+method:[[:space:]]+(.+)$ ]]; then
+        MANIFEST_MCP_EXTRA_METHODS+=("${BASH_REMATCH[1]}")
+        continue
+      fi
+      if [[ "$line" =~ ^[[:space:]]+target:[[:space:]]+(.+)$ ]]; then
+        MANIFEST_MCP_EXTRA_TARGETS+=("${BASH_REMATCH[1]}")
+        continue
+      fi
+    fi
+
+    # gitignore_extra section
+    if [[ "$line" =~ ^gitignore_extra:(.*)$ ]]; then
+      local rest="${BASH_REMATCH[1]}"
+      in_gitignore_extra=true
+      in_mcp_extra=false
+      current_section="gitignore_extra"
+      # Handle inline empty array: "gitignore_extra: []"
+      if [[ "$rest" =~ \[\] ]]; then
+        in_gitignore_extra=false
+      fi
+      continue
+    fi
+
+    # gitignore_extra list items
+    if [[ "$in_gitignore_extra" == true && "$line" =~ ^[[:space:]]+-[[:space:]]+(.+)$ ]]; then
+      MANIFEST_GITIGNORE_EXTRA+=("${BASH_REMATCH[1]}")
+      continue
+    fi
+  done < "$manifest"
+}
+
+migrate_stacks_to_rules() {
+  if [[ ${#OCTOPUS_STACKS[@]} -gt 0 && ${#OCTOPUS_RULES[@]} -eq 0 ]]; then
+    echo "WARNING: 'stacks:' is deprecated. Migrate to 'rules:' in .octopus.yml"
+    declare -A seen=()
+    for stack in "${OCTOPUS_STACKS[@]}"; do
+      local rule=""
+      case "$stack" in
+        node|nextjs|angular|react) rule="typescript" ;;
+        dotnet) rule="csharp" ;;
+        python) rule="python" ;;
+        *) echo "WARNING: Unknown stack '$stack', skipping migration"; continue ;;
+      esac
+      if [[ -z "${seen[$rule]:-}" ]]; then
+        OCTOPUS_RULES+=("$rule")
+        seen[$rule]=1
+      fi
+    done
+  fi
+  # Always ensure 'common' is first
+  local has_common=false
+  for r in "${OCTOPUS_RULES[@]}"; do
+    [[ "$r" == "common" ]] && has_common=true
+  done
+  if ! $has_common; then
+    OCTOPUS_RULES=("common" "${OCTOPUS_RULES[@]}")
+  fi
+}
+
+# --- Manifest-driven generation functions ---
+
+generate_from_template() {
+  local agent="$1"
+  local output_path="$2"
+  local full_output="$PROJECT_ROOT/$output_path"
+
+  echo "Generating $agent config (template) → $output_path"
+  mkdir -p "$(dirname "$full_output")"
+
+  # Build placeholder values
+  local rules_lines=""
+  local delivery_target="${MANIFEST_DELIVERY_RULES_TARGET:-.claude/rules}"
+  for rule in "${OCTOPUS_RULES[@]}"; do
+    rules_lines+="- See ${delivery_target}${rule}/ for ${rule} coding rules"$'\n'
+  done
+  rules_lines="${rules_lines%$'\n'}"
+
+  local skills_lines=""
+  local skills_target="${MANIFEST_DELIVERY_SKILLS_TARGET:-.claude/skills}"
+  for skill in "${OCTOPUS_SKILLS[@]}"; do
+    skills_lines+="- See ${skills_target}${skill}/ for ${skill} skill"$'\n'
+  done
+  skills_lines="${skills_lines%$'\n'}"
+
+  local template="$OCTOPUS_DIR/agents/$agent/CLAUDE.md"
+  awk -v rules="$rules_lines" -v skills="$skills_lines" '{
+    if ($0 == "{{RULES}}") {
+      print rules
+    } else if ($0 == "{{SKILLS}}") {
+      if (skills != "") print skills
+    } else {
+      print
+    }
+  }' "$template" > "$full_output"
+
+  # Copy settings.json if it exists
+  if [[ -f "$OCTOPUS_DIR/agents/$agent/settings.json" ]]; then
+    cp "$OCTOPUS_DIR/agents/$agent/settings.json" "$PROJECT_ROOT/$(dirname "$output_path")/settings.json"
+  fi
+}
+
+concatenate_from_manifest() {
+  local agent="$1"
+  local output_path="$2"
+  local full_output="$PROJECT_ROOT/$output_path"
+
+  echo "Generating $agent config (concatenate) → $output_path"
+  mkdir -p "$(dirname "$full_output")"
+
+  # Start with header
+  cat "$OCTOPUS_DIR/agents/$agent/header.md" > "$full_output"
+
+  # Append core files in order
+  for core_file in "${CORE_FILES[@]}"; do
+    echo "" >> "$full_output"
+    cat "$OCTOPUS_DIR/$core_file" >> "$full_output"
+  done
+
+  # Append rules (only if NOT delivered natively)
+  if [[ "$MANIFEST_CAP_RULES" != "true" ]]; then
+    for rule in "${OCTOPUS_RULES[@]}"; do
+      local rule_dir="$OCTOPUS_DIR/rules/$rule"
+      if [[ ! -d "$rule_dir" ]]; then continue; fi
+      for rule_file in "$rule_dir"/*.md; do
+        [[ -f "$rule_file" ]] || continue
+        echo "" >> "$full_output"
+        cat "$rule_file" >> "$full_output"
+      done
+    done
+  fi
+
+  # Append skills (only if NOT delivered natively)
+  if [[ "$MANIFEST_CAP_SKILLS" != "true" ]]; then
+    for skill in "${OCTOPUS_SKILLS[@]}"; do
+      local skill_file="$OCTOPUS_DIR/skills/$skill/SKILL.md"
+      if [[ -f "$skill_file" ]]; then
+        echo "" >> "$full_output"
+        cat "$skill_file" >> "$full_output"
+      fi
+    done
+  fi
+
+  # Append commands section (only if NOT delivered natively)
+  if [[ "$MANIFEST_CAP_COMMANDS" != "true" ]]; then
+    append_commands_section "$full_output"
+  fi
+}
+
+generate_main_output() {
+  local agent="$1"
+  local output_path="${OCTOPUS_AGENT_OUTPUT[$agent]:-$MANIFEST_OUTPUT}"
+
+  if [[ -z "$output_path" ]]; then
+    echo "WARNING: No output path defined for agent '$agent'. Skipping."
+    return
+  fi
+
+  if [[ "$MANIFEST_CONTENT_MODE" == "template" ]]; then
+    generate_from_template "$agent" "$output_path"
+  else
+    concatenate_from_manifest "$agent" "$output_path"
+  fi
+}
+
+deliver_rules() {
+  local agent="$1"
+  if [[ "$MANIFEST_CAP_RULES" != "true" ]]; then return; fi
+
+  local method="$MANIFEST_DELIVERY_RULES_METHOD"
+  local target="$PROJECT_ROOT/$MANIFEST_DELIVERY_RULES_TARGET"
+
+  if [[ "$method" == "symlink" ]]; then
+    echo "Generating rules symlinks for $agent..."
+    rm -rf "$target"
+    mkdir -p "$target"
+    for rule in "${OCTOPUS_RULES[@]}"; do
+      local source_dir="$OCTOPUS_DIR/rules/$rule"
+      if [[ ! -d "$source_dir" ]]; then
+        echo "  WARNING: Rules directory '$source_dir' not found. Skipping."
+        continue
+      fi
+      ln -s "$source_dir" "$target/$rule"
+      echo "  -> ${MANIFEST_DELIVERY_RULES_TARGET}$rule"
+    done
+  fi
+}
+
+deliver_skills() {
+  local agent="$1"
+  if [[ "$MANIFEST_CAP_SKILLS" != "true" ]]; then return; fi
+  if [[ ${#OCTOPUS_SKILLS[@]} -eq 0 ]]; then return; fi
+
+  local method="$MANIFEST_DELIVERY_SKILLS_METHOD"
+  local target="$PROJECT_ROOT/$MANIFEST_DELIVERY_SKILLS_TARGET"
+
+  if [[ "$method" == "symlink" ]]; then
+    echo "Generating skills symlinks for $agent..."
+    rm -rf "$target"
+    mkdir -p "$target"
+    for skill in "${OCTOPUS_SKILLS[@]}"; do
+      local source_dir="$OCTOPUS_DIR/skills/$skill"
+      if [[ ! -d "$source_dir" ]]; then
+        echo "  WARNING: Skill directory '$source_dir' not found. Skipping."
+        continue
+      fi
+      ln -s "$source_dir" "$target/$skill"
+      echo "  -> ${MANIFEST_DELIVERY_SKILLS_TARGET}$skill"
+    done
+  fi
+}
+
+deliver_hooks() {
+  local agent="$1"
+  if [[ "$MANIFEST_CAP_HOOKS" != "true" ]]; then return; fi
+  if [[ "$OCTOPUS_HOOKS" == "false" ]]; then return; fi
+
+  local method="$MANIFEST_DELIVERY_HOOKS_METHOD"
+
+  if [[ "$method" == "settings_json" ]]; then
+    local settings_file="$PROJECT_ROOT/$MANIFEST_DELIVERY_HOOKS_TARGET"
+    local hooks_template="$OCTOPUS_DIR/hooks/hooks.json"
+
+    if [[ ! -f "$hooks_template" || ! -f "$settings_file" ]]; then
+      echo "WARNING: hooks.json or settings.json not found. Skipping hooks for $agent."
+      return
+    fi
+
+    echo "Injecting hooks into $MANIFEST_DELIVERY_HOOKS_TARGET for $agent..."
+
+    python3 - "$settings_file" "$hooks_template" "${OCTOPUS_DISABLED_HOOKS:-}" << 'PYEOF'
+import json, sys
+
+settings_path, hooks_path, disabled = sys.argv[1], sys.argv[2], sys.argv[3]
+
+with open(settings_path) as f:
+    settings = json.load(f)
+with open(hooks_path) as f:
+    hooks = json.load(f)
+
+# Filter disabled hooks (comma-separated list from env)
+if disabled:
+    disabled_set = set(d.strip() for d in disabled.split(",") if d.strip())
+    for event_type in list(hooks.keys()):
+        hooks[event_type] = [
+            h for h in hooks[event_type]
+            if h.get("id", "") not in disabled_set
+        ]
+
+settings["hooks"] = hooks
+with open(settings_path, "w") as f:
+    json.dump(settings, f, indent=2)
+    f.write("\n")
+PYEOF
+    echo "  -> Hooks injected into $MANIFEST_DELIVERY_HOOKS_TARGET"
+  fi
+}
+
+# Core files in fixed concatenation order
+CORE_FILES=(
+  "core/guidelines.md"
+  "core/architecture.md"
+  "core/commit-conventions.md"
+  "core/pr-workflow.md"
+  "core/task-management.md"
+)
+
+strip_frontmatter() {
+  local file="$1"
+  # Remove YAML frontmatter (--- to ---) from beginning of file
+  awk 'BEGIN{skip=0} /^---$/{skip++; if(skip<=2) next} skip>=2||skip==0{print}' "$file"
+}
+
+deliver_roles() {
+  local agent="$1"
+  if [[ ${#OCTOPUS_ROLES[@]} -eq 0 ]]; then return; fi
+
+  # Read project context (cached across calls)
+  if [[ -z "${_ROLES_CONTEXT_LOADED:-}" ]]; then
+    _ROLES_CONTEXT_FILE="$PROJECT_ROOT/${OCTOPUS_CONTEXT:-.octopus-context.md}"
+    _ROLES_CONTEXT_CONTENT=""
+    if [[ -f "$_ROLES_CONTEXT_FILE" ]]; then
+      _ROLES_CONTEXT_CONTENT=$(cat "$_ROLES_CONTEXT_FILE")
+    else
+      echo "WARNING: $_ROLES_CONTEXT_FILE not found. Roles will be generated without project context."
+    fi
+    _ROLES_BASE_CONTENT=""
+    if [[ -f "$OCTOPUS_DIR/roles/_base.md" ]]; then
+      _ROLES_BASE_CONTENT=$(cat "$OCTOPUS_DIR/roles/_base.md")
+    fi
+    _ROLES_CONTEXT_LOADED="true"
+  fi
+
+  local output_path="${OCTOPUS_AGENT_OUTPUT[$agent]:-$MANIFEST_OUTPUT}"
+
+  for role in "${OCTOPUS_ROLES[@]}"; do
+    local template="$OCTOPUS_DIR/roles/${role}.md"
+    if [[ ! -f "$template" ]]; then
+      echo "WARNING: Role template '$template' not found. Skipping."
+      continue
+    fi
+
+    local role_content
+    role_content=$(awk -v ctx="$_ROLES_CONTEXT_CONTENT" '{
+      if ($0 == "{{PROJECT_CONTEXT}}") {
+        print ctx
+      } else {
+        print
+      }
+    }' "$template")
+
+    if [[ "$MANIFEST_CAP_AGENTS" == "true" ]]; then
+      # Native delivery: individual role files
+      local target_dir="$PROJECT_ROOT/$MANIFEST_DELIVERY_AGENTS_TARGET"
+      mkdir -p "$target_dir"
+      echo "$role_content" > "$target_dir/${role}.md"
+      if [[ -n "$_ROLES_BASE_CONTENT" ]]; then
+        echo "" >> "$target_dir/${role}.md"
+        echo "$_ROLES_BASE_CONTENT" >> "$target_dir/${role}.md"
+      fi
+      echo "  → ${MANIFEST_DELIVERY_AGENTS_TARGET}${role}.md"
+    else
+      # Inline delivery: append to concatenated output
+      local full_output="$PROJECT_ROOT/$output_path"
+      if [[ ! -f "$full_output" ]]; then continue; fi
+
+      local role_title
+      role_title="$(echo "${role:0:1}" | tr '[:lower:]' '[:upper:]')${role:1}"
+      echo "" >> "$full_output"
+      echo "# Role: $role_title" >> "$full_output"
+      echo "" >> "$full_output"
+      strip_frontmatter "$template" | awk -v ctx="$_ROLES_CONTEXT_CONTENT" '{
+        if ($0 == "{{PROJECT_CONTEXT}}") {
+          print ctx
+        } else {
+          print
+        }
+      }' >> "$full_output"
+      if [[ -n "$_ROLES_BASE_CONTENT" ]]; then
+        echo "" >> "$full_output"
+        echo "$_ROLES_BASE_CONTENT" >> "$full_output"
+      fi
+    fi
+  done
+}
+
+# Track generated workflow command names for collision detection
+declare -a GENERATED_WORKFLOW_CMDS=()
+
+deliver_commands() {
+  local agent="$1"
+  local output_path="${OCTOPUS_AGENT_OUTPUT[$agent]:-$MANIFEST_OUTPUT}"
+  local prefix="${MANIFEST_DELIVERY_COMMANDS_PREFIX:-octopus:}"
+
+  if [[ "$MANIFEST_CAP_COMMANDS" == "true" ]]; then
+    # Native delivery: individual command files
+    local commands_dir="$PROJECT_ROOT/$MANIFEST_DELIVERY_COMMANDS_TARGET"
+    mkdir -p "$commands_dir"
+
+    # Workflow commands
+    if [[ "$OCTOPUS_WORKFLOW" == "true" ]]; then
+      for cmd_file in "$OCTOPUS_DIR/commands/"*.md; do
+        [[ -f "$cmd_file" ]] || continue
+        local cmd_name
+        cmd_name=$(basename "$cmd_file" .md)
+        GENERATED_WORKFLOW_CMDS+=("$cmd_name")
+        strip_frontmatter "$cmd_file" > "$commands_dir/${prefix}${cmd_name}.md"
+        echo "  → ${MANIFEST_DELIVERY_COMMANDS_TARGET}${prefix}${cmd_name}.md"
+      done
+    fi
+
+    # Custom commands
+    if [[ ${#OCTOPUS_CMD_NAMES[@]} -gt 0 ]]; then
+      echo "Generating custom slash commands for $agent..."
+      for i in "${!OCTOPUS_CMD_NAMES[@]}"; do
+        local name="${OCTOPUS_CMD_NAMES[$i]}"
+
+        # Check collision with workflow commands
+        local collision=false
+        for wf_cmd in "${GENERATED_WORKFLOW_CMDS[@]:-}"; do
+          if [[ "$wf_cmd" == "$name" ]]; then
+            echo "WARNING: Custom command '$name' conflicts with workflow command. Skipping."
+            collision=true
+            break
+          fi
+        done
+        [[ "$collision" == true ]] && continue
+
+        local desc="${OCTOPUS_CMD_DESCS[$i]}"
+        local run="${OCTOPUS_CMD_RUNS[$i]}"
+        cat > "$commands_dir/${prefix}${name}.md" << EOF
+${desc}
+
+Run the following command:
+
+\`\`\`bash
+${run}
+\`\`\`
+EOF
+        echo "  → ${MANIFEST_DELIVERY_COMMANDS_TARGET}${prefix}${name}.md"
+      done
+    fi
+  else
+    # Inline delivery: workflow commands appended to output
+    local full_output="$PROJECT_ROOT/$output_path"
+    [[ -f "$full_output" ]] || return
+
+    if [[ "$OCTOPUS_WORKFLOW" == "true" ]]; then
+      echo "" >> "$full_output"
+      echo "# Octopus Commands" >> "$full_output"
+      echo "" >> "$full_output"
+      echo "When the user invokes any of these commands, follow the instructions and execute the CLI script." >> "$full_output"
+
+      for cmd_file in "$OCTOPUS_DIR/commands/"*.md; do
+        [[ -f "$cmd_file" ]] || continue
+        local cmd_name cmd_desc
+        cmd_name=$(basename "$cmd_file" .md)
+        cmd_desc=$(grep '^description:' "$cmd_file" 2>/dev/null | head -1 | sed 's/^description:[[:space:]]*//' || true)
+
+        echo "" >> "$full_output"
+        echo "## /octopus:${cmd_name}" >> "$full_output"
+        echo "${cmd_desc}" >> "$full_output"
+        echo "Run: \`./octopus/cli/octopus.sh ${cmd_name}\`" >> "$full_output"
+      done
+    fi
+
+    # Custom commands section is already appended by concatenate_from_manifest via append_commands_section
+  fi
+}
+
+append_commands_section() {
+  local output_file="$1"
+
+  if [[ ${#OCTOPUS_CMD_NAMES[@]} -eq 0 ]]; then
+    return
+  fi
+
+  echo "" >> "$output_file"
+  echo "# Custom Project Commands" >> "$output_file"
+  echo "" >> "$output_file"
+  echo "The following commands are available for common project tasks:" >> "$output_file"
+  echo "" >> "$output_file"
+  for i in "${!OCTOPUS_CMD_NAMES[@]}"; do
+    local name="${OCTOPUS_CMD_NAMES[$i]}"
+    local desc="${OCTOPUS_CMD_DESCS[$i]}"
+    local run="${OCTOPUS_CMD_RUNS[$i]}"
+    echo "- **/octopus:${name}** — ${desc}: \`${run}\`" >> "$output_file"
+  done
+}
+
+# --- MCP delivery sub-functions ---
+
+_build_mcp_merged() {
+  # Build merged MCP JSON from declared servers (returns temp file path)
+  local tmp_merged
+  tmp_merged=$(mktemp)
+  echo '{}' > "$tmp_merged"
+
+  for server in "${OCTOPUS_MCP[@]}"; do
+    local server_file="$OCTOPUS_DIR/mcp/${server}.json"
+    if [[ ! -f "$server_file" ]]; then
+      echo "WARNING: MCP config '$server_file' not found. Skipping."
+      continue
+    fi
+    python3 - "$tmp_merged" "$server_file" << 'PYEOF'
+import json, sys
+base_path, new_path = sys.argv[1], sys.argv[2]
+with open(base_path) as f:
+    base = json.load(f)
+with open(new_path) as f:
+    new = json.load(f)
+base.update(new)
+with open(base_path, 'w') as f:
+    json.dump(base, f)
+PYEOF
+  done
+  echo "$tmp_merged"
+}
+
+_inject_mcp_settings_json() {
+  local target="$1"
+  local merged="$2"
+  local settings_file="$PROJECT_ROOT/$target"
+
+  if [[ ! -f "$settings_file" ]]; then return; fi
+
+  python3 - "$settings_file" "$merged" << 'PYEOF'
+import json, sys
+settings_path, mcp_path = sys.argv[1], sys.argv[2]
+with open(settings_path) as f:
+    settings = json.load(f)
+with open(mcp_path) as f:
+    mcp = json.load(f)
+settings['mcpServers'] = mcp
+with open(settings_path, 'w') as f:
+    json.dump(settings, f, indent=2)
+    f.write('\n')
+PYEOF
+  echo "  → Injected MCP into $target"
+}
+
+_inject_mcp_vscode_json() {
+  local target="$1"
+  local merged="$2"
+  local target_path="$PROJECT_ROOT/$target"
+
+  mkdir -p "$(dirname "$target_path")"
+
+  python3 - "$merged" "$target_path" << 'PYEOF'
+import json, sys
+
+merged_path, output_path = sys.argv[1], sys.argv[2]
+with open(merged_path) as f:
+    servers = json.load(f)
+
+vscode_servers = {}
+for name, config in servers.items():
+    if config.get("type") == "http" or "url" in config:
+        vscode_servers[name] = {"type": "http", "url": config["url"]}
+    elif "command" in config:
+        entry = {"type": "stdio", "command": config["command"]}
+        if "args" in config:
+            entry["args"] = config["args"]
+        entry["envFile"] = "${workspaceFolder}/.env"
+        vscode_servers[name] = entry
+
+try:
+    with open(output_path) as f:
+        existing = json.load(f)
+except (FileNotFoundError, json.JSONDecodeError):
+    existing = {}
+
+existing["servers"] = vscode_servers
+with open(output_path, 'w') as f:
+    json.dump(existing, f, indent=2)
+    f.write('\n')
+PYEOF
+  echo "  → Generated $target"
+}
+
+_inject_mcp_copilot_cli() {
+  local target="$1"
+  local merged="$2"
+
+  # Expand ~ to $HOME
+  local target_path="${target/#\~/$HOME}"
+  mkdir -p "$(dirname "$target_path")"
+
+  python3 - "$merged" "$target_path" << 'PYEOF'
+import json, sys
+
+merged_path, output_path = sys.argv[1], sys.argv[2]
+with open(merged_path) as f:
+    servers = json.load(f)
+
+cli_servers = {}
+for name, config in servers.items():
+    if config.get("type") == "http" or "url" in config:
+        cli_servers[name] = {"type": "http", "url": config["url"]}
+    elif "command" in config:
+        entry = {"type": "local", "command": config["command"]}
+        if "args" in config:
+            entry["args"] = config["args"]
+        if "env" in config:
+            entry["env"] = config["env"]
+        cli_servers[name] = entry
+
+try:
+    with open(output_path) as f:
+        existing = json.load(f)
+except (FileNotFoundError, json.JSONDecodeError):
+    existing = {}
+
+existing["mcpServers"] = cli_servers
+with open(output_path, 'w') as f:
+    json.dump(existing, f, indent=2)
+    f.write('\n')
+PYEOF
+  echo "  → Generated $target"
+}
+
+_inject_mcp_cli_add() {
+  local command_prefix="$1"
+
+  if ! command -v "${command_prefix%% *}" &>/dev/null; then return; fi
+
+  for server in "${OCTOPUS_MCP[@]}"; do
+    local server_file="$OCTOPUS_DIR/mcp/${server}.json"
+    [[ -f "$server_file" ]] || continue
+    # Remove existing server config first (ignore errors)
+    $command_prefix remove "$server" 2>/dev/null || true
+    if ! python3 - "$server_file" "$server" "$command_prefix" << 'PYEOF'
+import json, sys, subprocess, shlex
+server_file, server_name, cmd_prefix = sys.argv[1], sys.argv[2], sys.argv[3]
+with open(server_file) as f:
+    data = json.load(f)
+config = data[server_name]
+cmd = shlex.split(cmd_prefix) + ["add", server_name]
+if config.get("type") == "http" and "url" in config:
+    cmd.extend(["--url", config["url"]])
+elif "command" in config:
+    for k, v in config.get("env", {}).items():
+        cmd.extend(["--env", f"{k}={v}"])
+    cmd.append("--")
+    cmd.append(config["command"])
+    cmd.extend(config.get("args", []))
+result = subprocess.run(cmd)
+sys.exit(result.returncode)
+PYEOF
+    then
+      echo "  WARNING: Failed to inject '$server' via $command_prefix"
+    fi
+  done
+  echo "  → Injected MCP servers via $command_prefix"
+}
+
+deliver_mcp() {
+  local agent="$1"
+  if [[ "$MANIFEST_CAP_MCP" != "true" ]]; then return; fi
+  if [[ ${#OCTOPUS_MCP[@]} -eq 0 ]]; then return; fi
+
+  echo "Injecting MCP servers for $agent..."
+
+  # Build merged MCP object once per agent
+  local tmp_merged
+  tmp_merged=$(_build_mcp_merged)
+
+  # Primary delivery method
+  local method="$MANIFEST_DELIVERY_MCP_METHOD"
+  case "$method" in
+    settings_json)  _inject_mcp_settings_json "$MANIFEST_DELIVERY_MCP_TARGET" "$tmp_merged" ;;
+    vscode_json)    _inject_mcp_vscode_json "$MANIFEST_DELIVERY_MCP_TARGET" "$tmp_merged" ;;
+    copilot_cli)    _inject_mcp_copilot_cli "$MANIFEST_DELIVERY_MCP_TARGET" "$tmp_merged" ;;
+    cli_add)        _inject_mcp_cli_add "$MANIFEST_DELIVERY_MCP_COMMAND" ;;
+  esac
+
+  # Extra MCP delivery targets
+  for i in "${!MANIFEST_MCP_EXTRA_METHODS[@]}"; do
+    local extra_method="${MANIFEST_MCP_EXTRA_METHODS[$i]}"
+    local extra_target="${MANIFEST_MCP_EXTRA_TARGETS[$i]:-}"
+    case "$extra_method" in
+      settings_json)  _inject_mcp_settings_json "$extra_target" "$tmp_merged" ;;
+      vscode_json)    _inject_mcp_vscode_json "$extra_target" "$tmp_merged" ;;
+      copilot_cli)    _inject_mcp_copilot_cli "$extra_target" "$tmp_merged" ;;
+      cli_add)        _inject_mcp_cli_add "$extra_target" ;;
+    esac
+  done
+
+  rm -f "$tmp_merged"
+}
+
+manage_env() {
+  local env_file="$PROJECT_ROOT/.env"
+  local env_example="$OCTOPUS_DIR/.env.example"
+
+  # Copy template if .env doesn't exist
+  if [[ ! -f "$env_file" ]]; then
+    if [[ -f "$env_example" ]]; then
+      cp "$env_example" "$env_file"
+      echo "Created .env from .env.example — fill in your values."
+    else
+      return
+    fi
+  fi
+
+  # Extract required vars from declared MCP server configs
+  local required_vars=()
+  for server in "${OCTOPUS_MCP[@]}"; do
+    local server_file="$OCTOPUS_DIR/mcp/${server}.json"
+    [[ -f "$server_file" ]] || continue
+    while IFS= read -r var; do
+      required_vars+=("$var")
+    done < <(grep -oP '\$\{(\K[^}]+)' "$server_file" | sort -u || true)
+  done
+
+  # Check for missing vars
+  local missing=()
+  for var in "${required_vars[@]}"; do
+    if ! grep -q "^${var}=" "$env_file" 2>/dev/null; then
+      missing+=("$var")
+    fi
+  done
+
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    echo "WARNING: The following environment variables are required by your MCP servers but missing from .env:"
+    for var in "${missing[@]}"; do
+      echo "  - $var"
+    done
+  fi
+
+  # Check for new vars in .env.example not in .env
+  if [[ -f "$env_example" ]]; then
+    while IFS= read -r var; do
+      [[ -z "$var" ]] && continue
+      if ! grep -q "^${var}=" "$env_file" 2>/dev/null; then
+        echo "INFO: New variable '$var' found in .env.example but not in .env"
+      fi
+    done < <(grep -oP '^([A-Z_]+)=' "$env_example" | sed 's/=$//' || true)
+  fi
+}
+
+# Collected gitignore entries from all agents
+declare -a ALL_GITIGNORE_ENTRIES=(".env")
+
+collect_gitignore_entries() {
+  local agent="$1"
+  local output="${OCTOPUS_AGENT_OUTPUT[$agent]:-$MANIFEST_OUTPUT}"
+  [[ -n "$output" ]] && ALL_GITIGNORE_ENTRIES+=("$output")
+
+  for entry in "${MANIFEST_GITIGNORE_EXTRA[@]}"; do
+    ALL_GITIGNORE_ENTRIES+=("$entry")
+  done
+}
+
+update_gitignore() {
+  local gitignore="$PROJECT_ROOT/.gitignore"
+
+  # Create .gitignore if it doesn't exist
+  touch "$gitignore"
+
+  # Add octopus marker section if not present
+  if ! grep -q "# octopus (auto-generated)" "$gitignore" 2>/dev/null; then
+    echo "" >> "$gitignore"
+    echo "# octopus (auto-generated)" >> "$gitignore"
+  fi
+
+  # Add each entry if not already present
+  for entry in "${ALL_GITIGNORE_ENTRIES[@]}"; do
+    if ! grep -qF "$entry" "$gitignore" 2>/dev/null; then
+      echo "$entry" >> "$gitignore"
+    fi
+  done
+}
+
+validate_cli_deps() {
+  if [[ "$OCTOPUS_WORKFLOW" != "true" ]]; then
+    return
+  fi
+
+  # Check gh
+  if ! command -v gh &>/dev/null; then
+    echo "WARNING: 'gh' (GitHub CLI) not found. Workflow commands will not work."
+    echo "  Install: https://cli.github.com/"
+    return
+  fi
+
+  # Check gh version >= 2.0
+  local gh_version
+  gh_version=$(gh --version 2>/dev/null | head -1 | grep -oP '\d+\.\d+' | head -1)
+  if [[ -n "$gh_version" ]]; then
+    local major
+    major=$(echo "$gh_version" | cut -d. -f1)
+    if [[ "$major" -lt 2 ]]; then
+      echo "WARNING: 'gh' version $gh_version found, but >= 2.0 is required for workflow commands."
+    fi
+  fi
+
+  # Check gh auth
+  if ! gh auth status &>/dev/null 2>&1; then
+    echo "WARNING: 'gh' is not authenticated. Run 'gh auth login' for workflow commands."
+  fi
+}
+
+# Allow sourcing without running main
+if [[ "${1:-}" == "--source-only" ]]; then
+  return 0 2>/dev/null || exit 0
+fi
+
+# --- Main execution ---
+
+CONFIG_FILE="$PROJECT_ROOT/.octopus.yml"
+
+if [[ ! -f "$CONFIG_FILE" ]]; then
+  echo "ERROR: .octopus.yml not found at $PROJECT_ROOT"
+  echo "Copy from: octopus/.octopus.example.yml"
+  exit 1
+fi
+
+echo "=== Octopus Setup ==="
+echo "Project root: $PROJECT_ROOT"
+echo ""
+
+# 1. Parse config
+parse_octopus_yml "$CONFIG_FILE"
+
+# 1b. Migrate stacks -> rules (backwards compat)
+migrate_stacks_to_rules
+
+echo "Rules:     ${OCTOPUS_RULES[*]:-none}"
+echo "Skills:    ${OCTOPUS_SKILLS[*]:-none}"
+echo "Hooks:     $OCTOPUS_HOOKS"
+echo "Agents:    ${OCTOPUS_AGENTS[*]:-none}"
+echo "MCP:       ${OCTOPUS_MCP[*]:-none}"
+echo "Commands:  ${OCTOPUS_CMD_NAMES[*]:-none}"
+echo "Workflow:  $OCTOPUS_WORKFLOW"
+echo "Roles:     ${OCTOPUS_ROLES[*]:-none}"
+echo "Reviewers: ${OCTOPUS_REVIEWERS[*]:-none}"
+echo ""
+
+# 2. Validate CLI dependencies
+validate_cli_deps
+
+# 3. Manifest-driven agent generation
+for agent in "${OCTOPUS_AGENTS[@]}"; do
+  load_manifest "$agent"
+  generate_main_output "$agent"
+  deliver_rules "$agent"
+  deliver_skills "$agent"
+  deliver_commands "$agent"
+  deliver_roles "$agent"
+  deliver_mcp "$agent"
+  deliver_hooks "$agent"
+  collect_gitignore_entries "$agent"
+done
+
+# 4. Manage .env
+manage_env
+
+# 5. Update .gitignore
+update_gitignore
+
+echo ""
+echo "=== Setup complete ==="

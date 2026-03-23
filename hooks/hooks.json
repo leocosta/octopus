@@ -1,0 +1,154 @@
+{
+  "PreToolUse": [
+    {
+      "matcher": "Bash",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "octopus/hooks/pre-tool-use/block-no-verify.sh",
+          "id": "block-no-verify"
+        }
+      ]
+    },
+    {
+      "matcher": "Bash",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "octopus/hooks/pre-tool-use/git-push-reminder.sh",
+          "id": "git-push-reminder"
+        }
+      ]
+    },
+    {
+      "matcher": "Bash",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "octopus/hooks/pre-tool-use/detect-secrets.sh",
+          "id": "detect-secrets"
+        }
+      ]
+    },
+    {
+      "matcher": "Write|Edit",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "octopus/hooks/pre-tool-use/format-check.sh",
+          "id": "format-check"
+        }
+      ]
+    }
+  ],
+  "PostToolUse": [
+    {
+      "matcher": "Write|Edit",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "octopus/hooks/post-tool-use/auto-format.sh",
+          "id": "auto-format",
+          "timeout": 30000
+        }
+      ]
+    },
+    {
+      "matcher": "Write|Edit",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "octopus/hooks/post-tool-use/typecheck.sh",
+          "id": "typecheck",
+          "timeout": 30000
+        }
+      ]
+    },
+    {
+      "matcher": "Write|Edit",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "octopus/hooks/post-tool-use/console-log-warn.sh",
+          "id": "console-log-warn"
+        }
+      ]
+    }
+  ],
+  "PreCompact": [
+    {
+      "matcher": "startup|resume|clear|compact",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "octopus/hooks/pre-compact/save-state.sh",
+          "id": "save-state",
+          "timeout": 10000
+        }
+      ]
+    }
+  ],
+  "SessionStart": [
+    {
+      "matcher": "startup|resume|clear|compact",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "octopus/hooks/session-start/load-context.sh",
+          "id": "load-context",
+          "timeout": 10000
+        }
+      ]
+    }
+  ],
+  "PostToolUseFailure": [
+    {
+      "matcher": "mcp__*",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "octopus/hooks/post-tool-use-failure/mcp-health.sh",
+          "id": "mcp-health",
+          "timeout": 10000
+        }
+      ]
+    }
+  ],
+  "Stop": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "octopus/hooks/stop/console-log-check.sh",
+          "id": "console-log-check",
+          "timeout": 10000
+        }
+      ]
+    },
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "octopus/hooks/stop/session-end.sh",
+          "id": "session-end",
+          "timeout": 10000
+        }
+      ]
+    }
+  ],
+  "SessionEnd": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "octopus/hooks/session-end/lifecycle-marker.sh",
+          "id": "lifecycle-marker",
+          "timeout": 10000
+        }
+      ]
+    }
+  ]
+}

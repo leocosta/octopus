@@ -1,0 +1,39 @@
+name: claude
+output: .claude/CLAUDE.md
+content_mode: template
+
+capabilities:
+  native_rules: true
+  native_skills: true
+  native_hooks: true
+  native_commands: true
+  native_agents: true
+  native_mcp: true
+
+delivery:
+  rules:
+    method: symlink
+    target: .claude/rules/
+  skills:
+    method: symlink
+    target: .claude/skills/
+  hooks:
+    method: settings_json
+    target: .claude/settings.json
+  commands:
+    method: file_per_command
+    target: .claude/commands/
+    prefix: "octopus:"
+  agents:
+    method: file_per_role
+    target: .claude/agents/
+  mcp:
+    method: settings_json
+    target: .claude/settings.json
+
+gitignore_extra:
+  - .claude/settings.json
+  - .claude/commands/
+  - .claude/agents/
+  - .claude/rules/
+  - .claude/skills/

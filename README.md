@@ -1,0 +1,392 @@
+[![Octopus - Centralized AI Agent Configuration](./images/cover.png "Octopus: Multi-repo AI agent configuration")](https://github.com/leocosta/octopus)
+
+---
+
+# Octopus
+
+Centralized AI agent configuration for multi-repo teams. One source of truth for coding standards, architecture context, and tool-specific settings across all your repositories and AI coding assistants.
+
+## What is Octopus
+
+Octopus is a framework that lives as a git submodule in your repositories. You configure it once via `.octopus.yml`, run `setup.sh`, and it generates the right configuration files for every AI Code Assistant your team uses — Claude Code, GitHub Copilot, OpenAI Codex, Antigravity, and Kilo Code.
+
+Each assistant has different capabilities (some support native rules, others need everything in a single markdown file). Octopus handles these differences automatically through a **manifest-driven architecture** — you write rules, skills, and hooks once, and Octopus delivers them in the format each tool understands.
+
+## Capability Matrix
+
+How Octopus delivers content to each Code Assistant:
+
+| Capability | Claude Code | Copilot | Codex | Antigravity | Kilo Code |
+|---|---|---|---|---|---|
+| **Output file** | `.claude/CLAUDE.md` | `.github/copilot-instructions.md` | `AGENTS.md` | `ANTIGRAVITY.md` | `.kilocode/rules.md` |
+| **Content mode** | Template | Concatenate | Concatenate | Concatenate | Concatenate |
+| **Rules** | Symlinked to `.claude/rules/` | Inlined | Inlined | Inlined | Inlined |
+| **Skills** | Symlinked to `.claude/skills/` | Inlined | Inlined | Inlined | Inlined |
+| **Hooks** | `settings.json` lifecycle hooks | Quality rules inlined | Quality rules inlined | Quality rules inlined | Quality rules inlined |
+| **Commands** | `.claude/commands/` (slash commands) | Inlined section | Inlined section | Inlined section | Inlined section |
+| **Roles** | `.claude/agents/` (native agents) | Inlined section | Inlined section | Inlined section | Inlined section |
+| **MCP** | `settings.json` mcpServers | `.vscode/mcp.json` + `~/.copilot/mcp-config.json` | `codex mcp add` CLI | — | — |
+
+**Template** mode fills placeholders in a template file (Claude's `CLAUDE.md`). **Concatenate** mode assembles a single markdown file from header + core + rules + skills + commands + roles.
+
+## Quick Start
+
+### Add to an existing repo
+
+```bash
+# 1. Add octopus as a submodule
+git submodule add git@github.com:your-org/octopus.git octopus
+git submodule update --init
+
+# 2. Configure
+cp octopus/.octopus.example.yml .octopus.yml
+# Edit .octopus.yml — choose your languages, agents, and features
+
+# 3. Create project context (required for roles)
+cp octopus/.octopus-context.example.md .octopus-context.md
+# Edit .octopus-context.md with your project's domain, architecture, and team info
+
+# 4. Run setup
+./octopus/setup.sh
+
+# 5. Fill in your .env with personal tokens (for MCP servers)
+
+# 6. Commit
+git add .octopus.yml .octopus-context.md octopus .gitignore
+git commit -m "chore: add octopus config"
+```
+
+### Update to a new version
+
+```bash
+cd octopus && git fetch --tags && git checkout v2.0.0 && cd ..
+./octopus/setup.sh
+git add octopus && git commit -m "chore: update octopus to v2.0.0"
+```
+
+## Configuration (.octopus.yml)
+
+```yaml
+# Language rules — coding standards applied to all agents
+# Available: common (always included), csharp, typescript, python
+rules:
+  - csharp
+  - typescript
+
+# Skills — reusable AI capabilities
+# Available: adr, backend-patterns, context-budget, e2e-testing, security-scan
+skills:
+  - adr
+  - e2e-testing
+
+# Hooks — lifecycle automation (Claude Code only)
+# Options: true (enable all), false (disable)
+# Disable specific hooks via env: OCTOPUS_DISABLED_HOOKS=hook-id-1,hook-id-2
+hooks: true
+
+# Which AI agents to configure
+# Available: claude, copilot, codex, antigravity, kilocode
+agents:
+  - claude
+  - copilot
+
+# MCP servers — external tool integrations
+# Available: notion, github, slack, postgres (or any .json file in mcp/)
+mcp:
+  - notion
+  - github
+
+# Workflow commands — PR, branch, and review automation
+# Requires: gh (GitHub CLI) >= 2.0 installed and authenticated
+workflow: true
+
+# GitHub reviewers for PRs
+reviewers:
+  - github-username
+
+# Roles — agent personas with project context
+# Available: product-manager, backend-specialist, frontend-specialist
+# Requires: .octopus-context.md in repo root
+roles:
+  - product-manager
+  - backend-specialist
+
+# Path to project context file (default: .octopus-context.md)
+# context: docs/project-context.md
+
+# Custom project commands — become slash commands with octopus: prefix
+commands:
+  - name: db-reset
+    description: Reset the database
+    run: make db-reset
+  - name: api-start
+    description: Start the API container
+    run: make api-start
+```
+
+## Features
+
+### Rules
+
+Language-specific coding standards applied to all agents.
+
+**Available rules:** `common` (always included), `csharp`, `typescript`, `python`
+
+**How it works:**
+1. Add languages to `.octopus.yml`:
+   ```yaml
+   rules:
+     - csharp
+     - typescript
+   ```
+2. Run `./octopus/setup.sh`
+3. **Claude Code**: rules are symlinked to `.claude/rules/<language>/` — Claude reads them as native rule files
+4. **Other agents**: all rule markdown files are appended to the agent's output file
+
+**What's included:**
+- `common/` — coding style, patterns, security, testing, quality checklist (always included)
+- `csharp/` — API patterns, architecture, data access, error handling, naming, testing
+- `typescript/` — naming, Next.js patterns, React patterns, state management, testing, tooling
+- `python/` — architecture, naming, testing, tooling, typing
+
+**Adding custom rules:**
+1. Create a directory: `octopus/rules/<name>/`
+2. Add `.md` files inside it
+3. Add `- <name>` to the `rules:` list in `.octopus.yml`
+
+### Skills
+
+Reusable AI capabilities that provide specialized knowledge.
+
+**Available skills:** `adr`, `backend-patterns`, `context-budget`, `e2e-testing`, `security-scan`
+
+**How it works:**
+1. Add skills to `.octopus.yml`:
+   ```yaml
+   skills:
+     - adr
+     - e2e-testing
+   ```
+2. Run `./octopus/setup.sh`
+3. **Claude Code**: skills are symlinked to `.claude/skills/<name>/` with a `SKILL.md` file each
+4. **Other agents**: skill content is appended to the agent's output file
+
+**Adding custom skills:**
+1. Create a directory: `octopus/skills/<name>/`
+2. Add a `SKILL.md` file with the skill instructions
+3. Add `- <name>` to the `skills:` list in `.octopus.yml`
+
+### Hooks
+
+Lifecycle hooks that automate quality enforcement for Claude Code. Other agents receive equivalent quality rules inlined from `rules/common/quality.md`.
+
+**Available hooks:**
+
+| Hook | Phase | What it does |
+|---|---|---|
+| `block-no-verify` | PreToolUse | Blocks `--no-verify` in git commands |
+| `detect-secrets` | PreToolUse | Warns about hardcoded secrets |
+| `git-push-reminder` | PreToolUse | Reminds to review before pushing |
+| `format-check` | PreToolUse | Checks formatting on file writes |
+| `auto-format` | PostToolUse | Auto-formats edited files |
+| `typecheck` | PostToolUse | Runs type checking after edits |
+| `console-log-warn` | PostToolUse | Warns about debug statements |
+| `mcp-health` | PostToolUseFailure | Checks MCP server health on failure |
+| `save-state` | PreCompact | Saves session state before compacting |
+| `load-context` | SessionStart | Loads project context on session start |
+| `console-log-check` | Stop | Final check for debug statements |
+| `session-end` | Stop | Session cleanup |
+| `lifecycle-marker` | SessionEnd | Marks session lifecycle events |
+
+**How it works:**
+1. Enable in `.octopus.yml`:
+   ```yaml
+   hooks: true
+   ```
+2. Run `./octopus/setup.sh`
+3. Hooks are injected into `.claude/settings.json`
+
+**Disable specific hooks:**
+```bash
+OCTOPUS_DISABLED_HOOKS=auto-format,typecheck ./octopus/setup.sh
+```
+
+### Roles
+
+Agent personas that combine a responsibility definition with your project context. Each role generates a specialized agent.
+
+**Available roles:** `product-manager`, `backend-specialist`, `frontend-specialist`
+
+**How it works:**
+1. Create `.octopus-context.md` in your repo root with your project's domain, architecture, business model, and team info
+2. Add roles to `.octopus.yml`:
+   ```yaml
+   roles:
+     - product-manager
+     - backend-specialist
+   ```
+3. Run `./octopus/setup.sh`
+4. **Claude Code**: each role becomes a native agent file in `.claude/agents/<role>.md` with YAML frontmatter (name, model, color)
+5. **Other agents**: roles are appended as sections to the agent's output file
+
+**The role template** contains a `{{PROJECT_CONTEXT}}` placeholder that gets replaced with the content of your `.octopus-context.md`. The `_base.md` file provides shared guidelines appended to all roles.
+
+**Adding custom roles:**
+1. Create `octopus/roles/<name>.md` with YAML frontmatter and `{{PROJECT_CONTEXT}}` placeholder
+2. Add `- <name>` to the `roles:` list in `.octopus.yml`
+
+### Commands
+
+Custom slash commands that map to CLI operations. Useful for database management, dev server control, tunnels, and other project-specific tasks.
+
+**How it works:**
+1. Add commands to `.octopus.yml`:
+   ```yaml
+   commands:
+     - name: db-reset
+       description: Reset the database
+       run: make db-reset
+     - name: api-start
+       description: Start the API container
+       run: make api-start
+   ```
+2. Run `./octopus/setup.sh`
+3. **Claude Code**: each command becomes a file at `.claude/commands/octopus:<name>.md` — usable as `/octopus:<name>` slash commands
+4. **Other agents**: commands are listed as a reference section in the agent's output file
+
+### MCP Servers
+
+External tool integrations (Notion, GitHub, Slack, PostgreSQL) configured from a single source.
+
+**Available servers:** `notion`, `github`, `slack`, `postgres`
+
+**How it works:**
+1. Add servers to `.octopus.yml`:
+   ```yaml
+   mcp:
+     - notion
+     - github
+   ```
+2. Add required environment variables to `.env`:
+   - `notion` — uses OAuth (no env vars needed)
+   - `github` — `GITHUB_TOKEN`
+   - `slack` — `SLACK_BOT_TOKEN`, `SLACK_TEAM_ID`
+   - `postgres` — `DATABASE_URL`
+3. Run `./octopus/setup.sh`
+4. Delivery varies per agent (see Capability Matrix):
+   - **Claude Code**: merged into `.claude/settings.json` under `mcpServers`
+   - **Copilot**: `.vscode/mcp.json` + `~/.copilot/mcp-config.json`
+   - **Codex**: `codex mcp add` CLI commands
+
+**Adding custom MCP servers:**
+1. Create `octopus/mcp/<name>.json` following the template in `mcp/_template.json`
+2. Use `${VAR_NAME}` for secrets — they'll be read from `.env`
+3. Add `- <name>` to the `mcp:` list in `.octopus.yml`
+
+### Workflow
+
+PR and branch automation commands powered by GitHub CLI (`gh`).
+
+**Available workflow commands:**
+
+| Command | What it does |
+|---|---|
+| `/octopus:branch-create` | Create a branch following naming conventions |
+| `/octopus:pr-open` | Push branch and create a PR |
+| `/octopus:pr-review` | Request review from configured reviewers |
+| `/octopus:pr-comments` | Handle PR comment feedback |
+| `/octopus:pr-merge` | Merge a PR |
+| `/octopus:codereview` | Run a code review workflow |
+| `/octopus:dev-flow` | Full development flow |
+| `/octopus:docs` | Documentation commands |
+
+**How it works:**
+1. Enable in `.octopus.yml`:
+   ```yaml
+   workflow: true
+   reviewers:
+     - github-username
+   ```
+2. Ensure `gh` is installed and authenticated: `gh auth login`
+3. Run `./octopus/setup.sh`
+4. **Claude Code**: commands become individual slash command files
+5. **Other agents**: commands are listed with CLI invocation instructions
+
+## Agent Manifests
+
+Each agent in `octopus/agents/<name>/` has a `manifest.yml` that declares what the tool supports natively:
+
+```yaml
+name: claude
+output: .claude/CLAUDE.md
+content_mode: template          # "template" or "concatenate"
+
+capabilities:
+  native_rules: true            # Can use symlinked rule files
+  native_skills: true           # Can use symlinked skill files
+  native_hooks: true            # Supports lifecycle hooks
+  native_commands: true         # Supports individual command files
+  native_agents: true           # Supports individual agent/role files
+  native_mcp: true              # Supports MCP server configuration
+
+delivery:
+  rules:
+    method: symlink             # How to deliver rules when native
+    target: .claude/rules/      # Where to put them
+  # ... (one entry per capability)
+
+gitignore_extra:                # Additional paths for .gitignore
+  - .claude/settings.json
+  - .claude/commands/
+```
+
+`setup.sh` reads the manifest and routes content accordingly — no hardcoded agent logic.
+
+### Adding a New Agent
+
+1. Create `octopus/agents/<name>/`
+2. Add `manifest.yml` declaring capabilities (copy from an existing agent and adjust)
+3. Add `header.md` with tool-specific instructions (limitations, format preferences)
+4. Add `- <name>` to `.octopus.yml` agents list
+5. Run `./octopus/setup.sh`
+
+No changes to `setup.sh` needed — the manifest drives all behavior.
+
+## Project Structure
+
+```
+octopus/
+├── agents/                 # Per-agent configuration
+│   ├── claude/             # manifest.yml + CLAUDE.md template + settings.json
+│   ├── copilot/            # manifest.yml + header.md
+│   ├── codex/              # manifest.yml + header.md
+│   ├── antigravity/        # manifest.yml + header.md
+│   └── kilocode/           # manifest.yml + header.md
+├── core/                   # Universal standards
+│   ├── guidelines.md       # Coding principles
+│   ├── architecture.md     # System architecture standards
+│   ├── commit-conventions.md
+│   ├── pr-workflow.md
+│   └── task-management.md
+├── rules/                  # Language-specific coding rules
+│   ├── common/             # Always included (coding-style, patterns, security, testing, quality)
+│   ├── csharp/             # C#/.NET rules
+│   ├── typescript/         # TypeScript/React/Next.js rules
+│   └── python/             # Python rules
+├── skills/                 # Reusable AI capabilities (each has SKILL.md)
+├── hooks/                  # Claude Code lifecycle hooks + hooks.json
+├── roles/                  # Agent persona templates (_base.md + per-role)
+├── commands/               # Workflow command definitions
+├── mcp/                    # MCP server configs (JSON, env var substitution)
+├── cli/                    # CLI utilities for workflow automation
+├── setup.sh                # Main generation script
+├── .octopus.example.yml    # Configuration template
+└── .octopus-context.example.md  # Project context template
+```
+
+## Requirements
+
+- Bash 4+
+- Python 3 (for JSON merging in MCP and hooks injection)
+- Git (with submodule support)
+- `gh` (GitHub CLI) >= 2.0 — only if `workflow: true`
