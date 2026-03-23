@@ -1,2 +1,9 @@
 .env
 /docs/superpowers
+# octopus (auto-generated)
+.claude/CLAUDE.md
+.claude/settings.json
+.claude/commands/
+.claude/agents/
+.claude/rules/
+.claude/skills/

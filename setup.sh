@@ -2,7 +2,13 @@
 set -euo pipefail
 
 OCTOPUS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$OCTOPUS_DIR/.." && pwd)"
+# Self-setup: if .octopus.yml exists inside OCTOPUS_DIR, use OCTOPUS_DIR as PROJECT_ROOT
+if [[ -z "${PROJECT_ROOT:-}" && -f "$OCTOPUS_DIR/.octopus.yml" ]]; then
+  PROJECT_ROOT="$OCTOPUS_DIR"
+else
+  PROJECT_ROOT="${PROJECT_ROOT:-$(cd "$OCTOPUS_DIR/.." && pwd)}"
+fi
+OCTOPUS_CLI_REL="$(python3 -c "import os; print(os.path.relpath('$OCTOPUS_DIR/cli/octopus.sh', '$PROJECT_ROOT'))")"
 
 # (Agent output paths are now read from agents/<name>/manifest.yml)
 
@@ -668,7 +674,9 @@ deliver_commands() {
         local cmd_name
         cmd_name=$(basename "$cmd_file" .md)
         GENERATED_WORKFLOW_CMDS+=("$cmd_name")
-        strip_frontmatter "$cmd_file" > "$commands_dir/${prefix}${cmd_name}.md"
+        strip_frontmatter "$cmd_file" \
+          | sed "s|\./octopus/cli/octopus\\.sh|./${OCTOPUS_CLI_REL}|g" \
+          > "$commands_dir/${prefix}${cmd_name}.md"
         echo "  → ${MANIFEST_DELIVERY_COMMANDS_TARGET}${prefix}${cmd_name}.md"
       done
     fi
