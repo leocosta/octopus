@@ -3,6 +3,11 @@ name: codereview
 description: Comprehensive security and quality review of uncommitted changes
 ---
 
+---
+description: Comprehensive security and quality review of uncommitted changes
+agent: code
+---
+
 # Code Review
 
 Comprehensive security and quality review of uncommitted changes:

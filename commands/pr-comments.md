@@ -4,6 +4,11 @@ description: Address PR review comments
 cli: octopus.sh pr-comments
 ---
 
+---
+description: Address PR review comments
+agent: code
+---
+
 ## Instructions
 
 1. Run: `./octopus/cli/octopus.sh pr-comments <pr-number>`
