@@ -2,6 +2,11 @@
 description: Look up current documentation for a library or topic via Context7.
 ---
 
+---
+description: Look up current documentation for a library or topic via Context7
+agent: code
+---
+
 # /docs
 
 ## Purpose

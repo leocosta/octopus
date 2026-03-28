@@ -6,8 +6,15 @@ capabilities:
   native_rules: false
   native_skills: false
   native_hooks: false
-  native_commands: false
+  native_commands: true
   native_agents: false
   native_mcp: false
 
-gitignore_extra: []
+delivery:
+  commands:
+    method: file_per_command
+    target: .kilo/command/
+    prefix: ""
+
+gitignore_extra:
+  - .kilo/command/

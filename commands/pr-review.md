@@ -4,6 +4,11 @@ description: Self-review a PR and assign human reviewers
 cli: octopus.sh pr-review
 ---
 
+---
+description: Self-review a PR and assign human reviewers
+agent: code
+---
+
 ## Instructions
 
 1. Run: `./octopus/cli/octopus.sh pr-review <pr-number>`

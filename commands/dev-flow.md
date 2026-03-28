@@ -3,6 +3,11 @@ name: dev-flow
 description: Full development workflow orchestrator
 ---
 
+---
+description: Full development workflow orchestrator
+agent: code
+---
+
 ## Instructions
 
 This is the full development workflow. Execute steps in order with pauses

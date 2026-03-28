@@ -4,6 +4,11 @@ description: Create a versioned release with CHANGELOG and GitHub Release
 cli: octopus.sh release
 ---
 
+---
+description: Create a versioned release with CHANGELOG and GitHub Release
+agent: code
+---
+
 ## Instructions
 
 This command creates a versioned release: generates CHANGELOG entry, creates a git tag with release notes, and optionally publishes a GitHub Release.
