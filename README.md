@@ -18,7 +18,7 @@ How Octopus delivers content to each Code Assistant:
 
 | Capability | Claude Code | Copilot | Codex | Antigravity | Kilo Code |
 |---|---|---|---|---|---|
-| **Output file** | `.claude/CLAUDE.md` | `.github/copilot-instructions.md` | `AGENTS.md` | `ANTIGRAVITY.md` | `.kilocode/rules.md` |
+| **Output file** | `.claude/CLAUDE.md` | `.github/copilot-instructions.md` | `AGENTS.md` | `ANTIGRAVITY.md` | `.opencode/rules.md` |
 | **Content mode** | Template | Concatenate | Concatenate | Concatenate | Concatenate |
 | **Rules** | Symlinked to `.claude/rules/` | Inlined | Inlined | Inlined | Inlined |
 | **Skills** | Symlinked to `.claude/skills/` | Inlined | Inlined | Inlined | Inlined |
@@ -85,7 +85,7 @@ skills:
 hooks: true
 
 # Which AI agents to configure
-# Available: claude, copilot, codex, antigravity, kilocode
+# Available: claude, copilot, codex, antigravity, opencode
 agents:
   - claude
   - copilot
@@ -361,7 +361,7 @@ octopus/
 │   ├── copilot/            # manifest.yml + header.md
 │   ├── codex/              # manifest.yml + header.md
 │   ├── antigravity/        # manifest.yml + header.md
-│   └── kilocode/           # manifest.yml + header.md
+│   └── opencode/           # manifest.yml + header.md
 ├── core/                   # Universal standards
 │   ├── guidelines.md       # Coding principles
 │   ├── architecture.md     # System architecture standards

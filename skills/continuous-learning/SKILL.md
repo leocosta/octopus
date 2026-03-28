@@ -99,8 +99,8 @@ Each file uses this structure:
 
 ## Integration with Octopus Agents
 
-### Kilo Code
-Instructions are inlined in `.kilocode/rules.md` via concatenate mode.
+### Open Code
+Instructions are inlined in `.opencode/rules.md` via concatenate mode.
 Before each task, reference:
 ```
 /knowledge/INDEX.md → route to relevant domain
