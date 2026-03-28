@@ -1,4 +1,5 @@
 agents:
   - claude
+  - opencode
 
 workflow: true

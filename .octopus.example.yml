@@ -20,7 +20,7 @@ rules:
 # hooks: true
 
 # Which AI agents should be configured?
-# Available: claude, copilot, codex, antigravity, kilocode
+# Available: claude, copilot, codex, antigravity, opencode
 # Use short form for defaults, or long form to override output path:
 #   - name: antigravity
 #     output: custom/path.md

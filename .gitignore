@@ -7,3 +7,9 @@
 .claude/agents/
 .claude/rules/
 .claude/skills/
+.opencode/rules.md
+.opencode/command/
+.opencode/rules/
+.opencode/skills/
+.opencode/agents/
+.opencode/settings.json

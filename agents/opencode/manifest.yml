@@ -1,0 +1,39 @@
+name: opencode
+output: .opencode/rules.md
+content_mode: concatenate
+
+capabilities:
+  native_rules: true
+  native_skills: true
+  native_hooks: true
+  native_commands: true
+  native_agents: true
+  native_mcp: true
+
+delivery:
+  rules:
+    method: symlink
+    target: .opencode/rules/
+  skills:
+    method: symlink
+    target: .opencode/skills/
+  hooks:
+    method: settings_json
+    target: .opencode/settings.json
+  commands:
+    method: file_per_command
+    target: .opencode/command/
+    prefix: ""
+  agents:
+    method: file_per_role
+    target: .opencode/agents/
+  mcp:
+    method: settings_json
+    target: .opencode/settings.json
+
+gitignore_extra:
+  - .opencode/command/
+  - .opencode/rules/
+  - .opencode/skills/
+  - .opencode/agents/
+  - .opencode/settings.json
