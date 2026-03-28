@@ -43,33 +43,49 @@ DEFAULT_TEMPLATE="$CLI_DIR/../pr-body-default.md"
 generate_pr_body() {
   local base="$1"
 
-  # Summary from recent commits
+  # Summary from recent commits with emoji based on type
   local summary
-  summary=$(git log "${base}..HEAD" --oneline | head -5 | sed 's/^[a-f0-9]* /- /')
+  summary=$(git log "${base}..HEAD" --oneline | head -5 | while IFS= read -r line; do
+    if echo "$line" | grep -qE 'feat(\(|:)'; then
+      echo "$line" | sed 's/^[a-f0-9]* /✨ /'
+    elif echo "$line" | grep -qE 'fix(\(|:)'; then
+      echo "$line" | sed 's/^[a-f0-9]* /🐛 /'
+    elif echo "$line" | grep -qE 'refactor(\(|:)'; then
+      echo "$line" | sed 's/^[a-f0-9]* /🔧 /'
+    elif echo "$line" | grep -qE 'docs(\(|:)'; then
+      echo "$line" | sed 's/^[a-f0-9]* /📝 /'
+    elif echo "$line" | grep -qE 'chore(\(|:)'; then
+      echo "$line" | sed 's/^[a-f0-9]* /🏗️ /'
+    elif echo "$line" | grep -qE 'test(\(|:)'; then
+      echo "$line" | sed 's/^[a-f0-9]* /🧪 /'
+    else
+      echo "$line" | sed 's/^[a-f0-9]* /• /'
+    fi
+  done)
 
-  # Changes categorized
+  # Changes categorized with emojis
   local added modified deleted
   added=$(git diff --name-status "${base}..HEAD" | grep '^A' | awk '{print "- `" $2 "`"}')
   modified=$(git diff --name-status "${base}..HEAD" | grep '^M' | awk '{print "- `" $2 "`"}')
   deleted=$(git diff --name-status "${base}..HEAD" | grep '^D' | awk '{print "- `" $2 "`"}')
 
   cat <<BODY
-## Summary
+## 📋 Summary
 
 ${summary:-N/A}
 
-## Changes
+## 🔄 Changes
 
-### Added
+### ✅ Added
 ${added:-N/A}
 
-### Modified
+### 🔧 Modified
 ${modified:-N/A}
 
-### Deleted
+### ❌ Deleted
 ${deleted:-N/A}
 
-## How to Test
+## 🧪 How to Test
 1. Review the diff for correctness
 BODY
 }
