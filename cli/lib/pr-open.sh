@@ -40,53 +40,145 @@ PR_TITLE="${PR_TYPE}: ${PR_DESC}"
 CLI_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEFAULT_TEMPLATE="$CLI_DIR/../pr-body-default.md"
 
+emoji_for_commit() {
+  local msg="$1"
+  case "$msg" in
+    feat*|feat\(*\)  ) echo "✨" ;;
+    fix*|fix\(*\)    ) echo "🐛" ;;
+    refactor*        ) echo "🔧" ;;
+    docs*|docs\(*\)  ) echo "📝" ;;
+    chore*|chore\(*\)) echo "🏗️" ;;
+    test*|test\(*\)  ) echo "🧪" ;;
+    style*|style\(*\)) echo "💄" ;;
+    perf*|perf\(*\)  ) echo "⚡" ;;
+    ci*|ci\(*\)      ) echo "🔁" ;;
+    build*|build\(*\)) echo "📦" ;;
+    revert*          ) echo "⏪" ;;
+    *)               echo "•" ;;
+  esac
+}
+
 generate_pr_body() {
   local base="$1"
+  local range="${base}..HEAD"
 
-  # Summary from recent commits with emoji based on type
-  local summary
-  summary=$(git log "${base}..HEAD" --oneline | head -5 | while IFS= read -r line; do
-    if echo "$line" | grep -qE 'feat(\(|:)'; then
-      echo "$line" | sed 's/^[a-f0-9]* /✨ /'
-    elif echo "$line" | grep -qE 'fix(\(|:)'; then
-      echo "$line" | sed 's/^[a-f0-9]* /🐛 /'
-    elif echo "$line" | grep -qE 'refactor(\(|:)'; then
-      echo "$line" | sed 's/^[a-f0-9]* /🔧 /'
-    elif echo "$line" | grep -qE 'docs(\(|:)'; then
-      echo "$line" | sed 's/^[a-f0-9]* /📝 /'
-    elif echo "$line" | grep -qE 'chore(\(|:)'; then
-      echo "$line" | sed 's/^[a-f0-9]* /🏗️ /'
-    elif echo "$line" | grep -qE 'test(\(|:)'; then
-      echo "$line" | sed 's/^[a-f0-9]* /🧪 /'
-    else
-      echo "$line" | sed 's/^[a-f0-9]* /• /'
+  # ── 1. Rich summary from commit messages (title + body) ──
+  local summary=""
+  while IFS= read -r hash; do
+    [[ -z "$hash" ]] && continue
+    local title body emoji
+    title=$(git log -1 --format="%s" "$hash")
+    body=$(git log -1 --format="%b" "$hash" | sed '/^$/d')
+    emoji=$(emoji_for_commit "$title")
+    summary+="${emoji} ${title}"
+    if [[ -n "$body" ]]; then
+      summary+=$'\n'"  > ${body}"
     fi
-  done)
+    summary+=$'\n'
+  done < <(git log "$range" --format="%H" 2>/dev/null)
 
-  # Changes categorized with emojis
+  # ── 2. High-level description from branch context ──
+  local branch_type branch_scope branch_desc
+  branch_type=$(echo "$CURRENT_BRANCH" | cut -d/ -f1)
+  branch_desc=$(echo "$CURRENT_BRANCH" | cut -d/ -f2- | tr '-' ' ')
+  branch_scope=$(git diff --name-status "$range" | awk '{print $2}' | cut -d/ -f1 | sort -u | tr '\n' ', ' | sed 's/,$//')
+
+  local context_emoji
+  case "$branch_type" in
+    feat)     context_emoji="🚀" ;;
+    fix)      context_emoji="🩹" ;;
+    refactor) context_emoji="🔧" ;;
+    docs)     context_emoji="📖" ;;
+    chore)    context_emoji="🏗️" ;;
+    test)     context_emoji="🧪" ;;
+    *)        context_emoji="📌" ;;
+  esac
+
+  # ── 3. Change statistics ──
+  local stats added_count modified_count deleted_count total_files
+  stats=$(git diff --shortstat "$range" 2>/dev/null)
+  added_count=$(git diff --name-status "$range" | grep -c '^A' || true)
+  modified_count=$(git diff --name-status "$range" | grep -c '^M' || true)
+  deleted_count=$(git diff --name-status "$range" | grep -c '^D' || true)
+  total_files=$((added_count + modified_count + deleted_count))
+
+  # ── 4. File categorization with context ──
   local added modified deleted
-  added=$(git diff --name-status "${base}..HEAD" | grep '^A' | awk '{print "- `" $2 "`"}')
-  modified=$(git diff --name-status "${base}..HEAD" | grep '^M' | awk '{print "- `" $2 "`"}')
-  deleted=$(git diff --name-status "${base}..HEAD" | grep '^D' | awk '{print "- `" $2 "`"}')
+  added=$(git diff --name-status "$range" | grep '^A' | awk '{
+    emoji="📄"; ext=tolower($2);
+    if (match(ext, /\.sh$/)) emoji="⚙️";
+    else if (match(ext, /\.ya?ml$/)) emoji="⚙️";
+    else if (match(ext, /\.md$/)) emoji="📝";
+    else if (match(ext, /\.ts$|\.js$/)) emoji="📜";
+    else if (match(ext, /\.json$/)) emoji="🔧";
+    print emoji " `" $2 "`"
+  }')
+  modified=$(git diff --name-status "$range" | grep '^M' | awk '{
+    emoji="📄"; ext=tolower($2);
+    if (match(ext, /\.sh$/)) emoji="⚙️";
+    else if (match(ext, /\.ya?ml$/)) emoji="⚙️";
+    else if (match(ext, /\.md$/)) emoji="📝";
+    else if (match(ext, /\.ts$|\.js$/)) emoji="📜";
+    else if (match(ext, /\.json$/)) emoji="🔧";
+    print emoji " `" $2 "`"
+  }')
+  deleted=$(git diff --name-status "$range" | grep '^D' | awk '{
+    emoji="📄"; ext=tolower($2);
+    if (match(ext, /\.sh$/)) emoji="⚙️";
+    else if (match(ext, /\.ya?ml$/)) emoji="⚙️";
+    else if (match(ext, /\.md$/)) emoji="📝";
+    else if (match(ext, /\.ts$|\.js$/)) emoji="📜";
+    else if (match(ext, /\.json$/)) emoji="🔧";
+    print emoji " `" $2 "`"
+  }')
 
+  # ── 5. Key diff highlights (changed functions/components) ──
+  local highlights=""
+  local diff_content
+  diff_content=$(git diff "$range" 2>/dev/null)
+  if [[ -n "$diff_content" ]]; then
+    # Extract function/class definitions changed
+    local funcs
+    funcs=$(echo "$diff_content" | grep -E '^\+.*(function |def |class |const |let |var |func |fn |impl )' | \
+      sed 's/^+//' | grep -oE '(function|def|class|const|let|var|func|fn|impl) +[a-zA-Z_][a-zA-Z0-9_]*' | \
+      head -5 | awk '{print "- `" $2 "` (" $1 ")"}')
+    if [[ -n "$funcs" ]]; then
+      highlights="$funcs"
+    fi
+  fi
+
+  # ── 6. Build the PR body ──
   cat <<BODY
-## 📋 Summary
+## ${context_emoji} Context
+
+**Branch**: \`${CURRENT_BRANCH}\` → \`${base}\`
+**Type**: ${branch_type} — ${branch_desc}
+**Scope**: ${branch_scope}
+**Impact**: ${total_files} file(s) changed, ${stats}
+
+## 📋 What Changed
 
 ${summary:-N/A}
 
-## 🔄 Changes
+## 🔄 File Changes
 
-### ✅ Added
-${added:-N/A}
+### ✅ Added (${added_count})
+${added:-_none_}
 
-### 🔧 Modified
-${modified:-N/A}
+### 🔧 Modified (${modified_count})
+${modified:-_none_}
 
-### ❌ Deleted
-${deleted:-N/A}
+### ❌ Deleted (${deleted_count})
+${deleted:-_none_}
+
+$([ -n "$highlights" ] && echo "## 🔍 Key Changes
+${highlights}
+")
 
 ## 🧪 How to Test
 1. Review the diff for correctness
+2. Verify no breaking changes introduced
+3. Run existing tests if applicable
 BODY
 }
 
