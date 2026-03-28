@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.1] - 2026-03-28
+
+♻️ This release migrates the agent configuration from `kilocode` to `opencode`, modernizing the project structure and aligning with current naming conventions. The legacy kilocode agent was removed and replaced with a new opencode agent that supports full native capabilities (rules, skills, hooks, commands, agents, and MCP). Configuration files and documentation were updated to reflect the change, including `.gitignore`, `.octopus.yml`, and `README.md`. Additionally, the PR creation workflow (`pr-open.sh`) was enhanced ✨ to automatically generate rich, context-aware PR bodies with emoji-styled summaries, commit narratives, and file change categorization.
+
 ## [0.2.0] - 2026-03-28
 
 ✨ This release introduces the Continuous Learning system, a knowledge management framework that enables capturing insights, testing hypotheses, and promoting confirmed patterns to rules. The system includes templates and examples for structuring project knowledge across teams. Additionally, a submodule URL in the README was corrected 🐛 to ensure proper repository linking.
