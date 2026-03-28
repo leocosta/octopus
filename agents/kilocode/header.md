@@ -1,6 +1,17 @@
 # Kilo Code Instructions
 
-<!-- TODO: Add Kilo Code-specific behavior instructions -->
+## Continuous Learning Protocol
+
+Before each task:
+1. Review `/knowledge/INDEX.md` to route to the relevant domain
+2. Load `rules.md` from that domain — apply confirmed rules by default
+3. Load `hypotheses.md` — flag any testable hypothesis for validation
+
+After each task:
+1. Extract insights and update the domain's `knowledge.md`
+2. If a hypothesis was confirmed or contradicted, update `hypotheses.md` / `rules.md`
+3. When a hypothesis reaches 5+ confirmations, promote it to `rules.md`
+4. When a rule is contradicted by new data, demote it to `hypotheses.md`
 
 ---
 
