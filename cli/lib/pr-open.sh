@@ -40,26 +40,48 @@ PR_TITLE="${PR_TYPE}: ${PR_DESC}"
 CLI_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEFAULT_TEMPLATE="$CLI_DIR/../pr-body-default.md"
 
+generate_pr_body() {
+  local base="$1"
+
+  # Summary from recent commits
+  local summary
+  summary=$(git log "${base}..HEAD" --oneline | head -5 | sed 's/^[a-f0-9]* /- /')
+
+  # Changes categorized
+  local added modified deleted
+  added=$(git diff --name-status "${base}..HEAD" | grep '^A' | awk '{print "- `" $2 "`"}')
+  modified=$(git diff --name-status "${base}..HEAD" | grep '^M' | awk '{print "- `" $2 "`"}')
+  deleted=$(git diff --name-status "${base}..HEAD" | grep '^D' | awk '{print "- `" $2 "`"}')
+
+  cat <<BODY
+## Summary
+
+${summary:-N/A}
+
+## Changes
+
+### Added
+${added:-N/A}
+
+### Modified
+${modified:-N/A}
+
+### Deleted
+${deleted:-N/A}
+
+## How to Test
+1. Review the diff for correctness
+BODY
+}
+
 if [[ -n "$BODY_FILE" ]]; then
   if [[ ! -f "$BODY_FILE" ]]; then
     echo "ERROR: Body file not found: $BODY_FILE"
     exit 1
   fi
   PR_BODY=$(cat "$BODY_FILE")
-elif [[ -f "$DEFAULT_TEMPLATE" ]]; then
-  PR_BODY=$(cat "$DEFAULT_TEMPLATE")
 else
-  PR_BODY="## Summary
--
-
-## Related Issues
-Closes #
-
-## How to Test
-1.
-
-## Screenshots (if applicable)
-"
+  PR_BODY=$(generate_pr_body "$TARGET")
 fi
 
 # Create PR
