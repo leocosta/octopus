@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] - 2026-03-29
+
+This release brings significant improvements to the workflow and the update experience in Octopus.
+
+✨ The new `/octopus:update` command enables AI agents to automatically update the Octopus submodule to newer versions, handling checkout, setup execution, and commit of changes transparently.
+
+📝 Documentation has been prepared for community release, including updated README and revised examples to facilitate adoption by new users.
+
+✨ The development flow (`dev-flow`) has been enhanced with an additional cleanup step in Step 7, ensuring a more robust and organized process after completing the development cycle.
+
 ## [0.4.0] - 2026-03-29
 
 ✨ Phase 1 of Knowledge Modules integration. Knowledge is now a first-class
