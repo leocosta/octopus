@@ -12,6 +12,7 @@ reset_state() {
   rm -rf "$TMPDIR/knowledge" "$TMPDIR/.claude" "$TMPDIR/.github"
   OCTOPUS_KNOWLEDGE_ENABLED="false"
   OCTOPUS_KNOWLEDGE_MODE=""
+  OCTOPUS_KNOWLEDGE_DIR="knowledge"
   OCTOPUS_KNOWLEDGE_LIST=()
   OCTOPUS_KNOWLEDGE_ROLES=()
   KNOWLEDGE_MODULES=()
