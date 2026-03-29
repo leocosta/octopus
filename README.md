@@ -26,6 +26,7 @@ How Octopus delivers content to each Code Assistant:
 | **Commands** | `.claude/commands/` (slash commands) | Inlined section | Inlined section | Inlined section | Inlined section |
 | **Feature Lifecycle Commands (`doc-*`)** | `.claude/commands/` (slash commands) | Inlined section | Inlined section | Inlined section | Inlined section |
 | **Roles** | `.claude/agents/` (native agents) | Inlined section | Inlined section | Inlined section | Inlined section |
+| **Knowledge** | Symlinked to `.claude/knowledge/` | Inlined in roles | Inlined in roles | Inlined in roles | Inlined in roles |
 | **MCP** | `settings.json` mcpServers | `.vscode/mcp.json` + `~/.copilot/mcp-config.json` | `codex mcp add` CLI | — | — |
 
 **Template** mode fills placeholders in a template file (Claude's `CLAUDE.md`). **Concatenate** mode assembles a single markdown file from header + core + rules + skills + commands + roles.
@@ -235,6 +236,54 @@ Agent personas that combine a responsibility definition with your project contex
 **Adding custom roles:**
 1. Create `octopus/roles/<name>.md` with YAML frontmatter and `{{PROJECT_CONTEXT}}` placeholder
 2. Add `- <name>` to the `roles:` list in `.octopus.yml`
+
+### Knowledge
+
+Modular domain knowledge that agents can load on demand — confirmed facts, hypotheses under investigation, and promoted rules. Each domain lives in its own folder under `knowledge/` and follows a structured format.
+
+**How it works:**
+1. Add `knowledge:` to `.octopus.yml` (three formats supported):
+   ```yaml
+   # Format A: auto-discover all folders in knowledge/ (not prefixed with _)
+   knowledge: true
+
+   # Format B: explicit module list
+   knowledge:
+     - domain
+     - architecture
+     - authentication
+
+   # Format C: full config with per-role mapping
+   knowledge:
+     modules:
+       - domain
+       - architecture
+       - authentication
+     roles:
+       backend-specialist:
+         - domain
+         - architecture
+       product-manager:
+         - domain
+   ```
+2. Run `./octopus/setup.sh`
+3. **Claude Code**: `knowledge/` is symlinked to `.claude/knowledge/` — agents load modules on demand
+4. **Other agents**: knowledge content is assembled per-role and inlined into the `{{PROJECT_CONTEXT}}` placeholder
+
+**Backward compatibility:** Projects using `.octopus-context.md` continue to work unchanged. If both exist, `.octopus-context.md` is prepended before knowledge modules.
+
+**Auto-generated index:** `setup.sh` creates `knowledge/INDEX.md` — a routing table listing every active module with file counts. Agents consult this first to find relevant domain context.
+
+**Creating a knowledge module:**
+```bash
+cp -r octopus/knowledge/_template knowledge/<domain>
+# Edit the files inside knowledge/<domain>/
+```
+
+Each module contains:
+- `knowledge.md` — confirmed facts and anti-patterns
+- `hypotheses.md` — under-investigation observations (promoted to rules after 5 confirmations)
+- `rules.md` — auto-applied rules promoted from hypotheses
 
 ### Commands
 

@@ -9,6 +9,7 @@ capabilities:
   native_commands: true
   native_agents: true
   native_mcp: true
+  native_knowledge: true
 
 delivery:
   rules:
@@ -30,6 +31,9 @@ delivery:
   mcp:
     method: settings_json
     target: .claude/settings.json
+  knowledge:
+    method: symlink
+    target: .claude/knowledge/
 
 gitignore_extra:
   - .claude/settings.json
@@ -37,3 +41,4 @@ gitignore_extra:
   - .claude/agents/
   - .claude/rules/
   - .claude/skills/
+  - .claude/knowledge/

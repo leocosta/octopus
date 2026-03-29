@@ -11,9 +11,11 @@ agent: code
 
 ## Instructions
 
-1. If no branch name was provided, ask the user:
-   - Type: feat, fix, refactor, docs, test, chore, style, perf, ci
-   - Short description (lowercase, hyphens, no spaces)
+1. If no branch name was provided:
+   - Infer a branch name from recent context (current task, last user message, open files, git status)
+   - Choose the appropriate type: feat, fix, refactor, docs, test, chore, style, perf, ci
+   - Propose: "Suggested branch: `<type>/<description>` — proceed? (or tell me a different name)"
+   - Wait for confirmation or correction before creating
 2. Run: `./octopus/cli/octopus.sh branch-create <type>/<description>`
 3. The script will:
    - Validate the branch name format (lowercase, hyphens only)

@@ -9,5 +9,6 @@ capabilities:
   native_commands: false
   native_agents: false
   native_mcp: false
+  native_knowledge: false
 
 gitignore_extra: []

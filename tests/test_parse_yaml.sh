@@ -226,5 +226,72 @@ migrate_stacks_to_rules
 
 echo "PASS: common always included"
 
+# --- Test: knowledge: parsing ---
+echo "Test: knowledge YAML parsing"
+
+TMPDIR4=$(mktemp -d)
+
+# Format A: boolean
+OCTOPUS_KNOWLEDGE_ENABLED="false"
+OCTOPUS_KNOWLEDGE_MODE=""
+OCTOPUS_KNOWLEDGE_LIST=()
+OCTOPUS_KNOWLEDGE_ROLES=()
+cat > "$TMPDIR4/.octopus-a.yml" << 'EOF'
+agents:
+  - claude
+knowledge: true
+EOF
+parse_octopus_yml "$TMPDIR4/.octopus-a.yml"
+[[ "$OCTOPUS_KNOWLEDGE_ENABLED" == "true" ]] || { echo "FAIL: Format A: KNOWLEDGE_ENABLED expected true"; exit 1; }
+[[ "$OCTOPUS_KNOWLEDGE_MODE" == "auto" ]] || { echo "FAIL: Format A: KNOWLEDGE_MODE expected auto, got '$OCTOPUS_KNOWLEDGE_MODE'"; exit 1; }
+
+# Format B: simple list
+OCTOPUS_KNOWLEDGE_ENABLED="false"
+OCTOPUS_KNOWLEDGE_MODE=""
+OCTOPUS_KNOWLEDGE_LIST=()
+OCTOPUS_KNOWLEDGE_ROLES=()
+cat > "$TMPDIR4/.octopus-b.yml" << 'EOF'
+agents:
+  - claude
+knowledge:
+  - domain
+  - architecture
+EOF
+parse_octopus_yml "$TMPDIR4/.octopus-b.yml"
+[[ "$OCTOPUS_KNOWLEDGE_ENABLED" == "true" ]] || { echo "FAIL: Format B: KNOWLEDGE_ENABLED expected true"; exit 1; }
+[[ "$OCTOPUS_KNOWLEDGE_MODE" == "explicit" ]] || { echo "FAIL: Format B: KNOWLEDGE_MODE expected explicit, got '$OCTOPUS_KNOWLEDGE_MODE'"; exit 1; }
+[[ "${OCTOPUS_KNOWLEDGE_LIST[0]}" == "domain" ]] || { echo "FAIL: Format B: list[0] expected domain"; exit 1; }
+[[ "${OCTOPUS_KNOWLEDGE_LIST[1]}" == "architecture" ]] || { echo "FAIL: Format B: list[1] expected architecture"; exit 1; }
+
+# Format C: full config with modules: and roles:
+OCTOPUS_KNOWLEDGE_ENABLED="false"
+OCTOPUS_KNOWLEDGE_MODE=""
+OCTOPUS_KNOWLEDGE_LIST=()
+OCTOPUS_KNOWLEDGE_ROLES=()
+cat > "$TMPDIR4/.octopus-c.yml" << 'EOF'
+agents:
+  - claude
+knowledge:
+  modules:
+    - domain
+    - auth
+  roles:
+    backend-specialist:
+      - domain
+      - auth
+    product-manager:
+      - domain
+EOF
+parse_octopus_yml "$TMPDIR4/.octopus-c.yml"
+[[ "$OCTOPUS_KNOWLEDGE_ENABLED" == "true" ]] || { echo "FAIL: Format C: KNOWLEDGE_ENABLED expected true"; exit 1; }
+[[ "$OCTOPUS_KNOWLEDGE_MODE" == "explicit" ]] || { echo "FAIL: Format C: KNOWLEDGE_MODE expected explicit, got '$OCTOPUS_KNOWLEDGE_MODE'"; exit 1; }
+[[ "${OCTOPUS_KNOWLEDGE_LIST[0]}" == "domain" ]] || { echo "FAIL: Format C: list[0] expected domain"; exit 1; }
+[[ "${OCTOPUS_KNOWLEDGE_LIST[1]}" == "auth" ]] || { echo "FAIL: Format C: list[1] expected auth"; exit 1; }
+[[ "${OCTOPUS_KNOWLEDGE_ROLES[backend-specialist]}" == "domain,auth" ]] || { echo "FAIL: Format C: backend-specialist role expected 'domain,auth', got '${OCTOPUS_KNOWLEDGE_ROLES[backend-specialist]}'"; exit 1; }
+[[ "${OCTOPUS_KNOWLEDGE_ROLES[product-manager]}" == "domain" ]] || { echo "FAIL: Format C: product-manager role expected 'domain', got '${OCTOPUS_KNOWLEDGE_ROLES[product-manager]}'"; exit 1; }
+
+rm -rf "$TMPDIR4"
+echo "PASS: knowledge YAML parsing"
+
 rm -rf "$TMPDIR"
 echo "PASS: all YAML parsing tests passed"

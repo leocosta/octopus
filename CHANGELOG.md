@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0] - 2026-03-29
+
+✨ Phase 1 of Knowledge Modules integration. Knowledge is now a first-class
+concept in the Octopus pipeline — modules are discovered from the project's
+`knowledge/` directory, assembled per-role with optional role mapping, and
+delivered through the manifest-driven architecture. The `knowledge:` key in
+`.octopus.yml` supports three formats: boolean auto-discover, explicit module
+list, and full config with per-role mapping. Backward compatibility with
+`.octopus-context.md` is fully preserved. The `INDEX.md` is now auto-generated
+by `setup.sh`. Claude Code receives a symlink to `knowledge/` for progressive
+context discovery; concatenate agents receive inlined knowledge in their role
+sections.
+
 ## [0.3.0] - 2026-03-28
 
 ✨ Feature Lifecycle Documentation System — a complete documentation workflow
