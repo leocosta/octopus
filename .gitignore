@@ -1,4 +1,5 @@
 .env
+.worktrees/
 /docs/superpowers
 # octopus (auto-generated)
 .claude/CLAUDE.md
