@@ -87,6 +87,13 @@ git commit -m "chore: add octopus config"
 
 ### Update to a new version
 
+If you have `workflow: true` enabled, ask your AI agent:
+```
+/octopus:update
+```
+The agent will show available versions, confirm with you, and handle the checkout, setup re-run, and commit.
+
+Or update manually:
 ```bash
 cd octopus && git fetch --tags && git checkout v0.4.0 && cd ..
 ./octopus/setup.sh
@@ -414,6 +421,7 @@ PR and branch automation commands powered by GitHub CLI (`gh`).
 | `/octopus:doc-spec` | Bootstrap a spec document from template |
 | `/octopus:doc-adr` | Bootstrap an ADR document from template |
 | `/octopus:docs` | Documentation commands |
+| `/octopus:update` | Update Octopus to a newer version |
 
 **How it works:**
 1. Enable in `.octopus.yml`:
