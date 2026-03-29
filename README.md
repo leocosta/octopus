@@ -2,13 +2,40 @@
 
 ---
 
+![Version](https://img.shields.io/badge/version-v0.4.0-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Shell](https://img.shields.io/badge/shell-bash%204%2B-lightgrey)
+
 # Octopus
 
 Centralized AI agent configuration for multi-repo teams. One source of truth for coding standards, architecture context, and tool-specific settings across all your repositories and AI coding assistants.
 
+## Table of Contents
+
+- [What is Octopus](#what-is-octopus)
+- [Capability Matrix](#capability-matrix)
+- [Quick Start](#quick-start)
+- [Configuration (.octopus.yml)](#configuration-octopusyml)
+- [Features](#features)
+  - [Rules](#rules)
+  - [Skills](#skills)
+  - [Hooks](#hooks)
+  - [Roles](#roles)
+  - [Knowledge](#knowledge)
+  - [Commands](#commands)
+  - [Feature Lifecycle](#feature-lifecycle)
+  - [MCP Servers](#mcp-servers)
+  - [Workflow](#workflow)
+- [Agent Manifests](#agent-manifests)
+- [Project Structure](#project-structure)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [Requirements](#requirements)
+- [License](#license)
+
 ## What is Octopus
 
-Octopus is a framework that lives as a git submodule in your repositories. You configure it once via `.octopus.yml`, run `setup.sh`, and it generates the right configuration files for every AI Code Assistant your team uses — Claude Code, GitHub Copilot, OpenAI Codex, Antigravity, and Kilo Code.
+Octopus is a framework that lives as a git submodule in your repositories. You configure it once via `.octopus.yml`, run `setup.sh`, and it generates the right configuration files for every AI Code Assistant your team uses — Claude Code, GitHub Copilot, OpenAI Codex, Antigravity, and OpenCode.
 
 Each assistant has different capabilities (some support native rules, others need everything in a single markdown file). Octopus handles these differences automatically through a **manifest-driven architecture** — you write rules, skills, and hooks once, and Octopus delivers them in the format each tool understands.
 
@@ -16,7 +43,7 @@ Each assistant has different capabilities (some support native rules, others nee
 
 How Octopus delivers content to each Code Assistant:
 
-| Capability | Claude Code | Copilot | Codex | Antigravity | Kilo Code |
+| Capability | Claude Code | Copilot | Codex | Antigravity | OpenCode |
 |---|---|---|---|---|---|
 | **Output file** | `.claude/CLAUDE.md` | `.github/copilot-instructions.md` | `AGENTS.md` | `ANTIGRAVITY.md` | `.opencode/rules.md` |
 | **Content mode** | Template | Concatenate | Concatenate | Concatenate | Concatenate |
@@ -61,9 +88,9 @@ git commit -m "chore: add octopus config"
 ### Update to a new version
 
 ```bash
-cd octopus && git fetch --tags && git checkout v2.0.0 && cd ..
+cd octopus && git fetch --tags && git checkout v0.4.0 && cd ..
 ./octopus/setup.sh
-git add octopus && git commit -m "chore: update octopus to v2.0.0"
+git add octopus && git commit -m "chore: update octopus to v0.4.0"
 ```
 
 ## Configuration (.octopus.yml)
@@ -490,9 +517,60 @@ octopus/
 └── .octopus-context.example.md  # Project context template
 ```
 
+## Troubleshooting
+
+**`syntax error` or associative arrays not working**
+Ensure you're running Bash 4+. macOS ships with Bash 3 — install a newer version with `brew install bash` and run `bash ./octopus/setup.sh` explicitly.
+
+**`command not found: python3`**
+Python 3 is required for JSON merging (MCP injection and hooks). Install with `brew install python3` (macOS) or `sudo apt install python3` (Linux).
+
+**`gh: command not found` when `workflow: true`**
+Install GitHub CLI from https://cli.github.com, then authenticate: `gh auth login`.
+
+**Symlinks not created (rules/skills missing from `.claude/`)**
+Always run `setup.sh` from your repo root, not from inside the `octopus/` directory:
+```bash
+# Correct
+./octopus/setup.sh
+
+# Wrong — will fail to locate PROJECT_ROOT
+cd octopus && ./setup.sh
+```
+
+**MCP environment variables not substituted**
+Ensure `.env` exists in your repo root with the required variables before running `setup.sh`. Copy from the generated template: `cp .env.example .env`.
+
+**Hooks not injected into `.claude/settings.json`**
+Requires Python 3 for JSON merging. Also verify `hooks: true` is set in `.octopus.yml`. Check for Python with `python3 --version`.
+
+## Contributing
+
+Contributions are welcome!
+
+1. Fork the repo and create a branch following Octopus conventions: `feat/<description>`, `fix/<description>`, `docs/<description>`
+2. Make your changes — follow patterns in existing agents, rules, and skills
+3. Run the test suite before opening a PR:
+   ```bash
+   for t in tests/test_*.sh; do bash "$t"; done
+   ```
+4. Open a PR targeting `main`
+
+**Extending Octopus:**
+- **New agent**: Create `agents/<name>/manifest.yml` + `header.md` — no changes to `setup.sh` needed
+- **New rule set**: Create `rules/<language>/` with `.md` files
+- **New skill**: Create `skills/<name>/SKILL.md`
+- **New MCP server**: Create `mcp/<name>.json` following `mcp/_template.json`
+
+Please open an issue first for large changes or new features.
+
 ## Requirements
 
 - Bash 4+
 - Python 3 (for JSON merging in MCP and hooks injection)
 - Git (with submodule support)
 - `gh` (GitHub CLI) >= 2.0 — only if `workflow: true`
+
+## License
+
+MIT — see [LICENSE](./LICENSE) for details.
