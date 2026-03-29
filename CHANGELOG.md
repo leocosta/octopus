@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0] - 2026-03-29
+
+♻️ This release removes legacy features that were no longer needed. The `.env` file was renamed to `.env.octopus` to avoid naming collisions in projects that use Octopus as a submodule. Support for `.octopus-context.md` was removed in favor of knowledge modules, which offer a more modular and structured approach to project context. The `stacks/` directory and automatic migration logic were eliminated — projects should use `rules:` directly in `.octopus.yml`. Documentation templates (RFC, Spec, ADR, Impl Prompt) were moved from `knowledge/_templates/` to a top-level `templates/` directory, making their purpose clearer.
+
+## [0.5.0] - 2026-03-29
+
+✨ A new `/octopus:update` command was added, allowing agents to update the Octopus submodule to newer versions in a guided and automated way. The `dev-flow` skill was extended with a Step 7 cleanup phase ♻️ that removes the git worktree and deletes local and remote branches after a successful merge. 📝 The README and example files were also updated to prepare the project for community release.
+
 ## [0.4.0] - 2026-03-29
 
 ✨ Phase 1 of Knowledge Modules integration. Knowledge is now a first-class
