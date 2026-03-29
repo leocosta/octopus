@@ -49,4 +49,13 @@ for human interaction.
 - If the user says "release" or equivalent:
   - Run /octopus:release
 - If the user says "skip" or equivalent:
-  - End the dev-flow
+  - Proceed to Step 7
+
+### Step 7: Cleanup
+- Remove the git worktree if one exists for this branch:
+  `git worktree remove .worktrees/<branch-name>`
+- Delete the local branch:
+  `git branch -d <branch-name>`
+- Delete the remote branch:
+  `git push origin --delete <branch-name>`
+- Confirm: "All clean. Worktree and branch removed."
