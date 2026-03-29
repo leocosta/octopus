@@ -17,7 +17,7 @@ grep -q ".claude/CLAUDE.md" "$TMPDIR/.gitignore" || { echo "FAIL: missing .claud
 grep -q ".claude/settings.json" "$TMPDIR/.gitignore" || { echo "FAIL: missing .claude/settings.json"; exit 1; }
 grep -q ".github/copilot-instructions.md" "$TMPDIR/.gitignore" || { echo "FAIL: missing copilot"; exit 1; }
 grep -q "AGENTS.md" "$TMPDIR/.gitignore" || { echo "FAIL: missing AGENTS.md"; exit 1; }
-grep -q ".env" "$TMPDIR/.gitignore" || { echo "FAIL: missing .env"; exit 1; }
+grep -q ".env.octopus" "$TMPDIR/.gitignore" || { echo "FAIL: missing .env.octopus"; exit 1; }
 
 # Test idempotency — run again, should not duplicate entries
 update_gitignore

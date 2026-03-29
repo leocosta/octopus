@@ -45,7 +45,7 @@ If no slug is provided, ask the user to describe the decision in a few words.
    - `SLUG`: the kebab-case slug
    - `TARGET`: `docs/adrs/${NUMBER}-${SLUG}.md`
 
-4. Read the template from `octopus/knowledge/_templates/adr.md`
+4. Read the template from `octopus/templates/adr.md`
 
 5. Replace placeholders:
    - `{{NUMBER}}` → actual number

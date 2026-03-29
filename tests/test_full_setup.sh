@@ -18,7 +18,6 @@ mkdir -p "$TMPDIR/octopus"
 
 # Symlink octopus content into fake repo
 ln -s "$SCRIPT_DIR/core" "$TMPDIR/octopus/core"
-ln -s "$SCRIPT_DIR/stacks" "$TMPDIR/octopus/stacks"
 ln -s "$SCRIPT_DIR/rules" "$TMPDIR/octopus/rules"
 ln -s "$SCRIPT_DIR/skills" "$TMPDIR/octopus/skills"
 ln -s "$SCRIPT_DIR/hooks" "$TMPDIR/octopus/hooks"
@@ -27,64 +26,13 @@ ln -s "$SCRIPT_DIR/mcp" "$TMPDIR/octopus/mcp"
 ln -s "$SCRIPT_DIR/roles" "$TMPDIR/octopus/roles"
 ln -s "$SCRIPT_DIR/commands" "$TMPDIR/octopus/commands"
 ln -s "$SCRIPT_DIR/cli" "$TMPDIR/octopus/cli"
-ln -s "$SCRIPT_DIR/.env.example" "$TMPDIR/octopus/.env.example"
+ln -s "$SCRIPT_DIR/.env.octopus.example" "$TMPDIR/octopus/.env.octopus.example"
 cp "$SCRIPT_DIR/setup.sh" "$TMPDIR/octopus/setup.sh"
 chmod +x "$TMPDIR/octopus/setup.sh"
 
-echo "=== Phase 1: Backwards compatibility (stacks -> rules migration) ==="
-
-cat > "$TMPDIR/.octopus.yml" << 'EOF'
-stacks:
-  - node
-  - dotnet
-
-agents:
-  - claude
-  - copilot
-  - codex
-
-mcp:
-  - notion
-
-commands:
-  - name: db-reset
-    description: Reset the database
-    run: make db-reset
-EOF
-
 cd "$TMPDIR"
-./octopus/setup.sh 2>&1 | tee /tmp/octopus-test-output.txt
 
-# Verify deprecation warning
-grep -q "deprecated" /tmp/octopus-test-output.txt || { echo "FAIL: deprecation warning not shown for stacks"; exit 1; }
-
-# Verify CLAUDE.md uses rules references
-[[ -f ".claude/CLAUDE.md" ]] || { echo "FAIL: .claude/CLAUDE.md missing"; exit 1; }
-grep -q ".claude/rules/common/" ".claude/CLAUDE.md" || { echo "FAIL: common rules not in CLAUDE.md after migration"; exit 1; }
-grep -q ".claude/rules/typescript/" ".claude/CLAUDE.md" || { echo "FAIL: typescript rules not in CLAUDE.md after migration"; exit 1; }
-grep -q ".claude/rules/csharp/" ".claude/CLAUDE.md" || { echo "FAIL: csharp rules not in CLAUDE.md after migration"; exit 1; }
-
-# Verify rules symlinks were created
-[[ -L ".claude/rules/common" ]] || { echo "FAIL: .claude/rules/common symlink missing"; exit 1; }
-[[ -L ".claude/rules/typescript" ]] || { echo "FAIL: .claude/rules/typescript symlink missing"; exit 1; }
-[[ -L ".claude/rules/csharp" ]] || { echo "FAIL: .claude/rules/csharp symlink missing"; exit 1; }
-
-# Verify copilot has rules content (concatenated)
-grep -q "Coding Style" ".github/copilot-instructions.md" || { echo "FAIL: rules not concatenated into copilot"; exit 1; }
-
-# Verify other outputs
-[[ -f ".claude/settings.json" ]] || { echo "FAIL: .claude/settings.json missing"; exit 1; }
-[[ -f "AGENTS.md" ]] || { echo "FAIL: AGENTS.md missing"; exit 1; }
-
-echo "PASS: Phase 1 (backwards compat)"
-
-echo "=== Phase 2: New config format (rules + skills + hooks) ==="
-
-cat > "$TMPDIR/.octopus-context.md" << 'EOF'
-# Project Context
-## Domain
-Test project
-EOF
+echo "=== Phase 1: Rules + skills + hooks ==="
 
 cat > "$TMPDIR/.octopus.yml" << 'EOF'
 rules:
@@ -186,7 +134,7 @@ grep -q "Test project" ".claude/agents/product-manager.md" || { echo "FAIL: cont
 grep -q ".claude/rules/" ".gitignore" || { echo "FAIL: .gitignore missing rules entry"; exit 1; }
 grep -q ".claude/skills/" ".gitignore" || { echo "FAIL: .gitignore missing skills entry"; exit 1; }
 
-echo "PASS: Phase 2 (new config format)"
+echo "PASS: Phase 1 (rules + skills + hooks)"
 
 rm -rf "$TMPDIR" "$SHADOW_DIR"
 echo "PASS: full integration test passed"

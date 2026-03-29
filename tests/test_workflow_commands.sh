@@ -51,7 +51,6 @@ echo "Test 3: Workflow commands for copilot"
 
 OCTOPUS_WORKFLOW=true
 OCTOPUS_AGENTS=(copilot)
-OCTOPUS_STACKS=()
 OCTOPUS_CMD_NAMES=()
 
 concatenate_agent "copilot"

@@ -68,7 +68,7 @@ documentation artifacts.
 - ADRs follow MADR format (see `adr` skill)
 - Specs include a "Context for Agents" section
 - Changelog entries follow the project's existing format and style
-- Use the project's response language as defined in `.octopus-context.md`
+- Use the project's response language as defined in the project knowledge modules
 
 # Output Format
 

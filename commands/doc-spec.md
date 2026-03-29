@@ -42,7 +42,7 @@ If no slug is provided, ask the user for a short descriptive name (kebab-case).
    - Look for files matching `docs/rfcs/*-${SLUG}.md`
    - If found, note the RFC path to include in the spec's Metadata table
 
-5. Read the template from `octopus/knowledge/_templates/spec.md`
+5. Read the template from `octopus/templates/spec.md`
 
 6. Replace placeholders:
    - `{{SLUG}}` → actual slug (in Title Case for the heading)

@@ -13,7 +13,6 @@ OCTOPUS_CLI_REL="$(python3 -c "import os; print(os.path.relpath('$OCTOPUS_DIR/cl
 # (Agent output paths are now read from agents/<name>/manifest.yml)
 
 # Parsed config arrays
-declare -a OCTOPUS_STACKS=()
 declare -a OCTOPUS_RULES=()
 declare -a OCTOPUS_SKILLS=()
 OCTOPUS_HOOKS="false"
@@ -26,7 +25,6 @@ declare -a OCTOPUS_CMD_RUNS=()
 OCTOPUS_WORKFLOW=false
 declare -a OCTOPUS_ROLES=()
 declare -a OCTOPUS_REVIEWERS=()
-OCTOPUS_CONTEXT=""
 OCTOPUS_KNOWLEDGE_ENABLED="false"
 OCTOPUS_KNOWLEDGE_MODE=""               # "auto" or "explicit"
 OCTOPUS_KNOWLEDGE_DIR="knowledge"       # configurable via knowledge_dir: in .octopus.yml
@@ -78,7 +76,6 @@ parse_octopus_yml() {
       # Trim trailing whitespace
       val="${val%"${val##*[![:space:]]}"}"
       case "$key" in
-        context)       OCTOPUS_CONTEXT="$val" ;;
         hooks)         OCTOPUS_HOOKS="$val" ;;
         knowledge_dir) OCTOPUS_KNOWLEDGE_DIR="$val" ;;
       esac
@@ -132,7 +129,6 @@ parse_octopus_yml() {
       fi
 
       case "$current_section" in
-        stacks)    OCTOPUS_STACKS+=("$value") ;;
         rules)     OCTOPUS_RULES+=("$value") ;;
         skills)    OCTOPUS_SKILLS+=("$value") ;;
         agents)    OCTOPUS_AGENTS+=("$value") ;;
@@ -386,25 +382,7 @@ load_manifest() {
   done < "$manifest"
 }
 
-migrate_stacks_to_rules() {
-  if [[ ${#OCTOPUS_STACKS[@]} -gt 0 && ${#OCTOPUS_RULES[@]} -eq 0 ]]; then
-    echo "WARNING: 'stacks:' is deprecated. Migrate to 'rules:' in .octopus.yml"
-    declare -A seen=()
-    for stack in "${OCTOPUS_STACKS[@]}"; do
-      local rule=""
-      case "$stack" in
-        node|nextjs|angular|react) rule="typescript" ;;
-        dotnet) rule="csharp" ;;
-        python) rule="python" ;;
-        *) echo "WARNING: Unknown stack '$stack', skipping migration"; continue ;;
-      esac
-      if [[ -z "${seen[$rule]:-}" ]]; then
-        OCTOPUS_RULES+=("$rule")
-        seen[$rule]=1
-      fi
-    done
-  fi
-  # Always ensure 'common' is first
+ensure_common_rule() {
   local has_common=false
   for r in "${OCTOPUS_RULES[@]}"; do
     [[ "$r" == "common" ]] && has_common=true
@@ -761,20 +739,8 @@ deliver_roles() {
 
     # Build context for this role
     local context_content=""
-    local context_file="$PROJECT_ROOT/${OCTOPUS_CONTEXT:-.octopus-context.md}"
     if [[ ${#KNOWLEDGE_MODULES[@]} -gt 0 ]]; then
-      # Prepend .octopus-context.md for backward compat if it exists
-      if [[ -f "$context_file" ]]; then
-        context_content="$(cat "$context_file")"$'\n\n'
-      fi
-      context_content+="$(assemble_knowledge "$role")"
-    else
-      # Legacy path: monolithic .octopus-context.md only
-      if [[ -f "$context_file" ]]; then
-        context_content=$(cat "$context_file")
-      else
-        echo "WARNING: $context_file not found. Roles will be generated without project context."
-      fi
+      context_content="$(assemble_knowledge "$role")"
     fi
 
     local role_content
@@ -1003,7 +969,7 @@ for name, config in servers.items():
         entry = {"type": "stdio", "command": config["command"]}
         if "args" in config:
             entry["args"] = config["args"]
-        entry["envFile"] = "${workspaceFolder}/.env"
+        entry["envFile"] = "${workspaceFolder}/.env.octopus"
         vscode_servers[name] = entry
 
 try:
@@ -1132,14 +1098,14 @@ deliver_mcp() {
 }
 
 manage_env() {
-  local env_file="$PROJECT_ROOT/.env"
-  local env_example="$OCTOPUS_DIR/.env.example"
+  local env_file="$PROJECT_ROOT/.env.octopus"
+  local env_example="$OCTOPUS_DIR/.env.octopus.example"
 
-  # Copy template if .env doesn't exist
+  # Copy template if .env.octopus doesn't exist
   if [[ ! -f "$env_file" ]]; then
     if [[ -f "$env_example" ]]; then
       cp "$env_example" "$env_file"
-      echo "Created .env from .env.example — fill in your values."
+      echo "Created .env.octopus from .env.octopus.example — fill in your values."
     else
       return
     fi
@@ -1164,25 +1130,25 @@ manage_env() {
   done
 
   if [[ ${#missing[@]} -gt 0 ]]; then
-    echo "WARNING: The following environment variables are required by your MCP servers but missing from .env:"
+    echo "WARNING: The following environment variables are required by your MCP servers but missing from .env.octopus:"
     for var in "${missing[@]}"; do
       echo "  - $var"
     done
   fi
 
-  # Check for new vars in .env.example not in .env
+  # Check for new vars in .env.octopus.example not in .env.octopus
   if [[ -f "$env_example" ]]; then
     while IFS= read -r var; do
       [[ -z "$var" ]] && continue
       if ! grep -q "^${var}=" "$env_file" 2>/dev/null; then
-        echo "INFO: New variable '$var' found in .env.example but not in .env"
+        echo "INFO: New variable '$var' found in .env.octopus.example but not in .env.octopus"
       fi
     done < <(grep -oP '^([A-Z_]+)=' "$env_example" | sed 's/=$//' || true)
   fi
 }
 
 # Collected gitignore entries from all agents
-declare -a ALL_GITIGNORE_ENTRIES=(".env")
+declare -a ALL_GITIGNORE_ENTRIES=(".env.octopus")
 
 collect_gitignore_entries() {
   local agent="$1"
@@ -1265,8 +1231,8 @@ echo ""
 # 1. Parse config
 parse_octopus_yml "$CONFIG_FILE"
 
-# 1b. Migrate stacks -> rules (backwards compat)
-migrate_stacks_to_rules
+# 1b. Ensure 'common' rule is always first
+ensure_common_rule
 
 # 1c. Discover knowledge modules
 discover_knowledge
