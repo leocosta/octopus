@@ -95,3 +95,41 @@ docs/api-authentication
 - **Don't commit generated files** — build outputs, lock files changes without dependency changes, etc.
 - **Squash fixup commits** before merging to main — keep history clean
 - **Never force-push to shared branches** (main, develop, release/*)
+
+## Co-authored-by for AI Assistants
+
+When an AI coding assistant generates or significantly contributes to a commit,
+add a `Co-authored-by` trailer to the commit message. This preserves attribution
+without replacing the human author.
+
+**Human-only commits** (no assistant involved): do **not** add any trailer.
+The commit author field is sufficient.
+
+**Assistant-assisted commits**: append the appropriate trailer in the footer.
+
+### Trailers by Assistant
+
+| Assistant | Trailer |
+|-----------|---------|
+| Kilo | `Co-authored-by: kilo <kilo@kilocode.com>` |
+| Claude | `Co-authored-by: claude <claude@anthropic.com>` |
+| Copilot | `Co-authored-by: copilot <copilot@github.com>` |
+| Codex | `Co-authored-by: codex <codex@openai.com>` |
+
+### Example
+
+```
+feat(auth): add OAuth2 PKCE flow
+
+Implement authorization code flow with PKCE for public clients.
+Token exchange happens server-side; refresh tokens are stored
+in httpOnly cookies.
+
+Co-authored-by: kilo <kilo@kilocode.com>
+```
+
+### Rules
+
+- The **human** is always the commit author; the assistant is a co-author
+- Only add the trailer if the assistant **generated or substantially modified** the code
+- Do not add trailers for commits where the assistant only provided suggestions
