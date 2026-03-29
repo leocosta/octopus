@@ -26,7 +26,7 @@ Categorize everything that loads into the agent's context:
 | Agents/Roles | .claude/agents/*.md | On invocation |
 | Commands | .claude/commands/*.md | On invocation |
 | MCP configs | settings.json mcpServers | Yes |
-| Project context | .octopus-context.md | Via roles |
+| Project context | knowledge/ modules | Via roles |
 
 ### 2. Measure Each Component
 
@@ -63,7 +63,7 @@ Look for:
 
 **Restructure:**
 - Split large files into focused smaller files (rules system supports this)
-- Move project-specific context to .octopus-context.md (only loaded via roles)
+- Move project-specific context to knowledge/ modules (only loaded via roles)
 
 ## Output Format
 

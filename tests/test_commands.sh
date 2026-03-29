@@ -10,9 +10,6 @@ source "$SCRIPT_DIR/setup.sh" --source-only
 
 TMPDIR=$(mktemp -d)
 cat > "$TMPDIR/test.yml" << 'EOF'
-stacks:
-  - node
-
 agents:
   - claude
   - copilot
@@ -44,14 +41,11 @@ echo "Test 2: Parse empty commands"
 OCTOPUS_CMD_NAMES=()
 OCTOPUS_CMD_DESCS=()
 OCTOPUS_CMD_RUNS=()
-OCTOPUS_STACKS=()
 OCTOPUS_AGENTS=()
 OCTOPUS_MCP=()
 
 TMPDIR=$(mktemp -d)
 cat > "$TMPDIR/test.yml" << 'EOF'
-stacks:
-  - node
 agents:
   - claude
 commands: []
@@ -67,7 +61,6 @@ echo "PASS: empty commands handled"
 # --- Test 3: Generate Claude slash command files ---
 echo "Test 3: Generate Claude slash command files"
 
-OCTOPUS_STACKS=(node)
 OCTOPUS_AGENTS=(claude)
 OCTOPUS_CMD_NAMES=(db-reset db-migration)
 OCTOPUS_CMD_DESCS=("Reset the database" "Add a new migration")

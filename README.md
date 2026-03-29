@@ -71,17 +71,13 @@ git submodule update --init
 cp octopus/.octopus.example.yml .octopus.yml
 # Edit .octopus.yml — choose your languages, agents, and features
 
-# 3. Create project context (required for roles)
-cp octopus/.octopus-context.example.md .octopus-context.md
-# Edit .octopus-context.md with your project's domain, architecture, and team info
-
-# 4. Run setup
+# 3. Run setup
 ./octopus/setup.sh
 
-# 5. Fill in your .env with personal tokens (for MCP servers)
+# 4. Fill in your .env.octopus with personal tokens (for MCP servers)
 
-# 6. Commit
-git add .octopus.yml .octopus-context.md octopus .gitignore
+# 5. Commit
+git add .octopus.yml octopus .gitignore
 git commit -m "chore: add octopus config"
 ```
 
@@ -142,13 +138,10 @@ reviewers:
 
 # Roles — agent personas with project context
 # Available: product-manager, backend-specialist, frontend-specialist, tech-writer
-# Requires: .octopus-context.md in repo root
+# Context is provided via knowledge modules (see knowledge: config below)
 roles:
   - product-manager
   - backend-specialist
-
-# Path to project context file (default: .octopus-context.md)
-# context: docs/project-context.md
 
 # Custom project commands — become slash commands with octopus: prefix
 commands:
@@ -254,18 +247,18 @@ Agent personas that combine a responsibility definition with your project contex
 **Available roles:** `product-manager`, `backend-specialist`, `frontend-specialist`, `tech-writer`
 
 **How it works:**
-1. Create `.octopus-context.md` in your repo root with your project's domain, architecture, business model, and team info
-2. Add roles to `.octopus.yml`:
+1. Add roles to `.octopus.yml`:
    ```yaml
    roles:
      - product-manager
      - backend-specialist
    ```
+2. Optionally configure knowledge modules (see [Knowledge](#knowledge)) — their content is injected as project context into each role
 3. Run `./octopus/setup.sh`
 4. **Claude Code**: each role becomes a native agent file in `.claude/agents/<role>.md` with YAML frontmatter (name, model, color)
 5. **Other agents**: roles are appended as sections to the agent's output file
 
-**The role template** contains a `{{PROJECT_CONTEXT}}` placeholder that gets replaced with the content of your `.octopus-context.md`. The `_base.md` file provides shared guidelines appended to all roles.
+**The role template** contains a `{{PROJECT_CONTEXT}}` placeholder that gets replaced with assembled knowledge module content. The `_base.md` file provides shared guidelines appended to all roles.
 
 **Adding custom roles:**
 1. Create `octopus/roles/<name>.md` with YAML frontmatter and `{{PROJECT_CONTEXT}}` placeholder
@@ -309,8 +302,6 @@ Modular domain knowledge that agents can load on demand — confirmed facts, hyp
 knowledge_dir: docs/ai   # modules will be read from docs/ai/ instead of knowledge/
 knowledge: true
 ```
-
-**Backward compatibility:** Projects using `.octopus-context.md` continue to work unchanged. If both exist, `.octopus-context.md` is prepended before knowledge modules.
 
 **Auto-generated index:** `setup.sh` creates `<knowledge_dir>/INDEX.md` — a routing table listing every active module with file counts. Agents consult this first to find relevant domain context.
 
@@ -363,10 +354,10 @@ A complete documentation lifecycle system that combines a decision framework ski
 Use this role when you need documentation-only execution: pre-implementation RFC/spec drafting, post-implementation ADR/spec deviation reconciliation, knowledge capture, and changelog updates.
 
 **Templates:**
-- `knowledge/_templates/rfc.md`
-- `knowledge/_templates/spec.md`
-- `knowledge/_templates/adr.md`
-- `knowledge/_templates/impl-prompt.md`
+- `templates/rfc.md`
+- `templates/spec.md`
+- `templates/adr.md`
+- `templates/impl-prompt.md`
 
 **Skill integration:**
 - `feature-lifecycle` orchestrates when each artifact is needed
@@ -386,7 +377,7 @@ External tool integrations (Notion, GitHub, Slack, PostgreSQL) configured from a
      - notion
      - github
    ```
-2. Add required environment variables to `.env`:
+2. Add required environment variables to `.env.octopus`:
    - `notion` — uses OAuth (no env vars needed)
    - `github` — `GITHUB_TOKEN`
    - `slack` — `SLACK_BOT_TOKEN`, `SLACK_TEAM_ID`
@@ -399,7 +390,7 @@ External tool integrations (Notion, GitHub, Slack, PostgreSQL) configured from a
 
 **Adding custom MCP servers:**
 1. Create `octopus/mcp/<name>.json` following the template in `mcp/_template.json`
-2. Use `${VAR_NAME}` for secrets — they'll be read from `.env`
+2. Use `${VAR_NAME}` for secrets — they'll be read from `.env.octopus`
 3. Add `- <name>` to the `mcp:` list in `.octopus.yml`
 
 ### Workflow
@@ -504,7 +495,6 @@ octopus/
 ├── hooks/                  # Claude Code lifecycle hooks + hooks.json
 ├── knowledge/
 │   ├── _template/          # Continuous learning domain bootstrap
-│   ├── _templates/         # Document templates (RFC, Spec, ADR, Impl Prompt)
 │   └── _examples/          # Reference examples
 ├── roles/
 │   ├── _base.md
@@ -518,11 +508,11 @@ octopus/
 │   ├── doc-adr.md          # Bootstrap ADR from template
 │   ├── pr-open.md
 │   └── ...
+├── templates/              # Document templates (RFC, Spec, ADR, Impl Prompt)
 ├── mcp/                    # MCP server configs (JSON, env var substitution)
 ├── cli/                    # CLI utilities for workflow automation
 ├── setup.sh                # Main generation script
-├── .octopus.example.yml    # Configuration template
-└── .octopus-context.example.md  # Project context template
+└── .octopus.example.yml    # Configuration template
 ```
 
 ## Troubleshooting
@@ -547,7 +537,7 @@ cd octopus && ./setup.sh
 ```
 
 **MCP environment variables not substituted**
-Ensure `.env` exists in your repo root with the required variables before running `setup.sh`. Copy from the generated template: `cp .env.example .env`.
+Ensure `.env.octopus` exists in your repo root with the required variables before running `setup.sh`. Copy from the generated template: `cp .env.octopus.example .env.octopus`.
 
 **Hooks not injected into `.claude/settings.json`**
 Requires Python 3 for JSON merging. Also verify `hooks: true` is set in `.octopus.yml`. Check for Python with `python3 --version`.

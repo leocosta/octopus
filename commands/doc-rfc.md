@@ -40,7 +40,7 @@ If no slug is provided, ask the user for a short descriptive name (kebab-case).
    mkdir -p docs/rfcs
    ```
 
-4. Read the template from `octopus/knowledge/_templates/rfc.md`
+4. Read the template from `octopus/templates/rfc.md`
 
 5. Replace placeholders:
    - `{{DATE}}` → actual date

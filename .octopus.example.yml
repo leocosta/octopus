@@ -50,13 +50,10 @@ mcp: []
 
 # Roles/personas (templates from octopus/roles/)
 # Available: product-manager, backend-specialist, frontend-specialist
-# Requires: .octopus-context.md in repo root (or custom path via context:)
+# Context is provided via knowledge modules (see knowledge: config below)
 # roles:
 #   - product-manager
 #   - backend-specialist
-
-# Path to project context file (default: .octopus-context.md)
-# context: docs/project-context.md
 
 # Knowledge modules — modular domain context for AI agents
 # Format A: auto-discover all folders in knowledge/ (not prefixed with _)
@@ -92,5 +89,3 @@ mcp: []
 #     description: Start the API container
 #     run: make api-start
 
-# DEPRECATED: 'stacks:' is replaced by 'rules:'. If present, stacks are
-# auto-migrated to rules (node/nextjs/angular/react -> typescript, dotnet -> csharp)

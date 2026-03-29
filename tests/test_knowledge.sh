@@ -17,7 +17,6 @@ reset_state() {
   OCTOPUS_KNOWLEDGE_ROLES=()
   KNOWLEDGE_MODULES=()
   OCTOPUS_ROLES=()
-  OCTOPUS_CONTEXT=""
   _ROLES_CONTEXT_LOADED=""
   MANIFEST_CAP_KNOWLEDGE="false"
   MANIFEST_DELIVERY_KNOWLEDGE_METHOD=""
@@ -138,51 +137,8 @@ echo "$pm_content" | grep -q "Domain fact" || { echo "FAIL: PM missing domain"; 
 echo "$pm_content" | grep -qi "Auth fact" && { echo "FAIL: PM should not have auth"; exit 1; }
 echo "PASS: Role assembly with role mapping"
 
-# --- Test 7: Backward compat — no knowledge config uses .octopus-context.md ---
-echo "Test 7: Backward compatibility"
-reset_state
-cat > "$TMPDIR/.octopus-context.md" << 'EOF'
-# Legacy Context
-Legacy project context here.
-EOF
-
-# KNOWLEDGE_MODULES is empty (no knowledge: config)
-OCTOPUS_ROLES=(product-manager)
-OCTOPUS_AGENTS=(claude)
-declare -A OCTOPUS_AGENT_OUTPUT=()
-load_manifest "claude"
-
-deliver_roles "claude"
-
-grep -q "Legacy project context here" "$TMPDIR/.claude/agents/product-manager.md" || \
-  { echo "FAIL: legacy context not injected when no knowledge modules"; exit 1; }
-echo "PASS: Backward compatibility"
-
-# --- Test 8: Coexistence — .octopus-context.md prepended before knowledge ---
-echo "Test 8: Coexistence of context file and knowledge modules"
-reset_state
-cat > "$TMPDIR/.octopus-context.md" << 'EOF'
-# Legacy Context
-Legacy project context here.
-EOF
-make_module domain
-echo "Domain knowledge here." > "$TMPDIR/knowledge/domain/knowledge.md"
-KNOWLEDGE_MODULES=(domain)
-OCTOPUS_ROLES=(product-manager)
-OCTOPUS_AGENTS=(claude)
-declare -A OCTOPUS_AGENT_OUTPUT=()
-load_manifest "claude"
-
-deliver_roles "claude"
-
-grep -q "Legacy project context here" "$TMPDIR/.claude/agents/product-manager.md" || \
-  { echo "FAIL: legacy context not present when knowledge modules active"; exit 1; }
-grep -q "Domain knowledge here" "$TMPDIR/.claude/agents/product-manager.md" || \
-  { echo "FAIL: knowledge module content not present"; exit 1; }
-echo "PASS: Coexistence"
-
-# --- Test 9: Claude symlink delivery ---
-echo "Test 9: Claude symlink delivery"
+# --- Test 7: Claude symlink delivery ---
+echo "Test 7: Claude symlink delivery"
 reset_state
 make_module domain
 KNOWLEDGE_MODULES=(domain)

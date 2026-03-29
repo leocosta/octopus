@@ -20,7 +20,7 @@ description: Security audit checklist for AI agent configurations, environment v
 **Check for exposed secrets:**
 - Scan all files for hardcoded API keys, tokens, passwords
 - Patterns to look for: `sk-`, `ghp_`, `Bearer`, `api_key=`, `password=`
-- Verify `.env` and `.env*.local` are in `.gitignore`
+- Verify `.env.octopus` and `.env*.local` are in `.gitignore`
 - Check git history for accidentally committed secrets
 
 ```bash
@@ -30,7 +30,7 @@ grep -rn "sk-\|ghp_\|api_key\|secret_key\|password\s*=" --include="*.ts" --inclu
 
 **Verify secret management:**
 - [ ] All secrets loaded from environment variables
-- [ ] `.env` files are in `.gitignore`
+- [ ] `.env.octopus` files are in `.gitignore`
 - [ ] No secrets in committed configuration files
 - [ ] Required secrets validated at application startup
 
@@ -113,7 +113,7 @@ CRITICAL (0)
   (none)
 
 HIGH (2)
-  [H1] .env not in .gitignore — secrets may be committed
+  [H1] .env.octopus not in .gitignore — secrets may be committed
   [H2] MCP server 'notion' uses hardcoded token in settings.json
 
 MEDIUM (1)
@@ -123,7 +123,7 @@ LOW (1)
   [L1] Branch protection not configured on main
 
 Recommendations:
-  1. Add .env to .gitignore immediately
+  1. Add .env.octopus to .gitignore immediately
   2. Move Notion token to environment variable
   3. Add `npm audit` step to CI workflow
   4. Enable branch protection rules

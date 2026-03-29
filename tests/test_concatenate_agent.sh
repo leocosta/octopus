@@ -28,7 +28,7 @@ grep -q "Coding Guidelines" "$OUTPUT" || { echo "FAIL: guidelines.md not include
 grep -q "Architecture" "$OUTPUT" || { echo "FAIL: architecture.md not included"; exit 1; }
 grep -q "Commit Conventions" "$OUTPUT" || { echo "FAIL: commit-conventions.md not included"; exit 1; }
 
-# Verify rules files are included (from rules/ directory, not stacks/)
+# Verify rules files are included (from rules/ directory)
 grep -q "Coding Style" "$OUTPUT" || { echo "FAIL: common/coding-style.md not included"; exit 1; }
 grep -q "Security" "$OUTPUT" || { echo "FAIL: common/security.md not included"; exit 1; }
 

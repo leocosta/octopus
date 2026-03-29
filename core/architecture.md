@@ -22,5 +22,5 @@ Document key architectural decisions using this format:
 
 - All services must have health check endpoints
 - Environment-specific configuration via environment variables — never hardcode
-- Secrets managed through `.env` files locally and secret managers in production
+- Secrets managed through `.env.octopus` files locally and secret managers in production
 - Infrastructure changes must be documented or automated
