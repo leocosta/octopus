@@ -14,6 +14,20 @@ if [[ -f "$state_file" ]]; then
   echo "" >&2
 fi
 
+# Announce available knowledge modules
+# Read knowledge_dir from .octopus.yml if configured, else default to "knowledge"
+knowledge_dir="knowledge"
+if [[ -f ".octopus.yml" ]]; then
+  _kd=$(grep -E '^knowledge_dir:[[:space:]]+' .octopus.yml 2>/dev/null | awk '{print $2}' | head -1)
+  [[ -n "$_kd" ]] && knowledge_dir="$_kd"
+fi
+if [[ -d "$knowledge_dir" && -f "$knowledge_dir/INDEX.md" ]]; then
+  echo "Knowledge modules available:" >&2
+  grep -E '^\|.*Active' "$knowledge_dir/INDEX.md" 2>/dev/null | \
+    awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print "  - " $2}' >&2
+  echo "Consult ${knowledge_dir}/INDEX.md for domain routing." >&2
+fi
+
 # Detect package manager for the project
 if [[ -f "package-lock.json" ]]; then
   echo "Package manager: npm" >&2

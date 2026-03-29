@@ -27,6 +27,11 @@ OCTOPUS_WORKFLOW=false
 declare -a OCTOPUS_ROLES=()
 declare -a OCTOPUS_REVIEWERS=()
 OCTOPUS_CONTEXT=""
+OCTOPUS_KNOWLEDGE_ENABLED="false"
+OCTOPUS_KNOWLEDGE_MODE=""               # "auto" or "explicit"
+OCTOPUS_KNOWLEDGE_DIR="knowledge"       # configurable via knowledge_dir: in .octopus.yml
+declare -a OCTOPUS_KNOWLEDGE_LIST=()
+declare -A OCTOPUS_KNOWLEDGE_ROLES=()   # key=role, value=comma-separated modules
 
 parse_octopus_yml() {
   local file="$1"
@@ -35,6 +40,8 @@ parse_octopus_yml() {
   local pending_cmd_name=""
   local pending_cmd_desc=""
   local pending_cmd_run=""
+  local current_knowledge_subsection=""
+  local current_knowledge_role=""
 
   _flush_pending_cmd() {
     if [[ -n "$pending_cmd_name" ]]; then
@@ -56,22 +63,24 @@ parse_octopus_yml() {
       local key="${BASH_REMATCH[1]}"
       local val="${BASH_REMATCH[2]}"
       case "$key" in
-        workflow) OCTOPUS_WORKFLOW="$val" ;;
-        hooks)   OCTOPUS_HOOKS="$val" ;;
+        workflow)  OCTOPUS_WORKFLOW="$val" ;;
+        hooks)     OCTOPUS_HOOKS="$val" ;;
+        knowledge) OCTOPUS_KNOWLEDGE_ENABLED="true"; OCTOPUS_KNOWLEDGE_MODE="auto" ;;
       esac
       current_section=""
       continue
     fi
 
-    # Handle inline string value: context: path/to/file
-    if [[ "$line" =~ ^([a-z]+):[[:space:]]+([^#\[]+)[[:space:]]*$ ]]; then
+    # Handle inline string value: context: path/to/file, knowledge_dir: docs/ai
+    if [[ "$line" =~ ^([a-z][a-z_]*):[[:space:]]+([^#\[]+)[[:space:]]*$ ]]; then
       local key="${BASH_REMATCH[1]}"
       local val="${BASH_REMATCH[2]}"
       # Trim trailing whitespace
       val="${val%"${val##*[![:space:]]}"}"
       case "$key" in
-        context) OCTOPUS_CONTEXT="$val" ;;
-        hooks)   OCTOPUS_HOOKS="$val" ;;
+        context)       OCTOPUS_CONTEXT="$val" ;;
+        hooks)         OCTOPUS_HOOKS="$val" ;;
+        knowledge_dir) OCTOPUS_KNOWLEDGE_DIR="$val" ;;
       esac
       # Don't set current_section — this is an inline value, not a section
       continue
@@ -87,7 +96,24 @@ parse_octopus_yml() {
     if [[ "$line" =~ ^([a-z]+):$ ]]; then
       _flush_pending_cmd
       current_section="${BASH_REMATCH[1]}"
+      current_knowledge_subsection=""
+      current_knowledge_role=""
       continue
+    fi
+
+    # Handle knowledge: sub-sections (modules:/roles:) and role name entries
+    if [[ "$current_section" == "knowledge" ]]; then
+      if [[ "$line" =~ ^[[:space:]]+(modules|roles):[[:space:]]*$ ]]; then
+        current_knowledge_subsection="${BASH_REMATCH[1]}"
+        OCTOPUS_KNOWLEDGE_ENABLED="true"
+        [[ "$current_knowledge_subsection" == "modules" ]] && OCTOPUS_KNOWLEDGE_MODE="explicit"
+        current_knowledge_role=""
+        continue
+      fi
+      if [[ "$current_knowledge_subsection" == "roles" && "$line" =~ ^[[:space:]]+([a-zA-Z][a-zA-Z0-9_-]*):[[:space:]]*$ ]]; then
+        current_knowledge_role="${BASH_REMATCH[1]}"
+        continue
+      fi
     fi
 
     # Handle list items (  - value)
@@ -113,6 +139,20 @@ parse_octopus_yml() {
         mcp)       OCTOPUS_MCP+=("$value") ;;
         roles)     OCTOPUS_ROLES+=("$value") ;;
         reviewers) OCTOPUS_REVIEWERS+=("$value") ;;
+        knowledge)
+          if [[ "$current_knowledge_subsection" == "roles" && -n "$current_knowledge_role" ]]; then
+            if [[ -n "${OCTOPUS_KNOWLEDGE_ROLES[$current_knowledge_role]:-}" ]]; then
+              OCTOPUS_KNOWLEDGE_ROLES["$current_knowledge_role"]+=",$value"
+            else
+              OCTOPUS_KNOWLEDGE_ROLES["$current_knowledge_role"]="$value"
+            fi
+          else
+            # Format B (simple list) or Format C modules sub-section
+            OCTOPUS_KNOWLEDGE_LIST+=("$value")
+            OCTOPUS_KNOWLEDGE_ENABLED="true"
+            OCTOPUS_KNOWLEDGE_MODE="explicit"
+          fi
+          ;;
       esac
       continue
     fi
@@ -208,6 +248,9 @@ load_manifest() {
   MANIFEST_MCP_EXTRA_METHODS=()
   MANIFEST_MCP_EXTRA_TARGETS=()
   MANIFEST_GITIGNORE_EXTRA=()
+  MANIFEST_CAP_KNOWLEDGE="false"
+  MANIFEST_DELIVERY_KNOWLEDGE_METHOD=""
+  MANIFEST_DELIVERY_KNOWLEDGE_TARGET=""
 
   local current_section=""
   local current_delivery=""
@@ -259,12 +302,13 @@ load_manifest() {
       local cap_key="${BASH_REMATCH[1]}"
       local cap_val="${BASH_REMATCH[2]}"
       case "$cap_key" in
-        native_rules)    MANIFEST_CAP_RULES="$cap_val" ;;
-        native_skills)   MANIFEST_CAP_SKILLS="$cap_val" ;;
-        native_hooks)    MANIFEST_CAP_HOOKS="$cap_val" ;;
-        native_commands) MANIFEST_CAP_COMMANDS="$cap_val" ;;
-        native_agents)   MANIFEST_CAP_AGENTS="$cap_val" ;;
-        native_mcp)      MANIFEST_CAP_MCP="$cap_val" ;;
+        native_rules)      MANIFEST_CAP_RULES="$cap_val" ;;
+        native_skills)     MANIFEST_CAP_SKILLS="$cap_val" ;;
+        native_hooks)      MANIFEST_CAP_HOOKS="$cap_val" ;;
+        native_commands)   MANIFEST_CAP_COMMANDS="$cap_val" ;;
+        native_agents)     MANIFEST_CAP_AGENTS="$cap_val" ;;
+        native_mcp)        MANIFEST_CAP_MCP="$cap_val" ;;
+        native_knowledge)  MANIFEST_CAP_KNOWLEDGE="$cap_val" ;;
       esac
       continue
     fi
@@ -288,9 +332,11 @@ load_manifest() {
         commands_prefix) MANIFEST_DELIVERY_COMMANDS_PREFIX="$dval" ;;
         agents_method)   MANIFEST_DELIVERY_AGENTS_METHOD="$dval" ;;
         agents_target)   MANIFEST_DELIVERY_AGENTS_TARGET="$dval" ;;
-        mcp_method)      MANIFEST_DELIVERY_MCP_METHOD="$dval" ;;
-        mcp_target)      MANIFEST_DELIVERY_MCP_TARGET="$dval" ;;
-        mcp_command)     MANIFEST_DELIVERY_MCP_COMMAND="$dval" ;;
+        mcp_method)        MANIFEST_DELIVERY_MCP_METHOD="$dval" ;;
+        mcp_target)        MANIFEST_DELIVERY_MCP_TARGET="$dval" ;;
+        mcp_command)       MANIFEST_DELIVERY_MCP_COMMAND="$dval" ;;
+        knowledge_method)  MANIFEST_DELIVERY_KNOWLEDGE_METHOD="$dval" ;;
+        knowledge_target)  MANIFEST_DELIVERY_KNOWLEDGE_TARGET="$dval" ;;
       esac
       continue
     fi
@@ -496,6 +542,8 @@ deliver_rules() {
   fi
 }
 
+declare -a KNOWLEDGE_MODULES=()         # resolved modules after discover_knowledge()
+
 deliver_skills() {
   local agent="$1"
   if [[ "$MANIFEST_CAP_SKILLS" != "true" ]]; then return; fi
@@ -518,6 +566,114 @@ deliver_skills() {
       echo "  -> ${MANIFEST_DELIVERY_SKILLS_TARGET}$skill"
     done
   fi
+}
+
+discover_knowledge() {
+  KNOWLEDGE_MODULES=()
+  local knowledge_dir="$PROJECT_ROOT/$OCTOPUS_KNOWLEDGE_DIR"
+  [[ "$OCTOPUS_KNOWLEDGE_ENABLED" != "true" ]] && return
+  [[ ! -d "$knowledge_dir" ]] && { echo "  WARNING: knowledge: enabled but no ${OCTOPUS_KNOWLEDGE_DIR}/ directory found."; return; }
+
+  if [[ "$OCTOPUS_KNOWLEDGE_MODE" == "auto" ]]; then
+    for dir in "$knowledge_dir"/*/; do
+      [[ ! -d "$dir" ]] && continue
+      local name; name=$(basename "$dir")
+      [[ "$name" == _* ]] && continue
+      KNOWLEDGE_MODULES+=("$name")
+    done
+  else
+    for mod in "${OCTOPUS_KNOWLEDGE_LIST[@]}"; do
+      if [[ -d "$knowledge_dir/$mod" ]]; then
+        KNOWLEDGE_MODULES+=("$mod")
+      else
+        echo "  WARNING: Knowledge module '$mod' not found in ${OCTOPUS_KNOWLEDGE_DIR}/. Skipping."
+      fi
+    done
+  fi
+}
+
+assemble_knowledge() {
+  local role="${1:-}"
+  local knowledge_dir="$PROJECT_ROOT/$OCTOPUS_KNOWLEDGE_DIR"
+  local content=""
+
+  local -a modules_for_role=()
+  if [[ -n "$role" && -n "${OCTOPUS_KNOWLEDGE_ROLES[$role]:-}" ]]; then
+    IFS=',' read -ra modules_for_role <<< "${OCTOPUS_KNOWLEDGE_ROLES[$role]}"
+  else
+    modules_for_role=("${KNOWLEDGE_MODULES[@]}")
+  fi
+
+  for mod in "${modules_for_role[@]}"; do
+    local mod_dir="$knowledge_dir/$mod"
+    [[ ! -d "$mod_dir" ]] && continue
+    content+=$'\n'"# Knowledge: ${mod}"$'\n\n'
+    while IFS= read -r md_file; do
+      local fname; fname=$(basename "$md_file")
+      [[ "$fname" == "INDEX.md" ]] && continue
+      content+="$(cat "$md_file")"
+      content+=$'\n\n'
+    done < <(find "$mod_dir" -name '*.md' -type f | sort)
+  done
+
+  echo "$content"
+}
+
+deliver_knowledge() {
+  local agent="$1"
+  [[ ${#KNOWLEDGE_MODULES[@]} -eq 0 ]] && return
+  [[ "$MANIFEST_CAP_KNOWLEDGE" != "true" ]] && return
+
+  local method="$MANIFEST_DELIVERY_KNOWLEDGE_METHOD"
+  # Strip trailing slash so ln -s works correctly
+  local target; target="${PROJECT_ROOT}/${MANIFEST_DELIVERY_KNOWLEDGE_TARGET%/}"
+
+  if [[ "$method" == "symlink" ]]; then
+    echo "Generating knowledge symlink for $agent..."
+    mkdir -p "$(dirname "$target")"
+    rm -rf "$target"
+    ln -s "$PROJECT_ROOT/$OCTOPUS_KNOWLEDGE_DIR" "$target"
+    echo "  → ${MANIFEST_DELIVERY_KNOWLEDGE_TARGET} -> ${OCTOPUS_KNOWLEDGE_DIR}/"
+  fi
+}
+
+generate_knowledge_index() {
+  local knowledge_dir="$PROJECT_ROOT/$OCTOPUS_KNOWLEDGE_DIR"
+  [[ ${#KNOWLEDGE_MODULES[@]} -eq 0 ]] && return
+
+  local index_file="$knowledge_dir/INDEX.md"
+
+  cat > "$index_file" << 'HEADER'
+# Knowledge Index
+
+<!--
+  Auto-generated by Octopus setup.sh — do not edit manually.
+  Routing table for AI agents — consult this file to find relevant domain knowledge.
+-->
+
+## Domain Map
+
+| Domain | Path | Files | Status |
+|---|---|---|---|
+HEADER
+
+  for mod in "${KNOWLEDGE_MODULES[@]}"; do
+    local mod_dir="$knowledge_dir/$mod"
+    local file_count
+    file_count=$(find "$mod_dir" -name '*.md' -type f | wc -l | tr -d ' ')
+    echo "| ${mod} | \`${OCTOPUS_KNOWLEDGE_DIR}/${mod}/\` | ${file_count} | Active |" >> "$index_file"
+  done
+
+  cat >> "$index_file" << 'FOOTER'
+
+## How to Use
+
+1. **Before a task**: Read this index, then load the relevant domain's files
+2. **During a task**: If you discover new patterns, add to `knowledge.md` or `hypotheses.md`
+3. **After a task**: Update knowledge files with confirmed findings
+FOOTER
+
+  echo "  → ${OCTOPUS_KNOWLEDGE_DIR}/INDEX.md (auto-generated)"
 }
 
 deliver_hooks() {
@@ -585,15 +741,8 @@ deliver_roles() {
   local agent="$1"
   if [[ ${#OCTOPUS_ROLES[@]} -eq 0 ]]; then return; fi
 
-  # Read project context (cached across calls)
+  # Load base content once (cached across calls)
   if [[ -z "${_ROLES_CONTEXT_LOADED:-}" ]]; then
-    _ROLES_CONTEXT_FILE="$PROJECT_ROOT/${OCTOPUS_CONTEXT:-.octopus-context.md}"
-    _ROLES_CONTEXT_CONTENT=""
-    if [[ -f "$_ROLES_CONTEXT_FILE" ]]; then
-      _ROLES_CONTEXT_CONTENT=$(cat "$_ROLES_CONTEXT_FILE")
-    else
-      echo "WARNING: $_ROLES_CONTEXT_FILE not found. Roles will be generated without project context."
-    fi
     _ROLES_BASE_CONTENT=""
     if [[ -f "$OCTOPUS_DIR/roles/_base.md" ]]; then
       _ROLES_BASE_CONTENT=$(cat "$OCTOPUS_DIR/roles/_base.md")
@@ -610,8 +759,26 @@ deliver_roles() {
       continue
     fi
 
+    # Build context for this role
+    local context_content=""
+    local context_file="$PROJECT_ROOT/${OCTOPUS_CONTEXT:-.octopus-context.md}"
+    if [[ ${#KNOWLEDGE_MODULES[@]} -gt 0 ]]; then
+      # Prepend .octopus-context.md for backward compat if it exists
+      if [[ -f "$context_file" ]]; then
+        context_content="$(cat "$context_file")"$'\n\n'
+      fi
+      context_content+="$(assemble_knowledge "$role")"
+    else
+      # Legacy path: monolithic .octopus-context.md only
+      if [[ -f "$context_file" ]]; then
+        context_content=$(cat "$context_file")
+      else
+        echo "WARNING: $context_file not found. Roles will be generated without project context."
+      fi
+    fi
+
     local role_content
-    role_content=$(awk -v ctx="$_ROLES_CONTEXT_CONTENT" '{
+    role_content=$(awk -v ctx="$context_content" '{
       if ($0 == "{{PROJECT_CONTEXT}}") {
         print ctx
       } else {
@@ -639,7 +806,7 @@ deliver_roles() {
       echo "" >> "$full_output"
       echo "# Role: $role_title" >> "$full_output"
       echo "" >> "$full_output"
-      strip_frontmatter "$template" | awk -v ctx="$_ROLES_CONTEXT_CONTENT" '{
+      strip_frontmatter "$template" | awk -v ctx="$context_content" '{
         if ($0 == "{{PROJECT_CONTEXT}}") {
           print ctx
         } else {
@@ -676,6 +843,7 @@ deliver_commands() {
         GENERATED_WORKFLOW_CMDS+=("$cmd_name")
         strip_frontmatter "$cmd_file" \
           | sed "s|\./octopus/cli/octopus\\.sh|./${OCTOPUS_CLI_REL}|g" \
+          | sed '/./,$!d' \
           > "$commands_dir/${prefix}${cmd_name}.md"
         echo "  → ${MANIFEST_DELIVERY_COMMANDS_TARGET}${prefix}${cmd_name}.md"
       done
@@ -701,7 +869,9 @@ deliver_commands() {
         local desc="${OCTOPUS_CMD_DESCS[$i]}"
         local run="${OCTOPUS_CMD_RUNS[$i]}"
         cat > "$commands_dir/${prefix}${name}.md" << EOF
-${desc}
+---
+description: ${desc}
+---
 
 Run the following command:
 
@@ -1098,6 +1268,9 @@ parse_octopus_yml "$CONFIG_FILE"
 # 1b. Migrate stacks -> rules (backwards compat)
 migrate_stacks_to_rules
 
+# 1c. Discover knowledge modules
+discover_knowledge
+
 echo "Rules:     ${OCTOPUS_RULES[*]:-none}"
 echo "Skills:    ${OCTOPUS_SKILLS[*]:-none}"
 echo "Hooks:     $OCTOPUS_HOOKS"
@@ -1107,6 +1280,7 @@ echo "Commands:  ${OCTOPUS_CMD_NAMES[*]:-none}"
 echo "Workflow:  $OCTOPUS_WORKFLOW"
 echo "Roles:     ${OCTOPUS_ROLES[*]:-none}"
 echo "Reviewers: ${OCTOPUS_REVIEWERS[*]:-none}"
+echo "Knowledge: ${KNOWLEDGE_MODULES[*]:-none}"
 echo ""
 
 # 2. Validate CLI dependencies
@@ -1118,12 +1292,16 @@ for agent in "${OCTOPUS_AGENTS[@]}"; do
   generate_main_output "$agent"
   deliver_rules "$agent"
   deliver_skills "$agent"
+  deliver_knowledge "$agent"
   deliver_commands "$agent"
   deliver_roles "$agent"
   deliver_mcp "$agent"
   deliver_hooks "$agent"
   collect_gitignore_entries "$agent"
 done
+
+# 3b. Generate knowledge index
+generate_knowledge_index
 
 # 4. Manage .env
 manage_env
