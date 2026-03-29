@@ -24,6 +24,7 @@ How Octopus delivers content to each Code Assistant:
 | **Skills** | Symlinked to `.claude/skills/` | Inlined | Inlined | Inlined | Inlined |
 | **Hooks** | `settings.json` lifecycle hooks | Quality rules inlined | Quality rules inlined | Quality rules inlined | Quality rules inlined |
 | **Commands** | `.claude/commands/` (slash commands) | Inlined section | Inlined section | Inlined section | Inlined section |
+| **Feature Lifecycle Commands (`doc-*`)** | `.claude/commands/` (slash commands) | Inlined section | Inlined section | Inlined section | Inlined section |
 | **Roles** | `.claude/agents/` (native agents) | Inlined section | Inlined section | Inlined section | Inlined section |
 | **MCP** | `settings.json` mcpServers | `.vscode/mcp.json` + `~/.copilot/mcp-config.json` | `codex mcp add` CLI | — | — |
 
@@ -74,7 +75,7 @@ rules:
   - typescript
 
 # Skills — reusable AI capabilities
-# Available: adr, backend-patterns, context-budget, e2e-testing, security-scan
+# Available: adr, backend-patterns, context-budget, continuous-learning, e2e-testing, feature-lifecycle, security-scan
 skills:
   - adr
   - e2e-testing
@@ -105,7 +106,7 @@ reviewers:
   - github-username
 
 # Roles — agent personas with project context
-# Available: product-manager, backend-specialist, frontend-specialist
+# Available: product-manager, backend-specialist, frontend-specialist, tech-writer
 # Requires: .octopus-context.md in repo root
 roles:
   - product-manager
@@ -158,7 +159,7 @@ Language-specific coding standards applied to all agents.
 
 Reusable AI capabilities that provide specialized knowledge.
 
-**Available skills:** `adr`, `backend-patterns`, `context-budget`, `e2e-testing`, `security-scan`
+**Available skills:** `adr`, `backend-patterns`, `context-budget`, `continuous-learning`, `e2e-testing`, `feature-lifecycle`, `security-scan`
 
 **How it works:**
 1. Add skills to `.octopus.yml`:
@@ -215,7 +216,7 @@ OCTOPUS_DISABLED_HOOKS=auto-format,typecheck ./octopus/setup.sh
 
 Agent personas that combine a responsibility definition with your project context. Each role generates a specialized agent.
 
-**Available roles:** `product-manager`, `backend-specialist`, `frontend-specialist`
+**Available roles:** `product-manager`, `backend-specialist`, `frontend-specialist`, `tech-writer`
 
 **How it works:**
 1. Create `.octopus-context.md` in your repo root with your project's domain, architecture, business model, and team info
@@ -253,6 +254,35 @@ Custom slash commands that map to CLI operations. Useful for database management
 2. Run `./octopus/setup.sh`
 3. **Claude Code**: each command becomes a file at `.claude/commands/octopus:<name>.md` — usable as `/octopus:<name>` slash commands
 4. **Other agents**: commands are listed as a reference section in the agent's output file
+
+### Feature Lifecycle
+
+A complete documentation lifecycle system that combines a decision framework skill, document bootstrap commands, a documentation-focused role, and reusable templates.
+
+**Decision matrix (what to create):**
+- All factors low (single team, low uncertainty, reversible, < 1 week) → lightweight Spec
+- Any factor high → detailed Spec via `/octopus:doc-spec`
+- 2+ factors high → RFC first via `/octopus:doc-rfc`, then Spec after approval
+- Any architectural decision during work → ADR via `/octopus:doc-adr`
+
+**Available commands:**
+- `/octopus:doc-rfc` — create RFC from template (`docs/rfcs/YYYY-MM-DD-<slug>.md`)
+- `/octopus:doc-spec` — create Spec from template (`docs/specs/<slug>.md`)
+- `/octopus:doc-adr` — create numbered ADR from template (`docs/adrs/NNN-<slug>.md`)
+
+**Role:** `tech-writer`  
+Use this role when you need documentation-only execution: pre-implementation RFC/spec drafting, post-implementation ADR/spec deviation reconciliation, knowledge capture, and changelog updates.
+
+**Templates:**
+- `knowledge/_templates/rfc.md`
+- `knowledge/_templates/spec.md`
+- `knowledge/_templates/adr.md`
+- `knowledge/_templates/impl-prompt.md`
+
+**Skill integration:**
+- `feature-lifecycle` orchestrates when each artifact is needed
+- `adr` provides ADR format and decision-record guidance
+- `continuous-learning` captures post-implementation knowledge in `knowledge/<domain>/`
 
 ### MCP Servers
 
@@ -298,6 +328,9 @@ PR and branch automation commands powered by GitHub CLI (`gh`).
 | `/octopus:pr-merge` | Merge a PR |
 | `/octopus:codereview` | Run a code review workflow |
 | `/octopus:dev-flow` | Full development flow |
+| `/octopus:doc-rfc` | Bootstrap an RFC document from template |
+| `/octopus:doc-spec` | Bootstrap a spec document from template |
+| `/octopus:doc-adr` | Bootstrap an ADR document from template |
 | `/octopus:docs` | Documentation commands |
 
 **How it works:**
@@ -374,9 +407,27 @@ octopus/
 │   ├── typescript/         # TypeScript/React/Next.js rules
 │   └── python/             # Python rules
 ├── skills/                 # Reusable AI capabilities (each has SKILL.md)
+│   ├── adr/
+│   ├── feature-lifecycle/  # Documentation decision framework
+│   ├── continuous-learning/
+│   └── ...
 ├── hooks/                  # Claude Code lifecycle hooks + hooks.json
-├── roles/                  # Agent persona templates (_base.md + per-role)
-├── commands/               # Workflow command definitions
+├── knowledge/
+│   ├── _template/          # Continuous learning domain bootstrap
+│   ├── _templates/         # Document templates (RFC, Spec, ADR, Impl Prompt)
+│   └── _examples/          # Reference examples
+├── roles/
+│   ├── _base.md
+│   ├── backend-specialist.md
+│   ├── frontend-specialist.md
+│   ├── product-manager.md
+│   └── tech-writer.md      # Documentation lifecycle agent
+├── commands/
+│   ├── doc-rfc.md          # Bootstrap RFC from template
+│   ├── doc-spec.md         # Bootstrap Spec from template
+│   ├── doc-adr.md          # Bootstrap ADR from template
+│   ├── pr-open.md
+│   └── ...
 ├── mcp/                    # MCP server configs (JSON, env var substitution)
 ├── cli/                    # CLI utilities for workflow automation
 ├── setup.sh                # Main generation script

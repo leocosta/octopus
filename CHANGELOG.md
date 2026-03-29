@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2026-03-28
+
+✨ Feature Lifecycle Documentation System — a complete documentation workflow
+integrated into the Octopus pipeline. Includes a new `feature-lifecycle` skill
+that guides agents through the right documentation for each phase of a feature
+(RFC → Spec → ADR → Knowledge). Three new slash commands (`/octopus:doc-rfc`,
+`/octopus:doc-spec`, `/octopus:doc-adr`) bootstrap documents from templates.
+A new `tech-writer` role provides a dedicated documentation agent that can
+produce post-implementation documentation, spec updates, and knowledge capture.
+Document templates live in `knowledge/_templates/` (RFC, Spec, ADR,
+Implementation Prompt).
+
 ## [0.2.1] - 2026-03-28
 
 ♻️ This release migrates the agent configuration from `kilocode` to `opencode`, modernizing the project structure and aligning with current naming conventions. The legacy kilocode agent was removed and replaced with a new opencode agent that supports full native capabilities (rules, skills, hooks, commands, agents, and MCP). Configuration files and documentation were updated to reflect the change, including `.gitignore`, `.octopus.yml`, and `README.md`. Additionally, the PR creation workflow (`pr-open.sh`) was enhanced ✨ to automatically generate rich, context-aware PR bodies with emoji-styled summaries, commit narratives, and file change categorization.
