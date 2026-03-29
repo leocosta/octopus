@@ -29,6 +29,7 @@ declare -a OCTOPUS_REVIEWERS=()
 OCTOPUS_CONTEXT=""
 OCTOPUS_KNOWLEDGE_ENABLED="false"
 OCTOPUS_KNOWLEDGE_MODE=""               # "auto" or "explicit"
+OCTOPUS_KNOWLEDGE_DIR="knowledge"       # configurable via knowledge_dir: in .octopus.yml
 declare -a OCTOPUS_KNOWLEDGE_LIST=()
 declare -A OCTOPUS_KNOWLEDGE_ROLES=()   # key=role, value=comma-separated modules
 
@@ -70,15 +71,16 @@ parse_octopus_yml() {
       continue
     fi
 
-    # Handle inline string value: context: path/to/file
-    if [[ "$line" =~ ^([a-z]+):[[:space:]]+([^#\[]+)[[:space:]]*$ ]]; then
+    # Handle inline string value: context: path/to/file, knowledge_dir: docs/ai
+    if [[ "$line" =~ ^([a-z][a-z_]*):[[:space:]]+([^#\[]+)[[:space:]]*$ ]]; then
       local key="${BASH_REMATCH[1]}"
       local val="${BASH_REMATCH[2]}"
       # Trim trailing whitespace
       val="${val%"${val##*[![:space:]]}"}"
       case "$key" in
-        context) OCTOPUS_CONTEXT="$val" ;;
-        hooks)   OCTOPUS_HOOKS="$val" ;;
+        context)       OCTOPUS_CONTEXT="$val" ;;
+        hooks)         OCTOPUS_HOOKS="$val" ;;
+        knowledge_dir) OCTOPUS_KNOWLEDGE_DIR="$val" ;;
       esac
       # Don't set current_section — this is an inline value, not a section
       continue
@@ -568,9 +570,9 @@ deliver_skills() {
 
 discover_knowledge() {
   KNOWLEDGE_MODULES=()
-  local knowledge_dir="$PROJECT_ROOT/knowledge"
+  local knowledge_dir="$PROJECT_ROOT/$OCTOPUS_KNOWLEDGE_DIR"
   [[ "$OCTOPUS_KNOWLEDGE_ENABLED" != "true" ]] && return
-  [[ ! -d "$knowledge_dir" ]] && { echo "  WARNING: knowledge: enabled but no knowledge/ directory found."; return; }
+  [[ ! -d "$knowledge_dir" ]] && { echo "  WARNING: knowledge: enabled but no ${OCTOPUS_KNOWLEDGE_DIR}/ directory found."; return; }
 
   if [[ "$OCTOPUS_KNOWLEDGE_MODE" == "auto" ]]; then
     for dir in "$knowledge_dir"/*/; do
@@ -584,7 +586,7 @@ discover_knowledge() {
       if [[ -d "$knowledge_dir/$mod" ]]; then
         KNOWLEDGE_MODULES+=("$mod")
       else
-        echo "  WARNING: Knowledge module '$mod' not found in knowledge/. Skipping."
+        echo "  WARNING: Knowledge module '$mod' not found in ${OCTOPUS_KNOWLEDGE_DIR}/. Skipping."
       fi
     done
   fi
@@ -592,7 +594,7 @@ discover_knowledge() {
 
 assemble_knowledge() {
   local role="${1:-}"
-  local knowledge_dir="$PROJECT_ROOT/knowledge"
+  local knowledge_dir="$PROJECT_ROOT/$OCTOPUS_KNOWLEDGE_DIR"
   local content=""
 
   local -a modules_for_role=()
@@ -630,13 +632,13 @@ deliver_knowledge() {
     echo "Generating knowledge symlink for $agent..."
     mkdir -p "$(dirname "$target")"
     rm -rf "$target"
-    ln -s "$PROJECT_ROOT/knowledge" "$target"
-    echo "  → ${MANIFEST_DELIVERY_KNOWLEDGE_TARGET} -> knowledge/"
+    ln -s "$PROJECT_ROOT/$OCTOPUS_KNOWLEDGE_DIR" "$target"
+    echo "  → ${MANIFEST_DELIVERY_KNOWLEDGE_TARGET} -> ${OCTOPUS_KNOWLEDGE_DIR}/"
   fi
 }
 
 generate_knowledge_index() {
-  local knowledge_dir="$PROJECT_ROOT/knowledge"
+  local knowledge_dir="$PROJECT_ROOT/$OCTOPUS_KNOWLEDGE_DIR"
   [[ ${#KNOWLEDGE_MODULES[@]} -eq 0 ]] && return
 
   local index_file="$knowledge_dir/INDEX.md"
@@ -659,7 +661,7 @@ HEADER
     local mod_dir="$knowledge_dir/$mod"
     local file_count
     file_count=$(find "$mod_dir" -name '*.md' -type f | wc -l | tr -d ' ')
-    echo "| ${mod} | \`knowledge/${mod}/\` | ${file_count} | Active |" >> "$index_file"
+    echo "| ${mod} | \`${OCTOPUS_KNOWLEDGE_DIR}/${mod}/\` | ${file_count} | Active |" >> "$index_file"
   done
 
   cat >> "$index_file" << 'FOOTER'
@@ -671,7 +673,7 @@ HEADER
 3. **After a task**: Update knowledge files with confirmed findings
 FOOTER
 
-  echo "  → knowledge/INDEX.md (auto-generated)"
+  echo "  → ${OCTOPUS_KNOWLEDGE_DIR}/INDEX.md (auto-generated)"
 }
 
 deliver_hooks() {

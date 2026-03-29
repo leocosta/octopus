@@ -293,5 +293,37 @@ parse_octopus_yml "$TMPDIR4/.octopus-c.yml"
 rm -rf "$TMPDIR4"
 echo "PASS: knowledge YAML parsing"
 
+# --- Test: knowledge_dir: parsing ---
+echo "Test: knowledge_dir YAML parsing"
+
+TMPDIR5=$(mktemp -d)
+OCTOPUS_KNOWLEDGE_DIR="knowledge"
+OCTOPUS_KNOWLEDGE_ENABLED="false"
+OCTOPUS_KNOWLEDGE_MODE=""
+OCTOPUS_KNOWLEDGE_LIST=()
+
+cat > "$TMPDIR5/.octopus-kdir.yml" << 'EOF'
+agents:
+  - claude
+knowledge_dir: docs/ai
+knowledge: true
+EOF
+parse_octopus_yml "$TMPDIR5/.octopus-kdir.yml"
+[[ "$OCTOPUS_KNOWLEDGE_DIR" == "docs/ai" ]] || { echo "FAIL: knowledge_dir expected 'docs/ai', got '$OCTOPUS_KNOWLEDGE_DIR'"; exit 1; }
+[[ "$OCTOPUS_KNOWLEDGE_ENABLED" == "true" ]] || { echo "FAIL: knowledge should still be enabled"; exit 1; }
+
+# Default is preserved when not set
+OCTOPUS_KNOWLEDGE_DIR="knowledge"
+cat > "$TMPDIR5/.octopus-kdir-default.yml" << 'EOF'
+agents:
+  - claude
+knowledge: true
+EOF
+parse_octopus_yml "$TMPDIR5/.octopus-kdir-default.yml"
+[[ "$OCTOPUS_KNOWLEDGE_DIR" == "knowledge" ]] || { echo "FAIL: knowledge_dir should default to 'knowledge', got '$OCTOPUS_KNOWLEDGE_DIR'"; exit 1; }
+
+rm -rf "$TMPDIR5"
+echo "PASS: knowledge_dir YAML parsing"
+
 rm -rf "$TMPDIR"
 echo "PASS: all YAML parsing tests passed"

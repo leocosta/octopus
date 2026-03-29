@@ -270,9 +270,15 @@ Modular domain knowledge that agents can load on demand — confirmed facts, hyp
 3. **Claude Code**: `knowledge/` is symlinked to `.claude/knowledge/` — agents load modules on demand
 4. **Other agents**: knowledge content is assembled per-role and inlined into the `{{PROJECT_CONTEXT}}` placeholder
 
+**Custom directory:** By default, modules live in `knowledge/`. Use `knowledge_dir:` to change the location:
+```yaml
+knowledge_dir: docs/ai   # modules will be read from docs/ai/ instead of knowledge/
+knowledge: true
+```
+
 **Backward compatibility:** Projects using `.octopus-context.md` continue to work unchanged. If both exist, `.octopus-context.md` is prepended before knowledge modules.
 
-**Auto-generated index:** `setup.sh` creates `knowledge/INDEX.md` — a routing table listing every active module with file counts. Agents consult this first to find relevant domain context.
+**Auto-generated index:** `setup.sh` creates `<knowledge_dir>/INDEX.md` — a routing table listing every active module with file counts. Agents consult this first to find relevant domain context.
 
 **Creating a knowledge module:**
 ```bash
