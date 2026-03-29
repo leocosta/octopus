@@ -8,10 +8,12 @@ rules:
   - typescript
 
 # Skills (symlinked to .claude/skills/)
-# Available: context-budget, backend-patterns, adr, e2e-testing, security-scan
+# Available: adr, backend-patterns, context-budget, continuous-learning,
+#            e2e-testing, feature-lifecycle, security-scan
 # skills:
 #   - adr
 #   - e2e-testing
+#   - feature-lifecycle
 
 # Hooks (injected into .claude/settings.json)
 # Options: true (enable all), false (disable), or profile name
@@ -55,6 +57,30 @@ mcp: []
 
 # Path to project context file (default: .octopus-context.md)
 # context: docs/project-context.md
+
+# Knowledge modules — modular domain context for AI agents
+# Format A: auto-discover all folders in knowledge/ (not prefixed with _)
+# knowledge: true
+#
+# Format B: explicit list
+# knowledge:
+#   - domain
+#   - architecture
+#
+# Format C: per-role mapping
+# knowledge:
+#   modules:
+#     - domain
+#     - architecture
+#   roles:
+#     backend-specialist:
+#       - domain
+#       - architecture
+#     product-manager:
+#       - domain
+
+# Custom knowledge directory (default: knowledge/)
+# knowledge_dir: docs/ai
 
 # Custom project commands
 # Each command becomes a slash command with octopus: prefix
