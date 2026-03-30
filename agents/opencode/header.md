@@ -1,5 +1,30 @@
 # Kilo Code Instructions
 
+## Agent-Specific Behavior
+
+### After Every Correction
+
+When you fix a mistake or learn something new about how this project should work,
+update the relevant rule file in `.opencode/rules/` immediately. This is how the
+team's guidelines improve over time.
+
+### Plan Before Complex Tasks
+
+For any non-trivial task (new feature, refactor, architectural change), draft a plan
+first and present it before writing code. Wait for approval before proceeding.
+
+Draft a plan when:
+- The task touches more than 2 files
+- You're unsure about the approach
+- The user says "think about this" or "what's the best way to..."
+
+### Code Quality After Changes
+
+After completing code changes, review the modified code for reuse, quality, and
+efficiency before declaring the task done. Run `/simplify` if available.
+
+---
+
 ## Continuous Learning Protocol
 
 Before each task:
