@@ -30,6 +30,9 @@ OCTOPUS_KNOWLEDGE_MODE=""               # "auto" or "explicit"
 OCTOPUS_KNOWLEDGE_DIR="knowledge"       # configurable via knowledge_dir: in .octopus.yml
 declare -a OCTOPUS_KNOWLEDGE_LIST=()
 declare -A OCTOPUS_KNOWLEDGE_ROLES=()   # key=role, value=comma-separated modules
+declare -a OCTOPUS_PERMISSIONS_ALLOW=()
+declare -a OCTOPUS_PERMISSIONS_DENY=()
+OCTOPUS_PERMISSIONS_MODE=""             # "explicit" | "defaults" | ""
 OCTOPUS_EFFORT_LEVEL=""                 # "low" | "medium" | "high" | "max"
 
 parse_octopus_yml() {
@@ -41,6 +44,7 @@ parse_octopus_yml() {
   local pending_cmd_run=""
   local current_knowledge_subsection=""
   local current_knowledge_role=""
+  local current_permissions_subsection=""
 
   _flush_pending_cmd() {
     if [[ -n "$pending_cmd_name" ]]; then
@@ -97,7 +101,17 @@ parse_octopus_yml() {
       current_section="${BASH_REMATCH[1]}"
       current_knowledge_subsection=""
       current_knowledge_role=""
+      current_permissions_subsection=""
+      [[ "$current_section" == "permissions" ]] && OCTOPUS_PERMISSIONS_MODE="explicit"
       continue
+    fi
+
+    # Handle permissions: sub-sections (allow:/deny:)
+    if [[ "$current_section" == "permissions" ]]; then
+      if [[ "$line" =~ ^[[:space:]]+(allow|deny):[[:space:]]*$ ]]; then
+        current_permissions_subsection="${BASH_REMATCH[1]}"
+        continue
+      fi
     fi
 
     # Handle knowledge: sub-sections (modules:/roles:) and role name entries
@@ -702,6 +716,100 @@ PYEOF
   fi
 }
 
+deliver_permissions() {
+  local agent="$1"
+  if [[ "$OCTOPUS_PERMISSIONS_MODE" == "" ]]; then return; fi
+  if [[ "$MANIFEST_DELIVERY_HOOKS_METHOD" != "settings_json" ]]; then return; fi
+
+  local settings_file="$PROJECT_ROOT/$MANIFEST_DELIVERY_HOOKS_TARGET"
+
+  if [[ ! -f "$settings_file" ]]; then
+    echo "WARNING: settings.json not found at $MANIFEST_DELIVERY_HOOKS_TARGET. Skipping permissions for $agent."
+    return
+  fi
+
+  # Only Claude's settings.json has a top-level "permissions" field with allow/deny lists.
+  # OpenCode uses a different schema ("permission" singular, per-tool mode strings) that is
+  # incompatible with this allow/deny list model — skip it.
+  if [[ "$agent" != "claude" ]]; then return; fi
+
+  # Build allow/deny arrays: use defaults when mode is "defaults", explicit lists otherwise
+  local allow_json="[]"
+  local deny_json="[]"
+
+  if [[ "$OCTOPUS_PERMISSIONS_MODE" == "defaults" ]]; then
+    # Detect language from OCTOPUS_RULES
+    local has_node="false"
+    for rule in "${OCTOPUS_RULES[@]}"; do
+      if [[ "$rule" == "typescript" || "$rule" == "node" ]]; then
+        has_node="true"
+        break
+      fi
+    done
+
+    if [[ "$has_node" == "true" ]]; then
+      allow_json='["Bash(git *)", "Bash(gh *)", "Bash(bun run *)", "Bash(npm run *)", "Bash(npx *)"]'
+    else
+      allow_json='["Bash(git *)", "Bash(gh *)"]'
+    fi
+  else
+    # Build JSON arrays from explicit allow/deny lists
+    allow_json=$(python3 -c "
+import json, sys
+items = sys.argv[1:]
+print(json.dumps(items))
+" "${OCTOPUS_PERMISSIONS_ALLOW[@]+"${OCTOPUS_PERMISSIONS_ALLOW[@]}"}")
+    deny_json=$(python3 -c "
+import json, sys
+items = sys.argv[1:]
+print(json.dumps(items))
+" "${OCTOPUS_PERMISSIONS_DENY[@]+"${OCTOPUS_PERMISSIONS_DENY[@]}"}")
+  fi
+
+  echo "Injecting permissions into $MANIFEST_DELIVERY_HOOKS_TARGET for $agent..."
+
+  python3 - "$settings_file" "$allow_json" "$deny_json" << 'PYEOF'
+import json, sys
+
+settings_path, allow_json, deny_json = sys.argv[1], sys.argv[2], sys.argv[3]
+
+with open(settings_path) as f:
+    settings = json.load(f)
+
+allow_new = json.loads(allow_json)
+deny_new = json.loads(deny_json)
+
+perms = settings.setdefault("permissions", {})
+
+# Merge allow list (dedup, preserve order)
+existing_allow = perms.get("allow", [])
+merged_allow = list(existing_allow)
+for entry in allow_new:
+    if entry not in merged_allow:
+        merged_allow.append(entry)
+if merged_allow:
+    perms["allow"] = merged_allow
+elif "allow" in perms:
+    del perms["allow"]
+
+# Merge deny list (dedup, preserve order)
+existing_deny = perms.get("deny", [])
+merged_deny = list(existing_deny)
+for entry in deny_new:
+    if entry not in merged_deny:
+        merged_deny.append(entry)
+if merged_deny:
+    perms["deny"] = merged_deny
+elif "deny" in perms:
+    del perms["deny"]
+
+with open(settings_path, "w") as f:
+    json.dump(settings, f, indent=2)
+    f.write("\n")
+PYEOF
+  echo "  → Permissions injected into $MANIFEST_DELIVERY_HOOKS_TARGET"
+}
+
 deliver_effort_level() {
   local agent="$1"
   if [[ -z "$OCTOPUS_EFFORT_LEVEL" ]]; then return; fi
@@ -1302,6 +1410,7 @@ for agent in "${OCTOPUS_AGENTS[@]}"; do
   deliver_roles "$agent"
   deliver_mcp "$agent"
   deliver_hooks "$agent"
+  deliver_permissions "$agent"
   deliver_effort_level "$agent"
   collect_gitignore_entries "$agent"
 done

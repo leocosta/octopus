@@ -23,7 +23,7 @@ Before starting any feature, check the project backlog.
 to this work?
 
 - **If yes**: reference the ID in your Spec or RFC frontmatter (`roadmap-item: RM-NNN`)
-  and update the item's status to "em progresso" with a link to the document.
+  and update the item's status to "in progress" with a link to the document.
 - **If no**: the work may not need a roadmap entry (e.g. bug fixes, small improvements).
 
 **If the work requires upfront analysis** (multiple approaches, unclear scope,
@@ -190,7 +190,7 @@ When creating a Spec or RFC for a roadmap item:
    ```
    roadmap-item: RM-001
    ```
-3. Update `docs/roadmap.md`: move the item from **Backlog** to **Em Progresso**
+3. Update `docs/roadmap.md`: move the item from **Backlog** to **In Progress**
    and add a link to the new document
 
 When implementation is complete, move the item to **Concluído** in the roadmap.

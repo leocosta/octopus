@@ -1,17 +1,38 @@
 # GitHub Copilot Instructions
 
-## Comportamento Geral
+## Agent-Specific Behavior
 
-- Responda sempre em portugues (pt-BR)
-- Seja direto e conciso nas respostas
-- Siga as convencoes do projeto documentadas nas secoes abaixo
-- Para operacoes de projeto, use os comandos do Makefile documentados na secao "Custom Project Commands"
+### After Every Correction
 
-## Limitacoes
+When you fix a mistake or learn something new about how the project is expected to work,
+mention it in the response and suggest updating `copilot-instructions.md` so that team
+guidelines improve over time.
 
-- Nao referencie arquivos em `.claude/` (settings, commands, agents, rules, skills) — sao exclusivos do Claude Code
-- Slash commands (`/octopus:*`) nao existem no Copilot — use os comandos do Makefile diretamente
-- MCP servers (Notion, Slack, PostgreSQL) devem ser configurados separadamente em `.vscode/mcp.json`
+### Plan Before Complex Tasks
+
+For any non-trivial task (new feature, refactor, architectural change),
+think step by step and write a plan before writing code. Present the plan
+and wait for approval before proceeding.
+
+Write a plan when:
+- The task involves more than 2 files
+- You are not sure about the approach
+- The user says "think about this" or "what is the best way to..."
+
+---
+
+## General Behavior
+
+- Always respond in Portuguese (pt-BR)
+- Be direct and concise in responses
+- Follow the project conventions documented in the sections below
+- For project operations, use the Makefile commands documented in the "Custom Project Commands" section
+
+## Limitations
+
+- Do not reference files in `.claude/` (settings, commands, agents, rules, skills) — they are exclusive to Claude Code
+- Slash commands (`/octopus:*`) do not exist in Copilot — use the Makefile commands directly
+- MCP servers (Notion, Slack, PostgreSQL) must be configured separately in `.vscode/mcp.json`
 
 ---
 

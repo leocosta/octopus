@@ -1,23 +1,23 @@
 # Research: {{SLUG}}
 
-**Data:** {{DATE}}
-**Gatilho:** {{TRIGGER}}
+**Date:** {{DATE}}
+**Trigger:** {{TRIGGER}}
 
-## Contexto
+## Context
 
 {{CONTEXT}}
 
-## Análise
+## Analysis
 
 {{ANALYSIS}}
 
-## Itens Identificados
+## Identified Items
 
-| ID | Título | Prioridade | Esforço |
-|----|--------|------------|---------|
-<!-- | RM-001 | Title | 🔴 Alta | baixo | -->
+| ID | Title | Priority | Effort |
+|----|-------|----------|--------|
+<!-- | RM-001 | Title | 🔴 High | low | -->
 
-## Itens Descartados
+## Discarded Items
 
 <!-- Items considered but not included, with reasons -->
 <!-- | Title | Reason | -->

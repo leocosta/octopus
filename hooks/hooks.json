@@ -88,6 +88,19 @@
       ]
     }
   ],
+  "PostCompact": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "octopus/hooks/post-compact/reload-context.sh",
+          "id": "reload-context",
+          "timeout": 10000
+        }
+      ]
+    }
+  ],
   "SessionStart": [
     {
       "matcher": "startup|resume|clear|compact",

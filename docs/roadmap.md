@@ -10,8 +10,6 @@ and add a link to the created document.
 
 ## Backlog
 
-<!-- Items are added here by /octopus:doc-research -->
-
 ---
 
 ## In Progress
@@ -25,4 +23,4 @@ and add a link to the created document.
 
 | ID | Title | Resolution | Date |
 |----|-------|------------|------|
-<!-- | RM-000 | Title | completed / rejected: reason | YYYY-MM-DD | -->
+| RM-001 | Pre-approved permissions in the manifest | completed → [Spec](specs/permissions-manifest.md) | 2026-03-30 |

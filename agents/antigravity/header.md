@@ -1,6 +1,22 @@
 # Antigravity Instructions
 
-<!-- TODO: Add Antigravity-specific behavior instructions -->
+## Agent-Specific Behavior
+
+### After Every Correction
+
+When you fix a mistake or learn something new about how this project should work,
+note it explicitly in your response and suggest updating ANTIGRAVITY.md so the
+team's guidelines improve over time.
+
+### Plan Before Complex Tasks
+
+For any non-trivial task (new feature, refactor, architectural change), think step
+by step and draft a plan before writing code. Present the plan and wait for approval.
+
+Draft a plan when:
+- The task touches more than 2 files
+- You're unsure about the approach
+- The user says "think about this" or "what's the best way to..."
 
 ---
 
