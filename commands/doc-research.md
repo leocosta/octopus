@@ -82,10 +82,10 @@ Propose candidate roadmap items. For each item:
 
 - **Title**: Action-oriented, specific (e.g. "Add permissions pre-approval to manifest")
 - **Priority**:
-  - 🔴 Alta — high impact, blocks key workflows, or significant productivity gain
-  - 🟡 Média — clear value, not immediately urgent
-  - 🟢 Baixa — nice to have, low friction to live without
-- **Effort**: trivial (<1h) / baixo (<1d) / médio (<1w) / alto (>1w)
+  - 🔴 High — high impact, blocks key workflows, or significant productivity gain
+  - 🟡 Medium — clear value, not immediately urgent
+  - 🟢 Low — nice to have, low friction to live without
+- **Effort**: trivial (<1h) / low (<1d) / medium (<1w) / high (>1w)
 - **Rationale**: 2-4 sentences explaining the value and why it matters
 
 Present all candidates together and ask the user to:
@@ -117,10 +117,10 @@ Each new item block:
 ```markdown
 ### RM-NNN — Title
 
-- **Prioridade:** 🔴/🟡/🟢 Priority
-- **Esforço:** effort
-- **Status:** proposto
-- **Adicionado:** DATE
+- **Priority:** 🔴/🟡/🟢 Priority
+- **Effort:** effort
+- **Status:** proposed
+- **Added:** DATE
 - **Research:** [SLUG](research/DATE-SLUG.md)
 
 Description of the item.
