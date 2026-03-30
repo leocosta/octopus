@@ -1,10 +1,10 @@
 # Roadmap
 
-Este arquivo é o backlog do projeto. Itens são adicionados via `/octopus:doc-research`
-e graduam para Spec ou RFC quando o trabalho começa.
+This file is the project backlog. Items are added via `/octopus:doc-research`
+and graduate to a Spec or RFC when work begins.
 
-Ao criar um Spec ou RFC para um item, atualize seu status para "em progresso"
-e adicione um link para o documento criado.
+When creating a Spec or RFC for an item, update its status to "in progress"
+and add a link to the created document.
 
 ---
 
@@ -14,15 +14,15 @@ e adicione um link para o documento criado.
 
 ---
 
-## Em Progresso
+## In Progress
 
 <!-- Items move here when work begins -->
-<!-- Update status to: em progresso → [Spec](docs/specs/slug.md) -->
+<!-- Update status to: in progress → [Spec](docs/specs/slug.md) -->
 
 ---
 
-## Concluído / Rejeitado
+## Completed / Rejected
 
-| ID | Título | Resolução | Data |
-|----|--------|-----------|------|
-<!-- | RM-000 | Title | concluído / rejeitado: reason | YYYY-MM-DD | -->
+| ID | Title | Resolution | Date |
+|----|-------|------------|------|
+<!-- | RM-000 | Title | completed / rejected: reason | YYYY-MM-DD | -->
