@@ -21,5 +21,28 @@
 
 ## Claude-Specific Behavior
 
-<!-- TODO: Add Claude Code specific instructions -->
-<!-- Examples: tool usage preferences, confirmation rules, language/tone -->
+### After Every Correction
+
+When you fix a mistake or learn something new about how this project should work,
+end your response with: "Update your CLAUDE.md so you don't make that mistake again."
+Then update the CLAUDE.md immediately. This is how the team's guidelines improve over time.
+
+### Plan Before Complex Tasks
+
+For any non-trivial task (new feature, refactor, architectural change), enter plan mode
+first. Present the plan and wait for approval before writing code.
+
+Trigger plan mode explicitly when:
+- The task touches more than 2 files
+- You're unsure about the approach
+- The user says "think about this" or "what's the best way to..."
+
+### Code Quality After Changes
+
+After completing code changes, append `/simplify` to review the modified code for
+reuse, quality, and efficiency before declaring the task done.
+
+---
+
+<!-- Add project-specific Claude instructions below this line -->
+<!-- Examples: preferred libraries, confirmation rules, response language -->
