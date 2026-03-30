@@ -124,7 +124,15 @@ grep -q "Architecture Decision Records" ".github/copilot-instructions.md" || { e
 
 # Verify workflow commands
 [[ -f ".claude/commands/octopus:branch-create.md" ]] || { echo "FAIL: workflow command missing"; exit 1; }
+[[ -f ".claude/commands/octopus:doc-research.md" ]] || { echo "FAIL: doc-research command missing"; exit 1; }
 [[ -f ".claude/commands/octopus:db-reset.md" ]] || { echo "FAIL: custom command missing"; exit 1; }
+
+# Verify doc-research command content (first frontmatter stripped, instructions present)
+grep -q "Instructions" ".claude/commands/octopus:doc-research.md" || { echo "FAIL: doc-research instructions missing"; exit 1; }
+grep -q "Context Scan" ".claude/commands/octopus:doc-research.md" || { echo "FAIL: doc-research context scan step missing"; exit 1; }
+
+# Verify CLAUDE.md references roadmap
+grep -q "docs/roadmap.md" ".claude/CLAUDE.md" || { echo "FAIL: roadmap reference missing from CLAUDE.md"; exit 1; }
 
 # Verify roles
 [[ -f ".claude/agents/product-manager.md" ]] || { echo "FAIL: product-manager role missing"; exit 1; }

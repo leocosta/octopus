@@ -15,6 +15,30 @@ Every feature follows a lifecycle from problem to knowledge. Different phases
 produce different documentation artifacts. This protocol helps you decide
 which artifacts are needed and when.
 
+## Phase 0: Research & Roadmap
+
+Before starting any feature, check the project backlog.
+
+**Consult `docs/roadmap.md`** — is there an open item (RM-NNN) that corresponds
+to this work?
+
+- **If yes**: reference the ID in your Spec or RFC frontmatter (`roadmap-item: RM-NNN`)
+  and update the item's status to "em progresso" with a link to the document.
+- **If no**: the work may not need a roadmap entry (e.g. bug fixes, small improvements).
+
+**If the work requires upfront analysis** (multiple approaches, unclear scope,
+strategic implications): run `/octopus:doc-research <slug>` before creating
+a Spec or RFC. This produces a research document and candidate backlog items
+for the team to validate.
+
+**Locations:**
+- Backlog: `docs/roadmap.md`
+- Research sessions: `docs/research/YYYY-MM-DD-<slug>.md`
+
+**Create or update the roadmap:** `/octopus:doc-research [slug]`
+
+---
+
 ## Decision Matrix — Which Documents Are Needed?
 
 Before starting any feature, evaluate these four factors:
@@ -156,6 +180,20 @@ The spec then serves as documentation, not just a plan.
 ### Changelog
 
 Update `CHANGELOG.md` with a concise entry describing what changed and why.
+
+## Roadmap Integration
+
+When creating a Spec or RFC for a roadmap item:
+
+1. Check `docs/roadmap.md` for the corresponding RM-NNN ID
+2. Add to the document frontmatter or metadata table:
+   ```
+   roadmap-item: RM-001
+   ```
+3. Update `docs/roadmap.md`: move the item from **Backlog** to **Em Progresso**
+   and add a link to the new document
+
+When implementation is complete, move the item to **Concluído** in the roadmap.
 
 ## Integration with Other Skills
 
