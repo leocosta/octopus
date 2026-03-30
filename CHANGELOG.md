@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.0] - 2026-03-29
+
+✨ This release introduces research and roadmap capabilities to the feature lifecycle. A new `/octopus:doc-research` command enables structured brainstorming sessions that produce research documents and candidate backlog items. The `feature-lifecycle` skill was extended with a Phase 0 that integrates roadmap consultation before starting any feature — agents now check `docs/roadmap.md` for existing items and can link Specs and RFCs to roadmap entries. Templates for research documents and the roadmap were added, and the Claude agent configuration was updated to reference the new workflow.
+
 ## [0.6.0] - 2026-03-29
 
 ♻️ This release removes legacy features that were no longer needed. The `.env` file was renamed to `.env.octopus` to avoid naming collisions in projects that use Octopus as a submodule. Support for `.octopus-context.md` was removed in favor of knowledge modules, which offer a more modular and structured approach to project context. The `stacks/` directory and automatic migration logic were eliminated — projects should use `rules:` directly in `.octopus.yml`. Documentation templates (RFC, Spec, ADR, Impl Prompt) were moved from `knowledge/_templates/` to a top-level `templates/` directory, making their purpose clearer.
