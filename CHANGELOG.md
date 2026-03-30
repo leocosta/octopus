@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.0] - 2026-03-30
+
+This release introduces four new manifest fields for the Claude agent, all inspired by Boris Cherny's Claude Code tips.
+
+✨ The `.octopus.yml` manifest received four new configuration fields: **`permissions:`** defines allow/deny lists for pre-approved commands, with per-language defaults via `permissions: true`; **`effortLevel:`** sets the project-level reasoning depth (`low | medium | high | max`), removing the need to configure it manually each session; **`autoMode:`** enables automatic permission mode (`permissionMode: auto`), a safer alternative to `--dangerously-skip-permissions`; and **`memory:`** with `auto` and `dream` subfields configures persistent memory and periodic memory consolidation via a subagent.
+
+✨ A new **PostCompact hook** (`hooks/post-compact/reload-context.sh`) re-injects working context after session compaction by reading the state saved by the PreCompact hook and restoring the current branch, timestamp, and modified files.
+
+✨ The **`## Claude-Specific Behavior`** section in all 5 agent templates has been filled with three recommended practices: updating the project instructions file after every correction, planning before complex tasks, and running `/simplify` for code quality review after changes.
+
+🔧 Templates, commands, and skills were translated to English to standardize the language across all repository artifacts.
+
+## [0.7.0] - 2026-03-29
+
+✨ The feature-lifecycle gained a **Phase 0: Research & Roadmap**, with the `/octopus:doc-research` command for interactive brainstorming sessions that generate tracked items (`RM-NNN`) in `docs/roadmap.md`. Research documents are persisted under `docs/research/` for future reference. The CLAUDE.md template was updated with a Roadmap & Backlog section, and the `/octopus:docs` command (a Context7 wrapper with no Octopus-specific logic) was removed.
+
 ## [0.6.0] - 2026-03-29
 
 ♻️ This release removes legacy features that were no longer needed. The `.env` file was renamed to `.env.octopus` to avoid naming collisions in projects that use Octopus as a submodule. Support for `.octopus-context.md` was removed in favor of knowledge modules, which offer a more modular and structured approach to project context. The `stacks/` directory and automatic migration logic were eliminated — projects should use `rules:` directly in `.octopus.yml`. Documentation templates (RFC, Spec, ADR, Impl Prompt) were moved from `knowledge/_templates/` to a top-level `templates/` directory, making their purpose clearer.
