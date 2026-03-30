@@ -33,6 +33,7 @@ declare -A OCTOPUS_KNOWLEDGE_ROLES=()   # key=role, value=comma-separated module
 declare -a OCTOPUS_PERMISSIONS_ALLOW=()
 declare -a OCTOPUS_PERMISSIONS_DENY=()
 OCTOPUS_PERMISSIONS_MODE=""             # "explicit" | "defaults" | ""
+OCTOPUS_EFFORT_LEVEL=""                 # "low" | "medium" | "high" | "max"
 
 parse_octopus_yml() {
   local file="$1"
@@ -73,8 +74,8 @@ parse_octopus_yml() {
       continue
     fi
 
-    # Handle inline string value: context: path/to/file, knowledge_dir: docs/ai
-    if [[ "$line" =~ ^([a-z][a-z_]*):[[:space:]]+([^#\[]+)[[:space:]]*$ ]]; then
+    # Handle inline string value: context: path/to/file, knowledge_dir: docs/ai, effortLevel: high
+    if [[ "$line" =~ ^([a-zA-Z][a-zA-Z_]*):[[:space:]]+([^#\[]+)[[:space:]]*$ ]]; then
       local key="${BASH_REMATCH[1]}"
       local val="${BASH_REMATCH[2]}"
       # Trim trailing whitespace
@@ -82,6 +83,7 @@ parse_octopus_yml() {
       case "$key" in
         hooks)         OCTOPUS_HOOKS="$val" ;;
         knowledge_dir) OCTOPUS_KNOWLEDGE_DIR="$val" ;;
+        effortLevel)   OCTOPUS_EFFORT_LEVEL="$val" ;;
       esac
       # Don't set current_section — this is an inline value, not a section
       continue
@@ -808,6 +810,43 @@ PYEOF
   echo "  → Permissions injected into $MANIFEST_DELIVERY_HOOKS_TARGET"
 }
 
+deliver_effort_level() {
+  local agent="$1"
+  if [[ -z "$OCTOPUS_EFFORT_LEVEL" ]]; then return; fi
+  if [[ "$agent" != "claude" ]]; then return; fi
+  if [[ "$MANIFEST_DELIVERY_HOOKS_METHOD" != "settings_json" ]]; then return; fi
+
+  local settings_file="$PROJECT_ROOT/$MANIFEST_DELIVERY_HOOKS_TARGET"
+
+  if [[ ! -f "$settings_file" ]]; then
+    echo "WARNING: settings.json not found at $MANIFEST_DELIVERY_HOOKS_TARGET. Skipping effortLevel for $agent."
+    return
+  fi
+
+  echo "Injecting effortLevel into $MANIFEST_DELIVERY_HOOKS_TARGET for $agent..."
+
+  python3 - "$settings_file" "$OCTOPUS_EFFORT_LEVEL" << 'PYEOF' || return $?
+import json, sys
+
+settings_path, effort_level = sys.argv[1], sys.argv[2]
+
+valid = {"low", "medium", "high", "max"}
+if effort_level not in valid:
+    print(f"ERROR: Invalid effortLevel '{effort_level}'. Valid values: {sorted(valid)}", file=sys.stderr)
+    sys.exit(1)
+
+with open(settings_path) as f:
+    settings = json.load(f)
+
+settings["effortLevel"] = effort_level
+
+with open(settings_path, "w") as f:
+    json.dump(settings, f, indent=2)
+    f.write("\n")
+PYEOF
+  echo "  → effortLevel=${OCTOPUS_EFFORT_LEVEL} injected into $MANIFEST_DELIVERY_HOOKS_TARGET"
+}
+
 # Core files in fixed concatenation order
 CORE_FILES=(
   "core/guidelines.md"
@@ -1372,6 +1411,7 @@ for agent in "${OCTOPUS_AGENTS[@]}"; do
   deliver_mcp "$agent"
   deliver_hooks "$agent"
   deliver_permissions "$agent"
+  deliver_effort_level "$agent"
   collect_gitignore_entries "$agent"
 done
 
