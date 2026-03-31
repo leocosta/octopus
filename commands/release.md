@@ -29,7 +29,7 @@ This command creates a versioned release: generates CHANGELOG entry, creates a g
 
 ### Step 3: Generate CHANGELOG Entry
 
-Analyze the commit list and write a **narrative text in the language the user is using in the conversation** with emojis mapped to commit types:
+Analyze the commit list and write a **narrative text following the project's language rules** (check `rules/common/language.md` — default is English) with emojis mapped to commit types:
 
 | Type | Emoji |
 |------|-------|
