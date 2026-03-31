@@ -2,11 +2,17 @@
 set -euo pipefail
 
 OCTOPUS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# Self-setup: if .octopus.yml exists inside OCTOPUS_DIR, use OCTOPUS_DIR as PROJECT_ROOT
-if [[ -z "${PROJECT_ROOT:-}" && -f "$OCTOPUS_DIR/.octopus.yml" ]]; then
-  PROJECT_ROOT="$OCTOPUS_DIR"
-else
-  PROJECT_ROOT="${PROJECT_ROOT:-$(cd "$OCTOPUS_DIR/.." && pwd)}"
+if [[ -z "${PROJECT_ROOT:-}" ]]; then
+  _PARENT_DIR="$(cd "$OCTOPUS_DIR/.." && pwd)"
+  if [[ -f "$_PARENT_DIR/.octopus.yml" ]]; then
+    # Submodule mode: parent project owns the config
+    PROJECT_ROOT="$_PARENT_DIR"
+  elif [[ -f "$OCTOPUS_DIR/.octopus.yml" ]]; then
+    # Self-setup: octopus itself is the root project
+    PROJECT_ROOT="$OCTOPUS_DIR"
+  else
+    PROJECT_ROOT="$_PARENT_DIR"
+  fi
 fi
 OCTOPUS_CLI_REL="$(python3 -c "import os; print(os.path.relpath('$OCTOPUS_DIR/cli/octopus.sh', '$PROJECT_ROOT'))")"
 
