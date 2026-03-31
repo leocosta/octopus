@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.0] - 2026-03-30
+
+✨ This release introduces **Language Rules** (RM-005), making Octopus aware of each project's language requirements. The `rules/common/language.md` rule has been reworked from a static "English only" directive into a behavioral detection rule: the AI now reads project context — existing documentation, commit history, and translation files — to infer the correct language for each artifact type, never defaulting to the conversation language.
+
+✨ For projects with explicit requirements, a new `language:` field is available in `.octopus.yml`, supporting both short form (`language: pt-br`) and per-scope form (`docs:`, `code:`, `ui:`). `setup.sh` automatically generates a `language.local.md` in each configured CA's rules directory, eliminating duplication. For more complex cases, the `.octopus/` directory serves as a single source of truth for project-level overrides — `setup.sh` distributes any `.local.md` file found there to all configured agents.
+
+♻️ Internally, rule delivery for native-rules agents (Claude) was refactored from a directory symlink to **per-file symlinks**, enabling the generated `language.local.md` to coexist alongside the original Octopus rule files.
+
+📝 Documentation updated: capability matrix, new "Language Configuration" section in the README, RM-005 spec, and roadmap.
+
+🧪 Integration tests updated to reflect the new per-file symlink structure.
+
 ## [0.8.0] - 2026-03-30
 
 This release introduces four new manifest fields for the Claude agent, all inspired by Boris Cherny's Claude Code tips.
