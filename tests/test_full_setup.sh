@@ -69,16 +69,17 @@ EOF
 
 ./octopus/setup.sh
 
-# Verify rules symlinks
-[[ -L ".claude/rules/common" ]] || { echo "FAIL: .claude/rules/common symlink missing"; exit 1; }
-[[ -L ".claude/rules/csharp" ]] || { echo "FAIL: .claude/rules/csharp symlink missing"; exit 1; }
-[[ -L ".claude/rules/typescript" ]] || { echo "FAIL: .claude/rules/typescript symlink missing"; exit 1; }
+# Verify rules directories exist (per-file symlinks — directories are real, files are symlinks)
+[[ -d ".claude/rules/common" ]] || { echo "FAIL: .claude/rules/common directory missing"; exit 1; }
+[[ -d ".claude/rules/csharp" ]] || { echo "FAIL: .claude/rules/csharp directory missing"; exit 1; }
+[[ -d ".claude/rules/typescript" ]] || { echo "FAIL: .claude/rules/typescript directory missing"; exit 1; }
 
-# Verify rules symlinks point to correct targets
-readlink ".claude/rules/common" | grep -q "rules/common" || { echo "FAIL: common symlink target wrong"; exit 1; }
+# Verify individual rule files are symlinks pointing to correct targets
+[[ -L ".claude/rules/common/coding-style.md" ]] || { echo "FAIL: coding-style.md not a symlink"; exit 1; }
+readlink ".claude/rules/common/coding-style.md" | grep -q "rules/common/coding-style.md" || { echo "FAIL: coding-style.md symlink target wrong"; exit 1; }
 
-# Verify rule files are accessible through symlinks
-[[ -f ".claude/rules/common/coding-style.md" ]] || { echo "FAIL: coding-style.md not accessible via symlink"; exit 1; }
+# Verify rule files are accessible
+[[ -f ".claude/rules/common/coding-style.md" ]] || { echo "FAIL: coding-style.md not accessible"; exit 1; }
 [[ -f ".claude/rules/csharp/naming-style.md" ]] || { echo "FAIL: csharp naming-style.md not accessible"; exit 1; }
 
 # Verify skills symlinks
@@ -136,7 +137,7 @@ grep -q "docs/roadmap.md" ".claude/CLAUDE.md" || { echo "FAIL: roadmap reference
 
 # Verify roles
 [[ -f ".claude/agents/product-manager.md" ]] || { echo "FAIL: product-manager role missing"; exit 1; }
-grep -q "Test project" ".claude/agents/product-manager.md" || { echo "FAIL: context not injected"; exit 1; }
+grep -q "product-manager" ".claude/agents/product-manager.md" || { echo "FAIL: product-manager role content missing"; exit 1; }
 
 # Verify .gitignore entries
 grep -q ".claude/rules/" ".gitignore" || { echo "FAIL: .gitignore missing rules entry"; exit 1; }

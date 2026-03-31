@@ -7,6 +7,17 @@
 rules:
   - typescript
 
+# Language configuration (optional — AI auto-detects from docs/, git log, and locales/ otherwise)
+# Use for new projects with no history or to enforce a specific language explicitly.
+# Short form (applies to all artifact types):
+# language: en
+#
+# Per-scope form:
+# language:
+#   docs: pt-br    # specs, ADRs, RFCs, commit messages, PR descriptions
+#   code: en       # identifiers (always en), code comments
+#   ui: pt-br      # user-facing messages, UI text, app copy
+
 # Skills (symlinked to .claude/skills/)
 # Available: adr, backend-patterns, context-budget, continuous-learning,
 #            e2e-testing, feature-lifecycle, security-scan

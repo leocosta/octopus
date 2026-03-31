@@ -47,7 +47,7 @@ How Octopus delivers content to each Code Assistant:
 |---|---|---|---|---|---|
 | **Output file** | `.claude/CLAUDE.md` | `.github/copilot-instructions.md` | `AGENTS.md` | `ANTIGRAVITY.md` | `.opencode/rules.md` |
 | **Content mode** | Template | Concatenate | Concatenate | Concatenate | Concatenate |
-| **Rules** | Symlinked to `.claude/rules/` | Inlined | Inlined | Inlined | Inlined |
+| **Rules** | Per-file symlinks in `.claude/rules/` | Inlined | Inlined | Inlined | Inlined |
 | **Skills** | Symlinked to `.claude/skills/` | Inlined | Inlined | Inlined | Inlined |
 | **Hooks** | `settings.json` lifecycle hooks | Quality rules inlined | Quality rules inlined | Quality rules inlined | Quality rules inlined |
 | **Commands** | `.claude/commands/` (slash commands) | Inlined section | Inlined section | Inlined section | Inlined section |
@@ -182,6 +182,23 @@ Language-specific coding standards applied to all agents.
 1. Create a directory: `octopus/rules/<name>/`
 2. Add `.md` files inside it
 3. Add `- <name>` to the `rules:` list in `.octopus.yml`
+
+### Language Configuration
+
+By default, the AI detects the project's language from existing docs, git history, and locales/. To configure language explicitly, add `language:` to `.octopus.yml`:
+
+```yaml
+# Short form (applies to all artifact types):
+language: en
+
+# Per-scope form:
+language:
+  docs: pt-br    # specs, ADRs, commits, PR descriptions
+  code: en       # code comments (identifiers are always English)
+  ui: pt-br      # user-facing messages and UI copy
+```
+
+**Project-level overrides**: create `.octopus/rules/common/language.local.md` in your repo root. `setup.sh` distributes it to all configured agents automatically — no duplication across agent directories. The `.local.md` convention extends to any rule file under `.octopus/rules/`.
 
 ### Skills
 
@@ -513,6 +530,15 @@ octopus/
 ├── cli/                    # CLI utilities for workflow automation
 ├── setup.sh                # Main generation script
 └── .octopus.example.yml    # Configuration template
+```
+
+In your repo root (alongside the submodule):
+
+```
+├── .octopus/               # (optional) project-level Octopus overrides
+│   └── rules/
+│       └── common/
+│           └── language.local.md   # distributed by setup.sh to all configured agents
 ```
 
 ## Troubleshooting

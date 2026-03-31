@@ -34,6 +34,9 @@ declare -a OCTOPUS_PERMISSIONS_ALLOW=()
 declare -a OCTOPUS_PERMISSIONS_DENY=()
 OCTOPUS_PERMISSIONS_MODE=""             # "explicit" | "defaults" | ""
 OCTOPUS_EFFORT_LEVEL=""                 # "low" | "medium" | "high" | "max"
+OCTOPUS_LANGUAGE_DOCS=""    # language for docs/commits/PRs (empty = auto-detect)
+OCTOPUS_LANGUAGE_CODE=""    # language for code comments (empty = auto-detect)
+OCTOPUS_LANGUAGE_UI=""      # language for UI/user-facing content (empty = auto-detect)
 
 parse_octopus_yml() {
   local file="$1"
@@ -84,6 +87,11 @@ parse_octopus_yml() {
         hooks)         OCTOPUS_HOOKS="$val" ;;
         knowledge_dir) OCTOPUS_KNOWLEDGE_DIR="$val" ;;
         effortLevel)   OCTOPUS_EFFORT_LEVEL="$val" ;;
+        language)
+          OCTOPUS_LANGUAGE_DOCS="$val"
+          OCTOPUS_LANGUAGE_CODE="$val"
+          OCTOPUS_LANGUAGE_UI="$val"
+          ;;
       esac
       # Don't set current_section — this is an inline value, not a section
       continue
@@ -125,6 +133,21 @@ parse_octopus_yml() {
       fi
       if [[ "$current_knowledge_subsection" == "roles" && "$line" =~ ^[[:space:]]+([a-zA-Z][a-zA-Z0-9_-]*):[[:space:]]*$ ]]; then
         current_knowledge_role="${BASH_REMATCH[1]}"
+        continue
+      fi
+    fi
+
+    # Handle language: sub-keys (docs:, code:, ui:)
+    if [[ "$current_section" == "language" ]]; then
+      if [[ "$line" =~ ^[[:space:]]+(docs|code|ui):[[:space:]]+(.+)$ ]]; then
+        local lang_key="${BASH_REMATCH[1]}"
+        local lang_val="${BASH_REMATCH[2]}"
+        lang_val="${lang_val%"${lang_val##*[![:space:]]}"}"
+        case "$lang_key" in
+          docs) OCTOPUS_LANGUAGE_DOCS="$lang_val" ;;
+          code) OCTOPUS_LANGUAGE_CODE="$lang_val" ;;
+          ui)   OCTOPUS_LANGUAGE_UI="$lang_val" ;;
+        esac
         continue
       fi
     fi
@@ -478,6 +501,47 @@ concatenate_from_manifest() {
         cat "$rule_file" >> "$full_output"
       done
     done
+
+    # Append project rule overrides from .octopus/rules/ (.local.md files win by position)
+    local octopus_rules_overrides="$PROJECT_ROOT/.octopus/rules"
+    if [[ -d "$octopus_rules_overrides" ]]; then
+      for rule in "${OCTOPUS_RULES[@]}"; do
+        local override_dir="$octopus_rules_overrides/$rule"
+        [[ -d "$override_dir" ]] || continue
+        for local_file in "$override_dir"/*.local.md; do
+          [[ -f "$local_file" ]] || continue
+          echo "" >> "$full_output"
+          cat "$local_file" >> "$full_output"
+        done
+      done
+    fi
+
+    # Only inject language override when 'common' rule set is active
+    if [[ " ${OCTOPUS_RULES[*]} " == *" common "* ]]; then
+      # If language: is configured but no .octopus/rules/common/language.local.md exists,
+      # generate the override inline (so concat agents also get explicit language rules)
+      if [[ -n "$OCTOPUS_LANGUAGE_DOCS" || -n "$OCTOPUS_LANGUAGE_CODE" || -n "$OCTOPUS_LANGUAGE_UI" ]]; then
+        if [[ ! -f "$PROJECT_ROOT/.octopus/rules/common/language.local.md" ]]; then
+          local docs="${OCTOPUS_LANGUAGE_DOCS:-en}"
+          local code="${OCTOPUS_LANGUAGE_CODE:-en}"
+          local ui="${OCTOPUS_LANGUAGE_UI:-en}"
+          {
+            echo ""
+            echo "# Language (Project Override)"
+            echo ""
+            echo "This file overrides \`language.md\` for this project."
+            echo "Configured explicitly in \`.octopus.yml\`."
+            echo ""
+            echo "- **Documentation & deliverables** (specs, ADRs, commits, PRs): **${docs}**"
+            echo "- **Code comments**: **${code}**"
+            echo "- **Code identifiers** (function/class/variable names): **en** (always English)"
+            echo "- **User-facing content** (UI, messages, copy): **${ui}**"
+            echo ""
+            echo "Conversation language does NOT influence these rules."
+          } >> "$full_output"
+        fi
+      fi
+    fi
   fi
 
   # Append skills (only if NOT delivered natively)
@@ -513,6 +577,46 @@ generate_main_output() {
   fi
 }
 
+# Generates language.local.md in a rules directory if language is configured.
+# Priority: .octopus/rules/common/language.local.md file > language: config > nothing
+_generate_language_local() {
+  local target_dir="$1"
+
+  # Priority 1: project .octopus/rules/common/language.local.md
+  local project_override="$PROJECT_ROOT/.octopus/rules/common/language.local.md"
+  if [[ -f "$project_override" ]]; then
+    cp "$project_override" "$target_dir/language.local.md"
+    echo "  -> language.local.md (from .octopus/rules/common/)"
+    return
+  fi
+
+  # Priority 2: generate from language: config in .octopus.yml
+  if [[ -n "$OCTOPUS_LANGUAGE_DOCS" || -n "$OCTOPUS_LANGUAGE_CODE" || -n "$OCTOPUS_LANGUAGE_UI" ]]; then
+    local docs="${OCTOPUS_LANGUAGE_DOCS:-en}"
+    local code="${OCTOPUS_LANGUAGE_CODE:-en}"
+    local ui="${OCTOPUS_LANGUAGE_UI:-en}"
+    cat > "$target_dir/language.local.md" << 'LANGEOF'
+# Language (Project Override)
+
+This file overrides `language.md` for this project.
+Configured explicitly in `.octopus.yml`.
+LANGEOF
+    cat >> "$target_dir/language.local.md" << LANGEOF
+
+- **Documentation & deliverables** (specs, ADRs, commits, PRs): **${docs}**
+- **Code comments**: **${code}**
+- **Code identifiers** (function/class/variable names): **en** (always English)
+- **User-facing content** (UI, messages, copy): **${ui}**
+
+Conversation language does NOT influence these rules.
+LANGEOF
+    echo "  -> language.local.md (generated from language: config)"
+    return
+  fi
+
+  # No override — language.md detection rule is sufficient, no .local.md needed
+}
+
 deliver_rules() {
   local agent="$1"
   if [[ "$MANIFEST_CAP_RULES" != "true" ]]; then return; fi
@@ -530,8 +634,16 @@ deliver_rules() {
         echo "  WARNING: Rules directory '$source_dir' not found. Skipping."
         continue
       fi
-      ln -s "$source_dir" "$target/$rule"
-      echo "  -> ${MANIFEST_DELIVERY_RULES_TARGET}$rule"
+      mkdir -p "$target/$rule"
+      for f in "$source_dir"/*.md; do
+        [[ -f "$f" ]] || continue
+        ln -sf "$f" "$target/$rule/$(basename "$f")"
+      done
+      echo "  -> ${MANIFEST_DELIVERY_RULES_TARGET}$rule/ (per-file symlinks)"
+      # Generate language.local.md for the common rule directory
+      if [[ "$rule" == "common" ]]; then
+        _generate_language_local "$target/$rule"
+      fi
     done
   fi
 }
@@ -1394,6 +1506,7 @@ echo "Workflow:  $OCTOPUS_WORKFLOW"
 echo "Roles:     ${OCTOPUS_ROLES[*]:-none}"
 echo "Reviewers: ${OCTOPUS_REVIEWERS[*]:-none}"
 echo "Knowledge: ${KNOWLEDGE_MODULES[*]:-none}"
+echo "Language:  docs=${OCTOPUS_LANGUAGE_DOCS:-auto} code=${OCTOPUS_LANGUAGE_CODE:-auto} ui=${OCTOPUS_LANGUAGE_UI:-auto}"
 echo ""
 
 # 2. Validate CLI dependencies
