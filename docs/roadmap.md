@@ -14,8 +14,9 @@ and add a link to the created document.
 
 ## In Progress
 
-<!-- Items move here when work begins -->
-<!-- Update status to: in progress → [Spec](docs/specs/slug.md) -->
+| ID | Title | Resolution | Date |
+|----|-------|------------|------|
+| RM-005 | Language rules — behavioral detection + per-project override | in progress → [Spec](specs/language-rules.md) | 2026-03-30 |
 
 ---
 
