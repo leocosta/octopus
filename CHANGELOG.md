@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.1] - 2026-03-31
+
+🐛 Fixes `PROJECT_ROOT` detection when octopus is used as a submodule inside a project that also has `.octopus.yml`. Previously, the self-setup condition was incorrectly triggered because octopus's own `.octopus.yml` exists in `OCTOPUS_DIR`, causing all generated files (commands, rules, agents) to be written to `<project>/octopus/.claude/` instead of `<project>/.claude/`. The fix checks the parent directory for `.octopus.yml` first (submodule mode), falling back to self-setup only when octopus is the root project.
+
 ## [0.9.0] - 2026-03-30
 
 ✨ This release introduces **Language Rules** (RM-005), making Octopus aware of each project's language requirements. The `rules/common/language.md` rule has been reworked from a static "English only" directive into a behavioral detection rule: the AI now reads project context — existing documentation, commit history, and translation files — to infer the correct language for each artifact type, never defaulting to the conversation language.
