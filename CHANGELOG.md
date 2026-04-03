@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.10.0] - 2026-04-03
+
+We've introduced a new `.NET` backend specialist skill, expanding the capabilities of our agent roles to include full stack detection and specific instructions for `.NET` projects (covering Minimal APIs, EF Core, and MediatR) ✨. Additionally, we fixed an issue to ensure that the `CHANGELOG` generation correctly prioritizes the project's language rules over the conversational language 🐛.
+
+
 ## [0.9.1] - 2026-03-31
 
 🐛 Fixes `PROJECT_ROOT` detection when octopus is used as a submodule inside a project that also has `.octopus.yml`. Previously, the self-setup condition was incorrectly triggered because octopus's own `.octopus.yml` exists in `OCTOPUS_DIR`, causing all generated files (commands, rules, agents) to be written to `<project>/octopus/.claude/` instead of `<project>/.claude/`. The fix checks the parent directory for `.octopus.yml` first (submodule mode), falling back to self-setup only when octopus is the root project.
