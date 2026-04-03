@@ -23,7 +23,7 @@ delivery:
     target: .opencode/settings.json
   commands:
     method: file_per_command
-    target: .opencode/command/
+    target: .opencode/commands/
     prefix: ""
   agents:
     method: file_per_role
@@ -33,7 +33,7 @@ delivery:
     target: .opencode/settings.json
 
 gitignore_extra:
-  - .opencode/command/
+  - .opencode/commands/
   - .opencode/rules/
   - .opencode/skills/
   - .opencode/agents/
