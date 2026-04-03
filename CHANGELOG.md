@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.11.0] - 2026-04-03
+
+✨ This release makes the Octopus release flow keep its own documentation in sync. The `release commit-changelog` step now updates deterministic version references in `README.md`, so the version badge and manual update examples advance together with the approved release version and are committed in the same release commit.
+
+📝 The release command documentation now reflects that README sync behavior, the workflow command table no longer advertises the undocumented `/octopus:docs` command, and commit attribution guidance was expanded with an explicit `Co-authored-by` convention for AI-assisted changes. 🧪 Release coverage now verifies successful README sync, validates that release commits include both `CHANGELOG.md` and `README.md`, and fails clearly when README version anchors are malformed.
+
 ## [0.10.0] - 2026-04-03
 
 We've introduced a new `.NET` backend specialist skill, expanding the capabilities of our agent roles to include full stack detection and specific instructions for `.NET` projects (covering Minimal APIs, EF Core, and MediatR) ✨. Additionally, we fixed an issue to ensure that the `CHANGELOG` generation correctly prioritizes the project's language rules over the conversational language 🐛.
