@@ -106,7 +106,7 @@ rules:
   - typescript
 
 # Skills — reusable AI capabilities
-# Available: adr, backend-patterns, context-budget, continuous-learning, e2e-testing, feature-lifecycle, security-scan
+# Available: adr, backend-patterns, context-budget, continuous-learning, dotnet, e2e-testing, feature-lifecycle, security-scan
 skills:
   - adr
   - e2e-testing
@@ -204,7 +204,7 @@ language:
 
 Reusable AI capabilities that provide specialized knowledge.
 
-**Available skills:** `adr`, `backend-patterns`, `context-budget`, `continuous-learning`, `e2e-testing`, `feature-lifecycle`, `security-scan`
+**Available skills:** `adr`, `backend-patterns`, `context-budget`, `continuous-learning`, `dotnet`, `e2e-testing`, `feature-lifecycle`, `security-scan`
 
 **How it works:**
 1. Add skills to `.octopus.yml`:
@@ -506,6 +506,7 @@ octopus/
 │   └── python/             # Python rules
 ├── skills/                 # Reusable AI capabilities (each has SKILL.md)
 │   ├── adr/
+│   ├── dotnet/             # .NET backend patterns (Minimal APIs, EF Core, MediatR, etc.)
 │   ├── feature-lifecycle/  # Documentation decision framework
 │   ├── continuous-learning/
 │   └── ...

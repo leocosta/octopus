@@ -13,3 +13,5 @@
 .opencode/skills/
 .opencode/agents/
 .opencode/settings.json
+.claude/knowledge/
+AGENTS.md

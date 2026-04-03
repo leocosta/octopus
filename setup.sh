@@ -462,12 +462,23 @@ generate_from_template() {
   done
   skills_lines="${skills_lines%$'\n'}"
 
+  # Build core content from CORE_FILES
+  local core_content=""
+  for core_file in "${CORE_FILES[@]}"; do
+    if [[ -f "$OCTOPUS_DIR/$core_file" ]]; then
+      core_content+="$(cat "$OCTOPUS_DIR/$core_file")"
+      core_content+=$'\n\n'
+    fi
+  done
+
   local template="$OCTOPUS_DIR/agents/$agent/CLAUDE.md"
-  awk -v rules="$rules_lines" -v skills="$skills_lines" '{
+  awk -v rules="$rules_lines" -v skills="$skills_lines" -v core="$core_content" '{
     if ($0 == "{{RULES}}") {
       print rules
     } else if ($0 == "{{SKILLS}}") {
       if (skills != "") print skills
+    } else if ($0 == "{{CORE}}") {
+      if (core != "") print core
     } else {
       print
     }
