@@ -1,17 +1,17 @@
 ---
 name: release
-description: Create a versioned release with CHANGELOG and GitHub Release
+description: Create a versioned release with CHANGELOG, README sync, and GitHub Release
 cli: octopus.sh release
 ---
 
 ---
-description: Create a versioned release with CHANGELOG and GitHub Release
+description: Create a versioned release with CHANGELOG, README sync, and GitHub Release
 agent: code
 ---
 
 ## Instructions
 
-This command creates a versioned release: generates CHANGELOG entry, creates a git tag with release notes, and optionally publishes a GitHub Release.
+This command creates a versioned release: generates a CHANGELOG entry, syncs deterministic version references in `README.md`, creates a git tag with release notes, and optionally publishes a GitHub Release.
 
 ### Step 1: Collect Data
 
@@ -62,6 +62,8 @@ Write a condensed version (2-3 sentences) of the CHANGELOG entry for the tag and
 
 1. Write the CHANGELOG entry to `CHANGELOG.md` (prepend)
 2. Run: `./octopus/cli/octopus.sh release commit-changelog <version>`
+   - This also syncs version references in `README.md` when the expected Octopus patterns are present
+   - The release commit should include both `CHANGELOG.md` and `README.md` when `README.md` was updated
 3. Save the release notes summary to a temporary file
 4. Run: `./octopus/cli/octopus.sh release create-tag <version> <temp-file>`
 5. Run: `git push && git push --tags`

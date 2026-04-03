@@ -85,8 +85,8 @@ tag_msg=$(git tag -l --format='%(contents)' v2.1.0)
 echo "$tag_msg" | grep -q "Release notes for v2.1.0" || { echo "FAIL: tag message wrong"; echo "Got: $tag_msg"; exit 1; }
 echo "PASS: create-tag"
 
-# --- Test 8: commit-changelog stages and commits ---
-echo "Test 8: commit-changelog"
+# --- Test 8: commit-changelog works without README.md ---
+echo "Test 8: commit-changelog without README.md"
 
 cd "$TMPDIR"
 echo "## [2.2.0] - 2026-03-22" > CHANGELOG.md
@@ -94,10 +94,72 @@ echo "Some release notes" >> CHANGELOG.md
 "$SCRIPT_DIR/cli/octopus.sh" release commit-changelog 2.2.0 2>&1
 last_msg=$(git log -1 --format="%s")
 [[ "$last_msg" == "chore(release): v2.2.0" ]] || { echo "FAIL: commit message should be 'chore(release): v2.2.0'"; echo "Got: $last_msg"; exit 1; }
-echo "PASS: commit-changelog"
+echo "PASS: commit-changelog without README.md"
 
-# --- Test 9: create-gh-release calls gh (mocked) ---
-echo "Test 9: create-gh-release"
+# --- Test 9: commit-changelog syncs README version references ---
+echo "Test 9: commit-changelog syncs README.md"
+
+SYNC_REPO="$TMPDIR/sync-repo"
+mkdir -p "$SYNC_REPO"
+git -C "$SYNC_REPO" init -q
+git -C "$SYNC_REPO" config user.email "test@test.com"
+git -C "$SYNC_REPO" config user.name "Test"
+cat > "$SYNC_REPO/README.md" << 'EOF'
+![Version](https://img.shields.io/badge/version-v2.1.0-blue)
+
+```bash
+cd octopus && git fetch --tags && git checkout v2.1.0 && cd ..
+./octopus/setup.sh
+git add octopus && git commit -m "chore: update octopus to v2.1.0"
+```
+EOF
+cat > "$SYNC_REPO/CHANGELOG.md" << 'EOF'
+## [Unreleased]
+Pending notes
+EOF
+git -C "$SYNC_REPO" add README.md CHANGELOG.md
+git -C "$SYNC_REPO" commit -m "docs: seed release files" -q
+cat > "$SYNC_REPO/CHANGELOG.md" << 'EOF'
+## [2.2.0] - 2026-03-22
+Some release notes
+EOF
+cd "$SYNC_REPO"
+"$SCRIPT_DIR/cli/octopus.sh" release commit-changelog 2.2.0 2>&1
+grep -q 'version-v2.2.0-blue' README.md || { echo "FAIL: README badge should be updated"; cat README.md; exit 1; }
+grep -q 'git checkout v2.2.0' README.md || { echo "FAIL: README checkout example should be updated"; cat README.md; exit 1; }
+grep -q 'chore: update octopus to v2.2.0' README.md || { echo "FAIL: README commit example should be updated"; cat README.md; exit 1; }
+last_files=$(git show --name-only --format= HEAD)
+echo "$last_files" | grep -q '^CHANGELOG.md$' || { echo "FAIL: release commit should include CHANGELOG.md"; echo "$last_files"; exit 1; }
+echo "$last_files" | grep -q '^README.md$' || { echo "FAIL: release commit should include README.md"; echo "$last_files"; exit 1; }
+echo "PASS: commit-changelog syncs README.md"
+
+# --- Test 10: commit-changelog fails on malformed README sync anchor ---
+echo "Test 10: commit-changelog fails on malformed README.md"
+
+BROKEN_REPO="$TMPDIR/broken-repo"
+mkdir -p "$BROKEN_REPO"
+git -C "$BROKEN_REPO" init -q
+git -C "$BROKEN_REPO" config user.email "test@test.com"
+git -C "$BROKEN_REPO" config user.name "Test"
+cat > "$BROKEN_REPO/README.md" << 'EOF'
+![Version](https://img.shields.io/badge/version-latest-blue)
+EOF
+cat > "$BROKEN_REPO/CHANGELOG.md" << 'EOF'
+## [2.2.0] - 2026-03-22
+Some release notes
+EOF
+git -C "$BROKEN_REPO" add README.md CHANGELOG.md
+git -C "$BROKEN_REPO" commit -m "docs: seed broken readme" -q
+cd "$BROKEN_REPO"
+if "$SCRIPT_DIR/cli/octopus.sh" release commit-changelog 2.2.0 > "$TMPDIR/broken-output.txt" 2>&1; then
+  echo "FAIL: commit-changelog should fail when README sync pattern is malformed"
+  exit 1
+fi
+grep -q "README version sync failed" "$TMPDIR/broken-output.txt" || { echo "FAIL: should explain README sync failure"; cat "$TMPDIR/broken-output.txt"; exit 1; }
+echo "PASS: commit-changelog fails on malformed README.md"
+
+# --- Test 11: create-gh-release calls gh (mocked) ---
+echo "Test 11: create-gh-release"
 
 MOCK_BIN="$TMPDIR/mock_bin"
 mkdir -p "$MOCK_BIN"

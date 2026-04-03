@@ -428,7 +428,7 @@ PR and branch automation commands powered by GitHub CLI (`gh`).
 | `/octopus:doc-rfc` | Bootstrap an RFC document from template |
 | `/octopus:doc-spec` | Bootstrap a spec document from template |
 | `/octopus:doc-adr` | Bootstrap an ADR document from template |
-| `/octopus:docs` | Documentation commands |
+| `/octopus:release` | Create a release, sync version docs, and tag it |
 | `/octopus:update` | Update Octopus to a newer version |
 
 **How it works:**

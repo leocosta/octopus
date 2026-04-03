@@ -33,6 +33,76 @@ strip_v() {
   echo "${1#v}"
 }
 
+sync_release_readme() {
+  local version="${1:-}"
+  local readme="README.md"
+
+  if [[ -z "$version" ]]; then
+    echo "Usage: sync_release_readme <version>"
+    exit 1
+  fi
+
+  if [[ ! -f "$readme" ]]; then
+    echo "README.md not found. Skipping README version sync."
+    return 0
+  fi
+
+  python3 - "$readme" "$version" <<'PY'
+import pathlib
+import re
+import sys
+
+readme_path = pathlib.Path(sys.argv[1])
+version = sys.argv[2]
+original = readme_path.read_text()
+updated = original
+
+patterns = [
+    (
+        "version badge",
+        r'!\[Version\]\(https://img\.shields\.io/badge/version-v\d+\.\d+\.\d+-blue\)',
+        f'![Version](https://img.shields.io/badge/version-{version}-blue)',
+        '![Version](https://img.shields.io/badge/version-',
+    ),
+    (
+        "manual update checkout command",
+        r'cd octopus && git fetch --tags && git checkout v\d+\.\d+\.\d+ && cd \.\.',
+        f'cd octopus && git fetch --tags && git checkout {version} && cd ..',
+        'cd octopus && git fetch --tags && git checkout ',
+    ),
+    (
+        "manual update commit example",
+        r'git add octopus && git commit -m "chore: update octopus to v\d+\.\d+\.\d+"',
+        f'git add octopus && git commit -m "chore: update octopus to {version}"',
+        'git add octopus && git commit -m "chore: update octopus to ',
+    ),
+]
+
+errors = []
+
+for label, pattern, replacement, anchor in patterns:
+    if anchor not in updated:
+        continue
+
+    next_text, count = re.subn(pattern, replacement, updated)
+    if count == 0:
+        errors.append(label)
+        continue
+    updated = next_text
+
+if errors:
+    labels = ", ".join(errors)
+    print(f"ERROR: README version sync failed for: {labels}", file=sys.stderr)
+    sys.exit(1)
+
+if updated != original:
+    readme_path.write_text(updated)
+    print(f"README.md version references updated for {version}.")
+else:
+    print(f"README.md version references already current for {version}.")
+PY
+}
+
 case "$SUBCMD" in
   suggest-version)
     FROM_REF="${1:-}"
@@ -124,9 +194,13 @@ case "$SUBCMD" in
       exit 1
     fi
     [[ "$VERSION" == v* ]] || VERSION="v$VERSION"
+    sync_release_readme "$VERSION"
     git add CHANGELOG.md
+    if [[ -f README.md ]]; then
+      git add README.md
+    fi
     git commit -m "chore(release): $VERSION"
-    echo "CHANGELOG.md committed for $VERSION."
+    echo "Release docs committed for $VERSION."
     ;;
 
   create-gh-release)
