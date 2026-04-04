@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.11.3] - 2026-04-03
+
+🐛 This patch release fixes OpenCode/Kilo startup failures caused by YAML frontmatter parsing in generated agent files. Octopus now emits quoted hex values such as `color: "#800080"` for native OpenCode roles, preventing the `#` from being parsed as a comment and leaving the `color` field empty at runtime.
+
+📝 Shared role templates were aligned with the same quoted-hex format, the role-generation test suite now asserts the YAML-safe output, and the documentation knowledge module records the confirmed root cause so future agent-schema fixes start from the right constraint.
+
 ## [0.11.2] - 2026-04-03
 
 🐛 This patch release strengthens Octopus's documentation workflow by expanding the `product-manager` and `tech-writer` roles with more actionable guidance, aligning ADR instructions with the real `docs/adrs/` path, and fixing knowledge index generation so projects with knowledge enabled but no active modules still get a useful `INDEX.md` instead of silently skipping it.
