@@ -9,13 +9,14 @@ PROJECT_ROOT="$TMPDIR"
 OCTOPUS_DIR="$SCRIPT_DIR"
 
 OCTOPUS_ROLES=(product-manager)
-OCTOPUS_AGENTS=(claude copilot)
+OCTOPUS_AGENTS=(claude copilot opencode)
 declare -A OCTOPUS_AGENT_OUTPUT=()
 
 # --- Test 1: Claude gets native agent file ---
 echo "Test 1: Claude role generation"
 
-generate_roles
+load_manifest "claude"
+deliver_roles "claude"
 
 [[ -f "$TMPDIR/.claude/agents/product-manager.md" ]] || { echo "FAIL: .claude/agents/product-manager.md not created"; exit 1; }
 
@@ -36,9 +37,9 @@ echo "Test 2: Copilot role section"
 
 # First generate the copilot config (so there's a file to append to)
 OCTOPUS_CMD_NAMES=()
-concatenate_agent "copilot"
-
-generate_roles
+load_manifest "copilot"
+generate_main_output "copilot"
+deliver_roles "copilot"
 
 OUTPUT="$TMPDIR/.github/copilot-instructions.md"
 grep -q "# Role: Product-manager" "$OUTPUT" || { echo "FAIL: role section header missing from copilot"; exit 1; }
@@ -47,6 +48,24 @@ grep -q "# Role: Product-manager" "$OUTPUT" || { echo "FAIL: role section header
 ! grep -q "^model: sonnet" "$OUTPUT" || { echo "FAIL: frontmatter model leaked into copilot"; exit 1; }
 
 echo "PASS: Copilot role section"
+
+# --- Test 3: OpenCode gets native agent file with hex color ---
+echo "Test 3: OpenCode role generation"
+
+load_manifest "opencode"
+deliver_roles "opencode"
+
+[[ -f "$TMPDIR/.opencode/agents/product-manager.md" ]] || { echo "FAIL: .opencode/agents/product-manager.md not created"; exit 1; }
+
+grep -q "^name: product-manager" "$TMPDIR/.opencode/agents/product-manager.md" || { echo "FAIL: frontmatter name missing for opencode"; exit 1; }
+grep -q "^model: sonnet" "$TMPDIR/.opencode/agents/product-manager.md" || { echo "FAIL: frontmatter model missing for opencode"; exit 1; }
+grep -q "^color: #800080" "$TMPDIR/.opencode/agents/product-manager.md" || { echo "FAIL: opencode color was not normalized to hex"; exit 1; }
+
+! grep -q "{{PROJECT_CONTEXT}}" "$TMPDIR/.opencode/agents/product-manager.md" || { echo "FAIL: {{PROJECT_CONTEXT}} placeholder not replaced for opencode"; exit 1; }
+
+grep -q "General Guidelines" "$TMPDIR/.opencode/agents/product-manager.md" || { echo "FAIL: _base.md not injected for opencode"; exit 1; }
+
+echo "PASS: OpenCode role generation"
 
 rm -rf "$TMPDIR"
 echo "PASS: all role generation tests passed"

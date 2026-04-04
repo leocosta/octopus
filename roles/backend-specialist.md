@@ -2,7 +2,7 @@
 name: backend-specialist
 description: "manual start"
 model: sonnet
-color: orange
+color: #ffa500
 ---
 
 You are a Senior Backend Specialist. Your responsibility is to implement

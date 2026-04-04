@@ -368,7 +368,7 @@ A complete documentation lifecycle system that combines a decision framework ski
 - `/octopus:doc-adr` — create numbered ADR from template (`docs/adrs/NNN-<slug>.md`)
 
 **Role:** `tech-writer`  
-Use this role when you need documentation-only execution: pre-implementation RFC/spec drafting, post-implementation ADR/spec deviation reconciliation, knowledge capture, and changelog updates.
+Use this role when you need documentation-only execution with stronger editorial rigor: pre-implementation RFC/spec drafting, post-implementation ADR/spec deviation reconciliation, knowledge capture, changelog updates, and documentation audits grounded in code and evidence.
 
 **Templates:**
 - `templates/rfc.md`
@@ -380,6 +380,225 @@ Use this role when you need documentation-only execution: pre-implementation RFC
 - `feature-lifecycle` orchestrates when each artifact is needed
 - `adr` provides ADR format and decision-record guidance
 - `continuous-learning` captures post-implementation knowledge in `knowledge/<domain>/`
+
+#### Claude Code Example: Operating `tech-writer`
+
+The `tech-writer` role is most effective in Claude Code when you use it as a
+documentation-only executor with a bounded artifact, explicit evidence sources,
+and a clear output path.
+
+**Recommended `.octopus.yml`:**
+```yaml
+agents:
+  - claude
+
+roles:
+  - tech-writer
+
+workflow: true
+knowledge: true
+```
+
+Then run:
+
+```bash
+./octopus/setup.sh
+```
+
+This should generate:
+- `.claude/agents/tech-writer.md`
+- `.claude/commands/octopus:doc-research.md`
+- `.claude/commands/octopus:doc-rfc.md`
+- `.claude/commands/octopus:doc-spec.md`
+- `.claude/commands/octopus:doc-adr.md`
+- `.claude/knowledge/` (when knowledge is enabled)
+
+**Pre-flight checklist before you ask Claude to use `tech-writer`:**
+- Confirm the generated agent exists:
+  ```bash
+  ls .claude/agents/tech-writer.md
+  ```
+- Confirm the documentation commands exist:
+  ```bash
+  ls .claude/commands/octopus:doc-*.md
+  ```
+- Confirm the project memory exists when expected:
+  ```bash
+  ls knowledge/INDEX.md
+  ```
+- Confirm the target docs folders exist or can be created:
+  `docs/specs/`, `docs/rfcs/`, `docs/adrs/`, `docs/research/`
+- Decide the artifact before writing:
+  RFC, Spec, ADR, knowledge update, changelog entry, or documentation audit
+- Decide the audience before writing:
+  implementer, reviewer, operator, stakeholder, or future maintainer
+
+**What to put in the very first Claude message:**
+- Name the agent: `Use the tech-writer agent`
+- Name the artifact and exact path:
+  `Update docs/specs/webhook-retries.md`
+- Name the audience:
+  `Audience: implementers and reviewers`
+- Name the evidence:
+  `Use code, tests, ADRs, roadmap items, and knowledge modules`
+- Name the constraints:
+  `Do not modify application code`
+- Name the success criteria:
+  `The spec must be implementation-ready and must flag any evidence gaps`
+
+**How to make the agent operate well in Claude Code:**
+1. Bootstrap the right artifact first when needed:
+   - use `/octopus:doc-research` for exploratory backlog work
+   - use `/octopus:doc-rfc` for high-uncertainty or cross-team proposals
+   - use `/octopus:doc-spec` for implementation-ready design
+   - use `/octopus:doc-adr` for architecture decisions discovered during work
+2. Hand the work to the generated `tech-writer` agent, not the default coding
+   agent, when the task is documentation-first.
+3. Give the agent a precise job:
+   - target artifact
+   - target audience
+   - source-of-truth files
+   - whether code changes are forbidden
+   - expected output path
+4. Ask it to reconcile reality, not just summarize intent:
+   current code, tests, schemas, ADRs, specs, roadmap items, and PR context
+   should outweigh conversational assumptions.
+5. Ask for explicit conflict reporting:
+   if docs and code disagree, the agent should call out which artifact is stale
+   and what must be updated.
+
+**Good prompt shape:**
+```text
+Use the `tech-writer` agent for this task.
+
+Audience: implementers and reviewers.
+Goal: create or update a spec for the retry behavior of webhook delivery.
+Output: docs/specs/webhook-retries.md
+Sources of truth:
+- knowledge/INDEX.md
+- docs/roadmap.md
+- docs/adrs/
+- current webhook code
+- existing tests
+
+Constraints:
+- do not modify application code
+- mark inferred statements explicitly
+- if the implementation differs from the current spec, add a deviation note
+- if a meaningful technical decision appears, create or update an ADR
+- if a reusable lesson is confirmed, update the relevant knowledge module
+```
+
+**End-to-end example: pre-implementation spec work**
+1. Start with research if the problem is still fuzzy:
+   ```text
+   /octopus:doc-research webhook-retries
+   ```
+2. After the topic is clear, bootstrap the spec:
+   ```text
+   /octopus:doc-spec webhook-retries
+   ```
+3. Then delegate to the `tech-writer` agent with a prompt like:
+   ```text
+   Use the `tech-writer` agent.
+
+   Turn `docs/specs/webhook-retries.md` into an implementation-ready spec.
+   First inspect `knowledge/INDEX.md`, the relevant knowledge modules,
+   `docs/roadmap.md`, related ADRs, and the current webhook implementation.
+
+   The spec must cover:
+   - current behavior
+   - desired retry policy
+   - failure modes and edge cases
+   - affected modules and likely files
+   - testing strategy
+   - rollout and observability notes
+
+   Do not modify application code.
+   If evidence is missing, call out the gap instead of guessing.
+   ```
+
+**Recommended session recipe inside Claude Code**
+1. Bootstrap the artifact with the matching `/octopus:*` command when the file
+   does not exist yet.
+2. In your next message, explicitly hand the task to `tech-writer`.
+3. Point `tech-writer` to the strongest evidence first:
+   current code, tests, schemas, accepted ADRs/specs, then roadmap and commits.
+4. Require a reality check:
+   ask it to state what is confirmed, what is inferred, and what is still
+   missing.
+5. Require document maintenance, not just document creation:
+   stale sections should be updated or removed instead of silently preserved.
+6. If the work reveals a lasting lesson, require a follow-up update to
+   `knowledge/<domain>/`.
+
+**End-to-end example: post-implementation reconciliation**
+1. Use the `tech-writer` agent after code has shipped or substantially changed:
+   ```text
+   Use the `tech-writer` agent.
+
+   Reconcile the shipped webhook retry behavior with the existing docs.
+   Compare the current code, tests, PR diff, and `docs/specs/webhook-retries.md`.
+   Update the spec to match reality.
+
+   If the implementation intentionally differs from the original design,
+   add a `[DEVIATION]` note with the reason and evidence.
+   If a durable design decision was made, create or update an ADR.
+   If you confirm a reusable lesson, update the relevant knowledge module.
+
+   Do not modify application code.
+   ```
+
+**End-to-end example: release and changelog support**
+```text
+Use the `tech-writer` agent.
+
+Update `CHANGELOG.md` for the webhook retry rollout.
+Ground the entry in shipped behavior, user-facing impact, operational impact,
+and any migration or rollout notes. Keep the entry concise and factual.
+Do not include speculative benefits.
+```
+
+**Expected output from a good `tech-writer` run**
+- The target file exists at the exact requested path
+- The document names its audience and purpose clearly
+- Statements are grounded in code, tests, specs, ADRs, or clearly marked as
+  inference
+- Contradictions between implementation and docs are called out explicitly
+- Deviations from prior plans are documented, not hidden
+- Related artifacts are linked:
+  roadmap item, RFC, spec, ADR, changelog, or knowledge module
+- The agent reports unresolved gaps instead of inventing certainty
+
+**What usually goes wrong:**
+- "Document this feature" is too vague. Always name the artifact and target path.
+- Mixing implementation and documentation in one task weakens the role. If code
+  changes are needed, let an implementation agent do that separately.
+- Giving only conversational context is not enough. Point the agent at concrete
+  evidence: code, tests, specs, ADRs, roadmap items, and knowledge modules.
+- Skipping the roadmap or knowledge scan makes the output less consistent with
+  the rest of the project memory.
+
+**Troubleshooting**
+- If `tech-writer` writes generic prose:
+  tighten the prompt around artifact path, audience, and evidence sources.
+- If it summarizes intent instead of reality:
+  explicitly tell it to prioritize current code and tests over conversational
+  context.
+- If it misses a decision trail:
+  point it at `docs/adrs/`, related PRs, and the roadmap item before asking for
+  the update.
+- If it starts editing code:
+  restate the constraint `do not modify application code` and keep the task
+  scoped to documentation files only.
+- If output is too broad:
+  split the work into separate passes:
+  one for spec/RFC/ADR, another for changelog or knowledge capture.
+
+**Rule of thumb:**
+Use `tech-writer` when you want documentation that is evidence-based,
+implementation-aware, and maintained as a first-class project artifact rather
+than an afterthought.
 
 ### MCP Servers
 

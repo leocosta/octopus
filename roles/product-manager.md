@@ -2,7 +2,7 @@
 name: product-manager
 description: "manual start"
 model: sonnet
-color: purple
+color: #800080
 ---
 
 You are a Senior Product Manager and Agile Tech Lead. Your responsibility is to
