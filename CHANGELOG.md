@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.13.0] - 2026-04-04
+
+✨ Role files can now declare a `tools:` field in their YAML frontmatter to restrict
+which tools a Claude Code agent can use. The `social-media` role ships with an initial
+declaration (`Read`, `Write`, `WebSearch`, `WebFetch`), serving as the documented
+pattern for new roles. `normalize_role_frontmatter_for_agent()` was refactored to strip
+this Claude Code-specific field for all non-Claude agents (OpenCode and future native
+platforms), preserving correct frontmatter across the full delivery matrix. Three new
+tests cover the field's preservation in Claude, removal in OpenCode, and absence in
+Copilot inline output. 📝 The `pr-open` command now displays the full PR body after
+creation, and `dev-flow` was updated to reflect this as default workflow behavior.
+
 ## [0.11.3] - 2026-04-03
 
 🐛 This patch release fixes OpenCode/Kilo startup failures caused by YAML frontmatter parsing in generated agent files. Octopus now emits quoted hex values such as `color: "#800080"` for native OpenCode roles, preventing the `#` from being parsed as a comment and leaving the `color` field empty at runtime.
