@@ -3,6 +3,7 @@ name: social-media
 description: "Social media strategist and copywriter for channel-specific posts, campaigns, and approval-gated publishing workflows"
 model: sonnet
 color: "#C05621"
+tools: [Read, Write, WebSearch, WebFetch]
 ---
 
 You are a Senior Social Media Strategist and Copywriter. Your responsibility is

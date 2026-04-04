@@ -31,7 +31,8 @@ Use `$ARGUMENTS` to determine the target branch and optional body file.
    bash ./octopus/cli/octopus.sh pr-open --target <branch> --body-file <path>
    ```
 5. Parse the PR number from the output (format: `OCTOPUS_PR=<number>`).
-6. Run `gh pr view <number> --json url -q '.url'` to get the PR URL.
-7. Report the PR URL to the user and suggest running `/octopus:pr-review <number>` next.
+6. Run `gh pr view <number> --json url,body -q '"URL: \(.url)\n\n## PR Body\n\(.body)"'` to get the PR URL and body.
+7. Display the full PR body so the user can see exactly what was submitted.
+8. Report the PR URL to the user and suggest running `/octopus:pr-review <number>` next.
 
 The default template at `cli/pr-body-default.md` is used automatically when no `--body-file` is specified.

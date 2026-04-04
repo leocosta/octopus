@@ -69,5 +69,40 @@ grep -q "General Guidelines" "$TMPDIR/.opencode/agents/product-manager.md" || { 
 
 echo "PASS: OpenCode role generation"
 
+# --- Test 4: Claude preserves tools: field ---
+echo "Test 4: Claude preserves tools: in frontmatter"
+
+OCTOPUS_ROLES=(social-media)
+load_manifest "claude"
+deliver_roles "claude"
+
+grep -q "^tools:" "$TMPDIR/.claude/agents/social-media.md" || { echo "FAIL: tools: field missing from Claude agent file"; exit 1; }
+
+echo "PASS: Claude preserves tools: in frontmatter"
+
+# --- Test 5: OpenCode strips tools: field ---
+echo "Test 5: OpenCode strips tools: from frontmatter"
+
+load_manifest "opencode"
+deliver_roles "opencode"
+
+! grep -q "^tools:" "$TMPDIR/.opencode/agents/social-media.md" || { echo "FAIL: tools: field leaked into OpenCode agent file"; exit 1; }
+grep -q "^name: social-media" "$TMPDIR/.opencode/agents/social-media.md" || { echo "FAIL: name field missing from OpenCode agent file"; exit 1; }
+
+echo "PASS: OpenCode strips tools: from frontmatter"
+
+# --- Test 6: Copilot inline has no tools: ---
+echo "Test 6: Copilot inline delivery has no tools:"
+
+OCTOPUS_CMD_NAMES=()
+load_manifest "copilot"
+generate_main_output "copilot"
+deliver_roles "copilot"
+
+! grep -q "^tools:" "$TMPDIR/.github/copilot-instructions.md" || { echo "FAIL: tools: field leaked into Copilot output"; exit 1; }
+grep -q "# Role: Social-media" "$TMPDIR/.github/copilot-instructions.md" || { echo "FAIL: role section header missing from copilot output"; exit 1; }
+
+echo "PASS: Copilot inline delivery has no tools:"
+
 rm -rf "$TMPDIR"
 echo "PASS: all role generation tests passed"

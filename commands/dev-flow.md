@@ -25,6 +25,7 @@ for human interaction.
 - When the user says "continue" or invokes this step:
 - Run /octopus:pr-open (will ask for target branch)
 - Capture the PR number from the output
+- Show the PR body that was submitted so the user can see what was proposed
 
 ### Step 3: Self-Review
 - Run /octopus:pr-review with the captured PR number

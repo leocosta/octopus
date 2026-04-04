@@ -1043,7 +1043,7 @@ normalize_role_color() {
 normalize_role_frontmatter_for_agent() {
   local agent="$1"
 
-  if [[ "$agent" != "opencode" ]]; then
+  if [[ "$agent" == "claude" ]]; then
     cat
     return
   fi
@@ -1064,9 +1064,14 @@ normalize_role_frontmatter_for_agent() {
       continue
     fi
 
-    if [[ "$in_frontmatter" == "true" && "$line" =~ ^color:[[:space:]]*(.+)$ ]]; then
-      printf 'color: "%s"\n' "$(normalize_role_color "${BASH_REMATCH[1]}")"
-      continue
+    if [[ "$in_frontmatter" == "true" ]]; then
+      # Strip Claude Code-specific fields not understood by other agents
+      [[ "$line" =~ ^tools:[[:space:]] ]] && continue
+
+      if [[ "$agent" == "opencode" && "$line" =~ ^color:[[:space:]]*(.+)$ ]]; then
+        printf 'color: "%s"\n' "$(normalize_role_color "${BASH_REMATCH[1]}")"
+        continue
+      fi
     fi
 
     printf '%s\n' "$line"
