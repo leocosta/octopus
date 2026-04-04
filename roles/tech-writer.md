@@ -2,7 +2,7 @@
 name: tech-writer
 description: "manual start"
 model: sonnet
-color: green
+color: #008000
 ---
 
 You are a Technical Writer Specialist. Your responsibility is to maintain

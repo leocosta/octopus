@@ -991,6 +991,80 @@ strip_frontmatter() {
   awk 'BEGIN{skip=0} /^---$/{skip++; if(skip<=2) next} skip>=2||skip==0{print}' "$file"
 }
 
+trim_whitespace() {
+  local value="$1"
+  value="${value#"${value%%[![:space:]]*}"}"
+  value="${value%"${value##*[![:space:]]}"}"
+  printf '%s' "$value"
+}
+
+normalize_role_color() {
+  local raw_color="$1"
+  local color
+  color="$(trim_whitespace "$raw_color")"
+
+  if [[ "$color" =~ ^[\"\'](.*)[\"\']$ ]]; then
+    color="${BASH_REMATCH[1]}"
+  fi
+
+  local normalized="${color,,}"
+
+  if [[ "$normalized" =~ ^#[0-9a-f]{6}$ || "$normalized" =~ ^#[0-9a-f]{3}$ ]]; then
+    printf '%s' "$normalized"
+    return
+  fi
+
+  case "$normalized" in
+    black)   printf '#000000' ;;
+    blue)    printf '#0000ff' ;;
+    brown)   printf '#a52a2a' ;;
+    cyan)    printf '#00ffff' ;;
+    gray|grey) printf '#808080' ;;
+    green)   printf '#008000' ;;
+    orange)  printf '#ffa500' ;;
+    pink)    printf '#ffc0cb' ;;
+    purple)  printf '#800080' ;;
+    red)     printf '#ff0000' ;;
+    teal)    printf '#008080' ;;
+    white)   printf '#ffffff' ;;
+    yellow)  printf '#ffff00' ;;
+    *)       printf '%s' "$color" ;;
+  esac
+}
+
+normalize_role_frontmatter_for_agent() {
+  local agent="$1"
+
+  if [[ "$agent" != "opencode" ]]; then
+    cat
+    return
+  fi
+
+  local frontmatter_index=0
+  local in_frontmatter=false
+  local line=""
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    if [[ "$line" == "---" ]]; then
+      frontmatter_index=$((frontmatter_index + 1))
+      if [[ $frontmatter_index -eq 1 ]]; then
+        in_frontmatter=true
+      elif [[ $frontmatter_index -eq 2 ]]; then
+        in_frontmatter=false
+      fi
+      printf '%s\n' "$line"
+      continue
+    fi
+
+    if [[ "$in_frontmatter" == "true" && "$line" =~ ^color:[[:space:]]*(.+)$ ]]; then
+      printf 'color: %s\n' "$(normalize_role_color "${BASH_REMATCH[1]}")"
+      continue
+    fi
+
+    printf '%s\n' "$line"
+  done
+}
+
 deliver_roles() {
   local agent="$1"
   if [[ ${#OCTOPUS_ROLES[@]} -eq 0 ]]; then return; fi
@@ -1026,7 +1100,7 @@ deliver_roles() {
       } else {
         print
       }
-    }' "$template")
+    }' "$template" | normalize_role_frontmatter_for_agent "$agent")
 
     if [[ "$MANIFEST_CAP_AGENTS" == "true" ]]; then
       # Native delivery: individual role files
