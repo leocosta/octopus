@@ -14,7 +14,7 @@ description: Create and manage Architecture Decision Records (ADRs) to document 
 
 ## ADR Format (MADR)
 
-Use the Markdown Any Decision Record format. Save in `docs/adr/`:
+Use the Markdown Any Decision Record format. Save in `docs/adrs/`:
 
 ```markdown
 # NNN - Title of Decision
@@ -64,9 +64,9 @@ State the decision in 1-3 clear sentences.
 
 ### Creating a New ADR
 
-1. Check existing ADRs: `ls docs/adr/`
+1. Check existing ADRs: `ls docs/adrs/`
 2. Determine next number: increment from highest existing
-3. Create file: `docs/adr/NNN-short-kebab-title.md`
+3. Create file: `docs/adrs/NNN-short-kebab-title.md`
 4. Fill in all sections — no section should be empty
 5. Set status to `Accepted`
 6. Update the index if one exists
@@ -74,7 +74,7 @@ State the decision in 1-3 clear sentences.
 ### File Naming Convention
 
 ```
-docs/adr/
+docs/adrs/
 ├── 001-use-postgresql-for-primary-database.md
 ├── 002-adopt-vertical-slice-architecture.md
 ├── 003-choose-react-query-for-state-management.md

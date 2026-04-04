@@ -240,20 +240,26 @@ knowledge:
   modules:
     - domain
     - auth
+    - pricing
+    - retention
   roles:
     backend-specialist:
       - domain
       - auth
     product-manager:
       - domain
+      - pricing
+      - retention
 EOF
 parse_octopus_yml "$TMPDIR4/.octopus-c.yml"
 [[ "$OCTOPUS_KNOWLEDGE_ENABLED" == "true" ]] || { echo "FAIL: Format C: KNOWLEDGE_ENABLED expected true"; exit 1; }
 [[ "$OCTOPUS_KNOWLEDGE_MODE" == "explicit" ]] || { echo "FAIL: Format C: KNOWLEDGE_MODE expected explicit, got '$OCTOPUS_KNOWLEDGE_MODE'"; exit 1; }
 [[ "${OCTOPUS_KNOWLEDGE_LIST[0]}" == "domain" ]] || { echo "FAIL: Format C: list[0] expected domain"; exit 1; }
 [[ "${OCTOPUS_KNOWLEDGE_LIST[1]}" == "auth" ]] || { echo "FAIL: Format C: list[1] expected auth"; exit 1; }
+[[ "${OCTOPUS_KNOWLEDGE_LIST[2]}" == "pricing" ]] || { echo "FAIL: Format C: list[2] expected pricing"; exit 1; }
+[[ "${OCTOPUS_KNOWLEDGE_LIST[3]}" == "retention" ]] || { echo "FAIL: Format C: list[3] expected retention"; exit 1; }
 [[ "${OCTOPUS_KNOWLEDGE_ROLES[backend-specialist]}" == "domain,auth" ]] || { echo "FAIL: Format C: backend-specialist role expected 'domain,auth', got '${OCTOPUS_KNOWLEDGE_ROLES[backend-specialist]}'"; exit 1; }
-[[ "${OCTOPUS_KNOWLEDGE_ROLES[product-manager]}" == "domain" ]] || { echo "FAIL: Format C: product-manager role expected 'domain', got '${OCTOPUS_KNOWLEDGE_ROLES[product-manager]}'"; exit 1; }
+[[ "${OCTOPUS_KNOWLEDGE_ROLES[product-manager]}" == "domain,pricing,retention" ]] || { echo "FAIL: Format C: product-manager role expected 'domain,pricing,retention', got '${OCTOPUS_KNOWLEDGE_ROLES[product-manager]}'"; exit 1; }
 
 rm -rf "$TMPDIR4"
 echo "PASS: knowledge YAML parsing"

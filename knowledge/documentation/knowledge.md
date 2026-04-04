@@ -22,6 +22,10 @@
   - Evidence: The `tech-writer` README guidance was further expanded on 2026-04-03 with session prep, success criteria, and failure recovery steps to make Claude Code usage reproducible for real teams.
   - Date: 2026-04-03
 
+- [FACT-006] Operational shell entrypoints documented for direct execution must keep their executable bit to avoid workflow regressions.
+  - Evidence: `setup.sh` and `tests/test_parse_yaml.sh` lost mode `100755` during the 2026-04-03 documentation-role changes; restoring the executable bit was necessary because the README and test workflow rely on direct script execution such as `./setup.sh`.
+  - Date: 2026-04-03
+
 ## Anti-Patterns
 
 - [ANTI-001] Defining a documentation role without an evidence hierarchy.

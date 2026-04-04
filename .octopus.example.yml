@@ -61,7 +61,7 @@ mcp: []
 #   - github-username-2
 
 # Roles/personas (templates from octopus/roles/)
-# Available: product-manager, backend-specialist, frontend-specialist
+# Available: product-manager, backend-specialist, frontend-specialist, tech-writer
 # Context is provided via knowledge modules (see knowledge: config below)
 # roles:
 #   - product-manager
@@ -81,12 +81,18 @@ mcp: []
 #   modules:
 #     - domain
 #     - architecture
+#     - pricing
+#     - retention
+#     - analytics
 #   roles:
 #     backend-specialist:
 #       - domain
 #       - architecture
 #     product-manager:
 #       - domain
+#       - pricing
+#       - retention
+#       - analytics
 
 # Custom knowledge directory (default: knowledge/)
 # knowledge_dir: docs/ai
@@ -100,4 +106,3 @@ mcp: []
 #   - name: api-start
 #     description: Start the API container
 #     run: make api-start
-

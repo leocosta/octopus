@@ -302,13 +302,18 @@ Modular domain knowledge that agents can load on demand — confirmed facts, hyp
      modules:
        - domain
        - architecture
-       - authentication
+       - pricing
+       - retention
+       - analytics
      roles:
        backend-specialist:
          - domain
          - architecture
        product-manager:
          - domain
+         - pricing
+         - retention
+         - analytics
    ```
 2. Run `./octopus/setup.sh`
 3. **Claude Code**: `knowledge/` is symlinked to `.claude/knowledge/` — agents load modules on demand
@@ -320,7 +325,7 @@ knowledge_dir: docs/ai   # modules will be read from docs/ai/ instead of knowled
 knowledge: true
 ```
 
-**Auto-generated index:** `setup.sh` creates `<knowledge_dir>/INDEX.md` — a routing table listing every active module with file counts. Agents consult this first to find relevant domain context.
+**Auto-generated index:** when knowledge is enabled, `setup.sh` creates `<knowledge_dir>/INDEX.md` — a routing table listing every active module with file counts. Agents consult this first to find relevant domain context.
 
 **Creating a knowledge module:**
 ```bash
