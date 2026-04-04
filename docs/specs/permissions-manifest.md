@@ -110,7 +110,7 @@ deliver_permissions "$agent"
 |---|---|---|
 | **claude** | Yes | Top-level `permissions.allow[]` and `permissions.deny[]` in `.claude/settings.json`. Native schema matches the Octopus allow/deny list model directly. |
 | **opencode** | No | OpenCode uses a `permission` (singular) field with per-tool mode values (`"ask" \| "allow" \| "deny"` for `edit`, `bash`, `webfetch`, etc.). This schema is fundamentally different from Claude's command-pattern allow/deny lists and cannot be mapped without loss of meaning. |
-| **antigravity** | No | No `settings_json` delivery method; no native permissions concept. |
+| **gemini** | No | No `settings_json` delivery method; no native permissions concept. |
 | **codex** | No | No `settings_json` delivery method; no native permissions concept. |
 | **copilot** | No | No `settings_json` delivery method; no native permissions concept. |
 

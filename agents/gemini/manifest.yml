@@ -1,5 +1,5 @@
-name: antigravity
-output: ANTIGRAVITY.md
+name: gemini
+output: GEMINI.md
 content_mode: concatenate
 
 capabilities:

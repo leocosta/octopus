@@ -35,7 +35,7 @@ Centralized AI agent configuration for multi-repo teams. One source of truth for
 
 ## What is Octopus
 
-Octopus is a framework that lives as a git submodule in your repositories. You configure it once via `.octopus.yml`, run `setup.sh`, and it generates the right configuration files for every AI Code Assistant your team uses — Claude Code, GitHub Copilot, OpenAI Codex, Antigravity, and OpenCode.
+Octopus is a framework that lives as a git submodule in your repositories. You configure it once via `.octopus.yml`, run `setup.sh`, and it generates the right configuration files for every AI Code Assistant your team uses — Claude Code, GitHub Copilot, OpenAI Codex, Gemini, and OpenCode.
 
 Each assistant has different capabilities (some support native rules, others need everything in a single markdown file). Octopus handles these differences automatically through a **manifest-driven architecture** — you write rules, skills, and hooks once, and Octopus delivers them in the format each tool understands.
 
@@ -43,9 +43,9 @@ Each assistant has different capabilities (some support native rules, others nee
 
 How Octopus delivers content to each Code Assistant:
 
-| Capability | Claude Code | Copilot | Codex | Antigravity | OpenCode |
+| Capability | Claude Code | Copilot | Codex | Gemini | OpenCode |
 |---|---|---|---|---|---|
-| **Output file** | `.claude/CLAUDE.md` | `.github/copilot-instructions.md` | `AGENTS.md` | `ANTIGRAVITY.md` | `.opencode/rules.md` |
+| **Output file** | `.claude/CLAUDE.md` | `.github/copilot-instructions.md` | `AGENTS.md` | `GEMINI.md` | `.opencode/rules.md` |
 | **Content mode** | Template | Concatenate | Concatenate | Concatenate | Concatenate |
 | **Rules** | Per-file symlinks in `.claude/rules/` | Inlined | Inlined | Inlined | Inlined |
 | **Skills** | Symlinked to `.claude/skills/` | Inlined | Inlined | Inlined | Inlined |
@@ -117,7 +117,7 @@ skills:
 hooks: true
 
 # Which AI agents to configure
-# Available: claude, copilot, codex, antigravity, opencode
+# Available: claude, copilot, codex, gemini, opencode
 agents:
   - claude
   - copilot
@@ -736,7 +736,7 @@ octopus/
 │   ├── claude/             # manifest.yml + CLAUDE.md template + settings.json
 │   ├── copilot/            # manifest.yml + header.md
 │   ├── codex/              # manifest.yml + header.md
-│   ├── antigravity/        # manifest.yml + header.md
+│   ├── gemini/        # manifest.yml + header.md
 │   └── opencode/           # manifest.yml + header.md
 ├── core/                   # Universal standards
 │   ├── guidelines.md       # Coding principles

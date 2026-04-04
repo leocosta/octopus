@@ -1,0 +1,8 @@
+{
+  "general": {
+    "debugKeystrokeLogging": false
+  },
+  "ui": {
+    "inlineThinkingMode": "full"
+  }
+}

@@ -115,7 +115,7 @@ The commit author field is sufficient.
 | Claude      | `Co-authored-by: claude <claude@anthropic.com>`             |
 | Copilot     | `Co-authored-by: copilot <copilot@github.com>`              |
 | Codex       | `Co-authored-by: codex <codex@openai.com>`                  |
-| Antigravity | `Co-authored-by: antigravity <antigravity@antigravity.ai>`  |
+| Gemini | `Co-authored-by: gemini <gemini@gemini.ai>`  |
 
 ### Example
 

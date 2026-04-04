@@ -16,7 +16,8 @@ OCTOPUS_WORKFLOW=true
 declare -A OCTOPUS_AGENT_OUTPUT=()
 
 mkdir -p "$TMPDIR/.claude"
-generate_workflow_commands
+load_manifest "claude"
+deliver_commands "claude"
 
 [[ -f "$TMPDIR/.claude/commands/octopus:branch-create.md" ]] || { echo "FAIL: octopus:branch-create.md not created"; exit 1; }
 [[ -f "$TMPDIR/.claude/commands/octopus:pr-open.md" ]] || { echo "FAIL: octopus:pr-open.md not created"; exit 1; }
@@ -40,7 +41,8 @@ rm -rf "$TMPDIR/.claude/commands"
 OCTOPUS_WORKFLOW=false
 mkdir -p "$TMPDIR/.claude"
 
-generate_workflow_commands
+load_manifest "claude"
+deliver_commands "claude"
 
 [[ ! -f "$TMPDIR/.claude/commands/octopus:branch-create.md" ]] || { echo "FAIL: should not generate when workflow is false"; exit 1; }
 
@@ -53,8 +55,9 @@ OCTOPUS_WORKFLOW=true
 OCTOPUS_AGENTS=(copilot)
 OCTOPUS_CMD_NAMES=()
 
-concatenate_agent "copilot"
-generate_workflow_commands
+load_manifest "copilot"
+generate_main_output "copilot"
+deliver_commands "copilot"
 
 OUTPUT="$TMPDIR/.github/copilot-instructions.md"
 grep -q "# Octopus Commands" "$OUTPUT" || { echo "FAIL: Octopus Commands section missing"; exit 1; }
