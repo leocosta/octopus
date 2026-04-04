@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.11.2] - 2026-04-03
+
+🐛 This patch release strengthens Octopus's documentation workflow by expanding the `product-manager` and `tech-writer` roles with more actionable guidance, aligning ADR instructions with the real `docs/adrs/` path, and fixing knowledge index generation so projects with knowledge enabled but no active modules still get a useful `INDEX.md` instead of silently skipping it.
+
+📝 The sample config, README, ADR template, and feature-lifecycle guidance now reflect the current knowledge mapping and documentation flow, including the post-`v0.11.1` README sync updates. 🧪 Role, knowledge, and YAML parsing coverage were updated to verify the new product-manager mappings and preserve the executable shell entrypoints that the documented workflow runs directly.
+
 ## [0.11.1] - 2026-04-03
 
 🐛 This patch release fixes OpenCode native role generation by normalizing role `color` frontmatter to valid hex values before writing agent files, which prevents the `Invalid hex color format color` failure when launching generated agents. Existing shared roles were updated to use explicit hex colors, and 🧪 role-generation coverage now verifies native OpenCode output alongside the current Claude and Copilot delivery paths.
