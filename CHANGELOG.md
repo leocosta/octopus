@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.14.0] - 2026-04-04
+
+🚀 Renamed the `antigravity` agent to `gemini` to align with the official Gemini CLI naming and ensure out-of-the-box compatibility by generating `GEMINI.md` as the default output. Updated all agent manifests, core documentation (including `README.md` and commit conventions), and fixed test suites (`test_parse_yaml.sh`, `test_concatenate_agent.sh`, `test_commands.sh`, `test_workflow_commands.sh`) to support the new agent name and its associated conventions. This migration ensures the Octopus framework is 100% compatible with the latest Gemini CLI standards.
+
 ## [0.13.0] - 2026-04-04
 
 ✨ Role files can now declare a `tools:` field in their YAML frontmatter to restrict
