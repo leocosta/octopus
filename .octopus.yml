@@ -3,3 +3,6 @@ agents:
   - opencode
 
 workflow: true
+
+roles:
+  - social-media

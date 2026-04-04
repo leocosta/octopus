@@ -26,6 +26,14 @@
   - Evidence: `setup.sh` and `tests/test_parse_yaml.sh` lost mode `100755` during the 2026-04-03 documentation-role changes; restoring the executable bit was necessary because the README and test workflow rely on direct script execution such as `./setup.sh`.
   - Date: 2026-04-03
 
+- [FACT-007] Non-engineering operational roles are stronger when the prompt separates persona, approval gates, and integration boundaries.
+  - Evidence: The `social-media` role added on 2026-04-04 became materially clearer once the role prompt distinguished copywriting behavior from publishing integrations and required explicit approval before publish actions.
+  - Date: 2026-04-04
+
+- [FACT-008] Local social publishing helpers should use `.env.octopus` as the canonical secret source and default to preview mode unless live publishing is explicitly requested.
+  - Evidence: `scripts/x_post.py` was added on 2026-04-04 to read X credentials from `.env.octopus`, fail fast when credentials are missing, and require `--publish` before sending a live post.
+  - Date: 2026-04-04
+
 ## Anti-Patterns
 
 - [ANTI-001] Defining a documentation role without an evidence hierarchy.

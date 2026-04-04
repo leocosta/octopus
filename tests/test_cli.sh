@@ -64,22 +64,30 @@ output=$("$SCRIPT_DIR/cli/octopus.sh" branch-create feat/test 2>&1) || true
 echo "$output" | grep -q "mock-git" || { echo "FAIL: branch-create should call git"; exit 1; }
 echo "PASS: branch-create routed"
 
-# --- Test 2: pr-open outputs OCTOPUS_PR ---
-echo "Test 2: pr-open output"
+# --- Test 2: dev-flow start routes to branch-create ---
+echo "Test 2: dev-flow start"
+
+output=$("$SCRIPT_DIR/cli/octopus.sh" dev-flow start feat/test-flow 2>&1) || true
+echo "$output" | grep -q "mock-git" || { echo "FAIL: dev-flow start should call git"; exit 1; }
+echo "$output" | grep -q "Branch created" || { echo "FAIL: dev-flow start should print next-step guidance"; exit 1; }
+echo "PASS: dev-flow start routed"
+
+# --- Test 3: pr-open outputs OCTOPUS_PR ---
+echo "Test 3: pr-open output"
 
 output=$("$SCRIPT_DIR/cli/octopus.sh" pr-open --target main 2>&1) || true
 echo "$output" | grep -q "OCTOPUS_PR=" || { echo "FAIL: pr-open should output OCTOPUS_PR"; exit 1; }
 echo "PASS: pr-open outputs PR number"
 
-# --- Test 3: pr-review outputs diff ---
-echo "Test 3: pr-review"
+# --- Test 4: pr-review outputs diff ---
+echo "Test 4: pr-review"
 
 output=$("$SCRIPT_DIR/cli/octopus.sh" pr-review 42 2>&1) || true
 echo "$output" | grep -q "Self-Review Complete" || { echo "FAIL: pr-review should show review output"; exit 1; }
 echo "PASS: pr-review shows review output"
 
-# --- Test 4: Unknown command fails ---
-echo "Test 4: Unknown command"
+# --- Test 5: Unknown command fails ---
+echo "Test 5: Unknown command"
 
 output=$("$SCRIPT_DIR/cli/octopus.sh" nonexistent 2>&1) || true
 echo "$output" | grep -qi "unknown\|not found\|usage" || { echo "FAIL: should error on unknown command"; exit 1; }

@@ -137,7 +137,7 @@ reviewers:
   - github-username
 
 # Roles — agent personas with project context
-# Available: product-manager, backend-specialist, frontend-specialist, tech-writer
+# Available: product-manager, backend-specialist, frontend-specialist, tech-writer, social-media
 # Context is provided via knowledge modules (see knowledge: config below)
 roles:
   - product-manager
@@ -261,7 +261,7 @@ OCTOPUS_DISABLED_HOOKS=auto-format,typecheck ./octopus/setup.sh
 
 Agent personas that combine a responsibility definition with your project context. Each role generates a specialized agent.
 
-**Available roles:** `product-manager`, `backend-specialist`, `frontend-specialist`, `tech-writer`
+**Available roles:** `product-manager`, `backend-specialist`, `frontend-specialist`, `tech-writer`, `social-media`
 
 **How it works:**
 1. Add roles to `.octopus.yml`:
@@ -280,6 +280,18 @@ Agent personas that combine a responsibility definition with your project contex
 **Adding custom roles:**
 1. Create `octopus/roles/<name>.md` with YAML frontmatter and `{{PROJECT_CONTEXT}}` placeholder
 2. Add `- <name>` to the `roles:` list in `.octopus.yml`
+
+**Built-in role highlight:** `social-media`  
+Use this role when you need a specialist for campaign copy, launch posts,
+threads, captions, carousel outlines, reel/story scripts, and approval-gated
+publishing preparation for `X` and `Instagram`. The role treats destination
+platform as optional: it can generate for `X`, `Instagram`, `both`, or produce
+variants for both when the brief does not name a final channel.
+
+For a minimal direct X publishing flow in this repository, use
+`scripts/x_post.py`. It reads credentials from `.env.octopus`, supports
+credential verification, previews the final payload before publishing, and
+requires an explicit `--publish` flag for live posting.
 
 ### Knowledge
 
@@ -634,6 +646,15 @@ External tool integrations (Notion, GitHub, Slack, PostgreSQL) configured from a
 2. Use `${VAR_NAME}` for secrets — they'll be read from `.env.octopus`
 3. Add `- <name>` to the `mcp:` list in `.octopus.yml`
 
+For social publishing workflows, prefer official platform APIs for production
+publishing. Community MCP servers can still be useful, but they should be
+treated as optional adapters and reviewed for security, maintenance, and policy
+compliance before adoption.
+
+This repository currently includes a direct X helper script rather than a
+built-in social MCP server. The helper uses `.env.octopus` credentials and is
+intended for approval-gated publishing tests and local automation.
+
 ### Workflow
 
 PR and branch automation commands powered by GitHub CLI (`gh`).
@@ -743,7 +764,10 @@ octopus/
 │   ├── backend-specialist.md
 │   ├── frontend-specialist.md
 │   ├── product-manager.md
+│   ├── social-media.md     # Social strategy, copywriting, and publishing prep
 │   └── tech-writer.md      # Documentation lifecycle agent
+├── scripts/
+│   └── x_post.py           # Preview, verify, and publish text posts to X
 ├── commands/
 │   ├── doc-rfc.md          # Bootstrap RFC from template
 │   ├── doc-spec.md         # Bootstrap Spec from template
