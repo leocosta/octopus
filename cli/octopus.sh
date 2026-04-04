@@ -11,6 +11,7 @@ if [[ -z "$COMMAND" ]]; then
   echo ""
   echo "Commands:"
   echo "  branch-create  Create a development branch"
+  echo "  dev-flow       Run the guided development workflow"
   echo "  pr-open        Open a PR following conventions"
   echo "  pr-review      Self-review a PR and assign reviewers"
   echo "  pr-comments    Address PR review comments"
