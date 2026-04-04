@@ -155,7 +155,8 @@ for full format and guidelines.
 
 ### Knowledge Capture
 
-**Purpose**: Extract lasting insights from the implementation.
+**Purpose**: Extract lasting insights from the implementation and preserve them
+where future agents and teammates can actually reuse them.
 
 **Where**: `knowledge/<domain>/` — following the continuous-learning protocol.
 

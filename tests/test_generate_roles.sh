@@ -29,6 +29,8 @@ grep -q "^model: sonnet" "$TMPDIR/.claude/agents/product-manager.md" || { echo "
 
 # Verify _base.md content injected
 grep -q "General Guidelines" "$TMPDIR/.claude/agents/product-manager.md" || { echo "FAIL: _base.md not injected"; exit 1; }
+grep -q "trial-to-paid" "$TMPDIR/.claude/agents/product-manager.md" || { echo "FAIL: SaaS metrics guidance missing"; exit 1; }
+grep -q "docs/roadmap.md" "$TMPDIR/.claude/agents/product-manager.md" || { echo "FAIL: roadmap guidance missing"; exit 1; }
 
 echo "PASS: Claude role generation"
 

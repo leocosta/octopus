@@ -762,7 +762,8 @@ deliver_knowledge() {
 
 generate_knowledge_index() {
   local knowledge_dir="$PROJECT_ROOT/$OCTOPUS_KNOWLEDGE_DIR"
-  [[ ${#KNOWLEDGE_MODULES[@]} -eq 0 ]] && return
+  [[ "$OCTOPUS_KNOWLEDGE_ENABLED" != "true" && ${#KNOWLEDGE_MODULES[@]} -eq 0 ]] && return
+  [[ ! -d "$knowledge_dir" ]] && return
 
   local index_file="$knowledge_dir/INDEX.md"
 
@@ -780,12 +781,16 @@ generate_knowledge_index() {
 |---|---|---|---|
 HEADER
 
-  for mod in "${KNOWLEDGE_MODULES[@]}"; do
-    local mod_dir="$knowledge_dir/$mod"
-    local file_count
-    file_count=$(find "$mod_dir" -name '*.md' -type f | wc -l | tr -d ' ')
-    echo "| ${mod} | \`${OCTOPUS_KNOWLEDGE_DIR}/${mod}/\` | ${file_count} | Active |" >> "$index_file"
-  done
+  if [[ ${#KNOWLEDGE_MODULES[@]} -eq 0 ]]; then
+    echo "| _none configured_ | \`${OCTOPUS_KNOWLEDGE_DIR}/\` | 0 | Pending |" >> "$index_file"
+  else
+    for mod in "${KNOWLEDGE_MODULES[@]}"; do
+      local mod_dir="$knowledge_dir/$mod"
+      local file_count
+      file_count=$(find "$mod_dir" -name '*.md' -type f | wc -l | tr -d ' ')
+      echo "| ${mod} | \`${OCTOPUS_KNOWLEDGE_DIR}/${mod}/\` | ${file_count} | Active |" >> "$index_file"
+    done
+  fi
 
   cat >> "$index_file" << 'FOOTER'
 
@@ -794,6 +799,9 @@ HEADER
 1. **Before a task**: Read this index, then load the relevant domain's files
 2. **During a task**: If you discover new patterns, add to `knowledge.md` or `hypotheses.md`
 3. **After a task**: Update knowledge files with confirmed findings
+
+If no active modules are listed yet, create a domain from `knowledge/_template/`
+and re-run `setup.sh`.
 FOOTER
 
   echo "  → ${OCTOPUS_KNOWLEDGE_DIR}/INDEX.md (auto-generated)"

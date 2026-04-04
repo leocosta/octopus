@@ -8,7 +8,7 @@
 .claude/rules/
 .claude/skills/
 .opencode/rules.md
-.opencode/command/
+.opencode/commands/
 .opencode/rules/
 .opencode/skills/
 .opencode/agents/

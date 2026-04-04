@@ -121,20 +121,24 @@ make_module domain
 echo "Domain fact" > "$TMPDIR/knowledge/domain/knowledge.md"
 make_module auth
 echo "Auth fact" > "$TMPDIR/knowledge/auth/knowledge.md"
-make_module payments
-echo "Payments fact" > "$TMPDIR/knowledge/payments/knowledge.md"
-KNOWLEDGE_MODULES=(domain auth payments)
+make_module pricing
+echo "Pricing fact" > "$TMPDIR/knowledge/pricing/knowledge.md"
+make_module retention
+echo "Retention fact" > "$TMPDIR/knowledge/retention/knowledge.md"
+KNOWLEDGE_MODULES=(domain auth pricing retention)
 OCTOPUS_KNOWLEDGE_ROLES[backend-specialist]="domain,auth"
-OCTOPUS_KNOWLEDGE_ROLES[product-manager]="domain"
+OCTOPUS_KNOWLEDGE_ROLES[product-manager]="domain,pricing,retention"
 
 backend_content=$(assemble_knowledge "backend-specialist")
 pm_content=$(assemble_knowledge "product-manager")
 
 echo "$backend_content" | grep -q "Domain fact" || { echo "FAIL: backend missing domain"; exit 1; }
 echo "$backend_content" | grep -q "Auth fact" || { echo "FAIL: backend missing auth"; exit 1; }
-echo "$backend_content" | grep -qi "Payments fact" && { echo "FAIL: backend should not have payments"; exit 1; }
+echo "$backend_content" | grep -qi "Pricing fact" && { echo "FAIL: backend should not have pricing"; exit 1; }
 echo "$pm_content" | grep -q "Domain fact" || { echo "FAIL: PM missing domain"; exit 1; }
 echo "$pm_content" | grep -qi "Auth fact" && { echo "FAIL: PM should not have auth"; exit 1; }
+echo "$pm_content" | grep -q "Pricing fact" || { echo "FAIL: PM missing pricing"; exit 1; }
+echo "$pm_content" | grep -q "Retention fact" || { echo "FAIL: PM missing retention"; exit 1; }
 echo "PASS: Role assembly with role mapping"
 
 # --- Test 7: Claude symlink delivery ---
