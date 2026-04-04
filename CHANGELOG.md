@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.11.1] - 2026-04-03
+
+🐛 This patch release fixes OpenCode native role generation by normalizing role `color` frontmatter to valid hex values before writing agent files, which prevents the `Invalid hex color format color` failure when launching generated agents. Existing shared roles were updated to use explicit hex colors, and 🧪 role-generation coverage now verifies native OpenCode output alongside the current Claude and Copilot delivery paths.
+
+📝 The README now includes a detailed Claude Code operating guide for the `tech-writer` role, covering setup, prompts, session flow, expected outputs, and troubleshooting. The new `knowledge/documentation/` module captures the documentation lessons behind this change so future role and docs work stays grounded in reproducible guidance.
+
 ## [0.11.0] - 2026-04-03
 
 ✨ This release makes the Octopus release flow keep its own documentation in sync. The `release commit-changelog` step now updates deterministic version references in `README.md`, so the version badge and manual update examples advance together with the approved release version and are committed in the same release commit.
