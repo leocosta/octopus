@@ -10,8 +10,8 @@
   - Evidence: `docs/adr/` in `skills/adr/SKILL.md` conflicted with `docs/adrs/` used by commands, README, and role guidance before the 2026-04-03 alignment.
   - Date: 2026-04-03
 
-- [FACT-003] Role frontmatter intended for native agent files must use the target agent's strict schema, especially for color fields.
-  - Evidence: OpenCode rejected generated role files when `roles/*.md` used named colors such as `purple`, `green`, and `orange`; normalizing to hex in `setup.sh` and updating the existing role files resolved the `Invalid hex color format color` failure on 2026-04-03.
+- [FACT-003] YAML frontmatter color values that start with `#` must be quoted when generating native agent files.
+  - Evidence: Kilo/OpenCode treated unquoted values like `color: #800080` as an empty YAML scalar because `#800080` is parsed as a comment; emitting `color: "#800080"` in generated `.opencode/agents/*.md` resolved the startup failure on 2026-04-03.
   - Date: 2026-04-03
 
 - [FACT-004] Role documentation becomes much more actionable when it includes an end-to-end operating example tied to generated artifacts and real project commands.

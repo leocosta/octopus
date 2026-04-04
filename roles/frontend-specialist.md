@@ -2,7 +2,7 @@
 name: frontend-specialist
 description: "manual start"
 model: sonnet
-color: #008000
+color: "#008000"
 ---
 
 You are a Senior Frontend Specialist with deep knowledge in UX and
