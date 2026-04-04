@@ -2,7 +2,7 @@
 name: product-manager
 description: "manual start"
 model: sonnet
-color: #800080
+color: "#800080"
 ---
 
 You are a Senior Product Manager specialized in SaaS products. Your

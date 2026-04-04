@@ -51,7 +51,7 @@ grep -q "# Role: Product-manager" "$OUTPUT" || { echo "FAIL: role section header
 
 echo "PASS: Copilot role section"
 
-# --- Test 3: OpenCode gets native agent file with hex color ---
+# --- Test 3: OpenCode gets native agent file with quoted hex color ---
 echo "Test 3: OpenCode role generation"
 
 load_manifest "opencode"
@@ -61,7 +61,7 @@ deliver_roles "opencode"
 
 grep -q "^name: product-manager" "$TMPDIR/.opencode/agents/product-manager.md" || { echo "FAIL: frontmatter name missing for opencode"; exit 1; }
 grep -q "^model: sonnet" "$TMPDIR/.opencode/agents/product-manager.md" || { echo "FAIL: frontmatter model missing for opencode"; exit 1; }
-grep -q "^color: #800080" "$TMPDIR/.opencode/agents/product-manager.md" || { echo "FAIL: opencode color was not normalized to hex"; exit 1; }
+grep -q '^color: "#800080"$' "$TMPDIR/.opencode/agents/product-manager.md" || { echo "FAIL: opencode color was not normalized to quoted hex"; exit 1; }
 
 ! grep -q "{{PROJECT_CONTEXT}}" "$TMPDIR/.opencode/agents/product-manager.md" || { echo "FAIL: {{PROJECT_CONTEXT}} placeholder not replaced for opencode"; exit 1; }
 

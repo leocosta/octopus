@@ -1065,7 +1065,7 @@ normalize_role_frontmatter_for_agent() {
     fi
 
     if [[ "$in_frontmatter" == "true" && "$line" =~ ^color:[[:space:]]*(.+)$ ]]; then
-      printf 'color: %s\n' "$(normalize_role_color "${BASH_REMATCH[1]}")"
+      printf 'color: "%s"\n' "$(normalize_role_color "${BASH_REMATCH[1]}")"
       continue
     fi
 
