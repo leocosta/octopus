@@ -24,12 +24,14 @@ Use `$ARGUMENTS` to determine the target branch and optional body file.
 2. If no target branch was provided as `$1`, ask the user which branch to target (default: `main`).
 3. Run the Octopus PR open command:
    ```
-   bash ./octopus/cli/octopus.sh pr-open --target <branch>
+   octopus pr-open --target <branch>
    ```
+   Legacy shim: `./octopus/cli/octopus.sh pr-open --target <branch>` still forwards to `octopus`.
 4. If the user provided `--body-file <path>` in `$ARGUMENTS`, pass it through:
    ```
-   bash ./octopus/cli/octopus.sh pr-open --target <branch> --body-file <path>
+   octopus pr-open --target <branch> --body-file <path>
    ```
+   Legacy shim continues to work if the repository still contains the submodule.
 5. Parse the PR number from the output (format: `OCTOPUS_PR=<number>`).
 6. Run `gh pr view <number> --json url,body -q '"URL: \(.url)\n\n## PR Body\n\(.body)"'` to get the PR URL and body.
 7. Display the full PR body so the user can see exactly what was submitted.

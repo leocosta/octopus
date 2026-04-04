@@ -12,9 +12,9 @@ agent: code
 
 1. Run to check current version and available releases:
    ```
-   ./octopus/cli/octopus.sh update --latest 2>&1 | head -10
+   octopus update --latest 2>&1 | head -10
    ```
-   This shows the current version, the 5 most recent tags, and the suggested target.
+   The legacy shim `./octopus/cli/octopus.sh update` still pipes through to `octopus` for migration.
 
 2. Present to the user:
    - Current version
@@ -26,10 +26,10 @@ agent: code
 4. Run the update:
    ```
    # To latest:
-   ./octopus/cli/octopus.sh update --latest
+   octopus update --latest
 
    # To a specific version:
-   ./octopus/cli/octopus.sh update --version v1.2.0
+   octopus update --version v1.2.0
    ```
 
 5. The script will:

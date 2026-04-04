@@ -15,6 +15,7 @@ if [[ -z "${PROJECT_ROOT:-}" ]]; then
   fi
 fi
 OCTOPUS_CLI_REL="$(python3 -c "import os; print(os.path.relpath('$OCTOPUS_DIR/cli/octopus.sh', '$PROJECT_ROOT'))")"
+OCTOPUS_CANONICAL_CLI="${OCTOPUS_CANONICAL_CLI:-octopus}"
 
 # (Agent output paths are now read from agents/<name>/manifest.yml)
 
@@ -1171,7 +1172,7 @@ deliver_commands() {
         cmd_name=$(basename "$cmd_file" .md)
         GENERATED_WORKFLOW_CMDS+=("$cmd_name")
         strip_frontmatter "$cmd_file" \
-          | sed "s|\./octopus/cli/octopus\\.sh|./${OCTOPUS_CLI_REL}|g" \
+          | sed "s|\./octopus/cli/octopus\\.sh|${OCTOPUS_CANONICAL_CLI}|g" \
           | sed '/./,$!d' \
           > "$commands_dir/${prefix}${cmd_name}.md"
         echo "  → ${MANIFEST_DELIVERY_COMMANDS_TARGET}${prefix}${cmd_name}.md"
@@ -1231,7 +1232,7 @@ EOF
         echo "" >> "$full_output"
         echo "## /octopus:${cmd_name}" >> "$full_output"
         echo "${cmd_desc}" >> "$full_output"
-        echo "Run: \`./octopus/cli/octopus.sh ${cmd_name}\`" >> "$full_output"
+        echo "Run: \`${OCTOPUS_CANONICAL_CLI} ${cmd_name}\`" >> "$full_output"
       done
     fi
 

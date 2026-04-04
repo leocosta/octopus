@@ -15,10 +15,11 @@ This command creates a versioned release: generates a CHANGELOG entry, syncs det
 
 ### Step 1: Collect Data
 
-1. Run: `./octopus/cli/octopus.sh release suggest-version`
-   - If the user provided a custom starting ref, pass it: `./octopus/cli/octopus.sh release suggest-version <from-ref>`
-2. Run: `./octopus/cli/octopus.sh release list-commits`
-   - Same: pass `<from-ref>` if provided
+1. Run: `octopus release suggest-version`
+   - The legacy `./octopus/cli/octopus.sh` path still forwards to the shim for now.
+   - If the user provided a custom starting ref, pass it: `octopus release suggest-version <from-ref>`
+2. Run: `octopus release list-commits`
+   - Same: pass `<from-ref>` if provided (the legacy command keeps working during migration)
 3. If suggest-version reports "No unreleased commits found", inform the user and stop
 
 ### Step 2: Confirm Version
@@ -61,12 +62,12 @@ Write a condensed version (2-3 sentences) of the CHANGELOG entry for the tag and
 ### Step 5: Execute
 
 1. Write the CHANGELOG entry to `CHANGELOG.md` (prepend)
-2. Run: `./octopus/cli/octopus.sh release commit-changelog <version>`
+2. Run: `octopus release commit-changelog <version>`
    - This also syncs version references in `README.md` when the expected Octopus patterns are present
    - The release commit should include both `CHANGELOG.md` and `README.md` when `README.md` was updated
 3. Save the release notes summary to a temporary file
-4. Run: `./octopus/cli/octopus.sh release create-tag <version> <temp-file>`
+4. Run: `octopus release create-tag <version> <temp-file>`
 5. Run: `git push && git push --tags`
 6. Ask the user: "Do you want to create a GitHub Release too?"
-   - If yes: `./octopus/cli/octopus.sh release create-gh-release <version> <temp-file>`
+   - If yes: `octopus release create-gh-release <version> <temp-file>`
    - If no: finish and report success

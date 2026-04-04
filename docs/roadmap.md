@@ -10,6 +10,22 @@ and add a link to the created document.
 
 ## Backlog
 
+### RM-007 — Octopus CLI Tool
+
+- **Priority:** 🔴 High
+- **Effort:** medium (2-3d)
+- **Status:** proposed
+- **Added:** 2026-04-04
+
+Create a global CLI for Octopus to reduce the friction of using git submodules. The CLI
+should handle installation, updates, and configuration across repositories without
+requiring a direct submodule link in every project.
+
+**Rationale:** While git submodules are excellent for strict versioning and "IaC"
+(Infrastructure as Code) for agents, they can be a barrier to entry for some teams. A
+global CLI (`octopus install`) will make it easier to adopt Octopus as a "Standard
+Library for AI Agents".
+
 ### RM-006 — Add `tools:` field to role frontmatter
 
 - **Priority:** 🟡 Medium

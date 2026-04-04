@@ -1,0 +1,27 @@
+name: Build Release Bundle
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Create release archive
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF##*/}"
+          tar -czf "octopus-${TAG}.tar.gz" --exclude .git --exclude .github -C "$GITHUB_WORKSPACE" .
+          sha256sum "octopus-${TAG}.tar.gz" > "octopus-${TAG}.sha256"
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: |
+            octopus-${GITHUB_REF##*/}.tar.gz
+            octopus-${GITHUB_REF##*/}.sha256

@@ -12,26 +12,34 @@ Centralized AI agent configuration for multi-repo teams. One source of truth for
 
 ## Table of Contents
 
-- [What is Octopus](#what-is-octopus)
-- [Capability Matrix](#capability-matrix)
-- [Quick Start](#quick-start)
-- [Configuration (.octopus.yml)](#configuration-octopusyml)
-- [Features](#features)
-  - [Rules](#rules)
-  - [Skills](#skills)
-  - [Hooks](#hooks)
-  - [Roles](#roles)
-  - [Knowledge](#knowledge)
-  - [Commands](#commands)
-  - [Feature Lifecycle](#feature-lifecycle)
-  - [MCP Servers](#mcp-servers)
-  - [Workflow](#workflow)
-- [Agent Manifests](#agent-manifests)
-- [Project Structure](#project-structure)
-- [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
-- [Requirements](#requirements)
-- [License](#license)
+- [Octopus](#octopus)
+  - [Table of Contents](#table-of-contents)
+  - [What is Octopus](#what-is-octopus)
+  - [Capability Matrix](#capability-matrix)
+  - [Quick Start](#quick-start)
+    - [Global CLI](#global-cli)
+    - [Add to an existing repo](#add-to-an-existing-repo)
+    - [Update to a new version](#update-to-a-new-version)
+  - [Configuration (.octopus.yml)](#configuration-octopusyml)
+  - [Features](#features)
+    - [Rules](#rules)
+    - [Language Configuration](#language-configuration)
+    - [Skills](#skills)
+    - [Hooks](#hooks)
+    - [Roles](#roles)
+    - [Knowledge](#knowledge)
+    - [Commands](#commands)
+    - [Feature Lifecycle](#feature-lifecycle)
+      - [Claude Code Example: Operating `tech-writer`](#claude-code-example-operating-tech-writer)
+    - [MCP Servers](#mcp-servers)
+    - [Workflow](#workflow)
+  - [Agent Manifests](#agent-manifests)
+    - [Adding a New Agent](#adding-a-new-agent)
+  - [Project Structure](#project-structure)
+  - [Troubleshooting](#troubleshooting)
+  - [Contributing](#contributing)
+  - [Requirements](#requirements)
+  - [License](#license)
 
 ## What is Octopus
 
@@ -59,6 +67,20 @@ How Octopus delivers content to each Code Assistant:
 **Template** mode fills placeholders in a template file (Claude's `CLAUDE.md`). **Concatenate** mode assembles a single markdown file from header + core + rules + skills + commands + roles.
 
 ## Quick Start
+
+### Global CLI
+
+Run `bash install.sh` to install the global `octopus` command into `~/.local/bin` (customizable via `OCTOPUS_INSTALL_BIN`). The installer caches the release under `~/.octopus-cli`, publishes metadata, and exposes `octopus doctor`/`octopus update`. Legacy submodule paths (`./octopus/cli/octopus.sh`) still work during migration.
+
+Refer to [docs/rfcs/octopus-cli-tool.md](docs/rfcs/octopus-cli-tool.md) for the full migration plan.
+
+Run the hosted installer once (via the official GitHub release URL) to automatically fetch the latest verified release:
+
+```
+curl -fsSL https://github.com/leocosta/octopus/releases/latest/download/install.sh | bash
+```
+
+The script detects the latest release tag, downloads `octopus-<tag>.tar.gz` plus `octopus-<tag>.sha256`, verifies the checksum, and bootstraps the global `octopus` shim under `~/.local/bin`. To pin a specific version, pass `--version <tag>`.
 
 ### Add to an existing repo
 

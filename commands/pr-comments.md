@@ -11,7 +11,7 @@ agent: code
 
 ## Instructions
 
-1. Run: `./octopus/cli/octopus.sh pr-comments <pr-number>`
+1. Run: `octopus pr-comments <pr-number>` (legacy shim also works for the short term).
 2. The script will output pending review comments with context (file, line, comment text)
 3. For each comment:
    a. Understand what the reviewer is asking for
