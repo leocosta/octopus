@@ -14,7 +14,7 @@ rules:
 agents:
   - claude
   - copilot
-  - name: antigravity
+  - name: gemini
     output: CUSTOM.md
 
 mcp:
@@ -32,10 +32,10 @@ parse_octopus_yml "$TMPDIR/.octopus.yml"
 # Verify agents
 [[ "${OCTOPUS_AGENTS[0]}" == "claude" ]] || { echo "FAIL: agents[0] expected 'claude', got '${OCTOPUS_AGENTS[0]}'"; exit 1; }
 [[ "${OCTOPUS_AGENTS[1]}" == "copilot" ]] || { echo "FAIL: agents[1] expected 'copilot', got '${OCTOPUS_AGENTS[1]}'"; exit 1; }
-[[ "${OCTOPUS_AGENTS[2]}" == "antigravity" ]] || { echo "FAIL: agents[2] expected 'antigravity', got '${OCTOPUS_AGENTS[2]}'"; exit 1; }
+[[ "${OCTOPUS_AGENTS[2]}" == "gemini" ]] || { echo "FAIL: agents[2] expected 'gemini', got '${OCTOPUS_AGENTS[2]}'"; exit 1; }
 
 # Verify custom output
-[[ "${OCTOPUS_AGENT_OUTPUT[antigravity]}" == "CUSTOM.md" ]] || { echo "FAIL: antigravity output expected 'CUSTOM.md', got '${OCTOPUS_AGENT_OUTPUT[antigravity]}'"; exit 1; }
+[[ "${OCTOPUS_AGENT_OUTPUT[gemini]}" == "CUSTOM.md" ]] || { echo "FAIL: gemini output expected 'CUSTOM.md', got '${OCTOPUS_AGENT_OUTPUT[gemini]}'"; exit 1; }
 
 # Verify MCP
 [[ "${OCTOPUS_MCP[0]}" == "notion" ]] || { echo "FAIL: mcp[0] expected 'notion', got '${OCTOPUS_MCP[0]}'"; exit 1; }

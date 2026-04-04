@@ -70,7 +70,9 @@ TMPDIR=$(mktemp -d)
 PROJECT_ROOT="$TMPDIR"
 
 mkdir -p "$TMPDIR/.claude"
-generate_commands
+agent="claude"
+load_manifest "$agent"
+deliver_commands "$agent"
 
 [[ -f "$TMPDIR/.claude/commands/octopus:db-reset.md" ]] || { echo "FAIL: octopus:db-reset.md not created"; exit 1; }
 [[ -f "$TMPDIR/.claude/commands/octopus:db-migration.md" ]] || { echo "FAIL: octopus:db-migration.md not created"; exit 1; }

@@ -13,7 +13,9 @@ OCTOPUS_SKILLS=(adr)
 OCTOPUS_AGENTS=(copilot)
 declare -A OCTOPUS_AGENT_OUTPUT=()
 
-concatenate_agent "copilot"
+agent="copilot"
+load_manifest "copilot"
+generate_main_output "copilot"
 
 OUTPUT="$TMPDIR/.github/copilot-instructions.md"
 
@@ -41,11 +43,15 @@ guidelines_line=$(grep -n "Coding Guidelines" "$OUTPUT" | head -1 | cut -d: -f1)
 [[ "$header_line" -lt "$guidelines_line" ]] || { echo "FAIL: header should come before core content"; exit 1; }
 
 # Test custom output path
-OCTOPUS_AGENTS=(antigravity)
-OCTOPUS_AGENT_OUTPUT=([antigravity]="CUSTOM.md")
-concatenate_agent "antigravity"
+OCTOPUS_AGENTS=(gemini)
+OCTOPUS_AGENT_OUTPUT=([gemini]="CUSTOM.md")
+agent="gemini"
+load_manifest "$agent"
+generate_main_output "$agent"
 [[ -f "$TMPDIR/CUSTOM.md" ]] || { echo "FAIL: custom output path not respected"; exit 1; }
 echo "PASS: custom output path test passed"
 
 rm -rf "$TMPDIR"
 echo "PASS: concatenation tests passed"
+
+

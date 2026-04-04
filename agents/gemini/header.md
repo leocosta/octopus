@@ -1,11 +1,11 @@
-# Antigravity Instructions
+# Gemini Instructions
 
 ## Agent-Specific Behavior
 
 ### After Every Correction
 
 When you fix a mistake or learn something new about how this project should work,
-note it explicitly in your response and suggest updating ANTIGRAVITY.md so the
+note it explicitly in your response and suggest updating GEMINI.md so the
 team's guidelines improve over time.
 
 ### Plan Before Complex Tasks

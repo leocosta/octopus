@@ -95,7 +95,7 @@ reuse, quality, and efficiency before declaring the task done.
 | **OpenCode** | Yes — update `.opencode/rules/` | Yes — draft plan before coding, wait for approval | Yes — `/simplify` if available (`native_skills: true`) |
 | **Codex** | Partial — suggest updating AGENTS.md | Yes — think step by step, draft plan first | No — no native skills or slash commands |
 | **Copilot** | Partial — suggest updating `copilot-instructions.md` | Yes — think step by step, draft plan first | No — no native skills or slash commands |
-| **Antigravity** | Partial — suggest updating ANTIGRAVITY.md | Yes — think step by step, draft plan first | No — no native capabilities |
+| **Gemini** | Partial — suggest updating GEMINI.md | Yes — think step by step, draft plan first | No — no native capabilities |
 
 Notes:
 - "Partial" for correction tracking means the agent cannot self-update files autonomously — it surfaces the suggestion to the user
@@ -107,7 +107,7 @@ Notes:
 2. **`agents/opencode/header.md`** — add `## Agent-Specific Behavior` section with all 3 behaviors adapted (update `.opencode/rules/`, draft plan, `/simplify`)
 3. **`agents/codex/header.md`** — add `## Agent-Specific Behavior` section with correction and planning behaviors (no `/simplify`, no native skills)
 4. **`agents/copilot/header.md`** — add `## Agent-Specific Behavior` section with correction and planning behaviors (no `/simplify`, no native skills)
-5. **`agents/antigravity/header.md`** — replace the TODO with `## Agent-Specific Behavior` section with correction and planning behaviors
+5. **`agents/gemini/header.md`** — replace the TODO with `## Agent-Specific Behavior` section with correction and planning behaviors
 
 ## Context for Agents
 
