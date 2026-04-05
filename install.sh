@@ -169,69 +169,296 @@ install_shim() {
   # Try to get it from the downloaded release first, fall back to inline
   local shim_source="$OCTOPUS_CACHE_DIR/current/bin/octopus"
 
-  if [[ -f "$shim_source" ]]; then
-    cp "$shim_source" "$OCTOPUS_BIN_DIR/octopus"
-  else
-    # Inline shim (fallback — should not happen with proper releases)
-    cat > "$OCTOPUS_BIN_DIR/octopus" << 'SHIM'
+  # Always use the embedded shim (guaranteed to be correct and up-to-date)
+  cat > "$OCTOPUS_BIN_DIR/octopus" << 'OCTOPUS_SHIM_EOF'
 #!/usr/bin/env bash
 set -euo pipefail
-OCTOPUS_CACHE_DIR="${OCTOPUS_CACHE_DIR:-$HOME/.octopus-cli}"
-resolve_octopus_dir() {
-  local lockfile=""
-  local search_dir="$(pwd)"
-  while [[ "$search_dir" != "/" ]]; do
-    if [[ -f "$search_dir/.octopus/cli-lock.yaml" ]]; then
-      lockfile="$search_dir/.octopus/cli-lock.yaml"
-      break
-    fi
-    search_dir="$(dirname "$search_dir")"
-  done
-  local version=""
-  if [[ -n "$lockfile" ]]; then
-    version="$(grep -E '^version:' "$lockfile" | head -1 | sed 's/version:[[:space:]]*//' | tr -d '"' | tr -d "'" | xargs)"
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RELEASE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+CACHE_ROOT="${OCTOPUS_CLI_CACHE_ROOT:-$HOME/.octopus-cli}"
+CACHE_DIR="$CACHE_ROOT/cache"
+METADATA_FILE="$CACHE_ROOT/metadata.json"
+
+LOCKFILE_NAME=".octopus/cli-lock.yaml"
+
+RELEASE_OWNER="${OCTOPUS_RELEASE_OWNER:-leocosta}"
+RELEASE_REPO="${OCTOPUS_RELEASE_NAME:-octopus}"
+API_ENDPOINT="${OCTOPUS_API_ENDPOINT:-https://api.github.com/repos/$RELEASE_OWNER/$RELEASE_REPO/releases/latest}"
+
+cli_version_from_git() {
+  git -C "$RELEASE_ROOT" describe --tags --abbrev=0 2>/dev/null \
+    || git -C "$RELEASE_ROOT" rev-parse --short HEAD
+}
+
+resolve_latest_remote_version() {
+  local payload
+  payload="$(curl -fsSL "$API_ENDPOINT" 2>/dev/null || true)"
+  if [[ -n "$payload" ]]; then
+    printf '%s' "$payload" | grep '"tag_name"' | head -n1 | sed -E 's/.*"([^"]+)".*/\1/'
   fi
-  if [[ -n "$version" && -d "$OCTOPUS_CACHE_DIR/$version" ]]; then
-    echo "$OCTOPUS_CACHE_DIR/$version"
-    return 0
-  fi
-  if [[ -L "$OCTOPUS_CACHE_DIR/current" && -d "$OCTOPUS_CACHE_DIR/current" ]]; then
-    echo "$OCTOPUS_CACHE_DIR/current"
-    return 0
-  fi
-  if [[ -d "$OCTOPUS_CACHE_DIR" ]]; then
-    local latest=""
-    latest="$(ls -1 "$OCTOPUS_CACHE_DIR" 2>/dev/null | grep '^v[0-9]' | sort -V | tail -1)"
-    if [[ -n "$latest" ]]; then
-      echo "$OCTOPUS_CACHE_DIR/$latest"
+}
+
+find_lockfile() {
+  local dir="$PWD"
+  while [[ -n "$dir" && "$dir" != "/" ]]; do
+    if [[ -f "$dir/$LOCKFILE_NAME" ]]; then
+      echo "$dir/$LOCKFILE_NAME"
       return 0
     fi
-  fi
+    dir="$(dirname "$dir")"
+  done
   return 1
 }
-main() {
-  local octopus_dir
-  if ! octopus_dir="$(resolve_octopus_dir)"; then
-    echo "Octopus is not installed in this project." >&2
-    echo "" >&2
-    echo "Install the global CLI:" >&2
-    echo "  curl -fsSL https://github.com/leocosta/octopus/releases/latest/download/install.sh | bash" >&2
-    echo "" >&2
-    echo "Or add Octopus as a submodule:" >&2
-    echo "  git submodule add git@github.com:leocosta/octopus.git octopus" >&2
-    echo "  ./octopus/setup.sh" >&2
-    exit 1
-  fi
-  local cli_script="$octopus_dir/cli/octopus.sh"
-  if [[ ! -f "$cli_script" ]]; then
-    echo "Error: cli/octopus.sh not found in $octopus_dir" >&2
-    exit 1
-  fi
-  exec bash "$cli_script" "$@"
+
+read_lock_version() {
+  local lockfile="$1"
+  grep -E '^version:' "$lockfile" 2>/dev/null | awk '{print $2}' | head -n1
 }
-main "$@"
-SHIM
+
+read_metadata_field() {
+  local key="$1"
+  [[ -f "$METADATA_FILE" ]] || return 1
+  grep -o "\"$key\"[[:space:]]*:[[:space:]]*\"[^\"]*\"" "$METADATA_FILE" \
+    | sed -E "s/\"$key\"[[:space:]]*:[[:space:]]*\"([^\"]*)\"/\\1/" \
+    | head -n1
+}
+
+resolve_version() {
+  if lockfile="$(find_lockfile)"; then
+    local lock_version
+    lock_version="$(read_lock_version "$lockfile")"
+    [[ -n "$lock_version" ]] && { echo "$lock_version"; return 0; }
   fi
+  local meta_version
+  meta_version="$(read_metadata_field "version" || true)"
+  if [[ -n "$meta_version" ]]; then
+    echo "$meta_version"
+    return 0
+  fi
+  cli_version_from_git
+}
+
+ensure_cache_dirs() {
+  mkdir -p "$CACHE_DIR"
+}
+
+install_release() {
+  local version="$1"
+  ensure_cache_dirs
+  local target="$CACHE_DIR/$version"
+  if [[ "$RELEASE_ROOT" != "$target" && ( -e "$target" || -L "$target" ) ]]; then
+    rm -rf "$target"
+  fi
+  if [[ "$RELEASE_ROOT" == "$target" ]]; then
+    mkdir -p "$target"
+  else
+    ln -s "$RELEASE_ROOT" "$target"
+  fi
+  local checksum
+  checksum="$(compute_release_checksum "$RELEASE_ROOT")"
+  write_metadata "$version" "$checksum"
+  echo "Installed Octopus $version (cached at $target)"
+}
+
+write_metadata() {
+  local version="$1"
+  local checksum="$2"
+  local timestamp
+  timestamp="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+  mkdir -p "$(dirname "$METADATA_FILE")"
+  cat > "$METADATA_FILE" <<EOF
+{
+  "version": "$version",
+  "checksum": "$checksum",
+  "installed_at": "$timestamp",
+  "release_path": "$RELEASE_ROOT"
+}
+EOF
+}
+
+compute_release_checksum() {
+  local root="$1"
+  if git -C "$root" rev-parse HEAD >/dev/null 2>&1; then
+    git -C "$root" rev-parse HEAD
+    return
+  fi
+
+  (cd "$root" && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}')
+}
+
+find_project_root() {
+  local dir="$PWD"
+  while [[ -n "$dir" && "$dir" != "/" ]]; do
+    if [[ -f "$dir/.octopus.yml" || -d "$dir/.git" ]]; then
+      echo "$dir"
+      return 0
+    fi
+    dir="$(dirname "$dir")"
+  done
+  echo "$PWD"
+}
+
+pin_lockfile() {
+  local version="$1"
+  local checksum="$2"
+  local lockfile
+  if lockfile="$(find_lockfile)"; then
+    :
+  else
+    local project
+    project="$(find_project_root)"
+    lockfile="$project/$LOCKFILE_NAME"
+  fi
+  mkdir -p "$(dirname "$lockfile")"
+  cat > "$lockfile" <<EOF
+version: $version
+checksum: $checksum
+EOF
+  echo "Pinned Octopus $version in $lockfile"
+}
+
+release_dir_for() {
+  local version="$1"
+  echo "$CACHE_DIR/$version"
+}
+
+ensure_release_for() {
+  local version="$1"
+  local release_dir
+  release_dir="$(release_dir_for "$version")"
+  if [[ ! -e "$release_dir" && ! -L "$release_dir" ]]; then
+    install_release "$version"
+  fi
+}
+
+doctor() {
+  local version
+  version="$(resolve_version)"
+  if [[ -z "$version" ]]; then
+    echo "No installed release."
+    return 1
+  fi
+  local release_dir
+  release_dir="$(release_dir_for "$version")"
+  echo "Installed Octopus version: $version"
+  echo "Tracked release directory: $release_dir"
+  [[ -f "$METADATA_FILE" ]] && echo "Metadata: $METADATA_FILE"
+  [[ -e "$release_dir" ]] && echo "Release available."
+}
+
+run_subcommand() {
+  local command="$1"
+  shift
+  local version
+  version="$(resolve_version)"
+  ensure_release_for "$version"
+  local project_root
+  project_root="$(find_project_root)"
+  local release_dir
+  release_dir="$(release_dir_for "$version")"
+  (cd "$project_root" && "$release_dir/cli/octopus.sh" "$command" "$@")
+}
+
+command_install() {
+  local version=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --version)
+        version="$2"
+        shift 2
+        ;;
+      --latest)
+        version="$(resolve_latest_remote_version || cli_version_from_git)"
+        shift
+        ;;
+      *)
+        echo "Unknown option: $1"
+        exit 1
+        ;;
+    esac
+  done
+  [[ -z "$version" ]] && version="$(resolve_latest_remote_version || cli_version_from_git)"
+  install_release "$version"
+}
+
+command_update() {
+  local version=""
+  local pin=false
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --version)
+        version="$2"
+        shift 2
+        ;;
+      --latest)
+        version="$(resolve_latest_remote_version || cli_version_from_git)"
+        shift
+        ;;
+      --pin)
+        pin=true
+        shift
+        ;;
+      *)
+        echo "Unknown option: $1"
+        exit 1
+        ;;
+    esac
+  done
+  [[ -z "$version" ]] && version="$(resolve_version)"
+  install_release "$version"
+  local checksum
+  checksum="$(git -C "$RELEASE_ROOT" rev-parse HEAD)"
+  if [[ "$pin" == true ]]; then
+    pin_lockfile "$version" "$checksum"
+  fi
+}
+
+command_setup() {
+  local version
+  version="$(resolve_version)"
+  ensure_release_for "$version"
+  run_subcommand setup "$@"
+}
+
+print_help() {
+  cat <<EOF
+Usage: octopus <command> [args]
+
+Commands:
+  install [--version <tag>] [--latest]   Install a release into the local cache
+  update [--version <tag>] [--latest] [--pin]
+  setup                                  Run setup in the current repo
+  doctor                                 Inspect the cached installation
+  <other>                                Delegate to the existing workflow CLI
+EOF
+}
+
+command="${1:-}"
+shift || true
+case "$command" in
+  install)
+    command_install "$@"
+    ;;
+  update)
+    command_update "$@"
+    ;;
+  setup)
+    command_setup "$@"
+    ;;
+  doctor)
+    doctor
+    ;;
+  "" | -h | --help)
+    print_help
+    ;;
+  *)
+    run_subcommand "$command" "$@"
+    ;;
+esac
+
+OCTOPUS_SHIM_EOF
+
 
   chmod +x "$OCTOPUS_BIN_DIR/octopus"
   success "Installed shim to $OCTOPUS_BIN_DIR/octopus"
