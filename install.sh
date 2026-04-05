@@ -11,6 +11,7 @@ set -euo pipefail
 
 OCTOPUS_CACHE_DIR="${OCTOPUS_CACHE_DIR:-$HOME/.octopus-cli}"
 OCTOPUS_BIN_DIR="${OCTOPUS_BIN_DIR:-$HOME/.local/bin}"
+METADATA_FILE="$OCTOPUS_CACHE_DIR/metadata.json"
 GITHUB_REPO="leocosta/octopus"
 GITHUB_API="https://api.github.com/repos/$GITHUB_REPO"
 
@@ -106,7 +107,7 @@ get_latest_version() {
 # Download and extract a release
 download_release() {
   local version="$1"
-  local dest="$OCTOPUS_CACHE_DIR/$version"
+  local dest="$OCTOPUS_CACHE_DIR/cache/$version"
 
   if [[ -d "$dest" && "$FORCE" != true ]]; then
     info "Octopus $version already cached at $dest"
@@ -120,15 +121,16 @@ download_release() {
   tmpdir="$(mktemp -d)"
   trap "rm -rf '$tmpdir'" EXIT
 
-  # Download tarball
+  # Download tarball (show progress bar)
   local url="https://github.com/$GITHUB_REPO/archive/refs/tags/$version.tar.gz"
-  if ! curl -fsSL "$url" -o "$tmpdir/octopus.tar.gz"; then
+  if ! curl -fL --progress-bar "$url" -o "$tmpdir/octopus.tar.gz"; then
     error "Failed to download $version."
     echo "Check that the tag exists: https://github.com/$GITHUB_REPO/releases" >&2
     exit 1
   fi
 
   # Extract
+  info "Extracting..."
   tar -xzf "$tmpdir/octopus.tar.gz" -C "$tmpdir"
 
   # The tarball extracts into octopus-<version>/ or octopus-<tag>/
@@ -140,45 +142,65 @@ download_release() {
   fi
 
   # Move to cache
-  mkdir -p "$OCTOPUS_CACHE_DIR"
+  mkdir -p "$OCTOPUS_CACHE_DIR/cache"
   rm -rf "$dest" 2>/dev/null || true
   mv "$extracted_dir" "$dest"
 
-  success "Octopus $version downloaded to $dest"
+  success "Octopus $version cached at $dest"
 }
 
 # Update the "current" symlink
 update_symlink() {
   local version="$1"
-  local target="$OCTOPUS_CACHE_DIR/$version"
+  local target="$OCTOPUS_CACHE_DIR/cache/$version"
 
-  # Remove old symlink
   rm -f "$OCTOPUS_CACHE_DIR/current"
-
-  # Create new symlink
   ln -sf "$target" "$OCTOPUS_CACHE_DIR/current"
+}
 
-  info "Symlinked $OCTOPUS_CACHE_DIR/current -> $version"
+# Write metadata.json so the shim can resolve the version without git
+write_metadata() {
+  local version="$1"
+  local timestamp
+  timestamp="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+  mkdir -p "$(dirname "$METADATA_FILE")"
+  cat > "$METADATA_FILE" <<EOF
+{
+  "version": "$version",
+  "checksum": "",
+  "installed_at": "$timestamp",
+  "release_path": "$OCTOPUS_CACHE_DIR/cache/$version"
+}
+EOF
 }
 
 # Install the shim
 install_shim() {
   mkdir -p "$OCTOPUS_BIN_DIR"
 
-  # Determine the source of the shim
-  # Try to get it from the downloaded release first, fall back to inline
-  local shim_source="$OCTOPUS_CACHE_DIR/current/bin/octopus"
-
-  # Always use the embedded shim (guaranteed to be correct and up-to-date)
   cat > "$OCTOPUS_BIN_DIR/octopus" << 'OCTOPUS_SHIM_EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-RELEASE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 CACHE_ROOT="${OCTOPUS_CLI_CACHE_ROOT:-$HOME/.octopus-cli}"
 CACHE_DIR="$CACHE_ROOT/cache"
 METADATA_FILE="$CACHE_ROOT/metadata.json"
+
+# Determine RELEASE_ROOT: prefer local submodule, fall back to globally cached release.
+# Uses plain readlink (no -f) because current always points to an absolute path.
+_resolve_release_root() {
+  local candidate
+  candidate="$(cd "$SCRIPT_DIR/.." && pwd)"
+  if [[ -f "$candidate/cli/octopus.sh" ]]; then
+    echo "$candidate"
+  elif [[ -L "$CACHE_ROOT/current" ]]; then
+    readlink "$CACHE_ROOT/current"
+  else
+    echo "$candidate"
+  fi
+}
+RELEASE_ROOT="$(_resolve_release_root)"
 
 LOCKFILE_NAME=".octopus/cli-lock.yaml"
 
@@ -370,6 +392,7 @@ command_install() {
         shift 2
         ;;
       --latest)
+        echo "Resolving latest version..."
         version="$(resolve_latest_remote_version || cli_version_from_git)"
         shift
         ;;
@@ -379,8 +402,13 @@ command_install() {
         ;;
     esac
   done
-  [[ -z "$version" ]] && version="$(resolve_latest_remote_version || cli_version_from_git)"
+  if [[ -z "$version" ]]; then
+    echo "Resolving latest version..."
+    version="$(resolve_latest_remote_version || cli_version_from_git)"
+  fi
+  echo "Installing Octopus $version..."
   install_release "$version"
+  echo "Done. Run 'octopus doctor' to verify."
 }
 
 command_update() {
@@ -393,6 +421,7 @@ command_update() {
         shift 2
         ;;
       --latest)
+        echo "Resolving latest version..."
         version="$(resolve_latest_remote_version || cli_version_from_git)"
         shift
         ;;
@@ -406,10 +435,14 @@ command_update() {
         ;;
     esac
   done
-  [[ -z "$version" ]] && version="$(resolve_version)"
+  if [[ -z "$version" ]]; then
+    echo "Resolving latest version..."
+    version="$(resolve_version)"
+  fi
+  echo "Updating to Octopus $version..."
   install_release "$version"
   local checksum
-  checksum="$(git -C "$RELEASE_ROOT" rev-parse HEAD)"
+  checksum="$(compute_release_checksum "$RELEASE_ROOT")"
   if [[ "$pin" == true ]]; then
     pin_lockfile "$version" "$checksum"
   fi
@@ -480,12 +513,13 @@ check_path() {
 # Main installation flow
 main() {
   echo ""
-  echo "  ___                   _"
-  echo " / _ \ _ __   ___ _ __ | | ___"
-  echo "| | | | '_ \ / _ \ '_ \| |/ _ \\"
-  echo "| |_| | |_) |  __/ | | | |  __/"
-  echo " \___/| .__/ \___|_| |_|_|\___|"
-  echo "      |_|"
+  echo -e "${GREEN}        ___"
+  echo      "       /   \\"
+  echo      "      | o o |"
+  echo      "       \\_^_/"
+  echo      "      /||||||\\"
+  echo      "     / |||||| \\"
+  echo -e   "    /  ||||||  \\\\${NC}"
   echo ""
   echo "  Octopus CLI Installer"
   echo ""
@@ -503,8 +537,9 @@ main() {
   # Download
   download_release "$VERSION"
 
-  # Symlink
+  # Symlink and metadata
   update_symlink "$VERSION"
+  write_metadata "$VERSION"
 
   # Install shim
   install_shim
@@ -513,25 +548,22 @@ main() {
   check_path
 
   echo ""
-  success "Octopus CLI installed successfully!"
+  echo -e "${GREEN}  ✓  Octopus CLI ${VERSION} installed!${NC}"
   echo ""
-  echo "Usage:"
-  echo "  octopus                           Show available commands"
-  echo "  octopus branch-create             Create a development branch"
-  echo "  octopus dev-flow                  Run guided development workflow"
-  echo "  octopus pr-open                   Open a PR"
-  echo "  octopus pr-review                 Self-review a PR"
-  echo "  octopus pr-merge                  Merge an approved PR"
-  echo "  octopus pr-comments               Address PR review comments"
-  echo "  octopus release                   Create a versioned release"
-  echo "  octopus update                    Update Octopus"
-  echo "  octopus doc-spec                  Create a feature spec"
-  echo "  octopus doc-rfc                   Create an RFC"
-  echo "  octopus doc-adr                   Create an ADR"
-  echo "  octopus doc-research              Conduct research session"
+  echo "  Get started:"
+  echo -e "    ${BLUE}octopus setup${NC}     Configure Octopus in the current repository"
+  echo -e "    ${BLUE}octopus doctor${NC}    Verify installation health"
+  echo -e "    ${BLUE}octopus --help${NC}    Show all available commands"
   echo ""
-  echo "Uninstall:"
-  echo "  curl -fsSL https://github.com/leocosta/octopus/releases/latest/download/install.sh | bash -s -- --uninstall"
+  echo "  Workflow commands (inside a configured repo):"
+  echo "    octopus dev-flow          Guided development workflow"
+  echo "    octopus pr-open           Open a pull request"
+  echo "    octopus release           Create a versioned release"
+  echo ""
+  echo "  Docs: https://github.com/leocosta/octopus"
+  echo ""
+  echo "  Uninstall:"
+  echo "    curl -fsSL https://github.com/leocosta/octopus/releases/latest/download/install.sh | bash -s -- --uninstall"
   echo ""
 }
 
