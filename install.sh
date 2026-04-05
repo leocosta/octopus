@@ -188,7 +188,8 @@ API_ENDPOINT="${OCTOPUS_API_ENDPOINT:-https://api.github.com/repos/$RELEASE_OWNE
 
 cli_version_from_git() {
   git -C "$RELEASE_ROOT" describe --tags --abbrev=0 2>/dev/null \
-    || git -C "$RELEASE_ROOT" rev-parse --short HEAD
+    || git -C "$RELEASE_ROOT" rev-parse --short HEAD 2>/dev/null \
+    || true
 }
 
 resolve_latest_remote_version() {
