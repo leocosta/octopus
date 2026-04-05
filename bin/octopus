@@ -2,10 +2,24 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-RELEASE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 CACHE_ROOT="${OCTOPUS_CLI_CACHE_ROOT:-$HOME/.octopus-cli}"
 CACHE_DIR="$CACHE_ROOT/cache"
 METADATA_FILE="$CACHE_ROOT/metadata.json"
+
+# Determine RELEASE_ROOT: prefer local submodule, fall back to globally cached release.
+# Uses plain readlink (no -f) because current always points to an absolute path.
+_resolve_release_root() {
+  local candidate
+  candidate="$(cd "$SCRIPT_DIR/.." && pwd)"
+  if [[ -f "$candidate/cli/octopus.sh" ]]; then
+    echo "$candidate"
+  elif [[ -L "$CACHE_ROOT/current" ]]; then
+    readlink "$CACHE_ROOT/current"
+  else
+    echo "$candidate"
+  fi
+}
+RELEASE_ROOT="$(_resolve_release_root)"
 
 LOCKFILE_NAME=".octopus/cli-lock.yaml"
 
@@ -197,6 +211,7 @@ command_install() {
         shift 2
         ;;
       --latest)
+        echo "Resolving latest version..."
         version="$(resolve_latest_remote_version || cli_version_from_git)"
         shift
         ;;
@@ -206,8 +221,13 @@ command_install() {
         ;;
     esac
   done
-  [[ -z "$version" ]] && version="$(resolve_latest_remote_version || cli_version_from_git)"
+  if [[ -z "$version" ]]; then
+    echo "Resolving latest version..."
+    version="$(resolve_latest_remote_version || cli_version_from_git)"
+  fi
+  echo "Installing Octopus $version..."
   install_release "$version"
+  echo "Done. Run 'octopus doctor' to verify."
 }
 
 command_update() {
@@ -220,6 +240,7 @@ command_update() {
         shift 2
         ;;
       --latest)
+        echo "Resolving latest version..."
         version="$(resolve_latest_remote_version || cli_version_from_git)"
         shift
         ;;
@@ -233,10 +254,14 @@ command_update() {
         ;;
     esac
   done
-  [[ -z "$version" ]] && version="$(resolve_version)"
+  if [[ -z "$version" ]]; then
+    echo "Resolving latest version..."
+    version="$(resolve_version)"
+  fi
+  echo "Updating to Octopus $version..."
   install_release "$version"
   local checksum
-  checksum="$(git -C "$RELEASE_ROOT" rev-parse HEAD)"
+  checksum="$(compute_release_checksum "$RELEASE_ROOT")"
   if [[ "$pin" == true ]]; then
     pin_lockfile "$version" "$checksum"
   fi

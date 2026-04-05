@@ -17,11 +17,15 @@ jobs:
           TAG="${GITHUB_REF##*/}"
           tar -czf "octopus-${TAG}.tar.gz" --exclude .git --exclude .github -C "$GITHUB_WORKSPACE" .
           sha256sum "octopus-${TAG}.tar.gz" > "octopus-${TAG}.sha256"
+          cp "$GITHUB_WORKSPACE/install.sh" install.sh
+          cp "$GITHUB_WORKSPACE/install.ps1" install.ps1
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           files: |
-            octopus-${GITHUB_REF##*/}.tar.gz
-            octopus-${GITHUB_REF##*/}.sha256
+            octopus-${{ github.ref_name }}.tar.gz
+            octopus-${{ github.ref_name }}.sha256
+            install.sh
+            install.ps1
