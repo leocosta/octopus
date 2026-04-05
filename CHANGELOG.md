@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.15.3] - 2026-04-05
+
+🔁 Fixed the `build-release.yml` CI workflow that was silently failing on every release since `v0.15.0`, causing `install.sh` and `install.ps1` to never be uploaded as release assets (resulting in a 404 when running `curl .../install.sh`). The root cause was two redundant `cp` commands that tried to copy each file onto itself — the runner's working directory is already `$GITHUB_WORKSPACE`, so `cp install.sh install.sh` aborted with a same-file error under bash `-e`, skipping the entire upload step. Removed the two lines; the files are already in the correct location after `actions/checkout`.
+
 ## [0.15.2] - 2026-04-05
 
 🐛 Fixed global installation issues and added Windows support. The curl installer now correctly uploads `install.sh` and `install.ps1` as GitHub release assets. The octopus setup no longer crashes because `download_release()` now extracts to `cache/<version>/` matching the `CACHE_DIR` expected by the shim. Fixed `RELEASE_ROOT` detection in global shim to handle both submodule and global modes. The install.sh now writes `metadata.json` so `resolve_version()` works without requiring `octopus install` to run first. Added macOS compatibility fixes (replaced `readlink -f` with plain `readlink`), progress bar to curl downloads, and status messages to install/update commands. Created ASCII art octopus with structured welcome banner. Added `install.ps1` for Windows with PowerShell installer, correct path conversion for WSL/Git Bash, and PATH auto-configuration. 📝 Revised README with multi-platform installation guide, cleaned features table with links to docs/, and moved detailed content to docs/features/*.md.
