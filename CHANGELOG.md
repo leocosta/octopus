@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.15.0] - 2026-04-04
+
+✨ Introduced a global CLI tool to reduce the friction of using git submodules across repositories. The new `bin/octopus` serves as a standalone shim that resolves versions from a local cache (`~/.octopus-cli`), respects per-repository lockfiles (`.octopus/cli-lock.yaml`), and delegates to the existing workflow commands (`branch-create`, `dev-flow`, `pr-open`, etc.). A shell installer (`install.sh`) downloads tagged releases from GitHub, verifies SHA256 checksums, and creates a shim at `~/.local/bin/octopus`. The `setup.sh` and legacy `./octopus/cli/octopus.sh` paths remain as migration shims that forward to the global CLI. Added RFC and spec documents under `docs/rfcs/` and `docs/specs/` to guide future development, along with tests (`test_global_cli.sh`, `test_installer.sh`) covering install, doctor, and update workflows.
+
 ## [0.14.0] - 2026-04-04
 
 🚀 Renamed the `antigravity` agent to `gemini` to align with the official Gemini CLI naming and ensure out-of-the-box compatibility by generating `GEMINI.md` as the default output. Updated all agent manifests, core documentation (including `README.md` and commit conventions), and fixed test suites (`test_parse_yaml.sh`, `test_concatenate_agent.sh`, `test_commands.sh`, `test_workflow_commands.sh`) to support the new agent name and its associated conventions. This migration ensures the Octopus framework is 100% compatible with the latest Gemini CLI standards.

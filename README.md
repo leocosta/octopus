@@ -2,7 +2,7 @@
 
 ---
 
-![Version](https://img.shields.io/badge/version-v0.14.0-blue)
+![Version](https://img.shields.io/badge/version-v0.15.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Shell](https://img.shields.io/badge/shell-bash%204%2B-lightgrey)
 
@@ -113,9 +113,9 @@ The agent will show available versions, confirm with you, and handle the checkou
 
 Or update manually:
 ```bash
-cd octopus && git fetch --tags && git checkout v0.14.0 && cd ..
+cd octopus && git fetch --tags && git checkout v0.15.0 && cd ..
 ./octopus/setup.sh
-git add octopus && git commit -m "chore: update octopus to v0.14.0"
+git add octopus && git commit -m "chore: update octopus to v0.15.0"
 ```
 
 ## Configuration (.octopus.yml)
