@@ -2,7 +2,7 @@
 
 ---
 
-![Version](https://img.shields.io/badge/version-v0.15.0-blue)
+![Version](https://img.shields.io/badge/version-v0.15.2-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Shell](https://img.shields.io/badge/shell-bash%204%2B-lightgrey)
 

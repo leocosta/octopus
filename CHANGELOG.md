@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.15.2] - 2026-04-05
+
+🐛 Fixed global installation issues and added Windows support. The curl installer now correctly uploads `install.sh` and `install.ps1` as GitHub release assets. The octopus setup no longer crashes because `download_release()` now extracts to `cache/<version>/` matching the `CACHE_DIR` expected by the shim. Fixed `RELEASE_ROOT` detection in global shim to handle both submodule and global modes. The install.sh now writes `metadata.json` so `resolve_version()` works without requiring `octopus install` to run first. Added macOS compatibility fixes (replaced `readlink -f` with plain `readlink`), progress bar to curl downloads, and status messages to install/update commands. Created ASCII art octopus with structured welcome banner. Added `install.ps1` for Windows with PowerShell installer, correct path conversion for WSL/Git Bash, and PATH auto-configuration. 📝 Revised README with multi-platform installation guide, cleaned features table with links to docs/, and moved detailed content to docs/features/*.md.
+
 ## [0.15.0] - 2026-04-04
 
 ✨ Introduced a global CLI tool to reduce the friction of using git submodules across repositories. The new `bin/octopus` serves as a standalone shim that resolves versions from a local cache (`~/.octopus-cli`), respects per-repository lockfiles (`.octopus/cli-lock.yaml`), and delegates to the existing workflow commands (`branch-create`, `dev-flow`, `pr-open`, etc.). A shell installer (`install.sh`) downloads tagged releases from GitHub, verifies SHA256 checksums, and creates a shim at `~/.local/bin/octopus`. The `setup.sh` and legacy `./octopus/cli/octopus.sh` paths remain as migration shims that forward to the global CLI. Added RFC and spec documents under `docs/rfcs/` and `docs/specs/` to guide future development, along with tests (`test_global_cli.sh`, `test_installer.sh`) covering install, doctor, and update workflows.
