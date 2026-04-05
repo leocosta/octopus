@@ -1,199 +1,310 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CACHE_ROOT="${OCTOPUS_CLI_CACHE_ROOT:-$HOME/.octopus-cli}"
-CACHE_DIR="$CACHE_ROOT/cache"
-BIN_DIR="${OCTOPUS_INSTALL_BIN:-$HOME/.local/bin}"
-VERSION="${1:-}"
-RELEASE_OWNER="${OCTOPUS_RELEASE_OWNER:-leocosta}"
-RELEASE_NAME="${OCTOPUS_RELEASE_NAME:-octopus}"
-INSTALL_ENDPOINT="${OCTOPUS_INSTALL_ENDPOINT:-https://github.com/$RELEASE_OWNER/$RELEASE_NAME/releases/download}"
-API_ENDPOINT="${OCTOPUS_API_ENDPOINT:-https://api.github.com/repos/$RELEASE_OWNER/$RELEASE_NAME/releases/latest}"
-TMP_DOWNLOAD_DIR=""
-LATEST_CHECKSUM=""
+# Octopus CLI Installer
+# Downloads Octopus releases from GitHub and installs the global CLI.
+#
+# Usage:
+#   curl -fsSL https://github.com/leocosta/octopus/releases/latest/download/install.sh | bash
+#   # Or with a specific version:
+#   curl -fsSL https://github.com/leocosta/octopus/releases/download/v0.15.0/install.sh | bash -s -- --version v0.15.0
 
-ARCHIVE_NAME() { echo "octopus-$1.tar.gz"; }
-CHECKSUM_NAME() { echo "octopus-$1.sha256"; }
+OCTOPUS_CACHE_DIR="${OCTOPUS_CACHE_DIR:-$HOME/.octopus-cli}"
+OCTOPUS_BIN_DIR="${OCTOPUS_BIN_DIR:-$HOME/.local/bin}"
+GITHUB_REPO="leocosta/octopus"
+GITHUB_API="https://api.github.com/repos/$GITHUB_REPO"
 
-resolve_latest_version() {
-  local payload
-  payload="$(curl -fsSL "$API_ENDPOINT" 2>/dev/null || true)"
-  if [[ -n "$payload" ]]; then
-    printf '%s' "$payload" | grep '"tag_name"' | head -n1 | sed -E 's/.*"([^"]+)".*/\1/'
-  fi
-}
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
-usage() {
-  cat <<EOF
-Usage: install.sh [--version <tag>] [--bin-dir <path>] [--cache-root <path>]
+info()    { echo -e "${BLUE}ℹ  $1${NC}"; }
+success() { echo -e "${GREEN}✓  $1${NC}"; }
+warn()    { echo -e "${YELLOW}⚠  $1${NC}"; }
+error()   { echo -e "${RED}✗  $1${NC}" >&2; }
 
-Options:
-  --version <tag>     Git tag or ref to install (default: latest tag)
-  --bin-dir <path>    Directory to expose the global \`octopus\` shim (default: $BIN_DIR)
-  --cache-root <path> Base directory for Octopus cache (default: \\$HOME/.octopus-cli)
-EOF
-  exit 1
-}
+# Parse arguments
+VERSION=""
+FORCE=false
+UNINSTALL=false
 
-parse_args() {
-  while [[ $# -gt 0 ]]; do
-    case "$1" in
-      --version)
-        VERSION="$2"
-        shift 2
-        ;;
-      --bin-dir)
-        BIN_DIR="$2"
-        shift 2
-        ;;
-      --cache-root)
-        CACHE_ROOT="$2"
-        CACHE_DIR="$CACHE_ROOT/cache"
-        shift 2
-        ;;
-      -h | --help)
-        usage
-        ;;
-      *)
-        usage
-        ;;
-    esac
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --version|-v)
+      VERSION="${2:-}"
+      if [[ -z "$VERSION" ]]; then
+        error "Missing version argument."
+        echo "Usage: install.sh --version v0.15.0" >&2
+        exit 1
+      fi
+      shift 2
+      ;;
+    --force|-f)
+      FORCE=true
+      shift
+      ;;
+    --uninstall)
+      UNINSTALL=true
+      shift
+      ;;
+    --help|-h)
+      echo "Octopus CLI Installer"
+      echo ""
+      echo "Usage:"
+      echo "  install.sh                    Install latest version"
+      echo "  install.sh --version v0.15.0  Install specific version"
+      echo "  install.sh --force            Reinstall even if already installed"
+      echo "  install.sh --uninstall        Remove Octopus CLI"
+      echo "  install.sh --help             Show this help"
+      exit 0
+      ;;
+    *)
+      error "Unknown argument: $1"
+      exit 1
+      ;;
+  esac
+done
+
+# Uninstall mode
+if [[ "$UNINSTALL" = true ]]; then
+  info "Uninstalling Octopus CLI..."
+  rm -f "$OCTOPUS_BIN_DIR/octopus"
+  rm -rf "$OCTOPUS_CACHE_DIR"
+  success "Octopus CLI removed."
+  exit 0
+fi
+
+# Check prerequisites
+check_prerequisites() {
+  local missing=()
+  for cmd in curl tar bash; do
+    if ! command -v "$cmd" &>/dev/null; then
+      missing+=("$cmd")
+    fi
   done
-}
 
-ensure_cache_dirs() {
-  mkdir -p "$CACHE_DIR"
-}
-
-ensure_target_dir() {
-  mkdir -p "$TARGET_DIR"
-}
-
-cleanup_download() {
-  [[ -n "$TMP_DOWNLOAD_DIR" ]] && rm -rf "$TMP_DOWNLOAD_DIR"
-  TMP_DOWNLOAD_DIR=""
-}
-
-download_release_tarball() {
-  local version="$1"
-  LATEST_CHECKSUM=""
-  TMP_DOWNLOAD_DIR="$(mktemp -d)"
-  local archive_path="$TMP_DOWNLOAD_DIR/$(ARCHIVE_NAME "$version")"
-  local checksum_path="$TMP_DOWNLOAD_DIR/$(CHECKSUM_NAME "$version")"
-  curl -fsSL "$INSTALL_ENDPOINT/$version/$(ARCHIVE_NAME "$version")" -o "$archive_path" || return 1
-  curl -fsSL "$INSTALL_ENDPOINT/$version/$(CHECKSUM_NAME "$version")" -o "$checksum_path" || return 1
-  verify_checksum "$archive_path" "$checksum_path"
-  tar -xzf "$archive_path" -C "$TARGET_DIR" --strip-components=1
-  cleanup_download
-  return 0
-}
-
-verify_checksum() {
-  local file="$1"
-  local checksum_file="$2"
-  local expected
-  expected="$(awk '{print $1}' "$checksum_file")"
-  local actual
-  actual="$(sha256sum "$file" | awk '{print $1}')"
-  if [[ "$expected" != "$actual" ]]; then
-    echo "Checksum mismatch for $file" >&2
-    echo "expected: $expected" >&2
-    echo "actual:   $actual" >&2
-    return 1
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    error "Missing required commands: ${missing[*]}"
+    exit 1
   fi
-  LATEST_CHECKSUM="$expected"
 }
 
-prepare_cache_from_git() {
-  if git -C "$SCRIPT_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    rm -rf "$TARGET_DIR"
-    mkdir -p "$TARGET_DIR"
-    git archive "$VERSION" | tar -x -C "$TARGET_DIR"
+# Fetch the latest release tag from GitHub API
+get_latest_version() {
+  local latest
+  latest="$(curl -fsSL "$GITHUB_API/releases/latest" | grep '"tag_name"' | head -1 | sed 's/.*"tag_name":[[:space:]]*"//' | sed 's/".*//')"
+  if [[ -z "$latest" ]]; then
+    error "Could not determine latest version from GitHub."
+    exit 1
+  fi
+  echo "$latest"
+}
+
+# Download and extract a release
+download_release() {
+  local version="$1"
+  local dest="$OCTOPUS_CACHE_DIR/$version"
+
+  if [[ -d "$dest" && "$FORCE" != true ]]; then
+    info "Octopus $version already cached at $dest"
     return 0
+  fi
+
+  info "Downloading Octopus $version..."
+
+  # Create temp directory for extraction
+  local tmpdir
+  tmpdir="$(mktemp -d)"
+  trap "rm -rf '$tmpdir'" EXIT
+
+  # Download tarball
+  local url="https://github.com/$GITHUB_REPO/archive/refs/tags/$version.tar.gz"
+  if ! curl -fsSL "$url" -o "$tmpdir/octopus.tar.gz"; then
+    error "Failed to download $version."
+    echo "Check that the tag exists: https://github.com/$GITHUB_REPO/releases" >&2
+    exit 1
+  fi
+
+  # Extract
+  tar -xzf "$tmpdir/octopus.tar.gz" -C "$tmpdir"
+
+  # The tarball extracts into octopus-<version>/ or octopus-<tag>/
+  local extracted_dir
+  extracted_dir="$(find "$tmpdir" -maxdepth 1 -type d -name 'octopus-*' | head -1)"
+  if [[ -z "$extracted_dir" ]]; then
+    error "Unexpected tarball structure."
+    exit 1
+  fi
+
+  # Move to cache
+  mkdir -p "$OCTOPUS_CACHE_DIR"
+  rm -rf "$dest" 2>/dev/null || true
+  mv "$extracted_dir" "$dest"
+
+  success "Octopus $version downloaded to $dest"
+}
+
+# Update the "current" symlink
+update_symlink() {
+  local version="$1"
+  local target="$OCTOPUS_CACHE_DIR/$version"
+
+  # Remove old symlink
+  rm -f "$OCTOPUS_CACHE_DIR/current"
+
+  # Create new symlink
+  ln -sf "$target" "$OCTOPUS_CACHE_DIR/current"
+
+  info "Symlinked $OCTOPUS_CACHE_DIR/current -> $version"
+}
+
+# Install the shim
+install_shim() {
+  mkdir -p "$OCTOPUS_BIN_DIR"
+
+  # Determine the source of the shim
+  # Try to get it from the downloaded release first, fall back to inline
+  local shim_source="$OCTOPUS_CACHE_DIR/current/bin/octopus"
+
+  if [[ -f "$shim_source" ]]; then
+    cp "$shim_source" "$OCTOPUS_BIN_DIR/octopus"
+  else
+    # Inline shim (fallback — should not happen with proper releases)
+    cat > "$OCTOPUS_BIN_DIR/octopus" << 'SHIM'
+#!/usr/bin/env bash
+set -euo pipefail
+OCTOPUS_CACHE_DIR="${OCTOPUS_CACHE_DIR:-$HOME/.octopus-cli}"
+resolve_octopus_dir() {
+  local lockfile=""
+  local search_dir="$(pwd)"
+  while [[ "$search_dir" != "/" ]]; do
+    if [[ -f "$search_dir/.octopus/cli-lock.yaml" ]]; then
+      lockfile="$search_dir/.octopus/cli-lock.yaml"
+      break
+    fi
+    search_dir="$(dirname "$search_dir")"
+  done
+  local version=""
+  if [[ -n "$lockfile" ]]; then
+    version="$(grep -E '^version:' "$lockfile" | head -1 | sed 's/version:[[:space:]]*//' | tr -d '"' | tr -d "'" | xargs)"
+  fi
+  if [[ -n "$version" && -d "$OCTOPUS_CACHE_DIR/$version" ]]; then
+    echo "$OCTOPUS_CACHE_DIR/$version"
+    return 0
+  fi
+  if [[ -L "$OCTOPUS_CACHE_DIR/current" && -d "$OCTOPUS_CACHE_DIR/current" ]]; then
+    echo "$OCTOPUS_CACHE_DIR/current"
+    return 0
+  fi
+  if [[ -d "$OCTOPUS_CACHE_DIR" ]]; then
+    local latest=""
+    latest="$(ls -1 "$OCTOPUS_CACHE_DIR" 2>/dev/null | grep '^v[0-9]' | sort -V | tail -1)"
+    if [[ -n "$latest" ]]; then
+      echo "$OCTOPUS_CACHE_DIR/$latest"
+      return 0
+    fi
   fi
   return 1
 }
-
-install_release() {
-  local version="$1"
-  ensure_cache_dirs
-  ensure_target_dir
-  rm -rf "$TARGET_DIR"/*
-  if ! download_release_tarball "$version"; then
-    prepare_cache_from_git || {
-      echo "Failed to install release $version (no release asset and not in git repo)" >&2
-      exit 1
-    }
+main() {
+  local octopus_dir
+  if ! octopus_dir="$(resolve_octopus_dir)"; then
+    echo "Octopus is not installed in this project." >&2
+    echo "" >&2
+    echo "Install the global CLI:" >&2
+    echo "  curl -fsSL https://github.com/leocosta/octopus/releases/latest/download/install.sh | bash" >&2
+    echo "" >&2
+    echo "Or add Octopus as a submodule:" >&2
+    echo "  git submodule add git@github.com:leocosta/octopus.git octopus" >&2
+    echo "  ./octopus/setup.sh" >&2
+    exit 1
   fi
-  [[ -x "$TARGET_DIR/bin/octopus" ]] || {
-    mkdir -p "$TARGET_DIR/bin"
-    cp "$SCRIPT_DIR/bin/octopus" "$TARGET_DIR/bin/octopus"
-    chmod +x "$TARGET_DIR/bin/octopus"
-  }
-  local checksum
-  checksum="${LATEST_CHECKSUM:-$(compute_local_checksum "$TARGET_DIR")}"
-  write_metadata "$version" "$checksum"
-  echo "Installed Octopus $version (cached at $TARGET_DIR)"
+  local cli_script="$octopus_dir/cli/octopus.sh"
+  if [[ ! -f "$cli_script" ]]; then
+    echo "Error: cli/octopus.sh not found in $octopus_dir" >&2
+    exit 1
+  fi
+  exec bash "$cli_script" "$@"
+}
+main "$@"
+SHIM
+  fi
+
+  chmod +x "$OCTOPUS_BIN_DIR/octopus"
+  success "Installed shim to $OCTOPUS_BIN_DIR/octopus"
 }
 
-compute_local_checksum() {
-  local root="$1"
-  (cd "$root" && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}')
+# Check if bin dir is in PATH
+check_path() {
+  if [[ ":$PATH:" != *":$OCTOPUS_BIN_DIR:"* ]]; then
+    warn "$OCTOPUS_BIN_DIR is not in your PATH."
+    echo ""
+    echo "Add it to your shell profile:"
+    echo "  echo 'export PATH=\"$OCTOPUS_BIN_DIR:\$PATH\"' >> ~/.bashrc  # or ~/.zshrc"
+    echo "  source ~/.bashrc"
+    echo ""
+  fi
 }
 
-write_metadata() {
-  local version="$1"
-  local checksum="$2"
-  local timestamp
-  timestamp="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-  mkdir -p "$CACHE_ROOT"
-  cat > "$CACHE_ROOT/metadata.json" <<EOF
-{
-  "version": "$version",
-  "checksum": "$checksum",
-  "installed_at": "$timestamp",
-  "release_endpoint": "$INSTALL_ENDPOINT"
-}
-EOF
-}
+# Main installation flow
+main() {
+  echo ""
+  echo "  ___                   _"
+  echo " / _ \ _ __   ___ _ __ | | ___"
+  echo "| | | | '_ \ / _ \ '_ \| |/ _ \\"
+  echo "| |_| | |_) |  __/ | | | |  __/"
+  echo " \___/| .__/ \___|_| |_|_|\___|"
+  echo "      |_|"
+  echo ""
+  echo "  Octopus CLI Installer"
+  echo ""
 
-parse_args "$@"
-if [[ -z "$VERSION" ]]; then
-  VERSION="$(resolve_latest_version)"
+  check_prerequisites
+
+  # Determine version
   if [[ -z "$VERSION" ]]; then
-    if git -C "$SCRIPT_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-      VERSION="$(git -C "$SCRIPT_DIR" describe --tags --abbrev=0 2>/dev/null || git -C "$SCRIPT_DIR" rev-parse --short HEAD)"
-    fi
+    info "No version specified, fetching latest..."
+    VERSION="$(get_latest_version)"
   fi
-fi
-if [[ -z "$VERSION" ]]; then
-  echo "Unable to determine Octopus release version" >&2
-  exit 1
-fi
 
-TARGET_DIR="$CACHE_DIR/$VERSION"
-SHIM_PATH="$BIN_DIR/octopus"
+  success "Installing Octopus $VERSION"
 
-install_release "$VERSION"
+  # Download
+  download_release "$VERSION"
 
-mkdir -p "$BIN_DIR"
-cat > "$SHIM_PATH" <<'EOF'
-#!/usr/bin/env bash
-set -euo pipefail
+  # Symlink
+  update_symlink "$VERSION"
 
-CACHE_ROOT="${OCTOPUS_CLI_CACHE_ROOT:-$HOME/.octopus-cli}"
-METADATA="$CACHE_ROOT/metadata.json"
+  # Install shim
+  install_shim
 
-if [[ ! -f "$METADATA" ]]; then
-  echo "Octopus CLI metadata missing; run install.sh first" >&2
-  exit 1
-fi
+  # Path check
+  check_path
 
-version="$(grep -E '"version"[[:space:]]*:' "$METADATA" | head -n1 | sed -E 's/.*"([^"]+)".*/\1/')"
-exec "$CACHE_ROOT/cache/$version/bin/octopus" "$@"
-EOF
+  echo ""
+  success "Octopus CLI installed successfully!"
+  echo ""
+  echo "Usage:"
+  echo "  octopus                           Show available commands"
+  echo "  octopus branch-create             Create a development branch"
+  echo "  octopus dev-flow                  Run guided development workflow"
+  echo "  octopus pr-open                   Open a PR"
+  echo "  octopus pr-review                 Self-review a PR"
+  echo "  octopus pr-merge                  Merge an approved PR"
+  echo "  octopus pr-comments               Address PR review comments"
+  echo "  octopus release                   Create a versioned release"
+  echo "  octopus update                    Update Octopus"
+  echo "  octopus doc-spec                  Create a feature spec"
+  echo "  octopus doc-rfc                   Create an RFC"
+  echo "  octopus doc-adr                   Create an ADR"
+  echo "  octopus doc-research              Conduct research session"
+  echo ""
+  echo "Uninstall:"
+  echo "  curl -fsSL https://github.com/leocosta/octopus/releases/latest/download/install.sh | bash -s -- --uninstall"
+  echo ""
+}
 
-chmod +x "$SHIM_PATH"
-
-echo "Installed Octopus CLI $VERSION and created shim at $SHIM_PATH"
+main "$@"

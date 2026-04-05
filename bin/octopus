@@ -261,7 +261,7 @@ Commands:
 EOF
 }
 
-command="$1"
+command="${1:-}"
 shift || true
 case "$command" in
   install)
