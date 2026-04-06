@@ -15,8 +15,8 @@ jobs:
         shell: bash
         run: |
           TAG="${GITHUB_REF##*/}"
-          tar -czf "octopus-${TAG}.tar.gz" --exclude .git --exclude .github -C "$GITHUB_WORKSPACE" .
-          sha256sum "octopus-${TAG}.tar.gz" > "octopus-${TAG}.sha256"
+          tar -czf "/tmp/octopus-${TAG}.tar.gz" --exclude .git --exclude .github -C "$GITHUB_WORKSPACE" .
+          sha256sum "/tmp/octopus-${TAG}.tar.gz" > "/tmp/octopus-${TAG}.sha256"
 
       - name: Upload release assets
         shell: bash
@@ -25,7 +25,7 @@ jobs:
         run: |
           TAG="${GITHUB_REF##*/}"
           gh release upload "$TAG" \
-            "octopus-${TAG}.tar.gz" \
-            "octopus-${TAG}.sha256" \
+            "/tmp/octopus-${TAG}.tar.gz" \
+            "/tmp/octopus-${TAG}.sha256" \
             install.sh \
             install.ps1
