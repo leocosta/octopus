@@ -2,6 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.15.9] - 2026-04-05
+Fixed the CLI setup command by adding the missing setup command to cli/octopus.sh 🐛
+
 ## [0.15.8] - 2026-04-05
 Added contents: write permission for GitHub release upload in CI workflow. 🐛
 
