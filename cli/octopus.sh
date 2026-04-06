@@ -10,6 +10,7 @@ if [[ -z "$COMMAND" ]]; then
   echo "Usage: octopus.sh <command> [args]"
   echo ""
   echo "Commands:"
+  echo "  setup          Configure Octopus in the current repository"
   echo "  branch-create  Create a development branch"
   echo "  dev-flow       Run the guided development workflow"
   echo "  pr-open        Open a PR following conventions"
