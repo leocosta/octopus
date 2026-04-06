@@ -9,13 +9,37 @@
 # ---------------------------------------------------------------------------
 
 WIZARD_BACKEND=""
+WIZARD_IS_WINDOWS=0  # 1 when running under Git Bash / MSYS2 / Cygwin
+WIZARD_COLORS=1      # 0 to suppress ANSI escape codes
+WIZARD_UNICODE=1     # 0 to replace non-ASCII chars with ASCII equivalents
+
+_detect_platform() {
+  # Detect MSYS2 / Git Bash / Cygwin
+  if [[ "${OSTYPE:-}" == msys* || "${OSTYPE:-}" == cygwin \
+     || -n "${MSYSTEM:-}" || -n "${CYGWIN:-}" ]]; then
+    WIZARD_IS_WINDOWS=1
+  fi
+
+  # Disable colors when terminal requests it (NO_COLOR spec or dumb terminal)
+  if [[ -n "${NO_COLOR:-}" || "${TERM:-}" == "dumb" ]]; then
+    WIZARD_COLORS=0
+  fi
+
+  # Disable Unicode when locale is not UTF-8 (common on bare MSYS2 installs)
+  if (( WIZARD_IS_WINDOWS )); then
+    local locale_str="${LC_ALL:-}${LC_CTYPE:-}${LANG:-}"
+    if [[ "$locale_str" != *[Uu][Tt][Ff]* ]]; then
+      WIZARD_UNICODE=0
+    fi
+  fi
+}
 
 _detect_tui_backend() {
   if command -v fzf &>/dev/null; then
     WIZARD_BACKEND="fzf"
-  elif command -v whiptail &>/dev/null; then
+  elif (( ! WIZARD_IS_WINDOWS )) && command -v whiptail &>/dev/null; then
     WIZARD_BACKEND="whiptail"
-  elif command -v dialog &>/dev/null; then
+  elif (( ! WIZARD_IS_WINDOWS )) && command -v dialog &>/dev/null; then
     WIZARD_BACKEND="dialog"
   else
     WIZARD_BACKEND="bash"
@@ -26,12 +50,16 @@ _detect_tui_backend() {
 # Colors / formatting helpers
 # ---------------------------------------------------------------------------
 
-_bold()  { printf '\033[1m%s\033[0m' "$*"; }
-_cyan()  { printf '\033[36m%s\033[0m' "$*"; }
-_green() { printf '\033[32m%s\033[0m' "$*"; }
-_dim()   { printf '\033[2m%s\033[0m' "$*"; }
+_bold()  { (( WIZARD_COLORS )) && printf '\033[1m%s\033[0m' "$*" || printf '%s' "$*"; }
+_cyan()  { (( WIZARD_COLORS )) && printf '\033[36m%s\033[0m' "$*" || printf '%s' "$*"; }
+_green() { (( WIZARD_COLORS )) && printf '\033[32m%s\033[0m' "$*" || printf '%s' "$*"; }
+_dim()   { (( WIZARD_COLORS )) && printf '\033[2m%s\033[0m' "$*" || printf '%s' "$*"; }
 
-_hr() { printf '%0.s─' $(seq 1 60); printf '\n'; }
+_hr() {
+  (( WIZARD_UNICODE )) && printf '%0.s─' $(seq 1 60) \
+                       || printf '%0.s-' $(seq 1 60)
+  printf '\n'
+}
 
 # ---------------------------------------------------------------------------
 # Core UI primitives
@@ -65,6 +93,12 @@ _multiselect_fzf() {
   local header
   header="$(printf '%s\n%s\n%s' "$(_bold "$title")" "$desc" "TAB=toggle  ENTER=confirm  (none = skip)")"
 
+  # Choose markers based on Unicode support
+  local pre_sel marker pointer
+  (( WIZARD_UNICODE )) && pre_sel="✓ " || pre_sel="* "
+  (( WIZARD_UNICODE )) && marker="✓"   || marker=">"
+  (( WIZARD_UNICODE )) && pointer="▶"  || pointer=">"
+
   # Mark defaults with a prefix so fzf can pre-select via --bind
   local input=()
   local item
@@ -75,7 +109,7 @@ _multiselect_fzf() {
       [[ "$def" == "$item" ]] && is_default=1 && break
     done
     if (( is_default )); then
-      input+=("✓ $item")
+      input+=("${pre_sel}$item")
     else
       input+=("  $item")
     fi
@@ -90,8 +124,8 @@ _multiselect_fzf() {
         --height=~40% \
         --layout=reverse \
         --border=rounded \
-        --marker="✓" \
-        --pointer="▶" \
+        --marker="$marker" \
+        --pointer="$pointer" \
         --bind='space:toggle' \
         --bind='ctrl-a:toggle-all' \
         --ansi \
@@ -99,8 +133,8 @@ _multiselect_fzf() {
 
   WIZARD_SELECTED=()
   while IFS= read -r line; do
-    # Strip leading ✓ or spaces and trim
-    line="${line#✓ }"
+    # Strip leading pre_sel prefix or spaces and trim
+    line="${line#"${pre_sel}"}"
     line="${line#  }"
     line="${line#"${line%%[! ]*}"}"  # ltrim
     [[ -n "$line" ]] && WIZARD_SELECTED+=("$line")
@@ -378,7 +412,10 @@ WIZARD_KNOWLEDGE=""
 _wizard_banner() {
   clear 2>/dev/null || true
   echo ""
-  echo "$(_bold "$(_cyan "  🐙 Octopus Setup Wizard")")"
+  local title
+  (( WIZARD_UNICODE )) && title="  🐙 Octopus Setup Wizard" \
+                       || title="  ** Octopus Setup Wizard **"
+  echo "$(_bold "$(_cyan "$title")")"
   echo "  $(_dim "Configure your .octopus.yml interactively")"
   echo ""
   _hr
@@ -605,7 +642,8 @@ _wizard_step_commands() {
     local cmd_run="$WIZARD_TEXT"
 
     WIZARD_COMMANDS+=("${cmd_name}|${cmd_desc}|${cmd_run}")
-    echo "  $(_green "✓ Added: /octopus:${cmd_name}")"
+    local _check; (( WIZARD_UNICODE )) && _check="✓" || _check="+"
+    echo "  $(_green "$_check Added: /octopus:${cmd_name}")"
   done
 }
 
@@ -863,7 +901,8 @@ run_setup_wizard() {
     return 0  # caller will fall back to template copy
   fi
 
-  _detect_tui_backend
+  _detect_platform    # sets WIZARD_IS_WINDOWS, WIZARD_COLORS, WIZARD_UNICODE
+  _detect_tui_backend # uses WIZARD_IS_WINDOWS to skip whiptail/dialog on Windows
 
   # Pre-fill from existing config when reconfiguring
   if [[ "$reconfigure" == "--reconfigure" && -f "$project_root/.octopus.yml" ]]; then
@@ -903,7 +942,8 @@ run_setup_wizard() {
   _generate_octopus_yml > "$project_root/.octopus.yml"
 
   echo ""
-  echo "  $(_green "✓ Written: $project_root/.octopus.yml")"
+  local _check; (( WIZARD_UNICODE )) && _check="✓" || _check="ok"
+  echo "  $(_green "$_check Written: $project_root/.octopus.yml")"
   echo "  $(_dim "Running octopus setup to apply configuration...")"
   echo ""
 }
