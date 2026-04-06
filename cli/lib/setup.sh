@@ -30,21 +30,56 @@ _ask_yes() {
   esac
 }
 
-# 4. Scaffold .octopus.yml if missing
+# 4. Interactive wizard for first-time setup or reconfiguration
+RECONFIGURE_FLAG="${1:-}"
+
 if [[ ! -f "$PROJECT_ROOT/.octopus.yml" ]]; then
   echo ""
   echo "No .octopus.yml found in: $PROJECT_ROOT"
+  echo ""
 
-  if [[ ! -f "$EXAMPLE_YML" ]]; then
-    echo "WARNING: template not found at $EXAMPLE_YML — skipping scaffold."
-  elif _ask_yes "Create .octopus.yml from template?"; then
-    cp "$EXAMPLE_YML" "$PROJECT_ROOT/.octopus.yml"
-    echo "Created: $PROJECT_ROOT/.octopus.yml"
-    echo "  -> Edit it and re-run 'octopus setup', or continue now with defaults."
-    echo ""
+  if [[ -t 0 && -t 1 ]]; then
+    # Interactive: run the setup wizard
+    source "$CLI_DIR/lib/setup-wizard.sh"
+    run_setup_wizard "$PROJECT_ROOT" "$RELEASE_DIR"
+
+    # If wizard skipped (non-interactive returned), fall back to template copy
+    if [[ ! -f "$PROJECT_ROOT/.octopus.yml" ]]; then
+      if [[ -f "$EXAMPLE_YML" ]]; then
+        cp "$EXAMPLE_YML" "$PROJECT_ROOT/.octopus.yml"
+        echo "Created: $PROJECT_ROOT/.octopus.yml"
+        echo "  -> Edit it and re-run 'octopus setup', or continue now with defaults."
+        echo ""
+      else
+        echo "WARNING: template not found at $EXAMPLE_YML — skipping scaffold."
+      fi
+    fi
   else
-    echo "Skipped. Re-run 'octopus setup' after creating .octopus.yml."
-    exit 0
+    # Non-interactive: copy template as before
+    if [[ ! -f "$EXAMPLE_YML" ]]; then
+      echo "WARNING: template not found at $EXAMPLE_YML — skipping scaffold."
+    elif _ask_yes "Create .octopus.yml from template?"; then
+      cp "$EXAMPLE_YML" "$PROJECT_ROOT/.octopus.yml"
+      echo "Created: $PROJECT_ROOT/.octopus.yml"
+      echo "  -> Edit it and re-run 'octopus setup', or continue now with defaults."
+      echo ""
+    else
+      echo "Skipped. Re-run 'octopus setup' after creating .octopus.yml."
+      exit 0
+    fi
+  fi
+
+elif [[ "$RECONFIGURE_FLAG" == "--reconfigure" ]]; then
+  # Reconfigure existing manifest interactively
+  if [[ -t 0 && -t 1 ]]; then
+    echo ""
+    echo "Reconfiguring existing .octopus.yml..."
+    echo ""
+    source "$CLI_DIR/lib/setup-wizard.sh"
+    run_setup_wizard "$PROJECT_ROOT" "$RELEASE_DIR" "--reconfigure"
+  else
+    echo "WARNING: --reconfigure requires an interactive terminal."
+    exit 1
   fi
 fi
 
@@ -58,5 +93,9 @@ if [[ ! -f "$PROJECT_ROOT/.env.octopus" ]]; then
   fi
 fi
 
-# 6. Delegate to the release setup.sh
-bash "$SETUP_SCRIPT" "$@"
+# 6. Delegate to the release setup.sh (strip --reconfigure flag, unknown to setup.sh)
+_setup_args=()
+for _arg in "$@"; do
+  [[ "$_arg" != "--reconfigure" ]] && _setup_args+=("$_arg")
+done
+bash "$SETUP_SCRIPT" "${_setup_args[@]}"
