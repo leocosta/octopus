@@ -2,6 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.16.0] - 2026-04-06
+Added an interactive TUI setup wizard (`octopus setup`) that guides users through configuring `.octopus.yml` with multi-backend support (fzf/whiptail/dialog/bash) and full Windows/Git Bash compatibility. ✨
+
 ## [0.15.10] - 2026-04-05
 Fixed the CLI setup for PROJECT_ROOT and added interactive scaffolding features. 🐛
 
