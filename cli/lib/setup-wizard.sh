@@ -373,7 +373,8 @@ _select_one() {
         (( i++ ))
       done
       echo ""
-      printf "> $(_dim "(default: %d") " "$default_idx")"
+      local _def_hint; _def_hint="$(_dim "(default: $default_idx)")"
+      printf "> %s " "$_def_hint"
       local reply
       read -r reply
       if [[ "$reply" =~ ^[0-9]+$ ]] && (( reply >= 1 && reply <= ${#_so_items[@]} )); then
