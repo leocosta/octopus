@@ -2,6 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.16.1] - 2026-04-06
+Fixed a syntax error in the _select_one bash fallback function that was causing issues in the setup process. 🐛
+
 ## [0.16.0] - 2026-04-06
 Added an interactive TUI setup wizard (`octopus setup`) that guides users through configuring `.octopus.yml` with multi-backend support (fzf/whiptail/dialog/bash) and full Windows/Git Bash compatibility. ✨
 
