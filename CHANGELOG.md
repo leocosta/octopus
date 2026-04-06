@@ -2,6 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.15.8] - 2026-04-05
+Added contents: write permission for GitHub release upload in CI workflow. 🐛
+
 ## [0.15.7] - 2026-04-05
 Fixed a CI issue where the tar archive was causing self-modification errors by writing it to /tmp instead. 🐛
 
