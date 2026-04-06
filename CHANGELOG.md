@@ -2,6 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.15.10] - 2026-04-05
+Fixed the CLI setup for PROJECT_ROOT and added interactive scaffolding features. 🐛
+
 ## [0.15.9] - 2026-04-05
 Fixed the CLI setup command by adding the missing setup command to cli/octopus.sh 🐛
 
