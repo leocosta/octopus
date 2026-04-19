@@ -31,3 +31,26 @@ done
 echo "PASS: intent/stack bundles expose a persona question"
 
 echo "All bundle structural tests passed!"
+
+echo "Test 4: parse_octopus_yml accepts a bundles: list"
+
+source "$SCRIPT_DIR/setup.sh" --source-only
+
+TMPDIR=$(mktemp -d)
+cat > "$TMPDIR/test.yml" <<'EOF'
+bundles:
+  - starter
+  - quality-gates
+EOF
+
+parse_octopus_yml "$TMPDIR/test.yml"
+
+[[ ${#OCTOPUS_BUNDLES[@]} -eq 2 ]] \
+  || { echo "FAIL: expected 2 bundles, got ${#OCTOPUS_BUNDLES[@]}"; exit 1; }
+[[ "${OCTOPUS_BUNDLES[0]}" == "starter" ]] \
+  || { echo "FAIL: first bundle wrong"; exit 1; }
+[[ "${OCTOPUS_BUNDLES[1]}" == "quality-gates" ]] \
+  || { echo "FAIL: second bundle wrong"; exit 1; }
+
+rm -rf "$TMPDIR"
+echo "PASS: parser reads bundles: list"

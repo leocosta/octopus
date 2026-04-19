@@ -55,6 +55,7 @@ OCTOPUS_USER_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/octopus"
 # Parsed config arrays
 declare -a OCTOPUS_RULES=()
 declare -a OCTOPUS_SKILLS=()
+declare -a OCTOPUS_BUNDLES=()
 OCTOPUS_HOOKS="false"
 declare -a OCTOPUS_AGENTS=()
 declare -A OCTOPUS_AGENT_OUTPUT=()
@@ -231,6 +232,7 @@ parse_octopus_yml() {
       fi
 
       case "$current_section" in
+        bundles)   OCTOPUS_BUNDLES+=("$value") ;;
         rules)     OCTOPUS_RULES+=("$value") ;;
         skills)    OCTOPUS_SKILLS+=("$value") ;;
         agents)    OCTOPUS_AGENTS+=("$value") ;;
