@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.2] - 2026-04-19
+
+📝 Every slash-command tutorial heading now shows the fully-qualified `/octopus:<name>` form. Before, the level-1 heading in `commands/*.md` rendered as `# /<name>`, which made the `octopus:` namespace look like a typo to new users who saw only the tutorial. Fixed across all 10 user-invoked commands: `cross-stack-contract`, `doc-adr`, `doc-research`, `doc-rfc`, `doc-spec`, `feature-to-market`, `money-review`, `plan-backlog-hygiene`, `release-announce`, `tenant-scope-audit`.
+
+🐛 `docs/features/bundles.md` also gains `release-announce` in the `growth` bundle row — v1.8.0 added the skill to the bundle YAML but the tutorial table missed it, so readers browsing the bundle catalog thought `growth` still shipped only `feature-to-market`.
+
 ## [1.8.1] - 2026-04-19
 
 🐛 `install.sh` reused any existing `cache/v<version>/` directory without verifying its contents — so a dir created by an aborted download, a manually-copied staging snapshot, or an older installer that packaged stale content under a newer label would be silently reused. Result: the `current` symlink pointed at a directory labeled `v1.8.0` that actually shipped v1.5.0 code, leading to `octopus setup` regenerating `.claude/settings.json` with the pre-v1.5.1 bugs (relative hook paths, invalid `PostToolUseFailure` event, unsupported top-level keys). Fix: on successful extraction the installer now writes the verified tarball SHA256 to `<cache-dir>/.cache-sha256` as an integrity marker. On subsequent runs, when the cache dir exists, the installer fetches the release's checksum file and compares it against the marker; mismatch or missing marker triggers a fresh re-extract, while a match reuses the cache. When no checksum endpoint is available (offline install or custom mirror), the installer falls back to the legacy "dir exists → reuse" behavior so offline flows keep working. `--force` continues to unconditionally re-download.
