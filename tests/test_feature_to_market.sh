@@ -109,3 +109,12 @@ grep -q "pollinations.ai" "$SKILL_FILE" \
   || { echo "FAIL: Pollinations fallback missing"; exit 1; }
 
 echo "PASS: image generation documented"
+
+echo "Test 11: SKILL.md documents errors and composition"
+
+grep -q "^## Errors$" "$SKILL_FILE" \
+  || { echo "FAIL: '## Errors' missing"; exit 1; }
+grep -q "^## Composition with social-media role$" "$SKILL_FILE" \
+  || { echo "FAIL: '## Composition with social-media role' missing"; exit 1; }
+
+echo "PASS: errors and composition documented"

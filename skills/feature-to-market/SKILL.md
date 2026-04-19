@@ -189,3 +189,31 @@ constraint to every prompt, e.g.:
 > realism. Typography-heavy layout. No stock-photo people."
 
 Log the final prompt used for each image as a comment in `image-prompts.md`.
+
+## Errors
+
+Fail fast and print an actionable message. Common cases:
+
+- **Unresolvable `<ref>`** → print the 5 nearest matches (RM IDs, spec
+  filenames) and exit before creating any files.
+- **Not in a git repo** → abort with "run inside a git repository".
+- **Launch directory already exists** → abort unless `--force` is passed.
+- **Both image providers fail** → continue, emit `image-prompts.md` only,
+  record `images_provider: none` in the kit README.
+- **`jq` or `curl` missing** → skip image generation gracefully, warn the
+  user, continue with text artifacts.
+
+## Composition with social-media role
+
+The `social-media` role (see `roles/social-media.md`) owns copywriting
+judgment. When this skill needs to choose a hook, adapt a message for a
+specific channel, or resolve an ambiguous brief, invoke the role's guidance:
+
+- Use its "Operating Principles" to decide between hook candidates.
+- Use its "Audience and Inputs" checklist to decide whether to ask the user
+  before generating instead of inventing.
+- Never contradict the role's approval-gate rule: the launch kit is a
+  draft until the reviewer signs off.
+
+This skill is orchestration; the role is voice. Do not duplicate the role's
+guidance in this skill — reference it when needed.
