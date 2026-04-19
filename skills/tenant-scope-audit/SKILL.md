@@ -1,0 +1,245 @@
+---
+name: tenant-scope-audit
+description: >
+  Pre-merge audit of multi-tenant data-scope enforcement. Given a branch
+  or PR, detects queries that bypass tenant filters, DbContexts missing
+  HasQueryFilter for new entities, raw SQL without tenant restriction,
+  controllers that accept ids from routes without ownership checks,
+  joins to unfiltered tables, and cross-tenant admin endpoints without
+  explicit markers. Produces a severity-tiered report with confidence
+  labels.
+---
+
+# Tenant-Scope-Audit Protocol
+
+## Overview
+
+This skill protects multi-tenant SaaS codebases from the systemic bug
+where a query without a tenant filter leaks data across tenants. EF
+Core offers `HasQueryFilter` for this, but the contract is easy to
+break: `IgnoreQueryFilters()`, `FromSqlRaw`, a new entity added to the
+DbContext without configuration, a controller that finds by `id`
+without verifying ownership.
+
+The skill composes with `security-scan`, `money-review`, and
+`cross-stack-contract`. All four emit the same severity format so
+their reports concatenate into a single PR comment.
+
+## Invocation
+
+```
+/octopus:tenant-scope-audit [ref] [--base=main] [--only=<checks>] [--write-report]
+```
+
+**Arguments / options:**
+
+- `ref` (optional) — PR (`#123`/URL), branch name, or commit SHA.
+  Default: current HEAD vs its upstream.
+- `--base=<branch>` — base for the diff. Default: `main`.
+- `--only=<list>` — comma-separated subset of checks:
+  `query-without-filter,dbcontext-missing-filter,raw-sql-no-filter,id-from-route-no-ownership,join-to-unfiltered-table,cross-tenant-admin-endpoint`.
+- `--write-report` — also save
+  `docs/reviews/YYYY-MM-DD-tenant-<slug>.md`.
+
+## Tenant-Scope Config
+
+Resolve configuration in this order:
+
+1. `.octopus.yml` top-level `tenantScope:` map:
+   ```yaml
+   tenantScope:
+     field: TenantId            # tenant FK column name
+     filter: AppQueryFilter     # helper/query filter used by the project
+     context: AppDbContext      # primary DbContext class name
+     entities:                  # (optional) explicit tenant-scoped entity list
+       - Student
+       - Class
+       - Subscription
+   ```
+2. Defaults when the key is absent:
+   - `field = TenantId`
+   - `filter = AppQueryFilter`
+   - `context = AppDbContext`
+   - `entities` unset → T2 flags every new DbSet added to the DbContext.
+
+When the manifest has a malformed `tenantScope:` section, warn, fall
+back to defaults, and continue.
+
+## File Discovery
+
+A file is tenant-relevant if any of the following holds for the diff
+of `<ref>` against `--base`:
+
+1. **Path tokens** — path contains any of: `Controller`, `Service`,
+   `Repository`, `DbContext`, `Queries`, `Commands`, `Entity`,
+   `Domain`, or `Handlers`.
+2. **Content references** — added/modified lines mention the
+   configured `field` (default `TenantId`) or the configured
+   `context` (default `AppDbContext`).
+3. **Signal regex** (case-sensitive):
+   - `IgnoreQueryFilters\(\)`
+   - `FromSqlRaw\(|ExecuteSqlRaw\(|Database\.SqlQuery`
+   - `HasQueryFilter\(`
+   - `\[Authorize\(.*Admin`
+   - `public class \w+Controller`
+4. **Repo overrides** — the file cascade applies (first match wins):
+   - `docs/tenant-scope-audit/patterns.md` (canonical)
+   - `docs/TENANT_SCOPE_AUDIT_PATTERNS.md` (uppercase compat)
+   - `skills/tenant-scope-audit/templates/patterns.md` (embedded default)
+
+   Overrides **append** — they do not replace the defaults.
+
+## Inspection Checks
+
+Each check produces zero or more findings. Every finding is labeled
+with a `confidence` level (`high` / `medium` / `low`) so reviewers can
+triage heuristic matches. Checks are skippable via `--only`.
+
+### T1 query-without-filter — bypassing the tenant filter
+
+Scan the diff for `IgnoreQueryFilters()` calls. For each occurrence:
+
+- Read the immediately preceding line.
+- If it matches `// tenant-override: <reason>` with non-empty reason,
+  suppress the finding.
+- Otherwise, emit **🚫 Block**.
+
+Example message:
+> T1 **query-without-filter** (high): `IgnoreQueryFilters()` at
+> `api/src/Students/StudentQueries.cs:42` has no tenant-override
+> justification.
+
+### T2 dbcontext-missing-filter — new entity without HasQueryFilter
+
+Scan for new `DbSet<X>` properties added to the file matching the
+configured `context` name (default `AppDbContext`). For each new entity
+`X`:
+
+- Search the same file's `OnModelCreating` additions in the diff for
+  `modelBuilder.Entity<X>().HasQueryFilter(...)` OR an `IEntityTypeConfiguration<X>`
+  reference.
+- If `tenantScope.entities:` is configured, skip entities NOT in the
+  list (treated as global).
+- Emit **🚫 Block** when the filter is missing.
+
+### T3 raw-sql-no-filter — raw SQL without tenant restriction
+
+Scan for raw-SQL helpers (see `patterns.md`): `FromSqlRaw`,
+`FromSqlInterpolated`, `ExecuteSqlRaw`, `ExecuteSqlInterpolated`,
+`Database.SqlQuery`.
+
+For each call, extract the SQL string literal. If the string does not
+contain any recognized tenant-field token (case-insensitive), emit
+**🚫 Block**.
+
+### T4 id-from-route-no-ownership — controller `id` lookup without check
+
+Scan controller methods added/modified in the diff. A finding triggers
+when all of these hold:
+
+1. The method has a parameter `id` or `{id}` bound from the route
+   (ASP.NET route templates) or query.
+2. The body calls `.FindAsync(id)`, `.Find(id)`,
+   `.FirstOrDefault(x => x.Id == id)`, `.SingleOrDefault(...)` on
+   a `DbSet<X>` where `X` is tenant-scoped (either listed in
+   `tenantScope.entities:` or detected as having `HasQueryFilter`).
+3. Neither the body nor the method attributes call one of the ownership
+   helper names from `patterns.md`.
+
+Severity: ⚠ Warn (defense-in-depth — EF query filter, if correctly
+configured, already enforces scope, but a dropped filter in the future
+would expose this path).
+
+### T5 join-to-unfiltered-table — join to a global table without restriction
+
+Scan LINQ `Join(...)` / `from ... in ... join ... in ... on ...`
+expressions in tenant-relevant files.
+
+For each join:
+
+- Identify the right-side `DbSet<Y>`.
+- If `Y` is NOT in the tenant-scoped entity set (either the
+  `tenantScope.entities:` list or entities with `HasQueryFilter`), AND
+  the join predicate does not constrain by the configured `field`,
+  emit **⚠ Warn**.
+
+### T6 cross-tenant-admin-endpoint — admin endpoint touching tenant data
+
+Scan controller methods that carry `[AllowAnonymous]` or
+`[Authorize(Roles = "Admin")]` / `[Authorize(Roles = "SuperAdmin")]`.
+
+For each such method:
+
+- If the method body accesses a tenant-scoped `DbSet` AND no preceding
+  line comment `// across-tenants: <reason>` is present, emit
+  **⚠ Warn**.
+- The comment must carry a non-empty reason; an empty marker is
+  rejected.
+
+## Output
+
+Same three-heading severity format used by `money-review` and
+`cross-stack-contract`, extended with a one-line config trailer that
+shows which tenant field / filter / context were in effect.
+
+```
+## 🚫 Block (N)
+- T1 **query-without-filter** (high): `IgnoreQueryFilters()` at
+  `api/src/Students/StudentQueries.cs:42` has no tenant-override
+  justification.
+- T2 **dbcontext-missing-filter** (high): new `DbSet<Waitlist>`
+  added at `api/.../AppDbContext.cs:88` without a `HasQueryFilter`
+  configuration.
+
+## ⚠ Warn (N)
+- T4 **id-from-route-no-ownership** (medium): `GET /students/{id}`
+  calls `.FindAsync(id)` without an ownership helper.
+  `api/.../StudentsController.cs:55`.
+
+## ℹ Info (0)
+- (none)
+
+tenant-scope-audit: 2 block, 1 warn, 0 info (config: TenantId via AppQueryFilter / AppDbContext)
+```
+
+With `--write-report`: content is persisted to
+`docs/reviews/YYYY-MM-DD-tenant-<slug>.md` with frontmatter:
+
+```yaml
+---
+ref: feat/students-waitlist
+base: main
+config:
+  field: TenantId
+  filter: AppQueryFilter
+  context: AppDbContext
+generated_by: octopus:tenant-scope-audit
+generated_at: 2026-04-19
+summary: "2 block, 1 warn, 0 info"
+---
+```
+
+The slug is derived from the branch name or PR number (lowercase
+ASCII, max 40 chars).
+
+## Errors
+
+- **Not in a git repo** → abort.
+- **Base branch missing** → abort with `--base` hint.
+- **No tenant-relevant files in diff** → print
+  "no tenant-scope changes detected" and exit 0 with
+  `tenant-scope-audit: 0 block, 0 warn, 0 info`.
+- **Malformed `tenantScope:` in `.octopus.yml`** → warn, fall back to
+  defaults, continue.
+- **Unrecognized `--only` check** → abort, list valid IDs.
+
+## Composition
+
+Runs well alongside `security-scan`, `money-review`, and
+`cross-stack-contract`. All four emit the same severity headings and
+confidence labels so their reports concatenate into a single PR
+comment without extra formatting.
+
+The report is guidance. In multi-tenant code reviewers should treat
+🚫 Block findings as merge blockers — each one is a potential
+data-leak path.
