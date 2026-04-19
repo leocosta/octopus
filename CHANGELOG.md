@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2026-04-19
+
+✨ New `money-review` skill audits money-touching code before merge. It resolves a branch or PR against a base, isolates money-touched files via filename and regex heuristics (tokens like `billing`, `payment`, `split`, `asaas`, `pix`, `webhook`, `fee`), and runs seven inspection families: numeric type safety (T1 — flag `float`/`double`/`number` for currency), explicit rounding strategy (T2), cents coverage in tests (T3 — require non-round literals like `0.01`, `199.99`), env-var consistency across sandbox and production (T4 — block when a new `*_PERCENT`/`*_FEE`/`*_RATE` exists in one environment but not the other), payment-call idempotency (T5 — flag POST calls lacking `Idempotency-Key` or `externalReference`), webhook signature verification (T6 — block new `/webhook` endpoints without a verifier helper), and fee/tax disclosure coupling (T7 — warn when a fee change lands without a spec mentioning disclosure).
+
+🎨 Output is a severity-tiered markdown report (`🚫 Block / ⚠ Warn / ℹ Info`) designed to paste into a PR comment as-is. With `--write-report`, the same content is persisted to `docs/reviews/YYYY-MM-DD-money-<slug>.md` with frontmatter for traceability. The `--only=<families>` flag restricts the scan to a subset; `--base=<branch>` overrides the default `main`.
+
+📝 Ships with embedded default patterns (`skills/money-review/templates/patterns.md`), provider idioms for Asaas / Stripe / Mercado Pago (`templates/providers.md`), a three-level override cascade (`docs/money-review/patterns.md` → `docs/MONEY_REVIEW_PATTERNS.md` → embedded), a tutorial at `docs/features/money-review.md`, and 8 structural tests guarding skill / command / wizard integration. Composes with the existing `security-scan` skill — run both on any billing PR.
+
 ## [1.2.0] - 2026-04-19
 
 ✨ New `feature-to-market` skill turns a completed feature (RM-NNN, spec path, research path, or PR) into a versioned multi-channel launch kit under `docs/marketing/launches/YYYY-MM-DD-<slug>/`. The kit bundles Instagram, LinkedIn and X posts, a launch email, landing-page copy, a commercial changelog entry, and a 30–60s video script — each rendered from per-channel templates with placeholders populated from the resolved feature context. Invocation is a single slash command (`/octopus:feature-to-market <ref>`) with flags for channel selection, dry-run, forced angle, and regeneration. Brand and voice pull from a three-level override cascade: `docs/marketing/<name>.md` (canonical) → `docs/<NAME>.md` (uppercase compat with repos that already keep these files at the docs root) → embedded defaults shipped with the skill.
