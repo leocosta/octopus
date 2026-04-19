@@ -8,7 +8,7 @@ description: Create a new RFC document from the Octopus template
 agent: code
 ---
 
-# /doc-rfc
+# /octopus:doc-rfc
 
 ## Purpose
 

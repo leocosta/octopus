@@ -8,7 +8,7 @@ description: Conduct an interactive brainstorming session and capture results as
 agent: code
 ---
 
-# /doc-research
+# /octopus:doc-research
 
 ## Purpose
 

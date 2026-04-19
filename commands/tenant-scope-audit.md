@@ -3,7 +3,7 @@ name: tenant-scope-audit
 description: Pre-merge audit of multi-tenant data-scope enforcement — query filters, new entity configs, raw SQL, controller ownership, admin endpoints.
 ---
 
-# /tenant-scope-audit
+# /octopus:tenant-scope-audit
 
 ## Purpose
 

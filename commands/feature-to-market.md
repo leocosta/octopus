@@ -3,7 +3,7 @@ name: feature-to-market
 description: Generate a multi-channel launch kit from a completed feature (RM/spec/PR).
 ---
 
-# /feature-to-market
+# /octopus:feature-to-market
 
 ## Purpose
 
