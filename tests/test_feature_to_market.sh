@@ -15,3 +15,16 @@ head -n 10 "$SKILL_FILE" | grep -q "^description:" \
   || { echo "FAIL: frontmatter 'description:' missing"; exit 1; }
 
 echo "PASS: SKILL.md frontmatter valid"
+
+echo "Test 2: SKILL.md documents invocation"
+
+grep -q "^## Invocation$" "$SKILL_FILE" \
+  || { echo "FAIL: '## Invocation' section missing"; exit 1; }
+grep -q "octopus:feature-to-market <ref>" "$SKILL_FILE" \
+  || { echo "FAIL: invocation syntax missing"; exit 1; }
+for flag in "--channels" "--dry-run" "--no-images" "--images-only" "--angle" "--force"; do
+  grep -q -- "$flag" "$SKILL_FILE" \
+    || { echo "FAIL: flag $flag not documented"; exit 1; }
+done
+
+echo "PASS: invocation documented"
