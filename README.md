@@ -12,6 +12,8 @@ Centralized AI agent configuration for multi-repo teams. One source of truth for
 
 Configure once via `.octopus.yml`, run `octopus setup`, and Octopus generates the right configuration for every AI assistant your team uses — Claude Code, GitHub Copilot, OpenAI Codex, Gemini, and OpenCode. Each assistant has different capabilities; Octopus handles these differences automatically through a manifest-driven architecture.
 
+New repos start from **bundles** — curated packages of skills + roles + rules by intent (`starter`, `quality-gates`, `growth`, `cross-stack`, `dotnet-api`, …). The Quick-mode wizard picks the right bundles for you via a few yes/no questions, so you never need to memorize the skill catalog to get a sensible config. Power users keep full control via Full mode or explicit lists in the manifest.
+
 ## Installation
 
 **Linux / macOS:**
@@ -38,7 +40,8 @@ After installation, verify with `octopus doctor`.
 ```bash
 # 1. Install the CLI (see Installation above)
 
-# 2. Run setup (launches the interactive wizard on first run)
+# 2. Run setup — Quick mode asks 4–6 yes/no questions and maps your
+#    answers to the right bundles (starter + quality-gates + cross-stack + ...)
 octopus setup
 
 # 3. Fill in your .env.octopus with tokens (for MCP servers you selected)
@@ -50,7 +53,9 @@ git commit -m "chore: add octopus config"
 
 Prefer editing a manifest by hand? Copy `.octopus.example.yml` from the
 [release](https://github.com/leocosta/octopus/releases/latest) into your
-repo as `.octopus.yml`, then run `octopus setup`.
+repo as `.octopus.yml`, then run `octopus setup`. For per-component control
+(individual skills, roles, mcp) pick Full mode at the wizard prompt — see
+[bundles.md](docs/features/bundles.md) for when Full mode pays off.
 
 ## Configuration
 
@@ -118,6 +123,7 @@ language:
 
 | Feature | Description | Docs |
 |---|---|---|
+| **Bundles** | Curated packages of skills + roles + rules by intent — the primary setup path | [bundles.md](docs/features/bundles.md) |
 | **Rules** | Language-specific coding standards | [rules.md](docs/features/rules.md) |
 | **Skills** | Reusable AI capabilities | [skills.md](docs/features/skills.md) |
 | **Hooks** | Lifecycle automation (Claude Code) | [hooks.md](docs/features/hooks.md) |
