@@ -38,3 +38,28 @@ concluded plans into `plans/archive/YYYY-MM/` when invoked with `--fix`.
 - `--stale-days=<n>` — threshold for the stale check. Default: `90`.
 - `--only=<list>` — subset of checks:
   `orphan,concluded,duplicate,broken-link,roadmap-orphan,stale`.
+
+## Plans Directory Discovery
+
+Resolve the plans directory in this order:
+
+1. `.octopus.yml` top-level field `plansDir:` (string path). When
+   present, it wins.
+2. Autodetection — first existing directory among: `plans/`,
+   `docs/plans/`, `docs/superpowers/plans/`. If more than one exists,
+   pick the directory with the most `*.md` files.
+3. If none of the above exist, abort with the message
+   "no plans directory found — set `plansDir:` in `.octopus.yml`
+   or create `plans/`".
+
+The roadmap lookup is always `docs/roadmap.md`. If missing, checks
+`concluded` and `roadmap-orphan` are skipped with a note; the other
+checks continue.
+
+Reference-pattern overrides live at:
+
+- `docs/plan-backlog-hygiene/patterns.md` (canonical)
+- `docs/PLAN_BACKLOG_HYGIENE_PATTERNS.md` (uppercase compat)
+- `skills/plan-backlog-hygiene/templates/patterns.md` (embedded default)
+
+Overrides append to the defaults.

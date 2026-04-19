@@ -21,3 +21,15 @@ for flag in "--fix" "--write-report" "--plans-dir" "--stale-days" "--only"; do
   grep -q -- "$flag" "$SKILL_FILE" || { echo "FAIL: flag $flag missing"; exit 1; }
 done
 echo "PASS: invocation documented"
+
+echo "Test 3: SKILL.md documents plans directory discovery"
+grep -q "^## Plans Directory Discovery$" "$SKILL_FILE" \
+  || { echo "FAIL: '## Plans Directory Discovery' missing"; exit 1; }
+grep -q "plansDir:" "$SKILL_FILE" \
+  || { echo "FAIL: plansDir field reference missing"; exit 1; }
+echo "PASS: discovery documented"
+
+echo "Test 4: patterns template exists"
+TEMPLATES="$SCRIPT_DIR/skills/plan-backlog-hygiene/templates"
+[[ -f "$TEMPLATES/patterns.md" ]] || { echo "FAIL: patterns.md missing"; exit 1; }
+echo "PASS: patterns template present"
