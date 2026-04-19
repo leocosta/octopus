@@ -33,3 +33,16 @@ echo "Test 4: patterns template exists"
 TEMPLATES="$SCRIPT_DIR/skills/plan-backlog-hygiene/templates"
 [[ -f "$TEMPLATES/patterns.md" ]] || { echo "FAIL: patterns.md missing"; exit 1; }
 echo "PASS: patterns template present"
+
+echo "Test 5: SKILL.md documents all six hygiene checks"
+grep -q "^## Hygiene Checks$" "$SKILL_FILE" \
+  || { echo "FAIL: '## Hygiene Checks' missing"; exit 1; }
+for check in "H1" "H2" "H3" "H4" "H5" "H6"; do
+  grep -q "^### $check " "$SKILL_FILE" \
+    || { echo "FAIL: check $check missing"; exit 1; }
+done
+for keyword in "orphan" "concluded" "duplicate" "broken-link" "roadmap-orphan" "stale"; do
+  grep -q "$keyword" "$SKILL_FILE" \
+    || { echo "FAIL: check keyword '$keyword' missing"; exit 1; }
+done
+echo "PASS: all hygiene checks documented"

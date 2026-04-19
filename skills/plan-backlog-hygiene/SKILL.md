@@ -63,3 +63,65 @@ Reference-pattern overrides live at:
 - `skills/plan-backlog-hygiene/templates/patterns.md` (embedded default)
 
 Overrides append to the defaults.
+
+## Hygiene Checks
+
+Each plan file is evaluated against the six checks below. Findings are
+grouped by severity. Families are skippable via `--only`.
+
+### H1 orphan — plan without any identifier
+
+A plan body (and frontmatter) contains no `RM-\d+`, no PR reference,
+no issue reference, and no link into `docs/specs/`, `docs/rfcs/`, or
+`docs/research/`.
+
+This is usually a draft that was never wired into the lifecycle.
+
+Severity: ℹ Info.
+
+### H2 concluded — plan for a completed RM not archived
+
+The plan references `RM-NNN`; the roadmap marks that RM as concluded
+(`completed`, `done`, `shipped`); and the plan file path does NOT
+start with `plans/archive/` (or `<plansDir>/archive/`).
+
+Severity: ⚠ Warn.
+
+With `--fix`: move the file to
+`<plansDir>/archive/YYYY-MM/<filename>` where `YYYY-MM` is derived
+from the RM's completion date (fallback: current month). Use
+`git mv` so history is preserved.
+
+### H3 duplicate — two or more plans for the same RM
+
+Two or more plan files reference the same `RM-NNN` in body or
+frontmatter. The skill lists all candidates and flags the set.
+
+Severity: ⚠ Warn. No auto-fix (team judgment call).
+
+### H4 broken-link — plan cites a missing file
+
+A plan contains a markdown link whose target path starts with one of
+the internal prefixes (`docs/specs/`, `docs/rfcs/`, `docs/research/`,
+`docs/adrs/`, `plans/`) but the target file does not exist.
+
+Severity: ⚠ Warn. No auto-fix.
+
+### H5 roadmap-orphan — RM without a plan
+
+The roadmap has an entry `RM-NNN` whose status is `in progress`,
+`wip`, `proposed`, or `blocked`, and no plan file in the plans
+directory references that ID.
+
+Not all RMs need a plan (trivial work may ship without one), so this
+is informational.
+
+Severity: ℹ Info.
+
+### H6 stale — plan unchanged for too long
+
+A plan's most recent commit is older than `--stale-days` (default 90)
+AND the plan does not link an already-concluded RM. When the file has
+no git history (bulk-imported), fall back to filesystem mtime.
+
+Severity: ℹ Info.
