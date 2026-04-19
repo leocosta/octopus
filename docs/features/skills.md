@@ -20,12 +20,13 @@ them natively, other assistants get them inlined into their output file.
 | `money-review` | Pre-merge audit of money-touching code: numeric types, rounding, cents tests, env-var drift, payment idempotency, webhook signatures, fee-disclosure coupling. | [money-review.md](money-review.md) |
 | `plan-backlog-hygiene` | Scan `plans/` + `docs/roadmap.md` for orphans, concluded-but-not-archived plans, duplicates, broken links, roadmap orphans, and stale items. `--fix` archives safely. | [plan-backlog-hygiene.md](plan-backlog-hygiene.md) |
 | `security-scan` | Security audit checklist for AI-agent configurations, environment variables, and project dependencies. | — |
+| `tenant-scope-audit` | Pre-merge audit of multi-tenant data-scope enforcement: query filters, new DbContext entities, raw SQL, controller ownership, admin endpoints. Blocks likely data-leak paths. | [tenant-scope-audit.md](tenant-scope-audit.md) |
 
 Pair-ups:
 
-- `security-scan` + `money-review` + `cross-stack-contract` share the same
-  `🚫 Block / ⚠ Warn / ℹ Info` output format — concatenate them into one
-  PR comment without extra formatting work.
+- `security-scan` + `money-review` + `cross-stack-contract` + `tenant-scope-audit`
+  share the same `🚫 Block / ⚠ Warn / ℹ Info` output format with confidence
+  labels — concatenate them into one PR comment without extra formatting work.
 - `feature-lifecycle` + `feature-to-market` cover the path from *plan* to
   *announce*.
 - `plan-backlog-hygiene` pairs with the `schedule` skill for a monthly
