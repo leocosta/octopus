@@ -60,3 +60,16 @@ for sev in "🚫 Block" "⚠ Warn" "ℹ Info"; do
   grep -q -- "$sev" "$SKILL_FILE" || { echo "FAIL: severity '$sev' missing"; exit 1; }
 done
 echo "PASS: output + fix + errors documented"
+
+echo "Test 7: slash command exists"
+CMD_FILE="$SCRIPT_DIR/commands/plan-backlog-hygiene.md"
+[[ -f "$CMD_FILE" ]] || { echo "FAIL: $CMD_FILE missing"; exit 1; }
+head -n 5 "$CMD_FILE" | grep -q "^name: plan-backlog-hygiene$" \
+  || { echo "FAIL: command frontmatter missing"; exit 1; }
+echo "PASS: slash command present"
+
+echo "Test 8: wizard includes plan-backlog-hygiene"
+WIZARD="$SCRIPT_DIR/cli/lib/setup-wizard.sh"
+grep -E "^[[:space:]]*local items=\(.*plan-backlog-hygiene.*\)" "$WIZARD" >/dev/null \
+  || { echo "FAIL: plan-backlog-hygiene not in items array"; exit 1; }
+echo "PASS: wizard registration present"
