@@ -176,3 +176,58 @@ any of these, emit a warning: "fee change without disclosure coupling —
 confirm a spec/research document addresses user-facing communication".
 
 Severity: ⚠ Warn.
+
+## Output
+
+**Default (chat):** one markdown block with three headings, each listing
+findings for that severity with the format
+`Tn **family**: <description> [file:line]`.
+
+```
+## 🚫 Block (N)
+- T4 **env**: `ASAAS_SPLIT_PERCENT_BOLETO` added to `api/.env.sandbox`
+  but missing in `api/.env`. `api/.env.sandbox:42`
+
+## ⚠ Warn (N)
+- T1 **types**: `double Fee` — prefer `decimal`.
+  `api/src/.../FeeCalculator.cs:17`
+
+## ℹ Info (N)
+- T3 **tests**: no test file touched for
+  `api/src/.../SplitCalculator.cs`.
+```
+
+Always end with: `money-review: N block, N warn, N info`.
+
+**With `--write-report`:** same content written to
+`docs/reviews/YYYY-MM-DD-money-<slug>.md` with a frontmatter block:
+
+```yaml
+---
+ref: feat/billing-v2
+base: main
+generated_by: octopus:money-review
+generated_at: 2026-04-19
+summary: "0 block, 3 warn, 1 info"
+---
+```
+
+The slug is derived from the branch name or PR number: lowercase ASCII,
+non-alphanumeric runs collapsed to `-`, max 40 chars.
+
+## Errors
+
+- **Not in a git repo** → abort.
+- **Base branch not found** → abort with "run `git fetch` or pass
+  `--base=<branch>`".
+- **No money-touched files** → print "no money-related changes detected"
+  and exit 0 with `money-review: 0 block, 0 warn, 0 info`.
+- **Override file malformed** → print a warning, ignore the override,
+  continue with defaults.
+- **Unrecognized `--only` family** → abort, list valid families.
+
+## Composition
+
+- Run `security-scan` first (secrets/injection) and `money-review` after
+  (money-logic). Both findings together form the pre-merge safety net.
+- Output is plain markdown designed to paste into a PR comment as-is.
