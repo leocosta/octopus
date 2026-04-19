@@ -88,6 +88,65 @@ OCTOPUS_SANDBOX=""             # RM-014: "true" enables CC's sandbox on tool cal
 OCTOPUS_OUTPUT_STYLE=""        # RM-015: "concise" | "verbose" | "structured" | "explanatory"
 OCTOPUS_GITHUB_ACTION=""       # RM-016: "true" scaffolds .github/workflows/claude.yml
 
+# Reads a bundle YAML file and appends its components into the global
+# OCTOPUS_* arrays. Does NOT de-duplicate — that is expand_bundles()'s
+# responsibility (a bundle is a logical grouping; two bundles can legally
+# reference the same skill).
+_load_bundle() {
+  local name="$1"
+  local file="$OCTOPUS_DIR/bundles/${name}.yml"
+
+  if [[ ! -f "$file" ]]; then
+    echo "Error: unknown bundle '$name' (expected $file)" >&2
+    return 1
+  fi
+
+  local parsed
+  parsed=$(python3 - "$file" <<'PYEOF'
+import sys, re
+
+path = sys.argv[1]
+with open(path) as f:
+    lines = f.readlines()
+
+section = None
+out = {"skills": [], "roles": [], "rules": [], "mcp": []}
+for raw in lines:
+    line = raw.rstrip()
+    if not line or line.lstrip().startswith("#"):
+        continue
+    m = re.match(r"^([a-z_]+):\s*(.*)$", line)
+    if m:
+        key, val = m.group(1), m.group(2)
+        if key in out:
+            section = key
+            if val and val.strip() != "[]":
+                out[key].append(val.strip().strip('"').strip("'"))
+        else:
+            section = None
+        continue
+    m = re.match(r"^\s+-\s+(.+)$", line)
+    if m and section:
+        out[section].append(m.group(1).strip().strip('"').strip("'"))
+
+for key in ("skills", "roles", "rules", "mcp"):
+    for item in out[key]:
+        if item and item != "[]":
+            print(f"{key}\t{item}")
+PYEOF
+  )
+
+  while IFS=$'\t' read -r key value; do
+    [[ -z "$key" ]] && continue
+    case "$key" in
+      skills) OCTOPUS_SKILLS+=("$value") ;;
+      roles)  OCTOPUS_ROLES+=("$value") ;;
+      rules)  OCTOPUS_RULES+=("$value") ;;
+      mcp)    OCTOPUS_MCP+=("$value") ;;
+    esac
+  done <<< "$parsed"
+}
+
 parse_octopus_yml() {
   local file="$1"
   local current_section=""

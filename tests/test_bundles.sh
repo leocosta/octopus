@@ -54,3 +54,33 @@ parse_octopus_yml "$TMPDIR/test.yml"
 
 rm -rf "$TMPDIR"
 echo "PASS: parser reads bundles: list"
+
+echo "Test 5: _load_bundle parses a single bundle YAML"
+
+# Reset arrays to isolate this test
+OCTOPUS_SKILLS=()
+OCTOPUS_ROLES=()
+OCTOPUS_RULES=()
+OCTOPUS_MCP=()
+
+_load_bundle "starter"
+
+# starter contributes adr, feature-lifecycle, context-budget
+printf '%s\n' "${OCTOPUS_SKILLS[@]}" | sort > /tmp/got_skills.$$
+printf '%s\n' adr feature-lifecycle context-budget | sort > /tmp/exp_skills.$$
+diff -q /tmp/got_skills.$$ /tmp/exp_skills.$$ >/dev/null \
+  || { echo "FAIL: starter did not populate skills correctly"; exit 1; }
+rm -f /tmp/got_skills.$$ /tmp/exp_skills.$$
+
+echo "PASS: _load_bundle populates OCTOPUS_SKILLS for starter"
+
+echo "Test 6: _load_bundle on an unknown name aborts with message"
+
+if ( _load_bundle "does-not-exist" ) 2>/tmp/err.$$ ; then
+  echo "FAIL: _load_bundle should have errored on missing bundle"
+  exit 1
+fi
+grep -q "unknown bundle" /tmp/err.$$ \
+  || { echo "FAIL: error message should mention 'unknown bundle'"; rm -f /tmp/err.$$; exit 1; }
+rm -f /tmp/err.$$
+echo "PASS: _load_bundle fails loudly on missing bundle"
