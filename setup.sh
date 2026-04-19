@@ -1893,6 +1893,10 @@ ui_kv "Root"  "$(_install_root)"
 # 1. Parse config
 parse_octopus_yml "$CONFIG_FILE"
 
+# 1a. Expand bundles into component arrays (must run before knowledge discovery,
+#     rule checks, or delivery). Bundles are additive; explicit lists survive.
+expand_bundles
+
 # 1b. Ensure 'common' rule is always first
 ensure_common_rule
 
