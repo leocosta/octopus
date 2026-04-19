@@ -20,6 +20,44 @@ jobs:
           tar -czf "/tmp/octopus-${TAG}.tar.gz" --exclude .git --exclude .github -C "$GITHUB_WORKSPACE" .
           sha256sum "/tmp/octopus-${TAG}.tar.gz" > "/tmp/octopus-${TAG}.sha256"
 
+      # RM-020 — Sign the tarball with the maintainer's GPG key so install.sh
+      # can verify integrity via `gpg --verify` (see docs/specs/signed-releases.md).
+      # Fails the workflow if secrets are missing to avoid shipping a partial,
+      # unsigned release by accident.
+      - name: Sign tarball with GPG
+        shell: bash
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.OCTOPUS_RELEASE_GPG_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.OCTOPUS_RELEASE_GPG_PASSPHRASE }}
+        run: |
+          if [[ -z "${GPG_PRIVATE_KEY:-}" ]]; then
+            echo "::error::OCTOPUS_RELEASE_GPG_KEY secret is not configured. See docs/specs/release-signing-pipeline.md for setup."
+            exit 1
+          fi
+          if [[ -z "${GPG_PASSPHRASE:-}" ]]; then
+            echo "::error::OCTOPUS_RELEASE_GPG_PASSPHRASE secret is not configured."
+            exit 1
+          fi
+
+          TAG="${GITHUB_REF##*/}"
+          TARBALL="/tmp/octopus-${TAG}.tar.gz"
+
+          # Import the private key into a temporary keyring
+          export GNUPGHOME="$(mktemp -d)"
+          chmod 700 "$GNUPGHOME"
+          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+
+          KEY_ID="$(gpg --list-secret-keys --with-colons | awk -F: '/^sec:/ {print $5; exit}')"
+          if [[ -z "$KEY_ID" ]]; then
+            echo "::error::Imported GPG key list is empty."
+            exit 1
+          fi
+
+          echo "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback \
+            --passphrase-fd 0 --local-user "$KEY_ID" \
+            --detach-sign --armor \
+            --output "${TARBALL}.asc" "$TARBALL"
+
       - name: Upload release assets
         shell: bash
         env:
@@ -29,5 +67,7 @@ jobs:
           gh release upload "$TAG" \
             "/tmp/octopus-${TAG}.tar.gz" \
             "/tmp/octopus-${TAG}.sha256" \
+            "/tmp/octopus-${TAG}.tar.gz.asc" \
             install.sh \
-            install.ps1
+            install.ps1 \
+            --clobber

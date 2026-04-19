@@ -6,9 +6,17 @@ source "$SCRIPT_DIR/setup.sh" --source-only
 
 TMPDIR=$(mktemp -d)
 PROJECT_ROOT="$TMPDIR"
+OCTOPUS_DIR="$SCRIPT_DIR"
 
 OCTOPUS_AGENTS=(claude copilot codex)
 declare -A OCTOPUS_AGENT_OUTPUT=()
+
+# Run the same pipeline setup.sh uses: load each manifest so the delivery
+# variables are populated, then collect gitignore entries before writing.
+for agent in "${OCTOPUS_AGENTS[@]}"; do
+  load_manifest "$agent"
+  collect_gitignore_entries "$agent"
+done
 
 update_gitignore
 

@@ -10,8 +10,11 @@ OCTOPUS_DIR="$SCRIPT_DIR"
 
 OCTOPUS_RULES=(common typescript)
 OCTOPUS_SKILLS=(adr)
+OCTOPUS_AGENTS=(claude)
+declare -A OCTOPUS_AGENT_OUTPUT=()
 
-generate_claude
+load_manifest "claude"
+generate_main_output "claude"
 
 # Verify CLAUDE.md was generated
 [[ -f "$TMPDIR/.claude/CLAUDE.md" ]] || { echo "FAIL: .claude/CLAUDE.md not created"; exit 1; }
@@ -30,8 +33,9 @@ grep -q ".claude/skills/adr/" "$TMPDIR/.claude/CLAUDE.md" || { echo "FAIL: adr s
 
 # Test with no skills
 OCTOPUS_SKILLS=()
-generate_claude
-! grep -q "skills" "$TMPDIR/.claude/CLAUDE.md" || { echo "FAIL: skills section should be empty when no skills"; exit 1; }
+load_manifest "claude"
+generate_main_output "claude"
+! grep -q "{{SKILLS}}" "$TMPDIR/.claude/CLAUDE.md" || { echo "FAIL: {{SKILLS}} placeholder should be empty, not literal"; exit 1; }
 
 rm -rf "$TMPDIR"
 echo "PASS: Claude generation tests passed"
