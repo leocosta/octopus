@@ -25,7 +25,37 @@ roadmap-first when the idea still needs shaping.
 
 ## Backlog
 
-_No open items._
+### Cluster 1 — Reduce tokens loaded per session
+
+- **RM-022** 🔴 High — Lazy skill activation via frontmatter `triggers:`
+  (paths / keywords / tools). Agents that concatenate (Copilot, Codex,
+  Gemini, OpenCode) replace non-matching skills with a 3-line stub.
+  Estimate: −40% to −70% of the output file.
+- **RM-023** 🟡 Medium — `/octopus:compress-skill` — compression pass
+  per skill with a human-approved diff. Estimate: −25% per skill.
+- **RM-024** 🟢 Low — Dedup shared preambles into
+  `skills/_shared/audit-output-format.md` (4 audit skills repeat ~60
+  lines of preamble each).
+
+### Cluster 2 — Reduce LLM calls
+
+- **RM-025** 🔴 High — Pre-LLM deterministic pass: audit skills run
+  `grep`/`rg` for raw pattern matching first; the LLM only classifies
+  severity and writes the human-readable message. Estimate: −60%
+  tokens per audit run.
+- **RM-026** 🟡 Medium — Cache audit outputs keyed by
+  `hash(diff) + skill-version`. Re-running the same audit becomes
+  zero-cost until the diff changes.
+
+### Cluster 3 — Accelerate workflow (prioritized — next)
+
+- **RM-027** 🟡 Medium — Bundle / skill diff preview in the Full-mode
+  wizard: show impact (lines / approx tokens) before confirming a
+  selection.
+- **RM-028** 🔴 High — `/octopus:audit-all <ref>`: shared file
+  discovery + four audits run in parallel + concatenated output.
+- **RM-029** 🟡 Medium — Post-merge hook that suggests relevant
+  audits based on the diff (touched files + keywords).
 
 ---
 
