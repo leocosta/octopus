@@ -35,3 +35,16 @@ echo "Test 4: patterns template exists"
 TEMPLATES="$SCRIPT_DIR/skills/tenant-scope-audit/templates"
 [[ -f "$TEMPLATES/patterns.md" ]] || { echo "FAIL: patterns.md missing"; exit 1; }
 echo "PASS: patterns template present"
+
+echo "Test 5: SKILL.md documents all six inspection checks"
+grep -q "^## Inspection Checks$" "$SKILL_FILE" \
+  || { echo "FAIL: '## Inspection Checks' missing"; exit 1; }
+for check in "T1" "T2" "T3" "T4" "T5" "T6"; do
+  grep -q "^### $check " "$SKILL_FILE" \
+    || { echo "FAIL: check $check missing"; exit 1; }
+done
+for keyword in "query-without-filter" "dbcontext-missing-filter" "raw-sql-no-filter" "id-from-route-no-ownership" "join-to-unfiltered-table" "cross-tenant-admin-endpoint"; do
+  grep -q "$keyword" "$SKILL_FILE" \
+    || { echo "FAIL: check keyword '$keyword' missing"; exit 1; }
+done
+echo "PASS: all inspection checks documented"

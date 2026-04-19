@@ -88,3 +88,90 @@ of `<ref>` against `--base`:
    - `skills/tenant-scope-audit/templates/patterns.md` (embedded default)
 
    Overrides **append** — they do not replace the defaults.
+
+## Inspection Checks
+
+Each check produces zero or more findings. Every finding is labeled
+with a `confidence` level (`high` / `medium` / `low`) so reviewers can
+triage heuristic matches. Checks are skippable via `--only`.
+
+### T1 query-without-filter — bypassing the tenant filter
+
+Scan the diff for `IgnoreQueryFilters()` calls. For each occurrence:
+
+- Read the immediately preceding line.
+- If it matches `// tenant-override: <reason>` with non-empty reason,
+  suppress the finding.
+- Otherwise, emit **🚫 Block**.
+
+Example message:
+> T1 **query-without-filter** (high): `IgnoreQueryFilters()` at
+> `api/src/Students/StudentQueries.cs:42` has no tenant-override
+> justification.
+
+### T2 dbcontext-missing-filter — new entity without HasQueryFilter
+
+Scan for new `DbSet<X>` properties added to the file matching the
+configured `context` name (default `AppDbContext`). For each new entity
+`X`:
+
+- Search the same file's `OnModelCreating` additions in the diff for
+  `modelBuilder.Entity<X>().HasQueryFilter(...)` OR an `IEntityTypeConfiguration<X>`
+  reference.
+- If `tenantScope.entities:` is configured, skip entities NOT in the
+  list (treated as global).
+- Emit **🚫 Block** when the filter is missing.
+
+### T3 raw-sql-no-filter — raw SQL without tenant restriction
+
+Scan for raw-SQL helpers (see `patterns.md`): `FromSqlRaw`,
+`FromSqlInterpolated`, `ExecuteSqlRaw`, `ExecuteSqlInterpolated`,
+`Database.SqlQuery`.
+
+For each call, extract the SQL string literal. If the string does not
+contain any recognized tenant-field token (case-insensitive), emit
+**🚫 Block**.
+
+### T4 id-from-route-no-ownership — controller `id` lookup without check
+
+Scan controller methods added/modified in the diff. A finding triggers
+when all of these hold:
+
+1. The method has a parameter `id` or `{id}` bound from the route
+   (ASP.NET route templates) or query.
+2. The body calls `.FindAsync(id)`, `.Find(id)`,
+   `.FirstOrDefault(x => x.Id == id)`, `.SingleOrDefault(...)` on
+   a `DbSet<X>` where `X` is tenant-scoped (either listed in
+   `tenantScope.entities:` or detected as having `HasQueryFilter`).
+3. Neither the body nor the method attributes call one of the ownership
+   helper names from `patterns.md`.
+
+Severity: ⚠ Warn (defense-in-depth — EF query filter, if correctly
+configured, already enforces scope, but a dropped filter in the future
+would expose this path).
+
+### T5 join-to-unfiltered-table — join to a global table without restriction
+
+Scan LINQ `Join(...)` / `from ... in ... join ... in ... on ...`
+expressions in tenant-relevant files.
+
+For each join:
+
+- Identify the right-side `DbSet<Y>`.
+- If `Y` is NOT in the tenant-scoped entity set (either the
+  `tenantScope.entities:` list or entities with `HasQueryFilter`), AND
+  the join predicate does not constrain by the configured `field`,
+  emit **⚠ Warn**.
+
+### T6 cross-tenant-admin-endpoint — admin endpoint touching tenant data
+
+Scan controller methods that carry `[AllowAnonymous]` or
+`[Authorize(Roles = "Admin")]` / `[Authorize(Roles = "SuperAdmin")]`.
+
+For each such method:
+
+- If the method body accesses a tenant-scoped `DbSet` AND no preceding
+  line comment `// across-tenants: <reason>` is present, emit
+  **⚠ Warn**.
+- The comment must carry a non-empty reason; an empty marker is
+  rejected.
