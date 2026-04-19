@@ -882,10 +882,10 @@ deliver_hooks() {
 
     echo "Injecting hooks into $MANIFEST_DELIVERY_HOOKS_TARGET for $agent..."
 
-    python3 - "$settings_file" "$hooks_template" "${OCTOPUS_DISABLED_HOOKS:-}" << 'PYEOF'
+    python3 - "$settings_file" "$hooks_template" "${OCTOPUS_DISABLED_HOOKS:-}" "$OCTOPUS_DIR" << 'PYEOF'
 import json, sys
 
-settings_path, hooks_path, disabled = sys.argv[1], sys.argv[2], sys.argv[3]
+settings_path, hooks_path, disabled, install_root = sys.argv[1:5]
 
 with open(settings_path) as f:
     settings = json.load(f)
@@ -900,6 +900,15 @@ if disabled:
             h for h in hooks[event_type]
             if h.get("id", "") not in disabled_set
         ]
+
+# Rewrite relative "octopus/hooks/..." paths to absolute install paths so
+# Claude Code can execute them regardless of its current working directory.
+for event_type, entries in hooks.items():
+    for entry in entries:
+        for hook in entry.get("hooks", []):
+            cmd = hook.get("command", "")
+            if cmd.startswith("octopus/hooks/"):
+                hook["command"] = install_root + "/" + cmd[len("octopus/"):]
 
 settings["hooks"] = hooks
 with open(settings_path, "w") as f:
@@ -1042,22 +1051,27 @@ PYEOF
 }
 
 # RM-011/012/013/014/015 — writes Boris-tip manifest fields into the delivered
-# Claude settings.json as simple key/value pairs. Each field is optional; only
-# non-empty values are injected. CC reads the keys directly (permissionMode,
-# outputStyle, sandbox, worktree, autoMemory); the `autoDream` key documents
-# intent for the companion subagent shipped in agents/claude/agents/dream.md.
+# Claude settings.json. Only keys known to be accepted by Claude Code's
+# settings.json schema are written; experimental fields (worktree, autoMemory,
+# autoDream, sandbox) are intentionally dropped here until CC officially
+# documents them — the related features still ship (dream subagent, batch
+# skill, etc.), they just don't pollute settings.json with unrecognized keys.
+# `permissionMode=auto` is normalized to `default` because CC rejects "auto".
 deliver_boris_settings() {
   local agent="$1"
   if [[ "$agent" != "claude" ]]; then return; fi
   if [[ "$MANIFEST_DELIVERY_HOOKS_METHOD" != "settings_json" ]]; then return; fi
 
-  # Build key=value pairs only for non-empty manifest fields
+  # Whitelist the keys that are known-safe in Claude Code's settings.json.
+  # Normalize permissionMode=auto to the closest valid value ("default").
   local -a pairs=()
-  [[ -n "$OCTOPUS_WORKTREE"        ]] && pairs+=("worktree:bool:$OCTOPUS_WORKTREE")
-  [[ -n "$OCTOPUS_PERMISSION_MODE" ]] && pairs+=("permissionMode:str:$OCTOPUS_PERMISSION_MODE")
-  [[ -n "$OCTOPUS_MEMORY"          ]] && pairs+=("autoMemory:bool:$OCTOPUS_MEMORY")
-  [[ -n "$OCTOPUS_DREAM"           ]] && pairs+=("autoDream:bool:$OCTOPUS_DREAM")
-  [[ -n "$OCTOPUS_SANDBOX"         ]] && pairs+=("sandbox:bool:$OCTOPUS_SANDBOX")
+  if [[ -n "$OCTOPUS_PERMISSION_MODE" ]]; then
+    local pm="$OCTOPUS_PERMISSION_MODE"
+    case "$pm" in
+      auto|"") pm="default" ;;
+    esac
+    pairs+=("permissionMode:str:$pm")
+  fi
   [[ -n "$OCTOPUS_OUTPUT_STYLE"    ]] && pairs+=("outputStyle:str:$OCTOPUS_OUTPUT_STYLE")
 
   if [[ ${#pairs[@]} -eq 0 ]]; then return; fi

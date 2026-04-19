@@ -114,19 +114,6 @@
       ]
     }
   ],
-  "PostToolUseFailure": [
-    {
-      "matcher": "mcp__*",
-      "hooks": [
-        {
-          "type": "command",
-          "command": "octopus/hooks/post-tool-use-failure/mcp-health.sh",
-          "id": "mcp-health",
-          "timeout": 10000
-        }
-      ]
-    }
-  ],
   "Stop": [
     {
       "matcher": "",
