@@ -79,3 +79,17 @@ for name in sunset ocean terminal paper; do
   done
 done
 echo "PASS: last four themes present"
+
+echo "Test 8: canonical HTML templates exist"
+HTML_DIR="$SCRIPT_DIR/skills/release-announce/templates/html"
+for f in index.html.tmpl email.html.tmpl; do
+  [[ -f "$HTML_DIR/$f" ]] || { echo "FAIL: $f missing"; exit 1; }
+  grep -q "{{THEME_BACKGROUND}}" "$HTML_DIR/$f" \
+    || { echo "FAIL: $f missing theme token {{THEME_BACKGROUND}}"; exit 1; }
+  grep -q "{{RELEASE_TITLE}}" "$HTML_DIR/$f" \
+    || { echo "FAIL: $f missing {{RELEASE_TITLE}}"; exit 1; }
+done
+if grep -q "<script" "$HTML_DIR/email.html.tmpl"; then
+  echo "FAIL: email template contains <script>"; exit 1
+fi
+echo "PASS: canonical HTML templates present and constrained"
