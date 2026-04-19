@@ -84,3 +84,44 @@ grep -q "unknown bundle" /tmp/err.$$ \
   || { echo "FAIL: error message should mention 'unknown bundle'"; rm -f /tmp/err.$$; exit 1; }
 rm -f /tmp/err.$$
 echo "PASS: _load_bundle fails loudly on missing bundle"
+
+echo "Test 7: expand_bundles unions multiple bundles and de-duplicates"
+
+OCTOPUS_SKILLS=()
+OCTOPUS_ROLES=()
+OCTOPUS_RULES=()
+OCTOPUS_MCP=()
+OCTOPUS_BUNDLES=("starter" "quality-gates")
+
+expand_bundles
+
+expected_skills=(adr feature-lifecycle context-budget security-scan money-review tenant-scope-audit)
+printf '%s\n' "${OCTOPUS_SKILLS[@]}" | sort -u > /tmp/got.$$
+printf '%s\n' "${expected_skills[@]}" | sort -u > /tmp/exp.$$
+diff -q /tmp/got.$$ /tmp/exp.$$ >/dev/null \
+  || { echo "FAIL: expand_bundles produced wrong skills"; cat /tmp/got.$$; rm -f /tmp/got.$$ /tmp/exp.$$; exit 1; }
+rm -f /tmp/got.$$ /tmp/exp.$$
+
+printf '%s\n' "${OCTOPUS_ROLES[@]}" | grep -q "^backend-specialist$" \
+  || { echo "FAIL: backend-specialist role missing"; exit 1; }
+
+echo "PASS: expand_bundles unions starter + quality-gates"
+
+echo "Test 8: expand_bundles de-duplicates across bundles"
+
+OCTOPUS_SKILLS=(existing-skill)
+OCTOPUS_ROLES=()
+OCTOPUS_RULES=()
+OCTOPUS_MCP=()
+OCTOPUS_BUNDLES=("quality-gates" "cross-stack")
+
+expand_bundles
+
+count=$(printf '%s\n' "${OCTOPUS_ROLES[@]}" | grep -c "^backend-specialist$" || true)
+[[ "$count" -eq 1 ]] \
+  || { echo "FAIL: backend-specialist duplicated ($count occurrences)"; exit 1; }
+
+printf '%s\n' "${OCTOPUS_SKILLS[@]}" | grep -q "^existing-skill$" \
+  || { echo "FAIL: explicit skill was dropped by expand_bundles"; exit 1; }
+
+echo "PASS: expand_bundles de-duplicates and preserves explicit entries"

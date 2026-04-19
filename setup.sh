@@ -147,6 +147,46 @@ PYEOF
   done <<< "$parsed"
 }
 
+# Expands OCTOPUS_BUNDLES into the component arrays. Must be called after
+# parse_octopus_yml (which populates OCTOPUS_BUNDLES plus any user-explicit
+# skills/roles/rules/mcp). Bundle components are appended to whatever the
+# user already declared explicitly; duplicates across bundles or between
+# bundles and explicit entries are removed.
+expand_bundles() {
+  if [[ ${#OCTOPUS_BUNDLES[@]} -eq 0 ]]; then return 0; fi
+
+  local name
+  for name in "${OCTOPUS_BUNDLES[@]}"; do
+    _load_bundle "$name"
+  done
+
+  _dedupe_array OCTOPUS_SKILLS
+  _dedupe_array OCTOPUS_ROLES
+  _dedupe_array OCTOPUS_RULES
+  _dedupe_array OCTOPUS_MCP
+}
+
+# _dedupe_array <name-of-array>
+# Rewrites the named array with duplicates removed, preserving first-seen order.
+_dedupe_array() {
+  local arr_name="$1"
+  local -a seen=()
+  local -a result=()
+  local item s dup
+  eval "local -a src=(\"\${${arr_name}[@]}\")"
+  for item in "${src[@]}"; do
+    dup="false"
+    for s in "${seen[@]}"; do
+      if [[ "$s" == "$item" ]]; then dup="true"; break; fi
+    done
+    if [[ "$dup" == "false" ]]; then
+      seen+=("$item")
+      result+=("$item")
+    fi
+  done
+  eval "${arr_name}=(\"\${result[@]}\")"
+}
+
 parse_octopus_yml() {
   local file="$1"
   local current_section=""
