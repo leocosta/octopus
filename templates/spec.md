@@ -52,6 +52,11 @@
 **Implementing roles**: <!-- e.g. [backend-specialist] -->
 **Related ADRs**: <!-- e.g. [ADR-001, ADR-005] -->
 **Skills needed**: <!-- e.g. [adr, e2e-testing, security-scan] -->
+**Bundle**: <!-- Required when this spec introduces a new skill. Either
+  the name of an existing bundle that will adopt the skill
+  (e.g. `quality-gates (existing)`) or a proposal for a new bundle
+  (e.g. `observability (proposed)`) with a matching Bundle Design
+  section elsewhere in this spec. -->
 
 **Constraints**:
 <!-- Non-negotiable rules the agent must follow -->

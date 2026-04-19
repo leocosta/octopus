@@ -61,17 +61,23 @@ agents:
   - claude
   - copilot
 
+# Bundles — curated packages of skills + roles + rules by intent.
+# Available: starter, quality-gates, growth, docs-discipline, cross-stack, dotnet-api, node-api
+# Prefer bundles over picking individual skills — run `octopus setup` to let the
+# Quick-mode wizard pick bundles for you via a few yes/no persona questions.
+bundles:
+  - starter
+  - quality-gates
+  - dotnet-api
+
 # Language rules — coding standards applied to all agents
 # Available: common (always included), csharp, typescript, python
-rules:
-  - csharp
-  - typescript
+# Bundles already set rules (e.g. dotnet-api → csharp); use this for extras.
+rules: []
 
-# Skills — reusable AI capabilities
+# Skills — optional extras on top of what bundles provide.
 # Available: adr, backend-patterns, context-budget, continuous-learning, cross-stack-contract, dotnet, e2e-testing, feature-lifecycle, feature-to-market, money-review, plan-backlog-hygiene, security-scan, tenant-scope-audit
-skills:
-  - adr
-  - e2e-testing
+skills: []
 
 # Hooks — lifecycle automation (Claude Code only)
 hooks: true
