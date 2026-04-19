@@ -129,3 +129,14 @@ grep -q "feature-to-market" "$CMD_FILE" \
   || { echo "FAIL: command body does not reference the skill"; exit 1; }
 
 echo "PASS: slash command present"
+
+echo "Test 13: wizard includes feature-to-market"
+
+WIZARD="$SCRIPT_DIR/cli/lib/setup-wizard.sh"
+grep -q "feature-to-market" "$WIZARD" \
+  || { echo "FAIL: feature-to-market not listed in setup-wizard.sh"; exit 1; }
+# Must appear in the items array (not only a comment)
+grep -E "^[[:space:]]*local items=\(.*feature-to-market.*\)" "$WIZARD" >/dev/null \
+  || { echo "FAIL: feature-to-market not in items array"; exit 1; }
+
+echo "PASS: wizard registration present"
