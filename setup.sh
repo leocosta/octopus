@@ -21,6 +21,35 @@ if [[ -z "${PROJECT_ROOT:-}" ]]; then
 fi
 OCTOPUS_CANONICAL_CLI="${OCTOPUS_CANONICAL_CLI:-octopus}"
 
+# RM-018 — Install scope. "repo" (default) writes everything relative to
+# PROJECT_ROOT (the consuming repository). "user" writes relative to $HOME so
+# the config merges with every Claude Code / Codex / Gemini session on this
+# machine (agents already merge ~/.claude/ with <repo>/.claude/; Octopus
+# leverages that layering).
+OCTOPUS_SCOPE="${OCTOPUS_SCOPE:-repo}"
+case "$OCTOPUS_SCOPE" in
+  repo|user) ;;
+  *) ui_error "Invalid OCTOPUS_SCOPE '$OCTOPUS_SCOPE' — use 'repo' or 'user'."; exit 1 ;;
+esac
+
+# Helper for scope-specific branches in delivery code.
+_is_user_scope() { [[ "$OCTOPUS_SCOPE" == "user" ]]; }
+
+# INSTALL_ROOT is resolved *lazily* via this function so tests (and any caller
+# that mutates PROJECT_ROOT after sourcing setup.sh) see the current value at
+# call time. Every delivery handler references "$(_install_root)" instead of a
+# frozen variable.
+_install_root() {
+  if _is_user_scope; then
+    printf '%s' "$HOME"
+  else
+    printf '%s' "$PROJECT_ROOT"
+  fi
+}
+
+# XDG-compliant user-scope config directory (manifest + .env live here).
+OCTOPUS_USER_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/octopus"
+
 # (Agent output paths are now read from agents/<name>/manifest.yml)
 
 # Parsed config arrays
@@ -49,6 +78,15 @@ OCTOPUS_LANGUAGE_DOCS=""    # language for docs/commits/PRs (empty = auto-detect
 OCTOPUS_LANGUAGE_CODE=""    # language for code comments (empty = auto-detect)
 OCTOPUS_LANGUAGE_UI=""      # language for UI/user-facing content (empty = auto-detect)
 
+# Boris tips — Claude Code settings.json passthroughs
+OCTOPUS_WORKTREE=""            # RM-011: "true" enables worktree isolation for agent runs
+OCTOPUS_PERMISSION_MODE=""     # RM-012: "auto" | "plan" | "default" | "acceptEdits" | "bypassPermissions"
+OCTOPUS_MEMORY=""              # RM-013: "true" enables auto-memory capture
+OCTOPUS_DREAM=""               # RM-013: "true" schedules auto-dream (memory consolidation subagent)
+OCTOPUS_SANDBOX=""             # RM-014: "true" enables CC's sandbox on tool calls
+OCTOPUS_OUTPUT_STYLE=""        # RM-015: "concise" | "verbose" | "structured" | "explanatory"
+OCTOPUS_GITHUB_ACTION=""       # RM-016: "true" scaffolds .github/workflows/claude.yml
+
 parse_octopus_yml() {
   local file="$1"
   local current_section=""
@@ -76,13 +114,18 @@ parse_octopus_yml() {
     [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
 
     # Handle inline boolean: workflow: true/false
-    if [[ "$line" =~ ^([a-z]+):[[:space:]]+(true|false)[[:space:]]*$ ]]; then
+    if [[ "$line" =~ ^([a-zA-Z]+):[[:space:]]+(true|false)[[:space:]]*$ ]]; then
       local key="${BASH_REMATCH[1]}"
       local val="${BASH_REMATCH[2]}"
       case "$key" in
-        workflow)  OCTOPUS_WORKFLOW="$val" ;;
-        hooks)     OCTOPUS_HOOKS="$val" ;;
-        knowledge) OCTOPUS_KNOWLEDGE_ENABLED="true"; OCTOPUS_KNOWLEDGE_MODE="auto" ;;
+        workflow)     OCTOPUS_WORKFLOW="$val" ;;
+        hooks)        OCTOPUS_HOOKS="$val" ;;
+        knowledge)    OCTOPUS_KNOWLEDGE_ENABLED="true"; OCTOPUS_KNOWLEDGE_MODE="auto" ;;
+        worktree)     OCTOPUS_WORKTREE="$val" ;;
+        memory)       OCTOPUS_MEMORY="$val" ;;
+        dream)        OCTOPUS_DREAM="$val" ;;
+        sandbox)      OCTOPUS_SANDBOX="$val" ;;
+        githubAction) OCTOPUS_GITHUB_ACTION="$val" ;;
       esac
       current_section=""
       continue
@@ -95,9 +138,18 @@ parse_octopus_yml() {
       # Trim trailing whitespace
       val="${val%"${val##*[![:space:]]}"}"
       case "$key" in
-        hooks)         OCTOPUS_HOOKS="$val" ;;
-        knowledge_dir) OCTOPUS_KNOWLEDGE_DIR="$val" ;;
-        effortLevel)   OCTOPUS_EFFORT_LEVEL="$val" ;;
+        hooks)          OCTOPUS_HOOKS="$val" ;;
+        knowledge_dir)  OCTOPUS_KNOWLEDGE_DIR="$val" ;;
+        effortLevel)    OCTOPUS_EFFORT_LEVEL="$val" ;;
+        permissionMode) OCTOPUS_PERMISSION_MODE="$val" ;;
+        outputStyle)    OCTOPUS_OUTPUT_STYLE="$val" ;;
+        scope)
+          # Warn when the manifest declares a scope different from the one
+          # actually in effect (CLI flag or env var took precedence).
+          if [[ "$val" != "$OCTOPUS_SCOPE" ]]; then
+            ui_warn "Manifest declares 'scope: $val' but active scope is '$OCTOPUS_SCOPE' (flag/env override). Continuing with '$OCTOPUS_SCOPE'."
+          fi
+          ;;
         language)
           OCTOPUS_LANGUAGE_DOCS="$val"
           OCTOPUS_LANGUAGE_CODE="$val"
@@ -447,7 +499,7 @@ ensure_common_rule() {
 generate_from_template() {
   local agent="$1"
   local output_path="$2"
-  local full_output="$PROJECT_ROOT/$output_path"
+  local full_output="$(_install_root)/$output_path"
 
   echo "Generating $agent config (template) → $output_path"
   mkdir -p "$(dirname "$full_output")"
@@ -491,14 +543,14 @@ generate_from_template() {
 
   # Copy settings.json if it exists
   if [[ -f "$OCTOPUS_DIR/agents/$agent/settings.json" ]]; then
-    cp "$OCTOPUS_DIR/agents/$agent/settings.json" "$PROJECT_ROOT/$(dirname "$output_path")/settings.json"
+    cp "$OCTOPUS_DIR/agents/$agent/settings.json" "$(_install_root)/$(dirname "$output_path")/settings.json"
   fi
 }
 
 concatenate_from_manifest() {
   local agent="$1"
   local output_path="$2"
-  local full_output="$PROJECT_ROOT/$output_path"
+  local full_output="$(_install_root)/$output_path"
 
   echo "Generating $agent config (concatenate) → $output_path"
   mkdir -p "$(dirname "$full_output")"
@@ -525,7 +577,7 @@ concatenate_from_manifest() {
     done
 
     # Append project rule overrides from .octopus/rules/ (.local.md files win by position)
-    local octopus_rules_overrides="$PROJECT_ROOT/.octopus/rules"
+    local octopus_rules_overrides="$(_install_root)/.octopus/rules"
     if [[ -d "$octopus_rules_overrides" ]]; then
       for rule in "${OCTOPUS_RULES[@]}"; do
         local override_dir="$octopus_rules_overrides/$rule"
@@ -543,7 +595,7 @@ concatenate_from_manifest() {
       # If language: is configured but no .octopus/rules/common/language.local.md exists,
       # generate the override inline (so concat agents also get explicit language rules)
       if [[ -n "$OCTOPUS_LANGUAGE_DOCS" || -n "$OCTOPUS_LANGUAGE_CODE" || -n "$OCTOPUS_LANGUAGE_UI" ]]; then
-        if [[ ! -f "$PROJECT_ROOT/.octopus/rules/common/language.local.md" ]]; then
+        if [[ ! -f "$(_install_root)/.octopus/rules/common/language.local.md" ]]; then
           local docs="${OCTOPUS_LANGUAGE_DOCS:-en}"
           local code="${OCTOPUS_LANGUAGE_CODE:-en}"
           local ui="${OCTOPUS_LANGUAGE_UI:-en}"
@@ -605,7 +657,7 @@ _generate_language_local() {
   local target_dir="$1"
 
   # Priority 1: project .octopus/rules/common/language.local.md
-  local project_override="$PROJECT_ROOT/.octopus/rules/common/language.local.md"
+  local project_override="$(_install_root)/.octopus/rules/common/language.local.md"
   if [[ -f "$project_override" ]]; then
     cp "$project_override" "$target_dir/language.local.md"
     echo "  -> language.local.md (from .octopus/rules/common/)"
@@ -644,7 +696,7 @@ deliver_rules() {
   if [[ "$MANIFEST_CAP_RULES" != "true" ]]; then return; fi
 
   local method="$MANIFEST_DELIVERY_RULES_METHOD"
-  local target="$PROJECT_ROOT/$MANIFEST_DELIVERY_RULES_TARGET"
+  local target="$(_install_root)/$MANIFEST_DELIVERY_RULES_TARGET"
 
   if [[ "$method" == "symlink" ]]; then
     echo "Generating rules symlinks for $agent..."
@@ -678,7 +730,7 @@ deliver_skills() {
   if [[ ${#OCTOPUS_SKILLS[@]} -eq 0 ]]; then return; fi
 
   local method="$MANIFEST_DELIVERY_SKILLS_METHOD"
-  local target="$PROJECT_ROOT/$MANIFEST_DELIVERY_SKILLS_TARGET"
+  local target="$(_install_root)/$MANIFEST_DELIVERY_SKILLS_TARGET"
 
   if [[ "$method" == "symlink" ]]; then
     echo "Generating skills symlinks for $agent..."
@@ -698,7 +750,7 @@ deliver_skills() {
 
 discover_knowledge() {
   KNOWLEDGE_MODULES=()
-  local knowledge_dir="$PROJECT_ROOT/$OCTOPUS_KNOWLEDGE_DIR"
+  local knowledge_dir="$(_install_root)/$OCTOPUS_KNOWLEDGE_DIR"
   [[ "$OCTOPUS_KNOWLEDGE_ENABLED" != "true" ]] && return
   [[ ! -d "$knowledge_dir" ]] && { echo "  WARNING: knowledge: enabled but no ${OCTOPUS_KNOWLEDGE_DIR}/ directory found."; return; }
 
@@ -722,7 +774,7 @@ discover_knowledge() {
 
 assemble_knowledge() {
   local role="${1:-}"
-  local knowledge_dir="$PROJECT_ROOT/$OCTOPUS_KNOWLEDGE_DIR"
+  local knowledge_dir="$(_install_root)/$OCTOPUS_KNOWLEDGE_DIR"
   local content=""
 
   local -a modules_for_role=()
@@ -760,13 +812,13 @@ deliver_knowledge() {
     echo "Generating knowledge symlink for $agent..."
     mkdir -p "$(dirname "$target")"
     rm -rf "$target"
-    ln -s "$PROJECT_ROOT/$OCTOPUS_KNOWLEDGE_DIR" "$target"
+    ln -s "$(_install_root)/$OCTOPUS_KNOWLEDGE_DIR" "$target"
     echo "  → ${MANIFEST_DELIVERY_KNOWLEDGE_TARGET} -> ${OCTOPUS_KNOWLEDGE_DIR}/"
   fi
 }
 
 generate_knowledge_index() {
-  local knowledge_dir="$PROJECT_ROOT/$OCTOPUS_KNOWLEDGE_DIR"
+  local knowledge_dir="$(_install_root)/$OCTOPUS_KNOWLEDGE_DIR"
   [[ "$OCTOPUS_KNOWLEDGE_ENABLED" != "true" && ${#KNOWLEDGE_MODULES[@]} -eq 0 ]] && return
   [[ ! -d "$knowledge_dir" ]] && return
 
@@ -820,7 +872,7 @@ deliver_hooks() {
   local method="$MANIFEST_DELIVERY_HOOKS_METHOD"
 
   if [[ "$method" == "settings_json" ]]; then
-    local settings_file="$PROJECT_ROOT/$MANIFEST_DELIVERY_HOOKS_TARGET"
+    local settings_file="$(_install_root)/$MANIFEST_DELIVERY_HOOKS_TARGET"
     local hooks_template="$OCTOPUS_DIR/hooks/hooks.json"
 
     if [[ ! -f "$hooks_template" || ! -f "$settings_file" ]]; then
@@ -863,7 +915,7 @@ deliver_permissions() {
   if [[ "$OCTOPUS_PERMISSIONS_MODE" == "" ]]; then return; fi
   if [[ "$MANIFEST_DELIVERY_HOOKS_METHOD" != "settings_json" ]]; then return; fi
 
-  local settings_file="$PROJECT_ROOT/$MANIFEST_DELIVERY_HOOKS_TARGET"
+  local settings_file="$(_install_root)/$MANIFEST_DELIVERY_HOOKS_TARGET"
 
   if [[ ! -f "$settings_file" ]]; then
     echo "WARNING: settings.json not found at $MANIFEST_DELIVERY_HOOKS_TARGET. Skipping permissions for $agent."
@@ -958,7 +1010,7 @@ deliver_effort_level() {
   if [[ "$agent" != "claude" ]]; then return; fi
   if [[ "$MANIFEST_DELIVERY_HOOKS_METHOD" != "settings_json" ]]; then return; fi
 
-  local settings_file="$PROJECT_ROOT/$MANIFEST_DELIVERY_HOOKS_TARGET"
+  local settings_file="$(_install_root)/$MANIFEST_DELIVERY_HOOKS_TARGET"
 
   if [[ ! -f "$settings_file" ]]; then
     echo "WARNING: settings.json not found at $MANIFEST_DELIVERY_HOOKS_TARGET. Skipping effortLevel for $agent."
@@ -987,6 +1039,108 @@ with open(settings_path, "w") as f:
     f.write("\n")
 PYEOF
   echo "  → effortLevel=${OCTOPUS_EFFORT_LEVEL} injected into $MANIFEST_DELIVERY_HOOKS_TARGET"
+}
+
+# RM-011/012/013/014/015 — writes Boris-tip manifest fields into the delivered
+# Claude settings.json as simple key/value pairs. Each field is optional; only
+# non-empty values are injected. CC reads the keys directly (permissionMode,
+# outputStyle, sandbox, worktree, autoMemory); the `autoDream` key documents
+# intent for the companion subagent shipped in agents/claude/agents/dream.md.
+deliver_boris_settings() {
+  local agent="$1"
+  if [[ "$agent" != "claude" ]]; then return; fi
+  if [[ "$MANIFEST_DELIVERY_HOOKS_METHOD" != "settings_json" ]]; then return; fi
+
+  # Build key=value pairs only for non-empty manifest fields
+  local -a pairs=()
+  [[ -n "$OCTOPUS_WORKTREE"        ]] && pairs+=("worktree:bool:$OCTOPUS_WORKTREE")
+  [[ -n "$OCTOPUS_PERMISSION_MODE" ]] && pairs+=("permissionMode:str:$OCTOPUS_PERMISSION_MODE")
+  [[ -n "$OCTOPUS_MEMORY"          ]] && pairs+=("autoMemory:bool:$OCTOPUS_MEMORY")
+  [[ -n "$OCTOPUS_DREAM"           ]] && pairs+=("autoDream:bool:$OCTOPUS_DREAM")
+  [[ -n "$OCTOPUS_SANDBOX"         ]] && pairs+=("sandbox:bool:$OCTOPUS_SANDBOX")
+  [[ -n "$OCTOPUS_OUTPUT_STYLE"    ]] && pairs+=("outputStyle:str:$OCTOPUS_OUTPUT_STYLE")
+
+  if [[ ${#pairs[@]} -eq 0 ]]; then return; fi
+
+  local settings_file="$(_install_root)/$MANIFEST_DELIVERY_HOOKS_TARGET"
+  if [[ ! -f "$settings_file" ]]; then
+    echo "WARNING: settings.json not found at $MANIFEST_DELIVERY_HOOKS_TARGET. Skipping Boris settings for $agent."
+    return
+  fi
+
+  echo "Injecting Boris-tip settings into $MANIFEST_DELIVERY_HOOKS_TARGET for $agent..."
+
+  python3 - "$settings_file" "${pairs[@]}" <<'PYEOF'
+import json, sys
+
+settings_path, *entries = sys.argv[1], *sys.argv[2:]
+with open(settings_path) as f:
+    settings = json.load(f)
+
+for entry in entries:
+    key, kind, value = entry.split(":", 2)
+    if kind == "bool":
+        settings[key] = (value.lower() == "true")
+    else:
+        settings[key] = value
+
+with open(settings_path, "w") as f:
+    json.dump(settings, f, indent=2)
+    f.write("\n")
+PYEOF
+
+  for pair in "${pairs[@]}"; do
+    local k="${pair%%:*}"
+    local v="${pair##*:}"
+    echo "  → $k=$v injected into $MANIFEST_DELIVERY_HOOKS_TARGET"
+  done
+}
+
+# RM-013 — Delivers the dream subagent (memory consolidator) to Claude's
+# native agents directory when `dream: true` is set. The file ships alongside
+# normal role templates but lives under agents/claude/agents/ because it is
+# Claude-specific (no other assistant has persistent memory).
+deliver_dream_subagent() {
+  local agent="$1"
+  if [[ "$agent" != "claude" ]]; then return; fi
+  if [[ "$OCTOPUS_DREAM" != "true" ]]; then return; fi
+
+  local source="$OCTOPUS_DIR/agents/claude/agents/dream.md"
+  if [[ ! -f "$source" ]]; then
+    echo "WARNING: dream subagent template not found at $source. Skipping."
+    return
+  fi
+
+  local target_dir="$(_install_root)/${MANIFEST_DELIVERY_AGENTS_TARGET:-.claude/agents/}"
+  mkdir -p "$target_dir"
+  cp "$source" "$target_dir/dream.md"
+  echo "  → ${MANIFEST_DELIVERY_AGENTS_TARGET}dream.md (RM-013)"
+}
+
+# RM-016 — Scaffolds .github/workflows/claude.yml from the bundled template so
+# repositories get Boris's "Claude Code in CI" pattern with one manifest flag.
+deliver_github_action() {
+  local agent="$1"
+  if [[ "$agent" != "claude" ]]; then return; fi
+  if [[ "$OCTOPUS_GITHUB_ACTION" != "true" ]]; then return; fi
+
+  local template="$OCTOPUS_DIR/templates/github-actions/claude.yml"
+  local target_dir="$(_install_root)/.github/workflows"
+  local target="$target_dir/claude.yml"
+
+  if [[ ! -f "$template" ]]; then
+    echo "WARNING: GitHub Action template not found at $template. Skipping."
+    return
+  fi
+
+  mkdir -p "$target_dir"
+  if [[ -f "$target" ]]; then
+    echo "  → .github/workflows/claude.yml already exists; leaving intact (delete to regenerate)"
+    return
+  fi
+
+  cp "$template" "$target"
+  echo "  → .github/workflows/claude.yml scaffolded (RM-016)"
 }
 
 # Core files in fixed concatenation order
@@ -1122,7 +1276,7 @@ deliver_roles() {
 
     if [[ "$MANIFEST_CAP_AGENTS" == "true" ]]; then
       # Native delivery: individual role files
-      local target_dir="$PROJECT_ROOT/$MANIFEST_DELIVERY_AGENTS_TARGET"
+      local target_dir="$(_install_root)/$MANIFEST_DELIVERY_AGENTS_TARGET"
       mkdir -p "$target_dir"
       echo "$role_content" > "$target_dir/${role}.md"
       if [[ -n "$_ROLES_BASE_CONTENT" ]]; then
@@ -1132,7 +1286,7 @@ deliver_roles() {
       echo "  → ${MANIFEST_DELIVERY_AGENTS_TARGET}${role}.md"
     else
       # Inline delivery: append to concatenated output
-      local full_output="$PROJECT_ROOT/$output_path"
+      local full_output="$(_install_root)/$output_path"
       if [[ ! -f "$full_output" ]]; then continue; fi
 
       local role_title
@@ -1165,7 +1319,7 @@ deliver_commands() {
 
   if [[ "$MANIFEST_CAP_COMMANDS" == "true" ]]; then
     # Native delivery: individual command files
-    local commands_dir="$PROJECT_ROOT/$MANIFEST_DELIVERY_COMMANDS_TARGET"
+    local commands_dir="$(_install_root)/$MANIFEST_DELIVERY_COMMANDS_TARGET"
     mkdir -p "$commands_dir"
 
     # Workflow commands
@@ -1217,7 +1371,7 @@ EOF
     fi
   else
     # Inline delivery: workflow commands appended to output
-    local full_output="$PROJECT_ROOT/$output_path"
+    local full_output="$(_install_root)/$output_path"
     [[ -f "$full_output" ]] || return
 
     if [[ "$OCTOPUS_WORKFLOW" == "true" ]]; then
@@ -1295,7 +1449,7 @@ PYEOF
 _inject_mcp_settings_json() {
   local target="$1"
   local merged="$2"
-  local settings_file="$PROJECT_ROOT/$target"
+  local settings_file="$(_install_root)/$target"
 
   if [[ ! -f "$settings_file" ]]; then return; fi
 
@@ -1317,7 +1471,7 @@ PYEOF
 _inject_mcp_vscode_json() {
   local target="$1"
   local merged="$2"
-  local target_path="$PROJECT_ROOT/$target"
+  local target_path="$(_install_root)/$target"
 
   mkdir -p "$(dirname "$target_path")"
 
@@ -1465,13 +1619,23 @@ deliver_mcp() {
 }
 
 manage_env() {
-  local env_file="$PROJECT_ROOT/.env.octopus"
+  # In user scope secrets live under XDG config; in repo scope they sit next
+  # to the manifest inside the repository (gitignored).
+  local env_file
+  if _is_user_scope; then
+    env_file="$OCTOPUS_USER_CONFIG_DIR/.env.octopus"
+    mkdir -p "$OCTOPUS_USER_CONFIG_DIR"
+  else
+    env_file="$(_install_root)/.env.octopus"
+  fi
   local env_example="$OCTOPUS_DIR/.env.octopus.example"
 
   # Copy template if .env.octopus doesn't exist
   if [[ ! -f "$env_file" ]]; then
     if [[ -f "$env_example" ]]; then
       cp "$env_example" "$env_file"
+      # User-scope secrets must not be world-readable.
+      _is_user_scope && chmod 600 "$env_file" 2>/dev/null || true
       ui_success "Created .env.octopus from .env.octopus.example — fill in your values."
     else
       return
@@ -1528,7 +1692,13 @@ collect_gitignore_entries() {
 }
 
 update_gitignore() {
-  local gitignore="$PROJECT_ROOT/.gitignore"
+  # User scope installs into $HOME; touching ~/.gitignore (if it even exists)
+  # would leak Octopus concerns into the user's global git config. Skip.
+  if _is_user_scope; then
+    return 0
+  fi
+
+  local gitignore="$(_install_root)/.gitignore"
 
   # Create .gitignore if it doesn't exist
   touch "$gitignore"
@@ -1583,16 +1753,27 @@ fi
 
 # --- Main execution ---
 
-CONFIG_FILE="$PROJECT_ROOT/.octopus.yml"
+# User-scope manifest lives in XDG config; repo-scope sits next to the code.
+if _is_user_scope; then
+  CONFIG_FILE="$OCTOPUS_USER_CONFIG_DIR/.octopus.yml"
+else
+  CONFIG_FILE="$(_install_root)/.octopus.yml"
+fi
 
 if [[ ! -f "$CONFIG_FILE" ]]; then
-  ui_error ".octopus.yml not found at $PROJECT_ROOT"
-  ui_info "Copy from: octopus/.octopus.example.yml"
+  ui_error ".octopus.yml not found at $CONFIG_FILE"
+  if _is_user_scope; then
+    ui_info "Run 'octopus setup --scope=user' to generate it interactively,"
+    ui_info "or copy $OCTOPUS_DIR/.octopus.example.yml into $OCTOPUS_USER_CONFIG_DIR/.octopus.yml."
+  else
+    ui_info "Copy from: octopus/.octopus.example.yml"
+  fi
   exit 1
 fi
 
 ui_banner "Octopus Setup"
-ui_kv "Project" "$PROJECT_ROOT"
+ui_kv "Scope" "$OCTOPUS_SCOPE"
+ui_kv "Root"  "$(_install_root)"
 
 # 1. Parse config
 parse_octopus_yml "$CONFIG_FILE"
@@ -1602,6 +1783,32 @@ ensure_common_rule
 
 # 1c. Discover knowledge modules
 discover_knowledge
+
+# 1d. Warn about fields that don't make sense in user scope and disable them
+# so delivery handlers short-circuit cleanly.
+if _is_user_scope; then
+  if [[ ${#OCTOPUS_MCP[@]} -gt 0 ]]; then
+    ui_warn "Ignoring 'mcp:' in user scope — MCP servers carry secrets and belong in repo-scope manifests."
+    OCTOPUS_MCP=()
+  fi
+  if [[ "$OCTOPUS_WORKFLOW" == "true" ]]; then
+    ui_warn "Ignoring 'workflow: true' in user scope — workflow commands only make sense in a repo."
+    OCTOPUS_WORKFLOW="false"
+  fi
+  if [[ ${#OCTOPUS_REVIEWERS[@]} -gt 0 ]]; then
+    ui_warn "Ignoring 'reviewers:' in user scope — reviewers are per-repo."
+    OCTOPUS_REVIEWERS=()
+  fi
+  if [[ "$OCTOPUS_GITHUB_ACTION" == "true" ]]; then
+    ui_warn "Ignoring 'githubAction: true' in user scope — GitHub Actions live in repo .github/."
+    OCTOPUS_GITHUB_ACTION=""
+  fi
+  if [[ "$OCTOPUS_KNOWLEDGE_ENABLED" == "true" ]]; then
+    ui_warn "Ignoring 'knowledge:' in user scope — domain knowledge is per-project."
+    OCTOPUS_KNOWLEDGE_ENABLED="false"
+    OCTOPUS_KNOWLEDGE_LIST=()
+  fi
+fi
 
 ui_kv "Rules"     "${OCTOPUS_RULES[*]:-none}"
 ui_kv "Skills"    "${OCTOPUS_SKILLS[*]:-none}"
@@ -1636,6 +1843,9 @@ _run_agent_pipeline() {
   deliver_hooks "$agent"
   deliver_permissions "$agent"
   deliver_effort_level "$agent"
+  deliver_boris_settings "$agent"
+  deliver_dream_subagent "$agent"
+  deliver_github_action "$agent"
   collect_gitignore_entries "$agent"
 }
 
@@ -1679,3 +1889,9 @@ manage_env
 update_gitignore
 
 ui_banner "Setup complete"
+
+# User scope touches ~/.claude/settings.json which active Claude Code sessions
+# have already loaded. Nudge the user to restart.
+if _is_user_scope; then
+  ui_info "Restart any active Claude Code / Codex / Gemini sessions for changes to take effect."
+fi

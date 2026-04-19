@@ -1,5 +1,16 @@
 # Octopus Configuration
 # Copy this file to .octopus.yml in your repo root and customize.
+# For user-account scope, place this file at ~/.config/octopus/.octopus.yml
+# and set `scope: user` below (see RM-018).
+
+# Install scope (RM-018)
+# Values: repo (default) | user
+#   repo — configs live in this project (.claude/ in <repo>). Use for
+#          project-specific rules, workflow commands, MCP with secrets.
+#   user — configs live in ~/.claude/, merged into every CC session on this
+#          machine. Use for defaults shared across all your repos.
+# Omit the key for repo scope; CC merges user-scope under any repo-scope config.
+# scope: user
 
 # Language rules (multi-file, symlinked to .claude/rules/)
 # Available: common (always included), csharp, typescript, python
@@ -106,3 +117,37 @@ mcp: []
 #   - name: api-start
 #     description: Start the API container
 #     run: make api-start
+
+# --------------------------------------------------------------------------
+# Boris Cherny tips — opt-in Claude Code settings.json passthroughs (RM-011–016)
+# Each key below is optional; set only what your team wants standardized.
+# --------------------------------------------------------------------------
+
+# RM-011 — Worktree isolation for agent runs
+# Signals that this repo tolerates git worktrees for parallel sub-agent work.
+# Prerequisite for the /batch skill (RM-017).
+# worktree: true
+
+# RM-012 — Auto mode for tool permissions
+# Claude Code auto-approves safe tool calls via its AI classifier.
+# Values: auto | plan | default | acceptEdits | bypassPermissions
+# permissionMode: auto
+
+# RM-013 — Persistent memory + dream subagent
+# memory: auto-captures context across sessions.
+# dream: schedules the 'dream' subagent to consolidate / prune stale memories.
+# memory: true
+# dream: true
+
+# RM-014 — Sandbox tool calls
+# Runs Claude Code's sandbox for destructive commands (mkdir/rm/etc.).
+# sandbox: true
+
+# RM-015 — Output style
+# Values: concise | verbose | structured | explanatory
+# outputStyle: concise
+
+# RM-016 — Scaffold Claude Code in CI
+# Generates .github/workflows/claude.yml for PR review + comment on every PR.
+# Requires ANTHROPIC_API_KEY secret in the GitHub repo.
+# githubAction: true
