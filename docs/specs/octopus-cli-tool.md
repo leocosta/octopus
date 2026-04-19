@@ -6,9 +6,9 @@
 |---|---|
 | **Date** | 2026-04-04 |
 | **Author** | codex assistant |
-| **Status** | Proposed |
+| **Status** | Implemented |
 | **Roadmap** | RM-007 |
-| **RFC** | TBD |
+| **RFC** | [docs/rfcs/octopus-cli-tool.md](../rfcs/octopus-cli-tool.md) |
 
 ## Problem Statement
 
@@ -90,3 +90,5 @@ Octopus today installs itself as a git submodule. Every repository has to add `o
 ## Changelog
 
 - 2026-04-04: Introduce RM-007 global Octopus CLI, shell installer, lockfile pinning, and migration shims.
+- 2026-04-18: Mark Implemented. `install.sh` now accepts `--bin-dir` / `--cache-root`, honors `OCTOPUS_INSTALL_ENDPOINT` (including `file://` mirrors), and verifies a companion `.sha256` before writing the real checksum into `metadata.json`. `tests/test_installer.sh` covers the flow end-to-end. GPG signature verification and the `octopus migrate` helper are tracked as follow-up work.
+- 2026-04-18 (post-release): **Submodule mode removed.** The global CLI is now the only supported entrypoint. `cli/lib/update.sh`, `commands/update.md`, the submodule branch in `setup.sh` PROJECT_ROOT resolution, and the `./octopus/cli/octopus.sh` sed replacement in delivered commands were deleted. The `octopus migrate` helper (originally a deferred RM-007 follow-up and later tracked as RM-010) was dropped from the roadmap since there is no migration destination now — repositories using the submodule must install the global CLI and let `octopus setup` regenerate their manifest-driven outputs.

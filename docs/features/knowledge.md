@@ -33,7 +33,7 @@ Modular domain knowledge that agents can load on demand — confirmed facts, hyp
          - retention
          - analytics
    ```
-2. Run `octopus setup` (or `./octopus/setup.sh`)
+2. Run `octopus setup`
 3. **Claude Code**: `knowledge/` is symlinked to `.claude/knowledge/` — agents load modules on demand
 4. **Other agents**: knowledge content is assembled per-role and inlined into the `{{PROJECT_CONTEXT}}` placeholder
 

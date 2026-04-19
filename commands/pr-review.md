@@ -11,7 +11,7 @@ agent: code
 
 ## Instructions
 
-1. Run: `octopus pr-review <pr-number>` (legacy `./octopus/cli/octopus.sh` continues to call the global CLI).
+1. Run: `octopus pr-review <pr-number>`
 2. The script will output the PR diff
 3. Perform a self-review of the diff, checking for:
    - **Correctness** — does the code do what it claims?

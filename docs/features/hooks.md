@@ -26,11 +26,11 @@ Lifecycle hooks that automate quality enforcement for Claude Code. Other agents 
    ```yaml
    hooks: true
    ```
-2. Run `octopus setup` (or `./octopus/setup.sh`)
+2. Run `octopus setup`
 3. Hooks are injected into `.claude/settings.json`
 
 ## Disable specific hooks
 
 ```bash
-OCTOPUS_DISABLED_HOOKS=auto-format,typecheck ./octopus/setup.sh
+OCTOPUS_DISABLED_HOOKS=auto-format,typecheck octopus setup
 ```

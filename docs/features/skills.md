@@ -12,7 +12,7 @@ Reusable AI capabilities that provide specialized knowledge.
      - adr
      - e2e-testing
    ```
-2. Run `octopus setup` (or `./octopus/setup.sh`)
+2. Run `octopus setup`
 3. **Claude Code**: skills are symlinked to `.claude/skills/<name>/` with a `SKILL.md` file each
 4. **Other agents**: skill content is appended to the agent's output file
 

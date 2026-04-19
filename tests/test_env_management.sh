@@ -26,8 +26,8 @@ echo "PASS: warns about missing MCP vars"
 # Test 3: .env exists but missing vars from .env.octopus.example — should show INFO
 echo "NOTION_API_TOKEN=abc" > "$TMPDIR/.env.octopus"
 echo "NOTION_WORKSPACE=abc" >> "$TMPDIR/.env.octopus"
-output=$(manage_env 2>&1)
-echo "$output" | grep -q "INFO.*GITHUB_TOKEN" || { echo "FAIL: should info about missing GITHUB_TOKEN from .env.octopus.example"; exit 1; }
+output=$(NO_COLOR=1 manage_env 2>&1)
+echo "$output" | grep -q "GITHUB_TOKEN.*found in .env.octopus.example" || { echo "FAIL: should info about missing GITHUB_TOKEN from .env.octopus.example"; exit 1; }
 echo "PASS: detects new vars from .env.octopus.example"
 
 rm -rf "$TMPDIR"
