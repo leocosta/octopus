@@ -32,3 +32,16 @@ grep -q "docs/release-announce/themes/" "$SKILL_FILE" \
 grep -q "frontend-design" "$SKILL_FILE" \
   || { echo "FAIL: frontend-design integration missing"; exit 1; }
 echo "PASS: resolution sections documented"
+
+echo "Test 4: SKILL.md documents output structure + theme schema"
+for section in "^## Output$" "^## Theme Schema$" "^## Slides Channel$"; do
+  grep -qE "$section" "$SKILL_FILE" \
+    || { echo "FAIL: section '$section' missing"; exit 1; }
+done
+grep -q "docs/releases/YYYY-MM-DD-" "$SKILL_FILE" \
+  || { echo "FAIL: output path convention missing"; exit 1; }
+for token in "palette" "typography" "layout" "voice" "hero" "grouping" "density"; do
+  grep -q "$token" "$SKILL_FILE" \
+    || { echo "FAIL: theme schema token '$token' missing"; exit 1; }
+done
+echo "PASS: output + schema documented"

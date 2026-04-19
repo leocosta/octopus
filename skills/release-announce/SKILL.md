@@ -128,3 +128,96 @@ When `--design-from="<prompt>"` is passed:
 
 If both `--design-from` and `--theme` are passed,
 `--design-from` wins; log a warning.
+
+## Output
+
+Create `docs/releases/YYYY-MM-DD-<slug>/` where `<slug>` is derived
+from the primary positional ref (a tag → that tag without the `v`
+prefix; an RM → `rm-NNN`; multi-ref → `release-YYYY-MM-DD`).
+
+**Canonical artifacts (always emitted):**
+
+- `README.md` — index linking every other file + frontmatter with
+  `generated_at`, `generated_by`, `refs`, `theme`, `audience`,
+  `channels`.
+- `index.html` — themed landing page. Hero + highlights grouped by
+  category + CTA. All CSS inline; no external assets.
+- `notes.md` — plain markdown fallback suitable for a docs site or
+  screen reader.
+- `theme.yml` — exact theme YAML used (snapshot, so re-rendering
+  later with a different theme preserves history).
+
+**Channel messages** (created under `channels/` based on
+`--channels=`):
+
+- `email.html` — email body (inline CSS, `<table>` layout, no
+  `<script>` or `<style>` in `<body>`, `<head>` only for metadata).
+- `slack.md` — Slack-flavored markdown (`*bold*`, `• bullet`,
+  fenced code), with a preamble line ready for `@here` if desired.
+- `discord.md` — Discord-flavored markdown with `**bold**`, `-# `
+  subtext, embed-style sectioning.
+- `in-app-banner.md` — one headline + one line of context + one CTA
+  URL placeholder. Max 220 characters total.
+- `status-page.md` — Statuspage-style update (title, body, component
+  hint).
+- `x-announcement.md` — post for **existing followers** (tone:
+  "here's what we shipped for you"). Max 280 chars per post; may
+  produce up to 3 posts as a thread.
+- `whatsapp.md` — WhatsApp broadcast formatting (`*bold*`, single
+  emoji per section, short lines).
+- `slides.html` — see "Slides Channel" below.
+
+Each channel file starts with a frontmatter block naming the refs,
+theme, and channel, then the rendered content.
+
+## Theme Schema
+
+A theme is a YAML file at one of the paths in `## Theme Resolution`:
+
+```yaml
+name: jade
+description: Elegant green palette with calm typography.
+palette:
+  background: "#0B1A17"
+  surface: "#112925"
+  primary: "#5FBF9A"
+  accent: "#E8C9A0"
+  muted: "#A2B5AF"
+  text: "#F6F9F7"
+typography:
+  display: "Inter Tight, system-ui, sans-serif"
+  body: "Inter, system-ui, sans-serif"
+  mono: "JetBrains Mono, ui-monospace, monospace"
+layout:
+  hero: large             # large | banner | minimal
+  grouping: grid          # grid | timeline | stack
+  density: comfortable    # compact | comfortable | spacious
+voice:
+  tone: calm              # calm | bold | playful | formal
+  persona: guide          # guide | host | reporter | friend
+```
+
+All fields required. Colors must be `#RRGGBB`. Enum values exactly as
+listed above.
+
+Nine presets ship in v1: `classic` (default), `jade`, `dark`, `bold`,
+`newsletter`, `sunset`, `ocean`, `terminal`, `paper`.
+
+## Slides Channel
+
+`slides.html` is a single autocontained HTML file:
+
+- One `<section class="slide">` per slide (title → hero → per-category
+  grouped highlights → CTA).
+- Inline CSS referencing `{{THEME_*}}` tokens. No external fonts (uses
+  `system-ui` fallback when theme fonts not installed). No image
+  assets.
+- Inline `<script>` with ≤40 lines of vanilla JS implementing:
+  keyboard navigation (`→`/`←`/`Space`/`PageUp`/`PageDown`), touch
+  swipe (`touchstart`/`touchend` distance threshold), progress bar
+  update, URL hash for the current slide.
+- `@page` CSS rule with landscape orientation + page-break-after per
+  slide so browser Print exports as a tidy PDF.
+
+Slides are opt-in: they land in `channels/slides.html` only when
+`slides` is in `--channels=` (or when `--channels=all`).
