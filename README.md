@@ -38,21 +38,19 @@ After installation, verify with `octopus doctor`.
 ```bash
 # 1. Install the CLI (see Installation above)
 
-# 2. Copy and edit the configuration
-cp octopus/.octopus.example.yml .octopus.yml
-# Edit .octopus.yml — choose your agents, rules, and features
-
-# 3. Run setup
+# 2. Run setup (launches the interactive wizard on first run)
 octopus setup
 
-# 4. Fill in your .env.octopus with tokens (for MCP servers)
+# 3. Fill in your .env.octopus with tokens (for MCP servers you selected)
 
-# 5. Commit
+# 4. Commit
 git add .octopus.yml .gitignore
 git commit -m "chore: add octopus config"
 ```
 
-> **Submodule users:** replace `octopus setup` with `./octopus/setup.sh`.
+Prefer editing a manifest by hand? Copy `.octopus.example.yml` from the
+[release](https://github.com/leocosta/octopus/releases/latest) into your
+repo as `.octopus.yml`, then run `octopus setup`.
 
 ## Configuration
 

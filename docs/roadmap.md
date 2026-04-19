@@ -10,50 +10,13 @@ and add a link to the created document.
 
 ## Backlog
 
-### RM-007 — Octopus CLI Tool
-
-- **Priority:** 🔴 High
-- **Effort:** medium (2-3d)
-- **Status:** proposed
-- **Added:** 2026-04-04
-
-Create a global CLI for Octopus to reduce the friction of using git submodules. The CLI
-should handle installation, updates, and configuration across repositories without
-requiring a direct submodule link in every project.
-
-**Rationale:** While git submodules are excellent for strict versioning and "IaC"
-(Infrastructure as Code) for agents, they can be a barrier to entry for some teams. A
-global CLI (`octopus install`) will make it easier to adopt Octopus as a "Standard
-Library for AI Agents".
-
-### RM-006 — Add `tools:` field to role frontmatter
-
-- **Priority:** 🟡 Medium
-- **Effort:** low (<1d)
-- **Status:** proposed
-- **Added:** 2026-04-04
-- **Research:** [claude-agents-support](research/2026-04-04-claude-agents-support.md)
-
-Role files should be able to declare `tools:` in their YAML frontmatter to restrict
-which tools a Claude Code agent can use (e.g., a social-media agent doesn't need Bash
-access). This field is Claude Code-specific and must be stripped for non-Claude agents:
-`normalize_role_frontmatter_for_agent()` in `setup.sh` must remove `tools:` for OpenCode
-(and any future native agent that doesn't support it). Inline delivery (Copilot, Codex,
-Antigravity) already strips all frontmatter via `strip_frontmatter`, so no change needed
-there.
-
-**Rationale:** Improves agent isolation and security. Without `tools:` restriction, a
-role like social-media has access to all tools (Bash, Write, etc.) even though it only
-needs to read project files and draft content. Declaring `tools:` makes the agent's
-capabilities explicit and auditable.
+_No open items._
 
 ---
 
 ## In Progress
 
-| ID | Title | Resolution | Date |
-|----|-------|------------|------|
-| RM-005 | Language rules — behavioral detection + per-project override | in progress → [Spec](specs/language-rules.md) | 2026-03-30 |
+_No items in progress._
 
 ---
 
@@ -62,3 +25,9 @@ capabilities explicit and auditable.
 | ID | Title | Resolution | Date |
 |----|-------|------------|------|
 | RM-001 | Pre-approved permissions in the manifest | completed → [Spec](specs/permissions-manifest.md) | 2026-03-30 |
+| RM-005 | Language rules — behavioral detection + per-project override | completed → [Spec](specs/language-rules.md) | 2026-04-18 |
+| RM-006 | Add `tools:` field to role frontmatter | completed → [Spec](specs/tools-field-frontmatter.md) | 2026-04-18 |
+| RM-007 | Octopus CLI Tool | completed → [Spec](specs/octopus-cli-tool.md) · [RFC](rfcs/octopus-cli-tool.md) | 2026-04-18 |
+| RM-008 | Setup UX unification (shared vocabulary, TUI dispatch, step descriptions) | completed → [Spec](specs/setup-ux-unification.md) | 2026-04-18 |
+| RM-009 | GPG-signed release verification | completed → [Spec](specs/signed-releases.md) | 2026-04-18 |
+| RM-010 | ~~`octopus migrate` helper~~ | rejected — submodule mode removed in this release; no migration destination remains | 2026-04-18 |

@@ -43,6 +43,23 @@ while [[ $# -gt 0 ]]; do
       fi
       shift 2
       ;;
+    --bin-dir)
+      OCTOPUS_BIN_DIR="${2:-}"
+      if [[ -z "$OCTOPUS_BIN_DIR" ]]; then
+        error "Missing --bin-dir argument."
+        exit 1
+      fi
+      shift 2
+      ;;
+    --cache-root)
+      OCTOPUS_CACHE_DIR="${2:-}"
+      if [[ -z "$OCTOPUS_CACHE_DIR" ]]; then
+        error "Missing --cache-root argument."
+        exit 1
+      fi
+      METADATA_FILE="$OCTOPUS_CACHE_DIR/metadata.json"
+      shift 2
+      ;;
     --force|-f)
       FORCE=true
       shift
@@ -57,9 +74,18 @@ while [[ $# -gt 0 ]]; do
       echo "Usage:"
       echo "  install.sh                    Install latest version"
       echo "  install.sh --version v0.15.0  Install specific version"
+      echo "  install.sh --bin-dir <path>   Override default shim directory"
+      echo "  install.sh --cache-root <path> Override ~/.octopus-cli cache location"
       echo "  install.sh --force            Reinstall even if already installed"
       echo "  install.sh --uninstall        Remove Octopus CLI"
       echo "  install.sh --help             Show this help"
+      echo ""
+      echo "Environment:"
+      echo "  OCTOPUS_INSTALL_ENDPOINT  Base URL for tarball + checksum + signature (supports file://)"
+      echo "  OCTOPUS_GPG_KEYRING       Custom keyring file for signature verification"
+      echo "  OCTOPUS_GPG_IMPORT_KEY    ASCII-armored public key to import before verifying"
+      echo "  OCTOPUS_REQUIRE_SIGNATURE Set to 1 to refuse installs without a published .asc"
+      echo "  OCTOPUS_SKIP_SIGNATURE    Set to 1 to bypass GPG verification (not recommended)"
       exit 0
       ;;
     *)
@@ -104,6 +130,76 @@ get_latest_version() {
   echo "$latest"
 }
 
+# Resolve the base URL for release artifacts.
+# When OCTOPUS_INSTALL_ENDPOINT is set, artifacts live at <endpoint>/<version>/
+# (supports file:// for tests/offline mirrors). Otherwise use the GitHub archive URL.
+resolve_tarball_url() {
+  local version="$1"
+  if [[ -n "${OCTOPUS_INSTALL_ENDPOINT:-}" ]]; then
+    echo "${OCTOPUS_INSTALL_ENDPOINT%/}/$version/octopus-$version.tar.gz"
+  else
+    echo "https://github.com/$GITHUB_REPO/archive/refs/tags/$version.tar.gz"
+  fi
+}
+
+resolve_checksum_url() {
+  local version="$1"
+  if [[ -n "${OCTOPUS_INSTALL_ENDPOINT:-}" ]]; then
+    echo "${OCTOPUS_INSTALL_ENDPOINT%/}/$version/octopus-$version.sha256"
+  fi
+}
+
+resolve_signature_url() {
+  local version="$1"
+  if [[ -n "${OCTOPUS_INSTALL_ENDPOINT:-}" ]]; then
+    echo "${OCTOPUS_INSTALL_ENDPOINT%/}/$version/octopus-$version.tar.gz.asc"
+  fi
+}
+
+# Verify the tarball's detached GPG signature against a trusted public key.
+# Honored env vars:
+#   OCTOPUS_GPG_KEYRING     — use this keyring instead of the default user one
+#   OCTOPUS_GPG_IMPORT_KEY  — path to an ASCII-armored public key to import first
+#   OCTOPUS_SKIP_SIGNATURE  — set to 1 to disable signature verification (not recommended)
+verify_signature() {
+  local tarball="$1"
+  local signature="$2"
+
+  if [[ "${OCTOPUS_SKIP_SIGNATURE:-0}" == "1" ]]; then
+    warn "Skipping GPG signature verification (OCTOPUS_SKIP_SIGNATURE=1)."
+    return 0
+  fi
+
+  if ! command -v gpg &>/dev/null; then
+    error "gpg not found — install GnuPG or set OCTOPUS_SKIP_SIGNATURE=1 to bypass."
+    return 1
+  fi
+
+  local gpg_args=(--verify --batch --no-auto-key-locate)
+
+  # Optional custom keyring overrides the user's default.
+  if [[ -n "${OCTOPUS_GPG_KEYRING:-}" ]]; then
+    if [[ ! -f "$OCTOPUS_GPG_KEYRING" ]]; then
+      error "OCTOPUS_GPG_KEYRING=$OCTOPUS_GPG_KEYRING: file not found."
+      return 1
+    fi
+    gpg_args=(--verify --batch --no-default-keyring --keyring "$OCTOPUS_GPG_KEYRING")
+  elif [[ -n "${OCTOPUS_GPG_IMPORT_KEY:-}" && -f "${OCTOPUS_GPG_IMPORT_KEY}" ]]; then
+    # Import the supplied key into the default keyring once; idempotent.
+    gpg --batch --quiet --import "${OCTOPUS_GPG_IMPORT_KEY}" >/dev/null 2>&1 || true
+  fi
+
+  if ! gpg "${gpg_args[@]}" "$signature" "$tarball" >/dev/null 2>&1; then
+    error "GPG signature verification failed for $(basename "$tarball")."
+    echo "  Set OCTOPUS_GPG_KEYRING or OCTOPUS_GPG_IMPORT_KEY to a trusted key," >&2
+    echo "  or OCTOPUS_SKIP_SIGNATURE=1 to bypass (not recommended)." >&2
+    return 1
+  fi
+}
+
+# Exported so write_metadata can embed the verified checksum.
+DOWNLOADED_CHECKSUM=""
+
 # Download and extract a release
 download_release() {
   local version="$1"
@@ -122,11 +218,51 @@ download_release() {
   trap "rm -rf '$tmpdir'" EXIT
 
   # Download tarball (show progress bar)
-  local url="https://github.com/$GITHUB_REPO/archive/refs/tags/$version.tar.gz"
+  local url
+  url="$(resolve_tarball_url "$version")"
   if ! curl -fL --progress-bar "$url" -o "$tmpdir/octopus.tar.gz"; then
-    error "Failed to download $version."
+    error "Failed to download $version from $url."
     echo "Check that the tag exists: https://github.com/$GITHUB_REPO/releases" >&2
     exit 1
+  fi
+
+  # Verify SHA256 when the endpoint publishes a companion checksum file.
+  local checksum_url
+  checksum_url="$(resolve_checksum_url "$version")"
+  if [[ -n "$checksum_url" ]]; then
+    if ! curl -fsSL "$checksum_url" -o "$tmpdir/octopus.sha256"; then
+      error "Failed to download checksum from $checksum_url."
+      exit 1
+    fi
+    local expected actual
+    expected="$(awk '{print $1}' "$tmpdir/octopus.sha256")"
+    actual="$(sha256sum "$tmpdir/octopus.tar.gz" | awk '{print $1}')"
+    if [[ "$expected" != "$actual" ]]; then
+      error "Checksum mismatch for $version (expected $expected, got $actual)."
+      exit 1
+    fi
+    DOWNLOADED_CHECKSUM="$actual"
+  else
+    DOWNLOADED_CHECKSUM="$(sha256sum "$tmpdir/octopus.tar.gz" | awk '{print $1}')"
+  fi
+
+  # Verify GPG signature when the endpoint publishes a detached .asc file.
+  # SHA256 protects against transport corruption; the signature protects
+  # against a compromised mirror serving a tampered tarball with a matching
+  # checksum file. Both are required when present.
+  local signature_url
+  signature_url="$(resolve_signature_url "$version")"
+  if [[ -n "$signature_url" ]]; then
+    # Probe for availability — some mirrors may not publish signatures yet.
+    # 'curl --fail' turns 404 into a non-zero exit.
+    if curl -fsSL "$signature_url" -o "$tmpdir/octopus.tar.gz.asc" 2>/dev/null; then
+      info "Verifying GPG signature..."
+      verify_signature "$tmpdir/octopus.tar.gz" "$tmpdir/octopus.tar.gz.asc" || exit 1
+      success "Signature valid."
+    elif [[ "${OCTOPUS_REQUIRE_SIGNATURE:-0}" == "1" ]]; then
+      error "No signature published at $signature_url (OCTOPUS_REQUIRE_SIGNATURE=1)."
+      exit 1
+    fi
   fi
 
   # Extract
@@ -167,7 +303,7 @@ write_metadata() {
   cat > "$METADATA_FILE" <<EOF
 {
   "version": "$version",
-  "checksum": "",
+  "checksum": "$DOWNLOADED_CHECKSUM",
   "installed_at": "$timestamp",
   "release_path": "$OCTOPUS_CACHE_DIR/cache/$version"
 }

@@ -13,7 +13,7 @@ Agent personas that combine a responsibility definition with your project contex
      - backend-specialist
    ```
 2. Optionally configure knowledge modules (see [Knowledge](knowledge.md)) — their content is injected as project context into each role
-3. Run `octopus setup` (or `./octopus/setup.sh`)
+3. Run `octopus setup`
 4. **Claude Code**: each role becomes a native agent file in `.claude/agents/<role>.md` with YAML frontmatter (name, model, color)
 5. **Other agents**: roles are appended as sections to the agent's output file
 

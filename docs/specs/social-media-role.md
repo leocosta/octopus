@@ -125,7 +125,7 @@ This change is additive. Existing roles, commands, and MCP configuration remain
 unchanged.
 
 Projects that want this role must opt in by adding `social-media` to the
-`roles:` list in `.octopus.yml` and re-running `./octopus/setup.sh`.
+`roles:` list in `.octopus.yml` and re-running `octopus setup`.
 
 ## Implementation Plan
 

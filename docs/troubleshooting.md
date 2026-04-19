@@ -27,7 +27,7 @@ source ~/.bashrc
 Ensure you're running Bash 4+. macOS ships with Bash 3 — install a newer version:
 ```bash
 brew install bash
-bash ./octopus/setup.sh   # use explicit bash
+bash "$(command -v octopus)" setup   # use explicit bash
 ```
 
 **`command not found: python3`**
@@ -44,13 +44,11 @@ gh auth login
 ```
 
 **Symlinks not created (rules/skills missing from `.claude/`)**
-Always run `setup.sh` from your repo root, not from inside the `octopus/` directory:
+Always run `octopus setup` from your repo root — the CLI detects the project
+via `.octopus.yml` and falls back to `$PWD`.
 ```bash
-# Correct
-./octopus/setup.sh
-
-# Wrong — will fail to locate PROJECT_ROOT
-cd octopus && ./setup.sh
+cd path/to/your/repo
+octopus setup
 ```
 
 **MCP environment variables not substituted**

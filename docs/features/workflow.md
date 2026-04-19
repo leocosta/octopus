@@ -28,6 +28,6 @@ PR and branch automation commands powered by GitHub CLI (`gh`).
      - github-username
    ```
 2. Ensure `gh` is installed and authenticated: `gh auth login`
-3. Run `octopus setup` (or `./octopus/setup.sh`)
+3. Run `octopus setup`
 4. **Claude Code**: commands become individual slash command files
 5. **Other agents**: commands are listed with CLI invocation instructions

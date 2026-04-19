@@ -54,7 +54,7 @@ octopus/
 └── .octopus.example.yml    # Configuration template
 ```
 
-In your repo root (alongside the submodule or via global CLI):
+In your repo root:
 
 ```
 ├── .octopus.yml            # Your configuration

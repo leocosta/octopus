@@ -16,10 +16,9 @@ This command creates a versioned release: generates a CHANGELOG entry, syncs det
 ### Step 1: Collect Data
 
 1. Run: `octopus release suggest-version`
-   - The legacy `./octopus/cli/octopus.sh` path still forwards to the shim for now.
    - If the user provided a custom starting ref, pass it: `octopus release suggest-version <from-ref>`
 2. Run: `octopus release list-commits`
-   - Same: pass `<from-ref>` if provided (the legacy command keeps working during migration)
+   - Same: pass `<from-ref>` if provided
 3. If suggest-version reports "No unreleased commits found", inform the user and stop
 
 ### Step 2: Confirm Version

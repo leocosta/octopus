@@ -2,19 +2,23 @@
 set -euo pipefail
 
 OCTOPUS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Unified visual vocabulary (ui_banner, ui_kv, ui_step, ui_done, ui_warn, ui_error, ui_detail, ...)
+# OCTOPUS_VERBOSE=1 surfaces per-file detail; default is grouped per-agent output.
+# shellcheck source=cli/lib/ui.sh
+source "$OCTOPUS_DIR/cli/lib/ui.sh"
+
 if [[ -z "${PROJECT_ROOT:-}" ]]; then
-  _PARENT_DIR="$(cd "$OCTOPUS_DIR/.." && pwd)"
-  if [[ -f "$_PARENT_DIR/.octopus.yml" ]]; then
-    # Submodule mode: parent project owns the config
-    PROJECT_ROOT="$_PARENT_DIR"
-  elif [[ -f "$OCTOPUS_DIR/.octopus.yml" ]]; then
-    # Self-setup: octopus itself is the root project
+  # Self-setup path: running setup.sh inside the octopus repo itself.
+  # Normal invocation goes through 'octopus setup', which exports PROJECT_ROOT
+  # to the caller's working directory (cli/lib/setup.sh). Falling back to $PWD
+  # here keeps direct `bash setup.sh` invocations sensible for contributors.
+  if [[ -f "$OCTOPUS_DIR/.octopus.yml" ]]; then
     PROJECT_ROOT="$OCTOPUS_DIR"
   else
-    PROJECT_ROOT="$_PARENT_DIR"
+    PROJECT_ROOT="$PWD"
   fi
 fi
-OCTOPUS_CLI_REL="$(python3 -c "import os; print(os.path.relpath('$OCTOPUS_DIR/cli/octopus.sh', '$PROJECT_ROOT'))")"
 OCTOPUS_CANONICAL_CLI="${OCTOPUS_CANONICAL_CLI:-octopus}"
 
 # (Agent output paths are now read from agents/<name>/manifest.yml)
@@ -1172,7 +1176,6 @@ deliver_commands() {
         cmd_name=$(basename "$cmd_file" .md)
         GENERATED_WORKFLOW_CMDS+=("$cmd_name")
         strip_frontmatter "$cmd_file" \
-          | sed "s|\./octopus/cli/octopus\\.sh|${OCTOPUS_CANONICAL_CLI}|g" \
           | sed '/./,$!d' \
           > "$commands_dir/${prefix}${cmd_name}.md"
         echo "  → ${MANIFEST_DELIVERY_COMMANDS_TARGET}${prefix}${cmd_name}.md"
@@ -1469,7 +1472,7 @@ manage_env() {
   if [[ ! -f "$env_file" ]]; then
     if [[ -f "$env_example" ]]; then
       cp "$env_example" "$env_file"
-      echo "Created .env.octopus from .env.octopus.example — fill in your values."
+      ui_success "Created .env.octopus from .env.octopus.example — fill in your values."
     else
       return
     fi
@@ -1494,9 +1497,9 @@ manage_env() {
   done
 
   if [[ ${#missing[@]} -gt 0 ]]; then
-    echo "WARNING: The following environment variables are required by your MCP servers but missing from .env.octopus:"
+    ui_warn "Environment variables required by MCP servers but missing from .env.octopus:"
     for var in "${missing[@]}"; do
-      echo "  - $var"
+      ui_detail "- $var"
     done
   fi
 
@@ -1505,7 +1508,7 @@ manage_env() {
     while IFS= read -r var; do
       [[ -z "$var" ]] && continue
       if ! grep -q "^${var}=" "$env_file" 2>/dev/null; then
-        echo "INFO: New variable '$var' found in .env.octopus.example but not in .env.octopus"
+        ui_info "New variable '$var' found in .env.octopus.example but not in .env.octopus"
       fi
     done < <(grep -oP '^([A-Z_]+)=' "$env_example" | sed 's/=$//' || true)
   fi
@@ -1551,8 +1554,8 @@ validate_cli_deps() {
 
   # Check gh
   if ! command -v gh &>/dev/null; then
-    echo "WARNING: 'gh' (GitHub CLI) not found. Workflow commands will not work."
-    echo "  Install: https://cli.github.com/"
+    ui_warn "'gh' (GitHub CLI) not found. Workflow commands will not work."
+    ui_detail "Install: https://cli.github.com/"
     return
   fi
 
@@ -1563,13 +1566,13 @@ validate_cli_deps() {
     local major
     major=$(echo "$gh_version" | cut -d. -f1)
     if [[ "$major" -lt 2 ]]; then
-      echo "WARNING: 'gh' version $gh_version found, but >= 2.0 is required for workflow commands."
+      ui_warn "'gh' version $gh_version found, but >= 2.0 is required for workflow commands."
     fi
   fi
 
   # Check gh auth
   if ! gh auth status &>/dev/null 2>&1; then
-    echo "WARNING: 'gh' is not authenticated. Run 'gh auth login' for workflow commands."
+    ui_warn "'gh' is not authenticated. Run 'gh auth login' for workflow commands."
   fi
 }
 
@@ -1583,14 +1586,13 @@ fi
 CONFIG_FILE="$PROJECT_ROOT/.octopus.yml"
 
 if [[ ! -f "$CONFIG_FILE" ]]; then
-  echo "ERROR: .octopus.yml not found at $PROJECT_ROOT"
-  echo "Copy from: octopus/.octopus.example.yml"
+  ui_error ".octopus.yml not found at $PROJECT_ROOT"
+  ui_info "Copy from: octopus/.octopus.example.yml"
   exit 1
 fi
 
-echo "=== Octopus Setup ==="
-echo "Project root: $PROJECT_ROOT"
-echo ""
+ui_banner "Octopus Setup"
+ui_kv "Project" "$PROJECT_ROOT"
 
 # 1. Parse config
 parse_octopus_yml "$CONFIG_FILE"
@@ -1601,24 +1603,28 @@ ensure_common_rule
 # 1c. Discover knowledge modules
 discover_knowledge
 
-echo "Rules:     ${OCTOPUS_RULES[*]:-none}"
-echo "Skills:    ${OCTOPUS_SKILLS[*]:-none}"
-echo "Hooks:     $OCTOPUS_HOOKS"
-echo "Agents:    ${OCTOPUS_AGENTS[*]:-none}"
-echo "MCP:       ${OCTOPUS_MCP[*]:-none}"
-echo "Commands:  ${OCTOPUS_CMD_NAMES[*]:-none}"
-echo "Workflow:  $OCTOPUS_WORKFLOW"
-echo "Roles:     ${OCTOPUS_ROLES[*]:-none}"
-echo "Reviewers: ${OCTOPUS_REVIEWERS[*]:-none}"
-echo "Knowledge: ${KNOWLEDGE_MODULES[*]:-none}"
-echo "Language:  docs=${OCTOPUS_LANGUAGE_DOCS:-auto} code=${OCTOPUS_LANGUAGE_CODE:-auto} ui=${OCTOPUS_LANGUAGE_UI:-auto}"
+ui_kv "Rules"     "${OCTOPUS_RULES[*]:-none}"
+ui_kv "Skills"    "${OCTOPUS_SKILLS[*]:-none}"
+ui_kv "Hooks"     "$OCTOPUS_HOOKS"
+ui_kv "Agents"    "${OCTOPUS_AGENTS[*]:-none}"
+ui_kv "MCP"       "${OCTOPUS_MCP[*]:-none}"
+ui_kv "Commands"  "${OCTOPUS_CMD_NAMES[*]:-none}"
+ui_kv "Workflow"  "$OCTOPUS_WORKFLOW"
+ui_kv "Roles"     "${OCTOPUS_ROLES[*]:-none}"
+ui_kv "Reviewers" "${OCTOPUS_REVIEWERS[*]:-none}"
+ui_kv "Knowledge" "${KNOWLEDGE_MODULES[*]:-none}"
+ui_kv "Language"  "docs=${OCTOPUS_LANGUAGE_DOCS:-auto} code=${OCTOPUS_LANGUAGE_CODE:-auto} ui=${OCTOPUS_LANGUAGE_UI:-auto}"
 echo ""
 
 # 2. Validate CLI dependencies
 validate_cli_deps
 
 # 3. Manifest-driven agent generation
-for agent in "${OCTOPUS_AGENTS[@]}"; do
+# Each agent's delivery chain emits many per-file lines; when OCTOPUS_VERBOSE=0
+# (default) we group them under a single "Configuring <agent>" step and surface
+# only warnings/errors so the output feels coherent with the setup wizard.
+_run_agent_pipeline() {
+  local agent="$1"
   load_manifest "$agent"
   generate_main_output "$agent"
   deliver_rules "$agent"
@@ -1631,6 +1637,36 @@ for agent in "${OCTOPUS_AGENTS[@]}"; do
   deliver_permissions "$agent"
   deliver_effort_level "$agent"
   collect_gitignore_entries "$agent"
+}
+
+_replay_captured_diagnostics() {
+  local log="$1"
+  while IFS= read -r line; do
+    if [[ "$line" == *ERROR:* ]]; then
+      ui_error "${line#*ERROR: }"
+    elif [[ "$line" == *WARNING:* ]]; then
+      ui_warn "${line#*WARNING: }"
+    fi
+  done < "$log"
+}
+
+for agent in "${OCTOPUS_AGENTS[@]}"; do
+  ui_step "Configuring $agent"
+  if (( OCTOPUS_VERBOSE )); then
+    _run_agent_pipeline "$agent" 2>&1 | sed 's/^/   /'
+  else
+    _agent_log="$(mktemp)"
+    if _run_agent_pipeline "$agent" > "$_agent_log" 2>&1; then
+      _replay_captured_diagnostics "$_agent_log"
+      rm -f "$_agent_log"
+    else
+      _rc=$?
+      cat "$_agent_log" >&2
+      rm -f "$_agent_log"
+      exit "$_rc"
+    fi
+  fi
+  ui_done
 done
 
 # 3b. Generate knowledge index
@@ -1642,5 +1678,4 @@ manage_env
 # 5. Update .gitignore
 update_gitignore
 
-echo ""
-echo "=== Setup complete ==="
+ui_banner "Setup complete"

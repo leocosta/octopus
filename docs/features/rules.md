@@ -12,7 +12,7 @@ Language-specific coding standards applied to all agents.
      - csharp
      - typescript
    ```
-2. Run `octopus setup` (or `./octopus/setup.sh`)
+2. Run `octopus setup`
 3. **Claude Code**: rules are symlinked to `.claude/rules/<language>/` — Claude reads them as native rule files
 4. **Other agents**: all rule markdown files are appended to the agent's output file
 

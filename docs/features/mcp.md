@@ -17,7 +17,7 @@ External tool integrations (Notion, GitHub, Slack, PostgreSQL) configured from a
    - `github` — `GITHUB_TOKEN`
    - `slack` — `SLACK_BOT_TOKEN`, `SLACK_TEAM_ID`
    - `postgres` — `DATABASE_URL`
-3. Run `octopus setup` (or `./octopus/setup.sh`)
+3. Run `octopus setup`
 4. Delivery varies per agent (see [Capability Matrix](../capability-matrix.md)):
    - **Claude Code**: merged into `.claude/settings.json` under `mcpServers`
    - **Copilot**: `.vscode/mcp.json` + `~/.copilot/mcp-config.json`

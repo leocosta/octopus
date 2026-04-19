@@ -18,7 +18,8 @@ if [[ -z "$COMMAND" ]]; then
   echo "  pr-comments    Address PR review comments"
   echo "  pr-merge       Merge an approved PR"
   echo "  release        Create a versioned release with tag and CHANGELOG"
-  echo "  update         Update Octopus submodule to a newer version"
+  echo ""
+  echo "Global commands (via bin/octopus shim): install, update, doctor."
   exit 1
 fi
 

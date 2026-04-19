@@ -13,8 +13,11 @@ SETUP_SCRIPT="$RELEASE_DIR/setup.sh"
 EXAMPLE_YML="$RELEASE_DIR/.octopus.example.yml"
 EXAMPLE_ENV="$RELEASE_DIR/.env.octopus.example"
 
+# shellcheck source=./ui.sh
+source "$CLI_DIR/lib/ui.sh"
+
 if [[ ! -f "$SETUP_SCRIPT" ]]; then
-  echo "ERROR: setup.sh not found at $SETUP_SCRIPT"
+  ui_error "setup.sh not found at $SETUP_SCRIPT"
   exit 1
 fi
 
@@ -34,9 +37,7 @@ _ask_yes() {
 RECONFIGURE_FLAG="${1:-}"
 
 if [[ ! -f "$PROJECT_ROOT/.octopus.yml" ]]; then
-  echo ""
-  echo "No .octopus.yml found in: $PROJECT_ROOT"
-  echo ""
+  ui_info "No .octopus.yml found in: $PROJECT_ROOT"
 
   if [[ -t 0 && -t 1 ]]; then
     # Interactive: run the setup wizard
@@ -47,24 +48,22 @@ if [[ ! -f "$PROJECT_ROOT/.octopus.yml" ]]; then
     if [[ ! -f "$PROJECT_ROOT/.octopus.yml" ]]; then
       if [[ -f "$EXAMPLE_YML" ]]; then
         cp "$EXAMPLE_YML" "$PROJECT_ROOT/.octopus.yml"
-        echo "Created: $PROJECT_ROOT/.octopus.yml"
-        echo "  -> Edit it and re-run 'octopus setup', or continue now with defaults."
-        echo ""
+        ui_success "Created $PROJECT_ROOT/.octopus.yml"
+        ui_info "Edit it and re-run 'octopus setup', or continue now with defaults."
       else
-        echo "WARNING: template not found at $EXAMPLE_YML — skipping scaffold."
+        ui_warn "template not found at $EXAMPLE_YML — skipping scaffold."
       fi
     fi
   else
     # Non-interactive: copy template as before
     if [[ ! -f "$EXAMPLE_YML" ]]; then
-      echo "WARNING: template not found at $EXAMPLE_YML — skipping scaffold."
+      ui_warn "template not found at $EXAMPLE_YML — skipping scaffold."
     elif _ask_yes "Create .octopus.yml from template?"; then
       cp "$EXAMPLE_YML" "$PROJECT_ROOT/.octopus.yml"
-      echo "Created: $PROJECT_ROOT/.octopus.yml"
-      echo "  -> Edit it and re-run 'octopus setup', or continue now with defaults."
-      echo ""
+      ui_success "Created $PROJECT_ROOT/.octopus.yml"
+      ui_info "Edit it and re-run 'octopus setup', or continue now with defaults."
     else
-      echo "Skipped. Re-run 'octopus setup' after creating .octopus.yml."
+      ui_info "Skipped. Re-run 'octopus setup' after creating .octopus.yml."
       exit 0
     fi
   fi
@@ -72,13 +71,11 @@ if [[ ! -f "$PROJECT_ROOT/.octopus.yml" ]]; then
 elif [[ "$RECONFIGURE_FLAG" == "--reconfigure" ]]; then
   # Reconfigure existing manifest interactively
   if [[ -t 0 && -t 1 ]]; then
-    echo ""
-    echo "Reconfiguring existing .octopus.yml..."
-    echo ""
+    ui_info "Reconfiguring existing .octopus.yml..."
     source "$CLI_DIR/lib/setup-wizard.sh"
     run_setup_wizard "$PROJECT_ROOT" "$RELEASE_DIR" "--reconfigure"
   else
-    echo "WARNING: --reconfigure requires an interactive terminal."
+    ui_warn "--reconfigure requires an interactive terminal."
     exit 1
   fi
 fi
@@ -87,9 +84,8 @@ fi
 if [[ ! -f "$PROJECT_ROOT/.env.octopus" ]]; then
   if [[ -f "$EXAMPLE_ENV" ]]; then
     cp "$EXAMPLE_ENV" "$PROJECT_ROOT/.env.octopus"
-    echo "Created: $PROJECT_ROOT/.env.octopus"
-    echo "  -> Fill in your API tokens before running integrations."
-    echo ""
+    ui_success "Created $PROJECT_ROOT/.env.octopus"
+    ui_info "Fill in your API tokens before running integrations."
   fi
 fi
 

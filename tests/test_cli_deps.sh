@@ -12,9 +12,9 @@ ORIG_PATH="$PATH"
 export PATH="$TMPDIR"  # override PATH completely to hide gh
 
 OCTOPUS_WORKFLOW=true
-output=$(validate_cli_deps 2>&1) || true
+output=$(NO_COLOR=1 validate_cli_deps 2>&1) || true
 export PATH="$ORIG_PATH"
-echo "$output" | grep -qi "warning.*gh" || { echo "FAIL: should warn about missing gh"; exit 1; }
+echo "$output" | grep -qi "gh.*not found" || { echo "FAIL: should warn about missing gh"; exit 1; }
 
 echo "PASS: warns about missing gh"
 
@@ -22,8 +22,8 @@ echo "PASS: warns about missing gh"
 echo "Test 2: No warning when workflow disabled"
 
 OCTOPUS_WORKFLOW=false
-output=$(validate_cli_deps 2>&1) || true
-echo "$output" | grep -qi "warning" && { echo "FAIL: should not warn when workflow is false"; exit 1; } || true
+output=$(NO_COLOR=1 validate_cli_deps 2>&1) || true
+echo "$output" | grep -qi "gh" && { echo "FAIL: should not warn when workflow is false"; exit 1; } || true
 
 echo "PASS: no warning when workflow disabled"
 

@@ -3,6 +3,13 @@
 #
 # Guides users through all manifest fields with multi-select UI.
 # TUI backend priority: fzf > whiptail > dialog > pure bash
+#
+# Shares the visual vocabulary of cli/lib/ui.sh so the wizard flows into the
+# rest of setup.sh without dialect shifts.
+
+# shellcheck source=./ui.sh
+_WIZARD_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$_WIZARD_DIR/ui.sh"
 
 # ---------------------------------------------------------------------------
 # Backend detection
@@ -10,27 +17,17 @@
 
 WIZARD_BACKEND=""
 WIZARD_IS_WINDOWS=0  # 1 when running under Git Bash / MSYS2 / Cygwin
-WIZARD_COLORS=1      # 0 to suppress ANSI escape codes
-WIZARD_UNICODE=1     # 0 to replace non-ASCII chars with ASCII equivalents
+# Mirror ui.sh capability flags so existing WIZARD_COLORS / WIZARD_UNICODE
+# branches (fzf marker selection, ASCII fallbacks in bash multiselect) keep
+# working with a single source of truth.
+WIZARD_COLORS="$UI_COLORS"
+WIZARD_UNICODE="$UI_UNICODE"
 
 _detect_platform() {
   # Detect MSYS2 / Git Bash / Cygwin
   if [[ "${OSTYPE:-}" == msys* || "${OSTYPE:-}" == cygwin \
      || -n "${MSYSTEM:-}" || -n "${CYGWIN:-}" ]]; then
     WIZARD_IS_WINDOWS=1
-  fi
-
-  # Disable colors when terminal requests it (NO_COLOR spec or dumb terminal)
-  if [[ -n "${NO_COLOR:-}" || "${TERM:-}" == "dumb" ]]; then
-    WIZARD_COLORS=0
-  fi
-
-  # Disable Unicode when locale is not UTF-8 (common on bare MSYS2 installs)
-  if (( WIZARD_IS_WINDOWS )); then
-    local locale_str="${LC_ALL:-}${LC_CTYPE:-}${LANG:-}"
-    if [[ "$locale_str" != *[Uu][Tt][Ff]* ]]; then
-      WIZARD_UNICODE=0
-    fi
   fi
 }
 
@@ -47,19 +44,34 @@ _detect_tui_backend() {
 }
 
 # ---------------------------------------------------------------------------
-# Colors / formatting helpers
+# Sober fzf palette
+# ---------------------------------------------------------------------------
+# whiptail and dialog ship themes that are deeply tied to their color model
+# (blue-on-blue windows); trying to override them to "neutral" tends to
+# produce unreadable combinations across different terminals. The default
+# newt/dialog theme is readable everywhere and safer than a hand-rolled one.
+#
+# fzf is the only backend whose defaults we nudge: we ask it to inherit the
+# terminal foreground/background (so it blends with the scrollback) and
+# restrict color to a single cyan accent for focus markers.
+#
+# Set OCTOPUS_WIZARD_THEME=default to disable the fzf override entirely.
+
+_apply_wizard_theme() {
+  [[ "${OCTOPUS_WIZARD_THEME:-sober}" == "default" ]] && return
+
+  export FZF_DEFAULT_OPTS="${FZF_DEFAULT_OPTS:-} --color=fg:-1,bg:-1,hl:cyan,fg+:-1,bg+:-1,hl+:cyan,border:8,info:8,prompt:cyan,pointer:cyan,marker:cyan,header:8,gutter:-1,spinner:cyan"
+}
+
+# ---------------------------------------------------------------------------
+# Colors / formatting helpers (thin aliases to cli/lib/ui.sh primitives)
 # ---------------------------------------------------------------------------
 
-_bold()  { (( WIZARD_COLORS )) && printf '\033[1m%s\033[0m' "$*" || printf '%s' "$*"; }
-_cyan()  { (( WIZARD_COLORS )) && printf '\033[36m%s\033[0m' "$*" || printf '%s' "$*"; }
-_green() { (( WIZARD_COLORS )) && printf '\033[32m%s\033[0m' "$*" || printf '%s' "$*"; }
-_dim()   { (( WIZARD_COLORS )) && printf '\033[2m%s\033[0m' "$*" || printf '%s' "$*"; }
-
-_hr() {
-  (( WIZARD_UNICODE )) && printf '%0.s─' $(seq 1 60) \
-                       || printf '%0.s-' $(seq 1 60)
-  printf '\n'
-}
+_bold()  { _ui_bold  "$*"; }
+_cyan()  { _ui_cyan  "$*"; }
+_green() { _ui_green "$*"; }
+_dim()   { _ui_dim   "$*"; }
+_hr()    { ui_divider 60; }
 
 # ---------------------------------------------------------------------------
 # Core UI primitives
@@ -261,50 +273,114 @@ _multiselect_bash() {
 }
 
 # _ask_yn <prompt> <default: y|n>
-# Returns 0 for yes, 1 for no
+# Returns 0 for yes, 1 for no.
+# Dispatches to the active TUI backend so yes/no prompts share the wizard's
+# visual style instead of dropping to a bare shell read.
 _ask_yn() {
   local prompt="$1"
   local default="${2:-y}"
 
-  local hint
-  if [[ "$default" == "y" ]]; then
-    hint="[Y/n]"
-  else
-    hint="[y/N]"
-  fi
-
-  printf "%s %s " "$(_bold "$prompt")" "$(_dim "$hint")"
-  local reply
-  read -r reply
-  reply="${reply,,}"
-
-  case "$reply" in
-    y|yes) return 0 ;;
-    n|no)  return 1 ;;
-    "")    [[ "$default" == "y" ]] && return 0 || return 1 ;;
-    *)     [[ "$default" == "y" ]] && return 0 || return 1 ;;
+  case "$WIZARD_BACKEND" in
+    fzf)
+      local pos pointer
+      [[ "$default" == "y" ]] && pos=1 || pos=2
+      (( WIZARD_UNICODE )) && pointer="▶" || pointer=">"
+      local choice
+      choice=$(printf 'Yes\nNo\n' | \
+        fzf --prompt="  $prompt  " \
+            --header="$(_dim "ENTER=confirm  ESC=use default ($default)")" \
+            --height=~15% \
+            --layout=reverse \
+            --border=rounded \
+            --pointer="$pointer" \
+            --bind="load:pos($pos)" \
+            --ansi \
+            2>/dev/tty) || choice=""
+      if [[ -z "$choice" ]]; then
+        [[ "$default" == "y" ]] && return 0 || return 1
+      fi
+      [[ "$choice" == "Yes" ]] && return 0 || return 1
+      ;;
+    whiptail)
+      local args=(--title "Octopus Setup" --yesno "$prompt" 10 60)
+      [[ "$default" == "n" ]] && args=(--defaultno "${args[@]}")
+      whiptail "${args[@]}"
+      ;;
+    dialog)
+      local args=(--title "Octopus Setup" --yesno "$prompt" 10 60)
+      [[ "$default" == "n" ]] && args=(--defaultno "${args[@]}")
+      dialog "${args[@]}" 2>/dev/null
+      ;;
+    *)
+      # Bash fallback: inline prompt — no TUI backend to dispatch to.
+      local hint
+      if [[ "$default" == "y" ]]; then
+        hint="[Y/n]"
+      else
+        hint="[y/N]"
+      fi
+      printf "%s %s " "$(_bold "$prompt")" "$(_dim "$hint")"
+      local reply
+      read -r reply
+      reply="${reply,,}"
+      case "$reply" in
+        y|yes) return 0 ;;
+        n|no)  return 1 ;;
+        *)     [[ "$default" == "y" ]] && return 0 || return 1 ;;
+      esac
+      ;;
   esac
 }
 
 # _ask_text <prompt> <default>
-# Sets WIZARD_TEXT on return
+# Sets WIZARD_TEXT on return. Dispatches to the active TUI backend so free-text
+# inputs share the wizard's visual style.
 WIZARD_TEXT=""
 _ask_text() {
   local prompt="$1"
   local default="${2:-}"
 
-  local hint=""
-  [[ -n "$default" ]] && hint=" $(_dim "(default: $default)")"
-
-  printf "%s%s: " "$(_bold "$prompt")" "$hint"
-  local reply
-  read -r reply
-
-  if [[ -z "$reply" ]]; then
-    WIZARD_TEXT="$default"
-  else
-    WIZARD_TEXT="$reply"
-  fi
+  case "$WIZARD_BACKEND" in
+    fzf)
+      # fzf has no inputbox widget; use --print-query on a single empty item so
+      # Enter always terminates and returns whatever the user typed (or the
+      # pre-filled query if untouched).
+      local typed
+      typed=$(echo "" | fzf \
+        --prompt="  $prompt: " \
+        --header="$(_dim "Type to edit  ENTER=confirm  ESC=keep default")" \
+        --query="$default" \
+        --print-query \
+        --no-info \
+        --height=~15% \
+        --layout=reverse \
+        --border=rounded \
+        2>/dev/tty | head -1) || typed=""
+      WIZARD_TEXT="${typed:-$default}"
+      ;;
+    whiptail)
+      local result
+      result=$(whiptail --title "Octopus Setup" \
+        --inputbox "$prompt" 10 70 "$default" \
+        3>&1 1>&2 2>&3) || result="$default"
+      WIZARD_TEXT="${result:-$default}"
+      ;;
+    dialog)
+      local result
+      result=$(dialog --title "Octopus Setup" \
+        --inputbox "$prompt" 10 70 "$default" \
+        2>&1 >/dev/tty) || result="$default"
+      WIZARD_TEXT="${result:-$default}"
+      ;;
+    *)
+      local hint=""
+      [[ -n "$default" ]] && hint=" $(_dim "(default: $default)")"
+      printf "%s%s: " "$(_bold "$prompt")" "$hint"
+      local reply
+      read -r reply
+      WIZARD_TEXT="${reply:-$default}"
+      ;;
+  esac
 }
 
 # _select_one <title> <desc> <items_varname> <default>
@@ -410,17 +486,64 @@ WIZARD_KNOWLEDGE=""
 # Wizard steps
 # ---------------------------------------------------------------------------
 
+# _WIZARD_BANNER_SHOWN: print the big title once per wizard session; subsequent
+# steps get a cheap separator. Keeps the scrollback continuous (no `clear`) so
+# the wizard flows into setup.sh's ui_banner without a visual context switch.
+_WIZARD_BANNER_SHOWN=0
+
 _wizard_banner() {
-  clear 2>/dev/null || true
+  if (( _WIZARD_BANNER_SHOWN )); then
+    echo ""
+    _hr
+    echo ""
+    return
+  fi
+  _WIZARD_BANNER_SHOWN=1
+
   echo ""
   local title
-  (( WIZARD_UNICODE )) && title="  🐙 Octopus Setup Wizard" \
-                       || title="  ** Octopus Setup Wizard **"
-  echo "$(_bold "$(_cyan "$title")")"
-  echo "  $(_dim "Configure your .octopus.yml interactively")"
+  (( WIZARD_UNICODE )) && title="🐙 Octopus Setup Wizard" \
+                       || title="** Octopus Setup Wizard **"
+  ui_banner "$title"
+  printf '  %s\n' "$(_dim "Configure your .octopus.yml interactively")"
+
+  # Nudge toward fzf when we're using a fullscreen backend — inline fzf is the
+  # sober scroll-friendly experience; whiptail/dialog themes can't really be
+  # tamed without breaking readability on some terminals.
+  case "$WIZARD_BACKEND" in
+    whiptail|dialog)
+      printf '  %s\n' "$(_dim "Tip: install fzf for an inline UI that blends with the terminal — 'sudo apt install fzf' / 'brew install fzf'.")"
+      ;;
+  esac
   echo ""
-  _hr
-  echo ""
+}
+
+# _wizard_intro <step> <title> <description_lines...>
+# Renders the step header plus 1+ dim description lines so each step explains
+# what it configures and why it matters before the picker opens.
+_wizard_intro() {
+  local step="$1"
+  local title="$2"
+  shift 2
+  printf "  %s — %s\n\n" "$(_bold "Step $step")" "$(_cyan "$title")"
+  local line
+  for line in "$@"; do
+    printf "  %s\n" "$(_dim "$line")"
+  done
+  printf "\n"
+}
+
+# _wizard_hints <entry...>
+# Entries are "name|description"; prints an aligned dim "name → description"
+# table so the user sees per-item context before picking.
+_wizard_hints() {
+  local entry name desc
+  for entry in "$@"; do
+    name="${entry%%|*}"
+    desc="${entry#*|}"
+    printf "  %s  %s\n" "$(_dim "$(printf '%-20s' "$name $UI_SYM_ARROW")")" "$(_dim "$desc")"
+  done
+  printf "\n"
 }
 
 _wizard_step_agents() {
@@ -428,8 +551,16 @@ _wizard_step_agents() {
   local defaults=("${WIZARD_AGENTS[@]:-claude}")
 
   _wizard_banner
-  printf "  $(_bold "Step 1/11") — %s\n\n" "$(_cyan "AI Code Assistants (agents)")"
-  printf "  %s\n\n" "$(_dim "Select which AI assistants this repo should be configured for.")"
+  _wizard_intro "1/11" "AI Code Assistants (agents)" \
+    "Which AI assistants Octopus configures for this repo. Each agent gets its" \
+    "own instructions file, rules, skills and slash commands delivered." \
+    "Pick one or more — pick none and Octopus defaults to claude."
+  _wizard_hints \
+    "claude|Claude Code: native subagents, skills, MCP, hooks" \
+    "copilot|GitHub Copilot Chat / agent-mode instructions" \
+    "codex|OpenAI Codex CLI" \
+    "gemini|Gemini CLI" \
+    "opencode|OpenCode (open-source agent)"
 
   _multiselect \
     "Select agents" \
@@ -451,8 +582,15 @@ _wizard_step_rules() {
   local defaults=("${WIZARD_RULES[@]}")
 
   _wizard_banner
-  printf "  $(_bold "Step 2/11") — %s\n\n" "$(_cyan "Language Rules")"
-  printf "  %s\n\n" "$(_dim "Select language-specific rule sets. 'common' is always included automatically.")"
+  _wizard_intro "2/11" "Language Rules" \
+    "Coding guidelines appended to agent instructions. Enforces style," \
+    "testing, security and patterns per language. The 'common' set (core" \
+    "principles, commit conventions, PR workflow) is always included." \
+    "Skip this if your project mixes many languages or you prefer no rules."
+  _wizard_hints \
+    "typescript|lint, formatting, type-safety, React/Node patterns" \
+    "csharp|.NET conventions, async, DI, LINQ" \
+    "python|PEP 8, typing, virtualenv, testing"
 
   _multiselect \
     "Select rules" \
@@ -467,8 +605,19 @@ _wizard_step_skills() {
   local defaults=("${WIZARD_SKILLS[@]}")
 
   _wizard_banner
-  printf "  $(_bold "Step 3/11") — %s\n\n" "$(_cyan "Skills")"
-  printf "  %s\n\n" "$(_dim "Reusable AI capabilities to inject. Select what's relevant to your project.")"
+  _wizard_intro "3/11" "Skills" \
+    "Reusable AI capabilities exposed as slash commands (/simplify, /loop, …)." \
+    "Gives agents tooling for common operations without custom code." \
+    "Pick only the ones relevant to your project to keep agents focused."
+  _wizard_hints \
+    "adr|record Architecture Decision Records" \
+    "backend-patterns|apply repo/service/DI patterns" \
+    "context-budget|monitor and trim the conversation context" \
+    "continuous-learning|capture lessons learned per session" \
+    "dotnet|.NET-specific build/test/format helpers" \
+    "e2e-testing|scaffold end-to-end test suites" \
+    "feature-lifecycle|spec → PR → release helpers" \
+    "security-scan|scan diffs for secrets and vulnerabilities"
 
   _multiselect \
     "Select skills" \
@@ -483,8 +632,16 @@ _wizard_step_roles() {
   local defaults=("${WIZARD_ROLES[@]}")
 
   _wizard_banner
-  printf "  $(_bold "Step 4/11") — %s\n\n" "$(_cyan "Roles / Personas")"
-  printf "  %s\n\n" "$(_dim "Select AI sub-agent personas. Each role has specialized instructions and context.")"
+  _wizard_intro "4/11" "Roles / Personas" \
+    "Specialized subagents invoked for focused tasks. Each role carries its" \
+    "own instructions and domain context, keeping the main conversation clean." \
+    "On Claude they map to native subagents; elsewhere they become role sections."
+  _wizard_hints \
+    "backend-specialist|APIs, data modeling, server-side logic" \
+    "frontend-specialist|UI/UX, components, accessibility" \
+    "product-manager|specs, roadmap, prioritization" \
+    "tech-writer|docs, READMEs, release notes" \
+    "social-media|platform-native posts and campaigns"
 
   _multiselect \
     "Select roles" \
@@ -499,14 +656,15 @@ _wizard_step_mcp() {
   local defaults=("${WIZARD_MCP[@]}")
 
   _wizard_banner
-  printf "  $(_bold "Step 5/11") — %s\n\n" "$(_cyan "MCP Servers")"
-  printf "  %s\n\n" "$(_dim "Model Context Protocol servers to configure. Each may require env vars.")"
-
-  echo "  $(_dim "  github  → GITHUB_TOKEN")"
-  echo "  $(_dim "  notion  → OAuth (no env vars)")"
-  echo "  $(_dim "  slack   → SLACK_BOT_TOKEN, SLACK_TEAM_ID")"
-  echo "  $(_dim "  postgres→ DATABASE_URL")"
-  echo ""
+  _wizard_intro "5/11" "MCP Servers" \
+    "Model Context Protocol servers: structured tool integrations agents can" \
+    "call (query GitHub, read Notion, run SQL, post to Slack). Each server" \
+    "may need env vars — fill them in .env.octopus after setup."
+  _wizard_hints \
+    "github|PR/issue/workflow access (GITHUB_TOKEN)" \
+    "notion|databases and pages (OAuth, no env vars)" \
+    "slack|channels and DMs (SLACK_BOT_TOKEN, SLACK_TEAM_ID)" \
+    "postgres|read-only SQL access (DATABASE_URL)"
 
   _multiselect \
     "Select MCP servers" \
@@ -518,8 +676,11 @@ _wizard_step_mcp() {
 
 _wizard_step_language() {
   _wizard_banner
-  printf "  $(_bold "Step 6/11") — %s\n\n" "$(_cyan "Language")"
-  printf "  %s\n\n" "$(_dim "Configure the language for AI-generated content. Leave blank to let Octopus auto-detect.")"
+  _wizard_intro "6/11" "Language" \
+    "Language for AI-generated content (specs, commits, PRs, UI strings)." \
+    "Prevents agents from defaulting to the conversation language. Code" \
+    "identifiers always stay in English." \
+    "Pick a base language; optionally override per scope (docs/code/ui separately)."
 
   local lang_opts=("en" "pt-br" "es" "fr" "de" "zh" "other")
   local current_default="${WIZARD_LANGUAGE:-en}"
@@ -556,9 +717,12 @@ _wizard_step_language() {
 
 _wizard_step_hooks() {
   _wizard_banner
-  printf "  $(_bold "Step 7/11") — %s\n\n" "$(_cyan "Hooks")"
-  printf "  %s\n\n" "$(_dim "Lifecycle hooks for Claude Code (pre-tool-use, post-tool-use, session-start, etc.).")"
-  printf "  %s\n\n" "$(_dim "Hooks enforce quality checks: block --no-verify, detect secrets, auto-format, etc.")"
+  _wizard_intro "7/11" "Hooks" \
+    "Lifecycle hooks Claude Code runs automatically around tool use, session" \
+    "start, and context compaction." \
+    "Quality gates they enforce: block --no-verify, detect secrets in diffs," \
+    "auto-format on save, warn on console.log leftovers, trim stale transcripts." \
+    "Skip to keep Claude Code unconstrained; nothing is enforced automatically."
 
   local current_default="y"
   [[ "$WIZARD_HOOKS" == "false" ]] && current_default="n"
@@ -572,9 +736,12 @@ _wizard_step_hooks() {
 
 _wizard_step_workflow() {
   _wizard_banner
-  printf "  $(_bold "Step 8/11") — %s\n\n" "$(_cyan "Workflow Commands")"
-  printf "  %s\n\n" "$(_dim "Enables /octopus:branch-create, /octopus:pr-open, /octopus:pr-review, etc.")"
-  printf "  %s\n\n" "$(_dim "Requires: gh (GitHub CLI) >= 2.0 installed and authenticated.")"
+  _wizard_intro "8/11" "Workflow Commands" \
+    "Guided dev-flow slash commands: /octopus:branch-create, :pr-open," \
+    ":pr-review, :pr-comments, :pr-merge, :release, :update." \
+    "Enforces Octopus conventions — branch naming, Conventional Commits," \
+    "PR template, squash merge, auto-assigned reviewers." \
+    "Requires 'gh' (GitHub CLI) >= 2.0 installed and authenticated."
 
   local gh_available=0
   command -v gh &>/dev/null && gh_available=1
@@ -596,8 +763,10 @@ _wizard_step_workflow() {
 
 _wizard_step_reviewers() {
   _wizard_banner
-  printf "  $(_bold "Step 9/11") — %s\n\n" "$(_cyan "GitHub Reviewers")"
-  printf "  %s\n\n" "$(_dim "Default reviewers automatically assigned to PRs via /octopus:pr-review.")"
+  _wizard_intro "9/11" "GitHub Reviewers" \
+    "Default reviewers assigned automatically when /octopus:pr-review runs." \
+    "Saves typing the same team members on every PR." \
+    "Leave blank to skip — /octopus:pr-review will prompt each time."
 
   local current_default=""
   if [[ ${#WIZARD_REVIEWERS[@]} -gt 0 ]]; then
@@ -620,8 +789,10 @@ _wizard_step_reviewers() {
 
 _wizard_step_commands() {
   _wizard_banner
-  printf "  $(_bold "Step 10/11") — %s\n\n" "$(_cyan "Custom Commands")"
-  printf "  %s\n\n" "$(_dim "Define project-specific slash commands (e.g. /octopus:db-reset).")"
+  _wizard_intro "10/11" "Custom Commands" \
+    "Your own project slash commands (/octopus:db-reset, :seed, :deploy-staging, ...)." \
+    "Each command is a shell invocation wrapped so any configured agent can run it." \
+    "Skip to finish without adding any — you can always re-run 'octopus setup --reconfigure'."
 
   WIZARD_COMMANDS=()
 
@@ -650,8 +821,11 @@ _wizard_step_commands() {
 
 _wizard_step_knowledge() {
   _wizard_banner
-  printf "  $(_bold "Step 11/11") — %s\n\n" "$(_cyan "Knowledge Modules")"
-  printf "  %s\n\n" "$(_dim "Domain context injected into AI agents (stored under knowledge/ directory).")"
+  _wizard_intro "11/11" "Knowledge Modules" \
+    "Curated domain context (business rules, system overview, glossary) that" \
+    "Octopus injects into agent prompts so they understand your project." \
+    "Lives under 'knowledge/'; each subdirectory is a module." \
+    "none = skip · auto-discover = use every folder · explicit-list = pick modules by name."
 
   local opts=("none" "auto-discover" "explicit-list")
   local default="none"
@@ -904,6 +1078,7 @@ run_setup_wizard() {
 
   _detect_platform    # sets WIZARD_IS_WINDOWS, WIZARD_COLORS, WIZARD_UNICODE
   _detect_tui_backend # uses WIZARD_IS_WINDOWS to skip whiptail/dialog on Windows
+  _apply_wizard_theme # tames the default loud palettes (override with OCTOPUS_WIZARD_THEME=default)
 
   # Pre-fill from existing config when reconfiguring
   if [[ "$reconfigure" == "--reconfigure" && -f "$project_root/.octopus.yml" ]]; then
