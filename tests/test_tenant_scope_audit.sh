@@ -61,3 +61,16 @@ for sev in "🚫 Block" "⚠ Warn" "ℹ Info"; do
 done
 grep -q "confidence" "$SKILL_FILE" || { echo "FAIL: confidence label missing"; exit 1; }
 echo "PASS: output + errors documented"
+
+echo "Test 7: slash command exists"
+CMD_FILE="$SCRIPT_DIR/commands/tenant-scope-audit.md"
+[[ -f "$CMD_FILE" ]] || { echo "FAIL: $CMD_FILE missing"; exit 1; }
+head -n 5 "$CMD_FILE" | grep -q "^name: tenant-scope-audit$" \
+  || { echo "FAIL: command frontmatter missing"; exit 1; }
+echo "PASS: slash command present"
+
+echo "Test 8: wizard includes tenant-scope-audit"
+WIZARD="$SCRIPT_DIR/cli/lib/setup-wizard.sh"
+grep -E "^[[:space:]]*local items=\(.*tenant-scope-audit.*\)" "$WIZARD" >/dev/null \
+  || { echo "FAIL: tenant-scope-audit not in items array"; exit 1; }
+echo "PASS: wizard registration present"
