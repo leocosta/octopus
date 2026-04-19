@@ -93,3 +93,15 @@ if grep -q "<script" "$HTML_DIR/email.html.tmpl"; then
   echo "FAIL: email template contains <script>"; exit 1
 fi
 echo "PASS: canonical HTML templates present and constrained"
+
+echo "Test 9: slides template exists and respects JS budget"
+SLIDES="$HTML_DIR/slides.html.tmpl"
+[[ -f "$SLIDES" ]] || { echo "FAIL: slides template missing"; exit 1; }
+js_lines=$(awk '/<script>/{flag=1;next} /<\/script>/{flag=0} flag{print}' "$SLIDES" | wc -l)
+[[ "$js_lines" -le 40 ]] \
+  || { echo "FAIL: slides JS block is $js_lines lines, budget is 40"; exit 1; }
+grep -q '{{THEME_PRIMARY}}' "$SLIDES" \
+  || { echo "FAIL: slides missing theme token"; exit 1; }
+grep -q 'class="slide"' "$SLIDES" \
+  || { echo "FAIL: slides missing slide sections"; exit 1; }
+echo "PASS: slides template within JS budget"
