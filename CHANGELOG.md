@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2026-04-19
+
+✨ New `feature-to-market` skill turns a completed feature (RM-NNN, spec path, research path, or PR) into a versioned multi-channel launch kit under `docs/marketing/launches/YYYY-MM-DD-<slug>/`. The kit bundles Instagram, LinkedIn and X posts, a launch email, landing-page copy, a commercial changelog entry, and a 30–60s video script — each rendered from per-channel templates with placeholders populated from the resolved feature context. Invocation is a single slash command (`/octopus:feature-to-market <ref>`) with flags for channel selection, dry-run, forced angle, and regeneration. Brand and voice pull from a three-level override cascade: `docs/marketing/<name>.md` (canonical) → `docs/<NAME>.md` (uppercase compat with repos that already keep these files at the docs root) → embedded defaults shipped with the skill.
+
+🎨 Optional image generation stays free by default: `GEMINI_API_KEY` (free tier at aistudio.google.com) is the preferred provider, with Pollinations.ai as a zero-setup fallback and graceful degradation to prompts-only when neither is available. Brand palette and logo constraints from `brand.md` are injected into every prompt; aspect ratios are pre-tuned per channel (1:1 IG, 1.91:1 LI, 16:9 X card, 16:9 LP hero).
+
+📝 Tutorial lands at `docs/features/feature-to-market.md`, README skills list and the setup wizard (`cli/lib/setup-wizard.sh`) gain the new entry, and 13 structural tests guard file layout, frontmatter, documented sections, and wizard registration.
+
 ## [1.1.1] - 2026-04-18
 
 🔧 Cleanup delivery closing RM-019, RM-020 and RM-021. `install.sh` no longer embeds a HEREDOC copy of the `bin/octopus` shim — the installer now copies the shim straight from the extracted release tree, removing 307 lines and eliminating the drift risk between the two sources. The release pipeline in `.github/workflows/build-release.yml` signs the published tarball with GPG and uploads `octopus-<tag>.tar.gz.asc` alongside the existing `.sha256`, closing the loop on RM-009's consumer-side verification (requires `OCTOPUS_RELEASE_GPG_KEY` and `OCTOPUS_RELEASE_GPG_PASSPHRASE` to be provisioned as repo secrets — see `docs/specs/release-signing-pipeline.md`).
