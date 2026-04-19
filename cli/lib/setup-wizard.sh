@@ -471,6 +471,7 @@ WIZARD_RULES=()
 WIZARD_SKILLS=()
 WIZARD_ROLES=()
 WIZARD_MCP=()
+WIZARD_BUNDLES=()
 WIZARD_LANGUAGE=""
 WIZARD_LANGUAGE_DOCS=""
 WIZARD_LANGUAGE_CODE=""
@@ -622,6 +623,51 @@ _wizard_sub_rules() {
     items defaults
 
   WIZARD_RULES=("${WIZARD_SELECTED[@]}")
+}
+
+# Persona-driven bundle selection. Reads every bundle YAML with a
+# persona_question and asks y/n. Foundation bundles (no persona question)
+# are auto-included. Result lands in WIZARD_BUNDLES.
+_wizard_sub_bundles() {
+  _wizard_subheader "Bundles" \
+    "Group skills + roles + rules by intent. Say yes to the ones that apply."
+
+  local bundles_dir
+  bundles_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/bundles"
+
+  WIZARD_BUNDLES=()
+
+  local file name desc category question default default_char
+
+  # Pass 1: foundation bundles (always included).
+  for file in "$bundles_dir"/*.yml; do
+    name=$(awk '/^name: /{print $2; exit}' "$file")
+    category=$(awk '/^category: /{print $2; exit}' "$file")
+    desc=$(awk -F': ' '/^description: /{sub(/^description:[[:space:]]*/, ""); print; exit}' "$file")
+    if [[ "$category" == "foundation" ]]; then
+      WIZARD_BUNDLES+=("$name")
+      printf "  ✓ %s — %s\n" "$name" "$desc"
+    fi
+  done
+
+  # Pass 2: intent + stack bundles — ask the persona question.
+  for file in "$bundles_dir"/*.yml; do
+    name=$(awk '/^name: /{print $2; exit}' "$file")
+    category=$(awk '/^category: /{print $2; exit}' "$file")
+    [[ "$category" == "foundation" ]] && continue
+
+    question=$(awk -F'"' '/^persona_question: /{print $2; exit}' "$file")
+    default=$(awk '/^persona_default: /{print $2; exit}' "$file")
+    [[ -z "$question" ]] && continue
+    [[ -z "$default" ]] && default="false"
+
+    default_char="n"
+    [[ "$default" == "true" ]] && default_char="y"
+
+    if _ask_yn "$question" "$default_char"; then
+      WIZARD_BUNDLES+=("$name")
+    fi
+  done
 }
 
 _wizard_sub_skills() {
