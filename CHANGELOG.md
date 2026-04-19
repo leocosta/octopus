@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.1] - 2026-04-18
+
+🔧 Cleanup delivery closing RM-019, RM-020 and RM-021. `install.sh` no longer embeds a HEREDOC copy of the `bin/octopus` shim — the installer now copies the shim straight from the extracted release tree, removing 307 lines and eliminating the drift risk between the two sources. The release pipeline in `.github/workflows/build-release.yml` signs the published tarball with GPG and uploads `octopus-<tag>.tar.gz.asc` alongside the existing `.sha256`, closing the loop on RM-009's consumer-side verification (requires `OCTOPUS_RELEASE_GPG_KEY` and `OCTOPUS_RELEASE_GPG_PASSPHRASE` to be provisioned as repo secrets — see `docs/specs/release-signing-pipeline.md`).
+
+🧪 Four tests that had been waved through as "pre-existing failures" since before v1.0.0 are now fixed. They referenced functions renamed during earlier refactors (`generate_claude`, `inject_mcp_servers`), missed a pipeline step (`collect_gitignore_entries`), or used assertions that the current delivery contract outgrew. The full test suite now reports **19/19 green** on a clean checkout.
+
 ## [1.1.0] - 2026-04-18
 
 Consolidated delivery of RM-011 through RM-018.
