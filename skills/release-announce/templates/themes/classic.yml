@@ -1,0 +1,20 @@
+name: classic
+description: Minimal newsletter — black-and-white with a single accent.
+palette:
+  background: "#FFFFFF"
+  surface: "#F7F7F5"
+  primary: "#111111"
+  accent: "#2F5AFF"
+  muted: "#6B7280"
+  text: "#111111"
+typography:
+  display: "Inter Tight, system-ui, sans-serif"
+  body: "Inter, system-ui, sans-serif"
+  mono: "JetBrains Mono, ui-monospace, monospace"
+layout:
+  hero: minimal
+  grouping: stack
+  density: comfortable
+voice:
+  tone: formal
+  persona: reporter

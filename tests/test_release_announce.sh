@@ -52,3 +52,17 @@ grep -q "^## Errors$" "$SKILL_FILE" \
 grep -q "^## Composition$" "$SKILL_FILE" \
   || { echo "FAIL: '## Composition' missing"; exit 1; }
 echo "PASS: errors + composition documented"
+
+echo "Test 6: first five preset themes exist with required fields"
+THEMES="$SCRIPT_DIR/skills/release-announce/templates/themes"
+for name in classic jade dark bold newsletter; do
+  f="$THEMES/${name}.yml"
+  [[ -f "$f" ]] || { echo "FAIL: theme $name.yml missing"; exit 1; }
+  grep -q "^name: ${name}$" "$f" \
+    || { echo "FAIL: $name missing correct name field"; exit 1; }
+  for field in description palette typography layout voice; do
+    grep -q "^${field}:" "$f" \
+      || { echo "FAIL: $name missing $field block"; exit 1; }
+  done
+done
+echo "PASS: first five themes present"
