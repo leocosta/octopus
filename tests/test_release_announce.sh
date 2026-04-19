@@ -107,3 +107,12 @@ grep -q '\.slide' "$SLIDES" \
 grep -q '{{SLIDES_HTML}}' "$SLIDES" \
   || { echo "FAIL: slides missing {{SLIDES_HTML}} placeholder"; exit 1; }
 echo "PASS: slides template within JS budget"
+
+echo "Test 10: first four channel templates exist"
+CH_DIR="$SCRIPT_DIR/skills/release-announce/templates/channels"
+for f in slack.md.tmpl discord.md.tmpl in-app-banner.md.tmpl status-page.md.tmpl; do
+  [[ -f "$CH_DIR/$f" ]] || { echo "FAIL: channel template $f missing"; exit 1; }
+  head -n 1 "$CH_DIR/$f" | grep -q "^---$" \
+    || { echo "FAIL: $f missing frontmatter"; exit 1; }
+done
+echo "PASS: first four channel templates present with frontmatter"
