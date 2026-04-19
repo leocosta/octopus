@@ -1,0 +1,13 @@
+name: cross-stack
+description: Monorepo with a backend API and one or more separate frontends.
+category: intent
+persona_question: "Does your repo contain both an API and a separate frontend?"
+persona_default: false
+skills:
+  - cross-stack-contract
+roles:
+  - backend-specialist
+  - frontend-specialist
+rules: []
+mcp: []
+hooks: null

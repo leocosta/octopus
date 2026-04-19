@@ -1,0 +1,13 @@
+name: node-api
+description: Node / TypeScript backend — patterns, E2E.
+category: stack
+persona_question: "Primary backend language is Node / TypeScript?"
+persona_default: false
+skills:
+  - backend-patterns
+  - e2e-testing
+roles: []
+rules:
+  - typescript
+mcp: []
+hooks: null

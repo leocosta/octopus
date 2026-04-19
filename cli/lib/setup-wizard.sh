@@ -471,6 +471,7 @@ WIZARD_RULES=()
 WIZARD_SKILLS=()
 WIZARD_ROLES=()
 WIZARD_MCP=()
+WIZARD_BUNDLES=()
 WIZARD_LANGUAGE=""
 WIZARD_LANGUAGE_DOCS=""
 WIZARD_LANGUAGE_CODE=""
@@ -622,6 +623,51 @@ _wizard_sub_rules() {
     items defaults
 
   WIZARD_RULES=("${WIZARD_SELECTED[@]}")
+}
+
+# Persona-driven bundle selection. Reads every bundle YAML with a
+# persona_question and asks y/n. Foundation bundles (no persona question)
+# are auto-included. Result lands in WIZARD_BUNDLES.
+_wizard_sub_bundles() {
+  _wizard_subheader "Bundles" \
+    "Group skills + roles + rules by intent. Say yes to the ones that apply."
+
+  local bundles_dir
+  bundles_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/bundles"
+
+  WIZARD_BUNDLES=()
+
+  local file name desc category question default default_char
+
+  # Pass 1: foundation bundles (always included).
+  for file in "$bundles_dir"/*.yml; do
+    name=$(awk '/^name: /{print $2; exit}' "$file")
+    category=$(awk '/^category: /{print $2; exit}' "$file")
+    desc=$(awk -F': ' '/^description: /{sub(/^description:[[:space:]]*/, ""); print; exit}' "$file")
+    if [[ "$category" == "foundation" ]]; then
+      WIZARD_BUNDLES+=("$name")
+      printf "  ✓ %s — %s\n" "$name" "$desc"
+    fi
+  done
+
+  # Pass 2: intent + stack bundles — ask the persona question.
+  for file in "$bundles_dir"/*.yml; do
+    name=$(awk '/^name: /{print $2; exit}' "$file")
+    category=$(awk '/^category: /{print $2; exit}' "$file")
+    [[ "$category" == "foundation" ]] && continue
+
+    question=$(awk -F'"' '/^persona_question: /{print $2; exit}' "$file")
+    default=$(awk '/^persona_default: /{print $2; exit}' "$file")
+    [[ -z "$question" ]] && continue
+    [[ -z "$default" ]] && default="false"
+
+    default_char="n"
+    [[ "$default" == "true" ]] && default_char="y"
+
+    if _ask_yn "$question" "$default_char"; then
+      WIZARD_BUNDLES+=("$name")
+    fi
+  done
 }
 
 _wizard_sub_skills() {
@@ -1071,8 +1117,18 @@ _generate_octopus_yml() {
     done
   fi
 
-  # skills
-  if [[ ${#WIZARD_SKILLS[@]} -gt 0 ]]; then
+  # bundles (Quick mode emits these; Full mode may too)
+  if [[ ${#WIZARD_BUNDLES[@]} -gt 0 ]]; then
+    out+=$'\n'
+    out+="bundles:"$'\n'
+    local bundle
+    for bundle in "${WIZARD_BUNDLES[@]}"; do
+      out+="  - ${bundle}"$'\n'
+    done
+  fi
+
+  # skills (explicit extras on top of bundles; skip when bundles cover everything)
+  if [[ ${#WIZARD_BUNDLES[@]} -eq 0 && ${#WIZARD_SKILLS[@]} -gt 0 ]]; then
     out+=$'\n'
     out+="skills:"$'\n'
     local skill
@@ -1081,8 +1137,8 @@ _generate_octopus_yml() {
     done
   fi
 
-  # roles
-  if [[ ${#WIZARD_ROLES[@]} -gt 0 ]]; then
+  # roles (explicit extras on top of bundles; skip when bundles cover everything)
+  if [[ ${#WIZARD_BUNDLES[@]} -eq 0 && ${#WIZARD_ROLES[@]} -gt 0 ]]; then
     out+=$'\n'
     out+="roles:"$'\n'
     local role
@@ -1327,11 +1383,16 @@ run_setup_wizard() {
   _wizard_mode_prompt
 
   if [[ "$WIZARD_MODE" == "quick" ]]; then
-    # Quick: just agents + hooks + workflow. Everything else stays default.
+    # Quick: agents + bundles (via persona questions) + hooks + workflow.
     _wizard_banner
-    _wizard_intro "1/1" "Quick setup" \
-      "Three questions, sensible defaults for the rest."
+    _wizard_intro "1/3" "Agents" \
+      "Which AI assistants should this repo configure?"
     _wizard_sub_agents
+    _wizard_intro "2/3" "Bundles" \
+      "Group skills + roles by intent — a few yes/no questions."
+    _wizard_sub_bundles
+    _wizard_intro "3/3" "Workflow" \
+      "Quality gates and PR automation."
     _wizard_sub_hooks
     _wizard_sub_workflow
     if [[ "$WIZARD_WORKFLOW" == "true" ]]; then

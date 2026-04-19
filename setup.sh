@@ -55,6 +55,7 @@ OCTOPUS_USER_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/octopus"
 # Parsed config arrays
 declare -a OCTOPUS_RULES=()
 declare -a OCTOPUS_SKILLS=()
+declare -a OCTOPUS_BUNDLES=()
 OCTOPUS_HOOKS="false"
 declare -a OCTOPUS_AGENTS=()
 declare -A OCTOPUS_AGENT_OUTPUT=()
@@ -86,6 +87,105 @@ OCTOPUS_DREAM=""               # RM-013: "true" schedules auto-dream (memory con
 OCTOPUS_SANDBOX=""             # RM-014: "true" enables CC's sandbox on tool calls
 OCTOPUS_OUTPUT_STYLE=""        # RM-015: "concise" | "verbose" | "structured" | "explanatory"
 OCTOPUS_GITHUB_ACTION=""       # RM-016: "true" scaffolds .github/workflows/claude.yml
+
+# Reads a bundle YAML file and appends its components into the global
+# OCTOPUS_* arrays. Does NOT de-duplicate — that is expand_bundles()'s
+# responsibility (a bundle is a logical grouping; two bundles can legally
+# reference the same skill).
+_load_bundle() {
+  local name="$1"
+  local file="$OCTOPUS_DIR/bundles/${name}.yml"
+
+  if [[ ! -f "$file" ]]; then
+    echo "Error: unknown bundle '$name' (expected $file)" >&2
+    return 1
+  fi
+
+  local parsed
+  parsed=$(python3 - "$file" <<'PYEOF'
+import sys, re
+
+path = sys.argv[1]
+with open(path) as f:
+    lines = f.readlines()
+
+section = None
+out = {"skills": [], "roles": [], "rules": [], "mcp": []}
+for raw in lines:
+    line = raw.rstrip()
+    if not line or line.lstrip().startswith("#"):
+        continue
+    m = re.match(r"^([a-z_]+):\s*(.*)$", line)
+    if m:
+        key, val = m.group(1), m.group(2)
+        if key in out:
+            section = key
+            if val and val.strip() != "[]":
+                out[key].append(val.strip().strip('"').strip("'"))
+        else:
+            section = None
+        continue
+    m = re.match(r"^\s+-\s+(.+)$", line)
+    if m and section:
+        out[section].append(m.group(1).strip().strip('"').strip("'"))
+
+for key in ("skills", "roles", "rules", "mcp"):
+    for item in out[key]:
+        if item and item != "[]":
+            print(f"{key}\t{item}")
+PYEOF
+  )
+
+  while IFS=$'\t' read -r key value; do
+    [[ -z "$key" ]] && continue
+    case "$key" in
+      skills) OCTOPUS_SKILLS+=("$value") ;;
+      roles)  OCTOPUS_ROLES+=("$value") ;;
+      rules)  OCTOPUS_RULES+=("$value") ;;
+      mcp)    OCTOPUS_MCP+=("$value") ;;
+    esac
+  done <<< "$parsed"
+}
+
+# Expands OCTOPUS_BUNDLES into the component arrays. Must be called after
+# parse_octopus_yml (which populates OCTOPUS_BUNDLES plus any user-explicit
+# skills/roles/rules/mcp). Bundle components are appended to whatever the
+# user already declared explicitly; duplicates across bundles or between
+# bundles and explicit entries are removed.
+expand_bundles() {
+  if [[ ${#OCTOPUS_BUNDLES[@]} -eq 0 ]]; then return 0; fi
+
+  local name
+  for name in "${OCTOPUS_BUNDLES[@]}"; do
+    _load_bundle "$name"
+  done
+
+  _dedupe_array OCTOPUS_SKILLS
+  _dedupe_array OCTOPUS_ROLES
+  _dedupe_array OCTOPUS_RULES
+  _dedupe_array OCTOPUS_MCP
+}
+
+# _dedupe_array <name-of-array>
+# Rewrites the named array with duplicates removed, preserving first-seen order.
+_dedupe_array() {
+  local arr_name="$1"
+  local -a seen=()
+  local -a result=()
+  local item s dup
+  eval "local -a src=(\"\${${arr_name}[@]}\")"
+  for item in "${src[@]}"; do
+    dup="false"
+    for s in "${seen[@]}"; do
+      if [[ "$s" == "$item" ]]; then dup="true"; break; fi
+    done
+    if [[ "$dup" == "false" ]]; then
+      seen+=("$item")
+      result+=("$item")
+    fi
+  done
+  eval "${arr_name}=(\"\${result[@]}\")"
+}
 
 parse_octopus_yml() {
   local file="$1"
@@ -231,6 +331,7 @@ parse_octopus_yml() {
       fi
 
       case "$current_section" in
+        bundles)   OCTOPUS_BUNDLES+=("$value") ;;
         rules)     OCTOPUS_RULES+=("$value") ;;
         skills)    OCTOPUS_SKILLS+=("$value") ;;
         agents)    OCTOPUS_AGENTS+=("$value") ;;
@@ -1791,6 +1892,10 @@ ui_kv "Root"  "$(_install_root)"
 
 # 1. Parse config
 parse_octopus_yml "$CONFIG_FILE"
+
+# 1a. Expand bundles into component arrays (must run before knowledge discovery,
+#     rule checks, or delivery). Bundles are additive; explicit lists survive.
+expand_bundles
 
 # 1b. Ensure 'common' rule is always first
 ensure_common_rule

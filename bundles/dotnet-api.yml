@@ -1,0 +1,14 @@
+name: dotnet-api
+description: .NET / ASP.NET Core backend — patterns, helpers, E2E.
+category: stack
+persona_question: "Primary backend language is .NET?"
+persona_default: false
+skills:
+  - dotnet
+  - backend-patterns
+  - e2e-testing
+roles: []
+rules:
+  - csharp
+mcp: []
+hooks: null
