@@ -61,3 +61,11 @@ for f in audience.md hashtags.md; do
 done
 
 echo "PASS: audience + hashtags defaults present"
+
+echo "Test 6: default strategy templates exist"
+
+for f in social-media-guide.md social-media-hooks.md caption-templates.md viral-content-ideas.md video-roteiro.md; do
+  [[ -f "$TEMPLATES/$f" ]] || { echo "FAIL: template $f missing"; exit 1; }
+done
+
+echo "PASS: strategy defaults present"
