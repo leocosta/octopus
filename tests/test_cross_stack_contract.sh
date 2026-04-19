@@ -61,3 +61,16 @@ for sev in "🚫 Block" "⚠ Warn" "ℹ Info"; do
 done
 grep -q "confidence" "$SKILL_FILE" || { echo "FAIL: confidence label missing"; exit 1; }
 echo "PASS: output + errors documented"
+
+echo "Test 7: slash command exists"
+CMD_FILE="$SCRIPT_DIR/commands/cross-stack-contract.md"
+[[ -f "$CMD_FILE" ]] || { echo "FAIL: $CMD_FILE missing"; exit 1; }
+head -n 5 "$CMD_FILE" | grep -q "^name: cross-stack-contract$" \
+  || { echo "FAIL: command frontmatter missing"; exit 1; }
+echo "PASS: slash command present"
+
+echo "Test 8: wizard includes cross-stack-contract"
+WIZARD="$SCRIPT_DIR/cli/lib/setup-wizard.sh"
+grep -E "^[[:space:]]*local items=\(.*cross-stack-contract.*\)" "$WIZARD" >/dev/null \
+  || { echo "FAIL: cross-stack-contract not in items array"; exit 1; }
+echo "PASS: wizard registration present"
