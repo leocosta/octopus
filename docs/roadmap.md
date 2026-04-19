@@ -1,10 +1,25 @@
 # Roadmap
 
-This file is the project backlog. Items are added via `/octopus:doc-research`
-and graduate to a Spec or RFC when work begins.
+This file is the project backlog — ideas that need team discussion
+before becoming a spec.
 
-When creating a Spec or RFC for an item, update its status to "in progress"
-and add a link to the created document.
+## Two valid entry paths
+
+1. **Roadmap-first** — for ideas that benefit from async brainstorm
+   or team validation. Run `/octopus:doc-research <slug>` to produce
+   a research doc + new RM entry. The RM graduates to a Spec or RFC
+   when work begins; when that happens, update the item's status to
+   "in progress" and link the new document.
+
+2. **Spec-first** — for work that already came out of a synchronous
+   brainstorm (e.g. the `superpowers:brainstorming` skill) with a
+   clear rationale and scope. Create the spec directly via
+   `/octopus:doc-spec <slug>` — no RM needed. The spec itself
+   carries the "why" and links from the CHANGELOG entry keep the
+   history visible.
+
+Use spec-first when the brainstorm already happened; use
+roadmap-first when the idea still needs shaping.
 
 ---
 
