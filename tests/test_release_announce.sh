@@ -66,3 +66,16 @@ for name in classic jade dark bold newsletter; do
   done
 done
 echo "PASS: first five themes present"
+
+echo "Test 7: last four preset themes exist with required fields"
+for name in sunset ocean terminal paper; do
+  f="$THEMES/${name}.yml"
+  [[ -f "$f" ]] || { echo "FAIL: theme $name.yml missing"; exit 1; }
+  grep -q "^name: ${name}$" "$f" \
+    || { echo "FAIL: $name missing correct name field"; exit 1; }
+  for field in description palette typography layout voice; do
+    grep -q "^${field}:" "$f" \
+      || { echo "FAIL: $name missing $field block"; exit 1; }
+  done
+done
+echo "PASS: last four themes present"

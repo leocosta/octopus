@@ -1,0 +1,20 @@
+name: ocean
+description: Cool blues and white for a calm, professional feel.
+palette:
+  background: "#F8FBFF"
+  surface: "#E3EEFB"
+  primary: "#1D4ED8"
+  accent: "#06B6D4"
+  muted: "#64748B"
+  text: "#0F172A"
+typography:
+  display: "Inter Tight, system-ui, sans-serif"
+  body: "Inter, system-ui, sans-serif"
+  mono: "JetBrains Mono, ui-monospace, monospace"
+layout:
+  hero: banner
+  grouping: grid
+  density: comfortable
+voice:
+  tone: formal
+  persona: guide
