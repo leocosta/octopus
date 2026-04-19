@@ -125,3 +125,37 @@ printf '%s\n' "${OCTOPUS_SKILLS[@]}" | grep -q "^existing-skill$" \
   || { echo "FAIL: explicit skill was dropped by expand_bundles"; exit 1; }
 
 echo "PASS: expand_bundles de-duplicates and preserves explicit entries"
+
+echo "Test 9: bundles-only manifest expands to full component lists"
+
+TMPDIR=$(mktemp -d)
+cat > "$TMPDIR/.octopus.yml" <<'EOF'
+agents:
+  - claude
+
+bundles:
+  - starter
+  - quality-gates
+
+hooks: true
+EOF
+
+OCTOPUS_BUNDLES=()
+OCTOPUS_SKILLS=()
+OCTOPUS_ROLES=()
+OCTOPUS_AGENTS=()
+OCTOPUS_MCP=()
+OCTOPUS_RULES=()
+
+parse_octopus_yml "$TMPDIR/.octopus.yml"
+expand_bundles
+
+# 3 (starter) + 3 (quality-gates) = 6 distinct skills
+[[ ${#OCTOPUS_SKILLS[@]} -eq 6 ]] \
+  || { echo "FAIL: expected 6 skills after bundle expansion, got ${#OCTOPUS_SKILLS[@]}"; exit 1; }
+
+printf '%s\n' "${OCTOPUS_ROLES[@]}" | grep -q "^backend-specialist$" \
+  || { echo "FAIL: backend-specialist role missing after expansion"; exit 1; }
+
+rm -rf "$TMPDIR"
+echo "PASS: bundles-only manifest expands to full component lists"

@@ -1117,8 +1117,18 @@ _generate_octopus_yml() {
     done
   fi
 
-  # skills
-  if [[ ${#WIZARD_SKILLS[@]} -gt 0 ]]; then
+  # bundles (Quick mode emits these; Full mode may too)
+  if [[ ${#WIZARD_BUNDLES[@]} -gt 0 ]]; then
+    out+=$'\n'
+    out+="bundles:"$'\n'
+    local bundle
+    for bundle in "${WIZARD_BUNDLES[@]}"; do
+      out+="  - ${bundle}"$'\n'
+    done
+  fi
+
+  # skills (explicit extras on top of bundles; skip when bundles cover everything)
+  if [[ ${#WIZARD_BUNDLES[@]} -eq 0 && ${#WIZARD_SKILLS[@]} -gt 0 ]]; then
     out+=$'\n'
     out+="skills:"$'\n'
     local skill
@@ -1127,8 +1137,8 @@ _generate_octopus_yml() {
     done
   fi
 
-  # roles
-  if [[ ${#WIZARD_ROLES[@]} -gt 0 ]]; then
+  # roles (explicit extras on top of bundles; skip when bundles cover everything)
+  if [[ ${#WIZARD_BUNDLES[@]} -eq 0 && ${#WIZARD_ROLES[@]} -gt 0 ]]; then
     out+=$'\n'
     out+="roles:"$'\n'
     local role
@@ -1373,11 +1383,16 @@ run_setup_wizard() {
   _wizard_mode_prompt
 
   if [[ "$WIZARD_MODE" == "quick" ]]; then
-    # Quick: just agents + hooks + workflow. Everything else stays default.
+    # Quick: agents + bundles (via persona questions) + hooks + workflow.
     _wizard_banner
-    _wizard_intro "1/1" "Quick setup" \
-      "Three questions, sensible defaults for the rest."
+    _wizard_intro "1/3" "Agents" \
+      "Which AI assistants should this repo configure?"
     _wizard_sub_agents
+    _wizard_intro "2/3" "Bundles" \
+      "Group skills + roles by intent — a few yes/no questions."
+    _wizard_sub_bundles
+    _wizard_intro "3/3" "Workflow" \
+      "Quality gates and PR automation."
     _wizard_sub_hooks
     _wizard_sub_workflow
     if [[ "$WIZARD_WORKFLOW" == "true" ]]; then
