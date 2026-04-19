@@ -126,3 +126,25 @@ for f in notes.md.tmpl readme.md.tmpl; do
   [[ -f "$TPL/$f" ]] || { echo "FAIL: canonical template $f missing"; exit 1; }
 done
 echo "PASS: remaining templates present"
+
+echo "Test 12: slash command + wizard + bundle + README + skills.md"
+CMD="$SCRIPT_DIR/commands/release-announce.md"
+[[ -f "$CMD" ]] || { echo "FAIL: command file missing"; exit 1; }
+head -n 5 "$CMD" | grep -q "^name: release-announce$" \
+  || { echo "FAIL: command frontmatter missing"; exit 1; }
+
+WIZARD="$SCRIPT_DIR/cli/lib/setup-wizard.sh"
+grep -E "^[[:space:]]*local items=\(.*release-announce.*\)" "$WIZARD" >/dev/null \
+  || { echo "FAIL: release-announce not in wizard items"; exit 1; }
+
+BUNDLE="$SCRIPT_DIR/bundles/growth.yml"
+grep -q -- "- release-announce" "$BUNDLE" \
+  || { echo "FAIL: growth bundle missing release-announce"; exit 1; }
+
+grep -q "release-announce" "$SCRIPT_DIR/README.md" \
+  || { echo "FAIL: README missing release-announce"; exit 1; }
+
+grep -q "release-announce" "$SCRIPT_DIR/docs/features/skills.md" \
+  || { echo "FAIL: skills.md missing release-announce row"; exit 1; }
+
+echo "PASS: command + wizard + bundle + docs wired"
