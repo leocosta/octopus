@@ -43,3 +43,13 @@ for name in brand voice audience hashtags social-media-guide social-media-hooks 
 done
 
 echo "PASS: input resolution + cascade documented"
+
+echo "Test 4: default brand and voice templates exist"
+
+TEMPLATES="$SCRIPT_DIR/skills/feature-to-market/templates"
+for f in brand.md voice.md; do
+  [[ -f "$TEMPLATES/$f" ]] || { echo "FAIL: template $f missing"; exit 1; }
+  grep -q "^# " "$TEMPLATES/$f" || { echo "FAIL: $f has no H1"; exit 1; }
+done
+
+echo "PASS: brand + voice defaults present"
