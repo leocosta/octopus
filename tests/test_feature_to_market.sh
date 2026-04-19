@@ -79,3 +79,11 @@ for f in post-instagram.md post-linkedin.md thread-x.md email-lancamento.md; do
 done
 
 echo "PASS: channel templates part 1 present"
+
+echo "Test 8: channel templates (LP, changelog, video, images, README) exist"
+
+for f in copy-lp.md changelog-vendedor.md roteiro-video.md image-prompts.md README.md; do
+  [[ -f "$CHANNELS/$f" ]] || { echo "FAIL: channel template $f missing"; exit 1; }
+done
+
+echo "PASS: channel templates part 2 present"
