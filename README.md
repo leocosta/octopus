@@ -2,7 +2,7 @@
 
 ---
 
-![Version](https://img.shields.io/badge/version-v1.3.0-blue)
+![Version](https://img.shields.io/badge/version-v1.4.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Shell](https://img.shields.io/badge/shell-bash%204%2B-lightgrey)
 
@@ -68,7 +68,7 @@ rules:
   - typescript
 
 # Skills — reusable AI capabilities
-# Available: adr, backend-patterns, context-budget, continuous-learning, dotnet, e2e-testing, feature-lifecycle, feature-to-market, money-review, security-scan
+# Available: adr, backend-patterns, context-budget, continuous-learning, cross-stack-contract, dotnet, e2e-testing, feature-lifecycle, feature-to-market, money-review, security-scan
 skills:
   - adr
   - e2e-testing
