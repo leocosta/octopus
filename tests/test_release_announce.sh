@@ -116,3 +116,13 @@ for f in slack.md.tmpl discord.md.tmpl in-app-banner.md.tmpl status-page.md.tmpl
     || { echo "FAIL: $f missing frontmatter"; exit 1; }
 done
 echo "PASS: first four channel templates present with frontmatter"
+
+echo "Test 11: remaining channel + canonical templates exist"
+for f in x-announcement.md.tmpl whatsapp.md.tmpl; do
+  [[ -f "$CH_DIR/$f" ]] || { echo "FAIL: channel template $f missing"; exit 1; }
+done
+TPL="$SCRIPT_DIR/skills/release-announce/templates"
+for f in notes.md.tmpl readme.md.tmpl; do
+  [[ -f "$TPL/$f" ]] || { echo "FAIL: canonical template $f missing"; exit 1; }
+done
+echo "PASS: remaining templates present"
