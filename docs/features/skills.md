@@ -1,8 +1,35 @@
 # Skills
 
-Reusable AI capabilities that provide specialized knowledge.
+Reusable AI capabilities that provide specialized knowledge or audit
+procedures. Skills are shipped as `SKILL.md` files; Claude Code loads
+them natively, other assistants get them inlined into their output file.
 
-**Available skills:** `adr`, `backend-patterns`, `context-budget`, `continuous-learning`, `dotnet`, `e2e-testing`, `feature-lifecycle`, `security-scan`
+## What each skill does
+
+| Skill | What it does | Tutorial |
+|---|---|---|
+| `adr` | Create and manage Architecture Decision Records (ADRs) to document significant technical decisions. | — |
+| `backend-patterns` | Backend architecture decision patterns for multi-stack projects (Node.js, .NET, Python). | — |
+| `context-budget` | Audit and optimize AI-agent context-window usage to reduce token overhead and improve response quality. | — |
+| `continuous-learning` | Captures insights, tests hypotheses, and promotes confirmed patterns to rules — a learning loop that makes the agent sharper over time. | — |
+| `cross-stack-contract` | Detect API-vs-frontend contract drift in multi-stack monorepos (endpoints, DTOs, enums, status codes, auth rules, params). Produces a severity-tiered report with confidence labels. | [cross-stack-contract.md](cross-stack-contract.md) |
+| `dotnet` | .NET backend architecture patterns, conventions, and decision trees for ASP.NET Core projects. | — |
+| `e2e-testing` | End-to-end testing patterns with Playwright for reliable, maintainable browser tests. | — |
+| `feature-lifecycle` | Guides the complete documentation lifecycle of a feature — from RFC through spec, implementation, ADR capture, and knowledge extraction. | [feature-lifecycle.md](feature-lifecycle.md) |
+| `feature-to-market` | Turn a completed feature (RM / spec / PR) into a versioned multi-channel launch kit under `docs/marketing/launches/` — posts, email, LP copy, commercial changelog, video script, and optional images. | [feature-to-market.md](feature-to-market.md) |
+| `money-review` | Pre-merge audit of money-touching code: numeric types, rounding, cents tests, env-var drift, payment idempotency, webhook signatures, fee-disclosure coupling. | [money-review.md](money-review.md) |
+| `plan-backlog-hygiene` | Scan `plans/` + `docs/roadmap.md` for orphans, concluded-but-not-archived plans, duplicates, broken links, roadmap orphans, and stale items. `--fix` archives safely. | [plan-backlog-hygiene.md](plan-backlog-hygiene.md) |
+| `security-scan` | Security audit checklist for AI-agent configurations, environment variables, and project dependencies. | — |
+
+Pair-ups:
+
+- `security-scan` + `money-review` + `cross-stack-contract` share the same
+  `🚫 Block / ⚠ Warn / ℹ Info` output format — concatenate them into one
+  PR comment without extra formatting work.
+- `feature-lifecycle` + `feature-to-market` cover the path from *plan* to
+  *announce*.
+- `plan-backlog-hygiene` pairs with the `schedule` skill for a monthly
+  cron run.
 
 ## How it works
 
@@ -11,13 +38,31 @@ Reusable AI capabilities that provide specialized knowledge.
    skills:
      - adr
      - e2e-testing
+     - money-review
    ```
-2. Run `octopus setup`
-3. **Claude Code**: skills are symlinked to `.claude/skills/<name>/` with a `SKILL.md` file each
-4. **Other agents**: skill content is appended to the agent's output file
+2. Run `octopus setup`.
+3. **Claude Code**: skills are symlinked to `.claude/skills/<name>/` with a
+   `SKILL.md` file each.
+4. **Other agents**: skill content is appended to the agent's output file.
 
 ## Adding custom skills
 
-1. Create a directory: `octopus/skills/<name>/`
-2. Add a `SKILL.md` file with the skill instructions
-3. Add `- <name>` to the `skills:` list in `.octopus.yml`
+1. Create a directory: `skills/<name>/` at the Octopus source.
+2. Add a `SKILL.md` file with frontmatter:
+   ```markdown
+   ---
+   name: <name>
+   description: >
+     One-line description of what the skill does — shown in the wizard
+     and skills catalog.
+   ---
+
+   # <Skill title>
+
+   (body)
+   ```
+3. Add `- <name>` to the `skills:` list in `.octopus.yml`.
+4. Register in `cli/lib/setup-wizard.sh` (items array, hints, legend) so
+   the setup wizard shows the skill with its one-line hint.
+5. Add a tutorial at `docs/features/<name>.md` when the skill is
+   user-facing and worth a dedicated page. Link it from the table above.
