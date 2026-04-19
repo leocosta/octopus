@@ -8,7 +8,7 @@ description: Create a new Architecture Decision Record from the Octopus template
 agent: code
 ---
 
-# /doc-adr
+# /octopus:doc-adr
 
 ## Purpose
 

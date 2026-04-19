@@ -8,7 +8,7 @@ description: Create a new feature specification from the Octopus template
 agent: code
 ---
 
-# /doc-spec
+# /octopus:doc-spec
 
 ## Purpose
 
