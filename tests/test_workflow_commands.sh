@@ -27,8 +27,13 @@ deliver_commands "claude"
 [[ -f "$TMPDIR/.claude/commands/octopus:dev-flow.md" ]] || { echo "FAIL: octopus:dev-flow.md not created"; exit 1; }
 [[ -f "$TMPDIR/.claude/commands/octopus:release.md" ]] || { echo "FAIL: octopus:release.md not created"; exit 1; }
 
-# Verify content has no frontmatter
-! grep -q "^---" "$TMPDIR/.claude/commands/octopus:pr-open.md" || { echo "FAIL: frontmatter should be stripped"; exit 1; }
+# Command templates carry TWO frontmatter blocks in source: the outer one
+# holds Octopus metadata (name:, cli:) that must be stripped, and the inner
+# one is a Claude-readable slash-command header (description:, agent:) that
+# the delivered file must keep. Verify only the Octopus-specific fields are
+# gone — presence of the inner block (and its leading ---) is correct.
+! grep -Eq "^(name|cli):" "$TMPDIR/.claude/commands/octopus:pr-open.md" \
+  || { echo "FAIL: Octopus frontmatter fields leaked into body"; exit 1; }
 # Verify content has instructions
 grep -q "Instructions" "$TMPDIR/.claude/commands/octopus:pr-open.md" || { echo "FAIL: instructions missing"; exit 1; }
 
@@ -63,7 +68,9 @@ OUTPUT="$TMPDIR/.github/copilot-instructions.md"
 grep -q "# Octopus Commands" "$OUTPUT" || { echo "FAIL: Octopus Commands section missing"; exit 1; }
 grep -q "/octopus:branch-create" "$OUTPUT" || { echo "FAIL: branch-create missing from copilot"; exit 1; }
 grep -q "/octopus:pr-open" "$OUTPUT" || { echo "FAIL: pr-open missing from copilot"; exit 1; }
-grep -q "octopus.sh" "$OUTPUT" || { echo "FAIL: CLI reference missing from copilot"; exit 1; }
+# RM-007 renamed the CLI from `octopus.sh` to the global `octopus` shim.
+grep -Eq "Run: \`octopus (branch-create|pr-open|release)\`" "$OUTPUT" \
+  || { echo "FAIL: CLI reference missing from copilot"; exit 1; }
 
 echo "PASS: workflow commands for copilot"
 
