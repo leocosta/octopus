@@ -68,7 +68,7 @@ rules:
   - typescript
 
 # Skills — reusable AI capabilities
-# Available: adr, backend-patterns, context-budget, continuous-learning, dotnet, e2e-testing, feature-lifecycle, security-scan
+# Available: adr, backend-patterns, context-budget, continuous-learning, dotnet, e2e-testing, feature-lifecycle, feature-to-market, security-scan
 skills:
   - adr
   - e2e-testing
