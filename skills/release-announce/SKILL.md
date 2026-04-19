@@ -221,3 +221,39 @@ Nine presets ship in v1: `classic` (default), `jade`, `dark`, `bold`,
 
 Slides are opt-in: they land in `channels/slides.html` only when
 `slides` is in `--channels=` (or when `--channels=all`).
+
+## Errors
+
+Fail fast with actionable messages:
+
+- **Unresolvable ref** → print the 5 nearest fuzzy matches (tags +
+  RMs) and exit 1 before creating any files.
+- **Not a git repo / no tags** → abort with "run `git tag` first or
+  pass explicit refs".
+- **`CHANGELOG.md` missing** → warn, continue with git log only.
+- **`--design-from` without frontend-design available** → abort with
+  guidance to install the skill or pick a preset.
+- **Invalid theme YAML (from `--design-from` or a repo override)** →
+  abort, list the validation failures.
+- **Output directory already exists** → abort unless a `--force`
+  flag is added in a future version (v1: never overwrite; user
+  removes or renames the existing kit).
+- **Unrecognized `--channels` value** → abort, list valid channel
+  names.
+
+## Composition
+
+Pairs with:
+
+- `feature-to-market` — `release-announce` does retention;
+  `feature-to-market` does acquisition. A release often needs both:
+  one post announcing to the market, one email announcing to
+  existing users.
+- `/octopus:release` — use `release-announce` right after the
+  versioned release lands (PR merged, tag pushed) to generate the
+  user-facing package.
+- `frontend-design` — the only cross-skill call path in this skill,
+  gated behind `--design-from`. See `## Theme Resolution`.
+
+Output files are never published automatically. Paste-ready content
+is the contract.

@@ -45,3 +45,10 @@ for token in "palette" "typography" "layout" "voice" "hero" "grouping" "density"
     || { echo "FAIL: theme schema token '$token' missing"; exit 1; }
 done
 echo "PASS: output + schema documented"
+
+echo "Test 5: SKILL.md documents errors and composition"
+grep -q "^## Errors$" "$SKILL_FILE" \
+  || { echo "FAIL: '## Errors' missing"; exit 1; }
+grep -q "^## Composition$" "$SKILL_FILE" \
+  || { echo "FAIL: '## Composition' missing"; exit 1; }
+echo "PASS: errors + composition documented"
