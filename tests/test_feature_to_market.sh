@@ -69,3 +69,13 @@ for f in social-media-guide.md social-media-hooks.md caption-templates.md viral-
 done
 
 echo "PASS: strategy defaults present"
+
+echo "Test 7: channel templates (IG, LI, X, email) exist"
+
+CHANNELS="$TEMPLATES/channels"
+for f in post-instagram.md post-linkedin.md thread-x.md email-lancamento.md; do
+  [[ -f "$CHANNELS/$f" ]] || { echo "FAIL: channel template $f missing"; exit 1; }
+  grep -q "^---$" "$CHANNELS/$f" || { echo "FAIL: $f missing frontmatter"; exit 1; }
+done
+
+echo "PASS: channel templates part 1 present"
