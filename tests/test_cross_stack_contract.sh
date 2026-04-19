@@ -48,3 +48,16 @@ for keyword in "endpoint-added" "endpoint-removed" "dto" "enum" "status" "auth" 
     || { echo "FAIL: check keyword '$keyword' missing"; exit 1; }
 done
 echo "PASS: all inspection checks documented"
+
+echo "Test 6: SKILL.md documents output + errors"
+grep -q "^## Output$" "$SKILL_FILE" \
+  || { echo "FAIL: '## Output' missing"; exit 1; }
+grep -q "^## Errors$" "$SKILL_FILE" \
+  || { echo "FAIL: '## Errors' missing"; exit 1; }
+grep -q "docs/reviews/" "$SKILL_FILE" \
+  || { echo "FAIL: report path missing"; exit 1; }
+for sev in "🚫 Block" "⚠ Warn" "ℹ Info"; do
+  grep -q -- "$sev" "$SKILL_FILE" || { echo "FAIL: severity '$sev' missing"; exit 1; }
+done
+grep -q "confidence" "$SKILL_FILE" || { echo "FAIL: confidence label missing"; exit 1; }
+echo "PASS: output + errors documented"

@@ -171,7 +171,11 @@ order changes on an endpoint.
 
 Severity: ⚠ Warn.
 
-### C7 params — path or query param changed
+### C7 params — path or query param changed (continued below)
+
+<!-- keeps C7 header searchable; detail follows -->
+
+
 
 Detect path params or query params added / removed / renamed on an
 existing endpoint:
@@ -182,3 +186,65 @@ existing endpoint:
 - Emit **⚠ Warn** when a live call site uses the old shape.
 
 Severity: ⚠ Warn.
+
+## Output
+
+**Default (chat):** one markdown block with three severity headings,
+each finding formatted as
+`Cn **check** (confidence): <description> [api-file:line ↔ frontend-file:line]`.
+
+```
+## 🚫 Block (N)
+- C2 **endpoint-removed** (high): `GET /students/{id}/profile` removed
+  in `api/.../StudentsController.cs:82`, still called in
+  `app/src/hooks/useStudentProfile.ts:14`.
+
+## ⚠ Warn (N)
+- C3 **dto** (medium): field `StudentDto.fullName` removed in
+  `api/.../StudentDto.cs:9`, still declared in
+  `app/src/types/student.ts:5`.
+
+## ℹ Info (N)
+- C1 **endpoint-added** (low): `POST /classes/{id}/archive` added;
+  no consumer detected in app or lp.
+```
+
+Always end with:
+`cross-stack-contract: N block, N warn, N info (<stacks compared>)`.
+
+**With `--write-report`:** content is persisted to
+`docs/reviews/YYYY-MM-DD-contract-<slug>.md` with frontmatter:
+
+```yaml
+---
+ref: feat/api-v2
+base: main
+stacks: [api, app, lp]
+generated_by: octopus:cross-stack-contract
+generated_at: 2026-04-19
+summary: "1 block, 2 warn, 1 info"
+---
+```
+
+The slug is derived from the branch name or PR number (lowercase ASCII,
+max 40 chars).
+
+## Errors
+
+- **No stacks detected** → abort with the message "add `stacks:` to
+  `.octopus.yml` or run from a supported monorepo layout".
+- **Only one stack detected** → print "nothing to compare" and exit 0
+  with `cross-stack-contract: 0 block, 0 warn, 0 info`.
+- **Base branch missing** → abort with `--base` hint.
+- **No contract-relevant changes** → print "no contract changes
+  detected" and exit 0.
+- **Unrecognized `--only` check** → abort, list valid checks.
+
+## Composition
+
+Runs well alongside `money-review` and `security-scan`. All three emit
+the same three-heading severity format so the reports can be
+concatenated into a single PR comment without extra formatting work.
+
+The findings are guidance, not a gate. Reviewers decide whether to
+block, require changes, or accept with a note.
