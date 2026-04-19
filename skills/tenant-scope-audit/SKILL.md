@@ -175,3 +175,71 @@ For each such method:
   **⚠ Warn**.
 - The comment must carry a non-empty reason; an empty marker is
   rejected.
+
+## Output
+
+Same three-heading severity format used by `money-review` and
+`cross-stack-contract`, extended with a one-line config trailer that
+shows which tenant field / filter / context were in effect.
+
+```
+## 🚫 Block (N)
+- T1 **query-without-filter** (high): `IgnoreQueryFilters()` at
+  `api/src/Students/StudentQueries.cs:42` has no tenant-override
+  justification.
+- T2 **dbcontext-missing-filter** (high): new `DbSet<Waitlist>`
+  added at `api/.../AppDbContext.cs:88` without a `HasQueryFilter`
+  configuration.
+
+## ⚠ Warn (N)
+- T4 **id-from-route-no-ownership** (medium): `GET /students/{id}`
+  calls `.FindAsync(id)` without an ownership helper.
+  `api/.../StudentsController.cs:55`.
+
+## ℹ Info (0)
+- (none)
+
+tenant-scope-audit: 2 block, 1 warn, 0 info (config: TenantId via AppQueryFilter / AppDbContext)
+```
+
+With `--write-report`: content is persisted to
+`docs/reviews/YYYY-MM-DD-tenant-<slug>.md` with frontmatter:
+
+```yaml
+---
+ref: feat/students-waitlist
+base: main
+config:
+  field: TenantId
+  filter: AppQueryFilter
+  context: AppDbContext
+generated_by: octopus:tenant-scope-audit
+generated_at: 2026-04-19
+summary: "2 block, 1 warn, 0 info"
+---
+```
+
+The slug is derived from the branch name or PR number (lowercase
+ASCII, max 40 chars).
+
+## Errors
+
+- **Not in a git repo** → abort.
+- **Base branch missing** → abort with `--base` hint.
+- **No tenant-relevant files in diff** → print
+  "no tenant-scope changes detected" and exit 0 with
+  `tenant-scope-audit: 0 block, 0 warn, 0 info`.
+- **Malformed `tenantScope:` in `.octopus.yml`** → warn, fall back to
+  defaults, continue.
+- **Unrecognized `--only` check** → abort, list valid IDs.
+
+## Composition
+
+Runs well alongside `security-scan`, `money-review`, and
+`cross-stack-contract`. All four emit the same severity headings and
+confidence labels so their reports concatenate into a single PR
+comment without extra formatting.
+
+The report is guidance. In multi-tenant code reviewers should treat
+🚫 Block findings as merge blockers — each one is a potential
+data-leak path.
