@@ -46,3 +46,17 @@ for keyword in "orphan" "concluded" "duplicate" "broken-link" "roadmap-orphan" "
     || { echo "FAIL: check keyword '$keyword' missing"; exit 1; }
 done
 echo "PASS: all hygiene checks documented"
+
+echo "Test 6: SKILL.md documents output + fix mode + errors"
+grep -q "^## Output$" "$SKILL_FILE" \
+  || { echo "FAIL: '## Output' missing"; exit 1; }
+grep -q "^## Fix Mode$" "$SKILL_FILE" \
+  || { echo "FAIL: '## Fix Mode' missing"; exit 1; }
+grep -q "^## Errors$" "$SKILL_FILE" \
+  || { echo "FAIL: '## Errors' missing"; exit 1; }
+grep -q "plans/archive/" "$SKILL_FILE" \
+  || { echo "FAIL: archive path missing"; exit 1; }
+for sev in "🚫 Block" "⚠ Warn" "ℹ Info"; do
+  grep -q -- "$sev" "$SKILL_FILE" || { echo "FAIL: severity '$sev' missing"; exit 1; }
+done
+echo "PASS: output + fix + errors documented"

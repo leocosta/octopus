@@ -118,10 +118,91 @@ is informational.
 
 Severity: ℹ Info.
 
-### H6 stale — plan unchanged for too long
+### H6 stale — plan unchanged for too long (continued)
+
+<!-- keep H6 searchable -->
+
+
 
 A plan's most recent commit is older than `--stale-days` (default 90)
 AND the plan does not link an already-concluded RM. When the file has
 no git history (bulk-imported), fall back to filesystem mtime.
 
 Severity: ℹ Info.
+
+## Output
+
+Same three-heading severity format used by `money-review` and
+`cross-stack-contract`. v1 does not emit any 🚫 Block findings, so the
+block heading is always empty — it is kept for format compatibility.
+
+```markdown
+## 🚫 Block (0)
+- (none)
+
+## ⚠ Warn (N)
+- H2 **concluded**: `plans/split-asaas-fase2.md` references RM-013
+  (completed); move to `plans/archive/2026-04/` with `--fix`.
+- H4 **broken-link**: `plans/abstract-greeting-hamster.md:9` cites
+  `docs/specs/enrollment.md` which does not exist.
+
+## ℹ Info (N)
+- H1 **orphan**: `plans/clever-honking-haven.md` references no RM,
+  PR, or spec.
+- H5 **roadmap-orphan**: RM-014 (in progress) has no plan file.
+- H6 **stale**: `plans/controle-de-acesso.md` unchanged for 180 days.
+
+plan-backlog-hygiene: 0 block, 2 warn, 3 info (scanned 54 plan files)
+```
+
+With `--write-report`: content is persisted to
+`docs/reviews/YYYY-MM-DD-hygiene.md` with a frontmatter block:
+
+```yaml
+---
+plans_dir: plans/
+roadmap: docs/roadmap.md
+generated_by: octopus:plan-backlog-hygiene
+generated_at: 2026-04-19
+summary: "0 block, 2 warn, 3 info"
+scanned_files: 54
+---
+```
+
+## Fix Mode
+
+`--fix` applies reversible filesystem moves for a single check:
+
+- **H2 concluded** — each matched plan is moved to
+  `<plansDir>/archive/YYYY-MM/<filename>` using `git mv` so commit
+  history is preserved. `YYYY-MM` comes from the RM's completion date
+  when parseable in the roadmap; otherwise the current month.
+
+Other checks (H1, H3, H4, H5, H6) are never auto-fixed — each needs
+human judgment.
+
+**Safety rules:**
+
+- `--fix` requires a clean working tree. Abort otherwise with the hint
+  `commit or stash local changes before running --fix`.
+- After applying moves, print a summary listing each move, then remind
+  the user the change is a staged `git mv` — commit or `git restore
+  --staged` to undo.
+- `--fix` and `--write-report` may be combined; the report lists the
+  applied moves under a "Fixes applied" section.
+
+## Errors
+
+- **Plans directory not found** → abort with guidance to set
+  `plansDir:` or create `plans/`.
+- **Roadmap missing** → print a warning, skip H2/H5, continue.
+- **`--fix` with a dirty working tree** → abort.
+- **Unrecognized `--only` check** → abort, list valid check IDs.
+- **Git unavailable** → fall back to mtime for H6 staleness; warn once.
+
+## Composition
+
+This skill scans repo state (not a diff) and runs independently of
+`money-review` and `cross-stack-contract`. The output format matches so
+a monthly "hygiene digest" PR can concatenate all three reports in a
+single comment.
