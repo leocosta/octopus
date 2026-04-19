@@ -625,7 +625,7 @@ _wizard_sub_rules() {
 }
 
 _wizard_sub_skills() {
-  local items=(adr backend-patterns context-budget continuous-learning dotnet e2e-testing feature-lifecycle feature-to-market money-review security-scan)
+  local items=(adr backend-patterns context-budget continuous-learning cross-stack-contract dotnet e2e-testing feature-lifecycle feature-to-market money-review security-scan)
   local defaults=("${WIZARD_SKILLS[@]}")
 
   _wizard_subheader "Skills" "Reusable AI capabilities exposed as slash commands."
@@ -634,6 +634,7 @@ _wizard_sub_skills() {
     "backend-patterns|apply repo/service/DI patterns" \
     "context-budget|monitor and trim the conversation context" \
     "continuous-learning|capture lessons learned per session" \
+    "cross-stack-contract|detect API-vs-frontend drift in monorepos" \
     "dotnet|.NET-specific build/test/format helpers" \
     "e2e-testing|scaffold end-to-end test suites" \
     "feature-lifecycle|spec → PR → release helpers" \
@@ -643,7 +644,7 @@ _wizard_sub_skills() {
 
   _multiselect \
     "Select skills" \
-    "adr · backend-patterns · context-budget · continuous-learning · dotnet · e2e-testing · feature-lifecycle · feature-to-market · money-review · security-scan" \
+    "adr · backend-patterns · context-budget · continuous-learning · cross-stack-contract · dotnet · e2e-testing · feature-lifecycle · feature-to-market · money-review · security-scan" \
     items defaults
 
   WIZARD_SKILLS=("${WIZARD_SELECTED[@]}")
