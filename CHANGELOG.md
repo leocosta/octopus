@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.1] - 2026-04-19
+
+🐛 `install.sh` reused any existing `cache/v<version>/` directory without verifying its contents — so a dir created by an aborted download, a manually-copied staging snapshot, or an older installer that packaged stale content under a newer label would be silently reused. Result: the `current` symlink pointed at a directory labeled `v1.8.0` that actually shipped v1.5.0 code, leading to `octopus setup` regenerating `.claude/settings.json` with the pre-v1.5.1 bugs (relative hook paths, invalid `PostToolUseFailure` event, unsupported top-level keys). Fix: on successful extraction the installer now writes the verified tarball SHA256 to `<cache-dir>/.cache-sha256` as an integrity marker. On subsequent runs, when the cache dir exists, the installer fetches the release's checksum file and compares it against the marker; mismatch or missing marker triggers a fresh re-extract, while a match reuses the cache. When no checksum endpoint is available (offline install or custom mirror), the installer falls back to the legacy "dir exists → reuse" behavior so offline flows keep working. `--force` continues to unconditionally re-download.
+
+🧪 `tests/test_installer.sh` gains four assertions covering the full contract: marker is written after a fresh extract, a corrupted cache is purged and re-extracted on the next run (detected via a canary file that survives only if the dir was NOT wiped), a healthy cache is reused without redundant download, and `--force` always re-downloads even when the cache is healthy.
+
 ## [1.8.0] - 2026-04-19
 
 ✨ New `release-announce` skill turns one or more refs (tags, tag ranges, RM IDs) into a themed release announcement kit aimed at **existing users** — a distinct job from `feature-to-market`, which handles acquisition and external audiences. Inputs can be a single version (`v1.7.0`), a range (`v1.5.0..v1.7.0`), or an RM ID (`RM-008`); default is since the last tagged release. Output is two-tiered: **canonical artifacts** (`index.html` themed landing page, `notes.md` plain fallback, `theme.yml` snapshot for reproducibility) plus **paste-ready channel messages** under `channels/` for email, Slack, Discord, in-app banner, status page, X/Twitter thread, WhatsApp, and an autocontained slide deck with keyboard nav and print-to-PDF.
