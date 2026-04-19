@@ -98,3 +98,14 @@ grep -q "YYYY-MM-DD-<slug>" "$SKILL_FILE" \
   || { echo "FAIL: slug convention missing"; exit 1; }
 
 echo "PASS: output assembly documented"
+
+echo "Test 10: SKILL.md documents image generation"
+
+grep -q "^## Image Generation$" "$SKILL_FILE" \
+  || { echo "FAIL: '## Image Generation' missing"; exit 1; }
+grep -q "GEMINI_API_KEY" "$SKILL_FILE" \
+  || { echo "FAIL: Gemini env var missing"; exit 1; }
+grep -q "pollinations.ai" "$SKILL_FILE" \
+  || { echo "FAIL: Pollinations fallback missing"; exit 1; }
+
+echo "PASS: image generation documented"

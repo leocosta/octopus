@@ -131,3 +131,61 @@ repo path, or `embedded` when the default was used).
   script — the repo-specific style matters too much).
 - With `--channels=<list>`: only those channels, regardless of override
   presence.
+
+## Image Generation
+
+Run after all text artifacts are written, unless `--no-images` is set. Skip
+entirely when `--channels` excludes every image-bearing surface.
+
+**Provider resolution order:**
+
+1. **Gemini** — if `GEMINI_API_KEY` is set in the environment. Use the current
+   Gemini image-generation endpoint (`gemini-2.5-flash-image` family). Save
+   each PNG to `images/<name>.png` in the launch directory.
+
+   Reference call (the agent adapts the model name to whatever is current):
+
+   ```bash
+   curl -sSf \
+     "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=$GEMINI_API_KEY" \
+     -H "Content-Type: application/json" \
+     -d "$(jq -n --arg prompt "$PROMPT" '{contents:[{parts:[{text:$prompt}]}]}')" \
+     | jq -r '.candidates[0].content.parts[] | select(.inlineData) | .inlineData.data' \
+     | base64 -d > "$OUT_PATH"
+   ```
+
+   If the Gemini call fails (HTTP non-2xx, empty payload, rate limit),
+   fall through to the next provider.
+
+2. **Pollinations.ai** — no key required. HTTP GET against
+   `https://image.pollinations.ai/prompt/<URL_ENCODED_PROMPT>?width=<W>&height=<H>&nologo=true`.
+   Save the response body as PNG.
+
+   ```bash
+   encoded_prompt="$(python3 -c 'import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))' "$PROMPT")"
+   curl -sSf "https://image.pollinations.ai/prompt/${encoded_prompt}?width=${W}&height=${H}&nologo=true" \
+     -o "$OUT_PATH"
+   ```
+
+3. **None** — if both fail and neither is configured: write only
+   `image-prompts.md`, set `images_provider: none` in `README.md`, and print
+   a note to the user explaining how to enable providers.
+
+**Aspect ratios:**
+
+| File | Size |
+|---|---|
+| `images/instagram-1x1.png` | 1080×1080 |
+| `images/linkedin-1.91x1.png` | 1200×628 |
+| `images/x-16x9.png` | 1200×675 |
+| `images/lp-hero-16x9.png` | 1600×900 |
+
+**Brand injection:**
+
+When `brand.md` (override or default) defines a palette or logo, prepend the
+constraint to every prompt, e.g.:
+
+> "Brand palette: #111111, #F5F5F5, accent #2F80ED. Avoid photographic
+> realism. Typography-heavy layout. No stock-photo people."
+
+Log the final prompt used for each image as a comment in `image-prompts.md`.
