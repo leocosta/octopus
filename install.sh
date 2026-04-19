@@ -206,8 +206,40 @@ download_release() {
   local dest="$OCTOPUS_CACHE_DIR/cache/$version"
 
   if [[ -d "$dest" && "$FORCE" != true ]]; then
-    info "Octopus $version already cached at $dest"
-    return 0
+    # Integrity check: compare the marker written at previous extraction
+    # against the freshly-downloaded release checksum. Stale/corrupted
+    # cache dirs (e.g. created by aborted downloads or older installers)
+    # are purged and re-extracted instead of silently reused.
+    local marker="$dest/.cache-sha256"
+    local checksum_url
+    checksum_url="$(resolve_checksum_url "$version")"
+    if [[ -f "$marker" && -n "$checksum_url" ]]; then
+      local tmp_sha
+      tmp_sha="$(mktemp)"
+      if curl -fsSL "$checksum_url" -o "$tmp_sha" 2>/dev/null; then
+        local fresh_sha cached_sha
+        fresh_sha="$(awk '{print $1}' "$tmp_sha")"
+        cached_sha="$(cat "$marker" 2>/dev/null || echo '')"
+        rm -f "$tmp_sha"
+        if [[ -n "$fresh_sha" && "$fresh_sha" == "$cached_sha" ]]; then
+          info "Octopus $version already cached at $dest (integrity OK)"
+          DOWNLOADED_CHECKSUM="$cached_sha"
+          return 0
+        fi
+        info "Cache integrity check failed for $version — re-downloading."
+      else
+        rm -f "$tmp_sha"
+        # No checksum endpoint available; trust the cache to avoid breaking
+        # offline re-installs. Uses the legacy "dir exists → reuse" path.
+        info "Octopus $version already cached at $dest (no checksum endpoint)"
+        return 0
+      fi
+    elif [[ ! -f "$marker" ]]; then
+      info "Cache for $version has no integrity marker — re-downloading."
+    else
+      info "Octopus $version already cached at $dest"
+      return 0
+    fi
   fi
 
   info "Downloading Octopus $version..."
@@ -281,6 +313,9 @@ download_release() {
   mkdir -p "$OCTOPUS_CACHE_DIR/cache"
   rm -rf "$dest" 2>/dev/null || true
   mv "$extracted_dir" "$dest"
+
+  # Write integrity marker so future runs can detect stale caches.
+  printf '%s\n' "$DOWNLOADED_CHECKSUM" > "$dest/.cache-sha256"
 
   success "Octopus $version cached at $dest"
 }
