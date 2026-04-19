@@ -1,0 +1,20 @@
+name: jade
+description: Calm green palette with elegant typography.
+palette:
+  background: "#0B1A17"
+  surface: "#112925"
+  primary: "#5FBF9A"
+  accent: "#E8C9A0"
+  muted: "#A2B5AF"
+  text: "#F6F9F7"
+typography:
+  display: "Fraunces, Georgia, serif"
+  body: "Inter, system-ui, sans-serif"
+  mono: "JetBrains Mono, ui-monospace, monospace"
+layout:
+  hero: large
+  grouping: grid
+  density: comfortable
+voice:
+  tone: calm
+  persona: guide

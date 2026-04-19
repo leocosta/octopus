@@ -5,6 +5,7 @@ persona_question: "Does your team produce marketing content alongside code?"
 persona_default: false
 skills:
   - feature-to-market
+  - release-announce
 roles:
   - social-media
 rules: []

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="{{LANG}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{RELEASE_TITLE}}</title>
+  <style>
+    :root {
+      --bg: {{THEME_BACKGROUND}};
+      --surface: {{THEME_SURFACE}};
+      --primary: {{THEME_PRIMARY}};
+      --accent: {{THEME_ACCENT}};
+      --muted: {{THEME_MUTED}};
+      --text: {{THEME_TEXT}};
+      --font-display: {{THEME_FONT_DISPLAY}};
+      --font-body: {{THEME_FONT_BODY}};
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-body); }
+    .slide {
+      min-height: 100vh; display: none; padding: 8vh 10vw;
+      flex-direction: column; justify-content: center;
+    }
+    .slide.active { display: flex; }
+    .slide h1 { font-family: var(--font-display); font-size: 5rem; color: var(--primary); line-height: 1.05; }
+    .slide h2 { font-family: var(--font-display); font-size: 2.75rem; color: var(--primary); margin-bottom: 0.5rem; }
+    .slide .kicker { color: var(--accent); text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.9rem; }
+    .slide p { font-size: 1.5rem; line-height: 1.5; margin-top: 1rem; color: var(--text); max-width: 60ch; }
+    .progress { position: fixed; bottom: 0; left: 0; height: 3px; background: var(--accent); transition: width 0.25s; }
+    .nav-hint { position: fixed; bottom: 16px; right: 24px; font-size: 0.8rem; color: var(--muted); }
+    @media print {
+      .slide { display: flex; page-break-after: always; min-height: 100vh; }
+      .progress, .nav-hint { display: none; }
+      @page { size: landscape; }
+    }
+  </style>
+</head>
+<body>
+  {{SLIDES_HTML}}
+  <div class="progress" id="progress" style="width:0%"></div>
+  <div class="nav-hint">← → to navigate · P to print</div>
+  <script>
+    var slides = document.querySelectorAll('.slide');
+    var idx = 0;
+    function show(i) {
+      i = Math.max(0, Math.min(slides.length - 1, i));
+      slides.forEach(function(s, n){ s.classList.toggle('active', n === i); });
+      idx = i;
+      document.getElementById('progress').style.width = ((i+1)/slides.length*100)+'%';
+      location.hash = 'slide-' + (i+1);
+    }
+    window.addEventListener('keydown', function(e){
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') show(idx+1);
+      else if (e.key === 'ArrowLeft' || e.key === 'PageUp') show(idx-1);
+      else if (e.key === 'p' || e.key === 'P') window.print();
+    });
+    var tx = 0;
+    document.addEventListener('touchstart', function(e){ tx = e.touches[0].clientX; });
+    document.addEventListener('touchend', function(e){
+      var dx = e.changedTouches[0].clientX - tx;
+      if (Math.abs(dx) > 60) show(idx + (dx < 0 ? 1 : -1));
+    });
+    var m = (location.hash || '').match(/slide-(\d+)/);
+    show(m ? parseInt(m[1],10)-1 : 0);
+  </script>
+</body>
+</html>

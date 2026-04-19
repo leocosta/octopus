@@ -1,0 +1,20 @@
+name: sunset
+description: Warm orange-to-pink gradient feel with friendly serif display.
+palette:
+  background: "#FFF5EC"
+  surface: "#FFE4D0"
+  primary: "#F97316"
+  accent: "#EC4899"
+  muted: "#9A8577"
+  text: "#431A0A"
+typography:
+  display: "Fraunces, Georgia, serif"
+  body: "Inter, system-ui, sans-serif"
+  mono: "JetBrains Mono, ui-monospace, monospace"
+layout:
+  hero: large
+  grouping: grid
+  density: comfortable
+voice:
+  tone: playful
+  persona: friend

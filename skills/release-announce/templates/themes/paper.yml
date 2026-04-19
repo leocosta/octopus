@@ -1,0 +1,20 @@
+name: paper
+description: Cream background with warm browns and serif body — editorial feel.
+palette:
+  background: "#FBF7F0"
+  surface: "#F2EAD9"
+  primary: "#78350F"
+  accent: "#9F1239"
+  muted: "#8A7A6A"
+  text: "#2C1A0A"
+typography:
+  display: "Fraunces, Georgia, serif"
+  body: "Georgia, serif"
+  mono: "Menlo, Consolas, monospace"
+layout:
+  hero: minimal
+  grouping: stack
+  density: comfortable
+voice:
+  tone: calm
+  persona: reporter

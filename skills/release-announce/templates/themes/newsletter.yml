@@ -1,0 +1,20 @@
+name: newsletter
+description: Plain and text-heavy — maximum content density.
+palette:
+  background: "#FDFCF9"
+  surface: "#F3EFEA"
+  primary: "#1F2937"
+  accent: "#B45309"
+  muted: "#6B7280"
+  text: "#1F2937"
+typography:
+  display: "Georgia, serif"
+  body: "Georgia, serif"
+  mono: "Menlo, Consolas, monospace"
+layout:
+  hero: minimal
+  grouping: stack
+  density: compact
+voice:
+  tone: formal
+  persona: reporter

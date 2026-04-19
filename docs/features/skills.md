@@ -19,6 +19,7 @@ them natively, other assistants get them inlined into their output file.
 | `feature-to-market` | Turn a completed feature (RM / spec / PR) into a versioned multi-channel launch kit under `docs/marketing/launches/` — posts, email, LP copy, commercial changelog, video script, and optional images. | `growth` | [feature-to-market.md](feature-to-market.md) |
 | `money-review` | Pre-merge audit of money-touching code: numeric types, rounding, cents tests, env-var drift, payment idempotency, webhook signatures, fee-disclosure coupling. | `quality-gates` | [money-review.md](money-review.md) |
 | `plan-backlog-hygiene` | Scan `plans/` + `docs/roadmap.md` for orphans, concluded-but-not-archived plans, duplicates, broken links, roadmap orphans, and stale items. `--fix` archives safely. | `docs-discipline` | [plan-backlog-hygiene.md](plan-backlog-hygiene.md) |
+| `release-announce` | Themed release announcement kit for existing users — landing HTML, channel messages, slide deck, 9 preset themes. | `growth` | [release-announce.md](release-announce.md) |
 | `security-scan` | Security audit checklist for AI-agent configurations, environment variables, and project dependencies. | `quality-gates` | — |
 | `tenant-scope-audit` | Pre-merge audit of multi-tenant data-scope enforcement: query filters, new DbContext entities, raw SQL, controller ownership, admin endpoints. Blocks likely data-leak paths. | `quality-gates` | [tenant-scope-audit.md](tenant-scope-audit.md) |
 

@@ -1,0 +1,20 @@
+name: terminal
+description: Green monospace on black — hacker / dev-tool aesthetic.
+palette:
+  background: "#000000"
+  surface: "#0A0A0A"
+  primary: "#22C55E"
+  accent: "#FACC15"
+  muted: "#4B5563"
+  text: "#D1FAE5"
+typography:
+  display: "JetBrains Mono, Menlo, monospace"
+  body: "JetBrains Mono, Menlo, monospace"
+  mono: "JetBrains Mono, Menlo, monospace"
+layout:
+  hero: minimal
+  grouping: timeline
+  density: compact
+voice:
+  tone: bold
+  persona: reporter

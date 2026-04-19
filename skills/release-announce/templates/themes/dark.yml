@@ -1,0 +1,20 @@
+name: dark
+description: Dark background, modern accent, high contrast.
+palette:
+  background: "#0A0A0A"
+  surface: "#171717"
+  primary: "#7C3AED"
+  accent: "#F472B6"
+  muted: "#737373"
+  text: "#FAFAFA"
+typography:
+  display: "Inter Tight, system-ui, sans-serif"
+  body: "Inter, system-ui, sans-serif"
+  mono: "JetBrains Mono, ui-monospace, monospace"
+layout:
+  hero: large
+  grouping: grid
+  density: comfortable
+voice:
+  tone: bold
+  persona: host
