@@ -21,3 +21,17 @@ for flag in "--base" "--only" "--write-report"; do
   grep -q -- "$flag" "$SKILL_FILE" || { echo "FAIL: flag $flag missing"; exit 1; }
 done
 echo "PASS: invocation documented"
+
+echo "Test 3: SKILL.md documents tenant-scope config + file discovery"
+grep -q "^## Tenant-Scope Config$" "$SKILL_FILE" \
+  || { echo "FAIL: '## Tenant-Scope Config' missing"; exit 1; }
+grep -q "^## File Discovery$" "$SKILL_FILE" \
+  || { echo "FAIL: '## File Discovery' missing"; exit 1; }
+grep -q "tenantScope:" "$SKILL_FILE" \
+  || { echo "FAIL: tenantScope config key missing"; exit 1; }
+echo "PASS: config + discovery documented"
+
+echo "Test 4: patterns template exists"
+TEMPLATES="$SCRIPT_DIR/skills/tenant-scope-audit/templates"
+[[ -f "$TEMPLATES/patterns.md" ]] || { echo "FAIL: patterns.md missing"; exit 1; }
+echo "PASS: patterns template present"
