@@ -28,3 +28,18 @@ for flag in "--channels" "--dry-run" "--no-images" "--images-only" "--angle" "--
 done
 
 echo "PASS: invocation documented"
+
+echo "Test 3: SKILL.md documents input resolution and cascade"
+
+grep -q "^## Input Resolution$" "$SKILL_FILE" \
+  || { echo "FAIL: '## Input Resolution' missing"; exit 1; }
+grep -q "^## Override Cascade$" "$SKILL_FILE" \
+  || { echo "FAIL: '## Override Cascade' missing"; exit 1; }
+grep -q "docs/marketing/" "$SKILL_FILE" \
+  || { echo "FAIL: canonical override path missing"; exit 1; }
+for name in brand voice audience hashtags social-media-guide social-media-hooks caption-templates viral-content-ideas; do
+  grep -q "$name" "$SKILL_FILE" \
+    || { echo "FAIL: override name '$name' missing"; exit 1; }
+done
+
+echo "PASS: input resolution + cascade documented"
