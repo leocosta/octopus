@@ -36,3 +36,16 @@ for f in patterns.md providers.md; do
   [[ -f "$TEMPLATES/$f" ]] || { echo "FAIL: $f missing"; exit 1; }
 done
 echo "PASS: templates present"
+
+echo "Test 5: SKILL.md documents all seven inspection families"
+grep -q "^## Inspection Families$" "$SKILL_FILE" \
+  || { echo "FAIL: '## Inspection Families' missing"; exit 1; }
+for fam in "T1" "T2" "T3" "T4" "T5" "T6" "T7"; do
+  grep -q "^### $fam " "$SKILL_FILE" \
+    || { echo "FAIL: family $fam missing"; exit 1; }
+done
+for keyword in "types" "rounding" "tests" "env" "idempotency" "webhook" "disclosure"; do
+  grep -q "\b$keyword\b" "$SKILL_FILE" \
+    || { echo "FAIL: family keyword '$keyword' missing"; exit 1; }
+done
+echo "PASS: all inspection families documented"
