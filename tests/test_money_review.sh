@@ -22,3 +22,17 @@ for flag in "--base" "--write-report" "--only"; do
   grep -q -- "$flag" "$SKILL_FILE" || { echo "FAIL: flag $flag not documented"; exit 1; }
 done
 echo "PASS: invocation documented"
+
+echo "Test 3: SKILL.md documents file discovery and overrides"
+grep -q "^## File Discovery$" "$SKILL_FILE" \
+  || { echo "FAIL: '## File Discovery' missing"; exit 1; }
+grep -q "docs/money-review/patterns.md" "$SKILL_FILE" \
+  || { echo "FAIL: override path missing"; exit 1; }
+echo "PASS: file discovery documented"
+
+echo "Test 4: template defaults exist"
+TEMPLATES="$SCRIPT_DIR/skills/money-review/templates"
+for f in patterns.md providers.md; do
+  [[ -f "$TEMPLATES/$f" ]] || { echo "FAIL: $f missing"; exit 1; }
+done
+echo "PASS: templates present"

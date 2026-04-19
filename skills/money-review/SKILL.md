@@ -34,3 +34,29 @@ on any billing PR.
 - `--write-report` — also save `docs/reviews/YYYY-MM-DD-money-<slug>.md`.
 - `--only=<list>` — comma-separated subset of inspection families:
   `types,rounding,tests,env,idempotency,webhook,disclosure`. Default: all.
+
+## File Discovery
+
+A file is "money-touched" if any of the following match in the diff of
+`<ref>` against `--base`:
+
+1. **Filename tokens** — path contains any of: `billing`, `payment`,
+   `charge`, `cobran`, `split`, `invoice`, `subscription`, `asaas`,
+   `stripe`, `pix`, `webhook`, `refund`, `reembolso`, `tax`, `taxa`,
+   `fee`.
+2. **Content regex (case-insensitive)** on the added/removed lines:
+   - `\b(PERCENT|PERCENTAGE|RATE|FEE)[_A-Z]*\s*=`
+   - `\bdecimal\b` in `*.cs` files near `cents|centavos|amount|valor`
+   - `asaas|stripe|mercadopago`
+   - `webhook` combined with `signature|hmac|signing`
+3. **Repo overrides** — the file cascade applies (first match wins):
+   - `docs/money-review/patterns.md` (canonical)
+   - `docs/MONEY_REVIEW_PATTERNS.md` (uppercase compat)
+   - `skills/money-review/templates/patterns.md` (embedded default)
+
+   The repo override **appends** tokens/patterns; it does not replace the
+   defaults. Same rule for `providers.md`.
+
+A separate "spec set" is collected: any `docs/specs/*.md`,
+`docs/research/*.md`, or `docs/roadmap.md` section touched by the same
+diff. This set feeds the T7 (disclosure) inspection.
