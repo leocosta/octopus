@@ -21,3 +21,14 @@ for flag in "--theme" "--since" "--audience" "--channels" "--design-from" "--dry
   grep -q -- "$flag" "$SKILL_FILE" || { echo "FAIL: flag $flag missing"; exit 1; }
 done
 echo "PASS: invocation documented"
+
+echo "Test 3: SKILL.md documents input resolution and theme cascade"
+grep -q "^## Input Resolution$" "$SKILL_FILE" \
+  || { echo "FAIL: '## Input Resolution' missing"; exit 1; }
+grep -q "^## Theme Resolution$" "$SKILL_FILE" \
+  || { echo "FAIL: '## Theme Resolution' missing"; exit 1; }
+grep -q "docs/release-announce/themes/" "$SKILL_FILE" \
+  || { echo "FAIL: repo override path missing"; exit 1; }
+grep -q "frontend-design" "$SKILL_FILE" \
+  || { echo "FAIL: frontend-design integration missing"; exit 1; }
+echo "PASS: resolution sections documented"
