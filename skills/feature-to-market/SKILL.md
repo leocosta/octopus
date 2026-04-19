@@ -86,3 +86,48 @@ For each of the override names — `brand`, `voice`, `audience`, `hashtags`,
 Record which source was used per override in the launch-kit `README.md`
 frontmatter (`overrides:` map) so the reviewer sees where each style decision
 came from.
+
+## Output Assembly
+
+Create `docs/marketing/launches/YYYY-MM-DD-<slug>/` in the target repository
+where:
+
+- `YYYY-MM-DD` is today's date (UTC or local, use `date -u +%F`).
+- `<slug>` is derived from the feature title: lowercase ASCII, non-alphanumeric
+  runs collapsed to `-`, trimmed to 40 chars. Example: "Card de consentimento
+  de taxas" → `card-de-consentimento-de-taxas`.
+
+If the directory already exists:
+- Without `--force`: abort with an error message suggesting `--force` or a
+  different slug (append a short discriminator).
+- With `--force`: overwrite files inside, but preserve `images/` unless
+  `--images-only` is passed.
+
+For each selected channel, read the matching template under
+`skills/feature-to-market/templates/channels/<name>.md`, fill every `{{PLACEHOLDER}}`
+with content grounded in the resolved feature context, and write it to the
+launch directory.
+
+**Placeholder rules:**
+
+- Never leave a placeholder literal in the output.
+- If a placeholder has no grounded answer, remove the whole line or block and
+  add a `<!-- TODO: <what's missing> -->` comment nearby.
+- `{{ANGLE}}` must come from `social-media-hooks` (override or default); pick
+  one angle and reuse it across all channels for coherence.
+- `{{LANGUAGE}}` is the detected language (e.g. `pt-BR`, `en`).
+
+**README.md assembly:**
+
+Always write `README.md` last, after every other file is generated. Fill the
+`overrides:` map with the source used per override name (one of: the absolute
+repo path, or `embedded` when the default was used).
+
+**Channel selection:**
+
+- Default: all channels whose override source exists OR whose embedded default
+  exists, EXCEPT `roteiro-video.md` which requires a `video-roteiro` override
+  in the target repo (embedded default alone is not enough to produce a video
+  script — the repo-specific style matters too much).
+- With `--channels=<list>`: only those channels, regardless of override
+  presence.

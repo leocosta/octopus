@@ -87,3 +87,14 @@ for f in copy-lp.md changelog-vendedor.md roteiro-video.md image-prompts.md READ
 done
 
 echo "PASS: channel templates part 2 present"
+
+echo "Test 9: SKILL.md documents output assembly"
+
+grep -q "^## Output Assembly$" "$SKILL_FILE" \
+  || { echo "FAIL: '## Output Assembly' missing"; exit 1; }
+grep -q "docs/marketing/launches/" "$SKILL_FILE" \
+  || { echo "FAIL: output path missing"; exit 1; }
+grep -q "YYYY-MM-DD-<slug>" "$SKILL_FILE" \
+  || { echo "FAIL: slug convention missing"; exit 1; }
+
+echo "PASS: output assembly documented"
