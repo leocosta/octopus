@@ -281,7 +281,8 @@ Usage: octopus <command> [args]
 Commands:
   install [--version <tag>] [--latest]   Install a release into the local cache
   update [--version <tag>] [--latest] [--pin]
-  setup                                  Run setup in the current repo
+  setup [--scope=repo|user] [--reconfigure]
+                                          Configure Octopus for this repo (default) or user account
   doctor                                 Inspect the cached installation
   <other>                                Delegate to the existing workflow CLI
 EOF

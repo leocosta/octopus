@@ -482,6 +482,11 @@ WIZARD_REVIEWERS=()
 WIZARD_COMMANDS=()   # "name|description|run" entries
 WIZARD_KNOWLEDGE=""
 
+# Advanced settings (RM-011 through RM-016, Claude Code only)
+WIZARD_ADVANCED_FLAGS=()      # subset of: worktree memory dream sandbox githubAction
+WIZARD_PERMISSION_MODE=""     # "" | plan | auto | acceptEdits
+WIZARD_OUTPUT_STYLE=""        # "" | concise | verbose | structured | explanatory
+
 # ---------------------------------------------------------------------------
 # Wizard steps
 # ---------------------------------------------------------------------------
@@ -519,13 +524,21 @@ _wizard_banner() {
 }
 
 # _wizard_intro <step> <title> <description_lines...>
-# Renders the step header plus 1+ dim description lines so each step explains
-# what it configures and why it matters before the picker opens.
+# Renders a group header: "Step X/N — Title" plus 1+ dim description lines.
+# In --reconfigure mode, or when OCTOPUS_WIZARD_VERBOSE is unset, the
+# description lines are suppressed — returning users already know what
+# each group configures and don't need the explanatory paragraphs again.
 _wizard_intro() {
   local step="$1"
   local title="$2"
   shift 2
   printf "  %s — %s\n\n" "$(_bold "Step $step")" "$(_cyan "$title")"
+
+  # Compact mode: skip description lines in reconfigure unless explicitly verbose
+  if [[ "${WIZARD_RECONFIGURE:-0}" == "1" && "${OCTOPUS_WIZARD_VERBOSE:-0}" != "1" ]]; then
+    return 0
+  fi
+
   local line
   for line in "$@"; do
     printf "  %s\n" "$(_dim "$line")"
@@ -533,10 +546,30 @@ _wizard_intro() {
   printf "\n"
 }
 
+# _wizard_subheader <title> [one-line-description]
+# Lightweight header used between sub-questions within a group. Does NOT
+# print a banner or divider — just an indented arrow + title, so each sub
+# picker flows naturally under the group's single banner.
+_wizard_subheader() {
+  local title="$1"
+  local desc="${2:-}"
+  local arrow
+  (( WIZARD_UNICODE )) && arrow="››" || arrow=">>"
+  printf "  %s %s\n" "$(_cyan "$arrow")" "$(_bold "$title")"
+  if [[ -n "$desc" && "${WIZARD_RECONFIGURE:-0}" != "1" ]]; then
+    printf "  %s\n" "$(_dim "$desc")"
+  fi
+  printf "\n"
+}
+
 # _wizard_hints <entry...>
 # Entries are "name|description"; prints an aligned dim "name → description"
-# table so the user sees per-item context before picking.
+# table so the user sees per-item context before picking. Suppressed in
+# reconfigure mode (returning users already know the catalog).
 _wizard_hints() {
+  if [[ "${WIZARD_RECONFIGURE:-0}" == "1" && "${OCTOPUS_WIZARD_VERBOSE:-0}" != "1" ]]; then
+    return 0
+  fi
   local entry name desc
   for entry in "$@"; do
     name="${entry%%|*}"
@@ -546,15 +579,11 @@ _wizard_hints() {
   printf "\n"
 }
 
-_wizard_step_agents() {
+_wizard_sub_agents() {
   local items=(claude copilot codex gemini opencode)
   local defaults=("${WIZARD_AGENTS[@]:-claude}")
 
-  _wizard_banner
-  _wizard_intro "1/11" "AI Code Assistants (agents)" \
-    "Which AI assistants Octopus configures for this repo. Each agent gets its" \
-    "own instructions file, rules, skills and slash commands delivered." \
-    "Pick one or more — pick none and Octopus defaults to claude."
+  _wizard_subheader "Agents" "Which AI assistants Octopus configures for this repo."
   _wizard_hints \
     "claude|Claude Code: native subagents, skills, MCP, hooks" \
     "copilot|GitHub Copilot Chat / agent-mode instructions" \
@@ -577,16 +606,11 @@ _wizard_step_agents() {
   fi
 }
 
-_wizard_step_rules() {
+_wizard_sub_rules() {
   local items=(typescript csharp python)
   local defaults=("${WIZARD_RULES[@]}")
 
-  _wizard_banner
-  _wizard_intro "2/11" "Language Rules" \
-    "Coding guidelines appended to agent instructions. Enforces style," \
-    "testing, security and patterns per language. The 'common' set (core" \
-    "principles, commit conventions, PR workflow) is always included." \
-    "Skip this if your project mixes many languages or you prefer no rules."
+  _wizard_subheader "Rules" "Language-specific coding guidelines. 'common' is always added."
   _wizard_hints \
     "typescript|lint, formatting, type-safety, React/Node patterns" \
     "csharp|.NET conventions, async, DI, LINQ" \
@@ -600,15 +624,11 @@ _wizard_step_rules() {
   WIZARD_RULES=("${WIZARD_SELECTED[@]}")
 }
 
-_wizard_step_skills() {
+_wizard_sub_skills() {
   local items=(adr backend-patterns context-budget continuous-learning dotnet e2e-testing feature-lifecycle security-scan)
   local defaults=("${WIZARD_SKILLS[@]}")
 
-  _wizard_banner
-  _wizard_intro "3/11" "Skills" \
-    "Reusable AI capabilities exposed as slash commands (/simplify, /loop, …)." \
-    "Gives agents tooling for common operations without custom code." \
-    "Pick only the ones relevant to your project to keep agents focused."
+  _wizard_subheader "Skills" "Reusable AI capabilities exposed as slash commands."
   _wizard_hints \
     "adr|record Architecture Decision Records" \
     "backend-patterns|apply repo/service/DI patterns" \
@@ -627,15 +647,11 @@ _wizard_step_skills() {
   WIZARD_SKILLS=("${WIZARD_SELECTED[@]}")
 }
 
-_wizard_step_roles() {
+_wizard_sub_roles() {
   local items=(backend-specialist frontend-specialist product-manager tech-writer social-media)
   local defaults=("${WIZARD_ROLES[@]}")
 
-  _wizard_banner
-  _wizard_intro "4/11" "Roles / Personas" \
-    "Specialized subagents invoked for focused tasks. Each role carries its" \
-    "own instructions and domain context, keeping the main conversation clean." \
-    "On Claude they map to native subagents; elsewhere they become role sections."
+  _wizard_subheader "Roles" "Specialized sub-agent personas; each carries its own instructions."
   _wizard_hints \
     "backend-specialist|APIs, data modeling, server-side logic" \
     "frontend-specialist|UI/UX, components, accessibility" \
@@ -651,15 +667,11 @@ _wizard_step_roles() {
   WIZARD_ROLES=("${WIZARD_SELECTED[@]}")
 }
 
-_wizard_step_mcp() {
+_wizard_sub_mcp() {
   local items=(github notion slack postgres)
   local defaults=("${WIZARD_MCP[@]}")
 
-  _wizard_banner
-  _wizard_intro "5/11" "MCP Servers" \
-    "Model Context Protocol servers: structured tool integrations agents can" \
-    "call (query GitHub, read Notion, run SQL, post to Slack). Each server" \
-    "may need env vars — fill them in .env.octopus after setup."
+  _wizard_subheader "MCP servers" "External tool integrations; env vars go in .env.octopus."
   _wizard_hints \
     "github|PR/issue/workflow access (GITHUB_TOKEN)" \
     "notion|databases and pages (OAuth, no env vars)" \
@@ -674,13 +686,8 @@ _wizard_step_mcp() {
   WIZARD_MCP=("${WIZARD_SELECTED[@]}")
 }
 
-_wizard_step_language() {
-  _wizard_banner
-  _wizard_intro "6/11" "Language" \
-    "Language for AI-generated content (specs, commits, PRs, UI strings)." \
-    "Prevents agents from defaulting to the conversation language. Code" \
-    "identifiers always stay in English." \
-    "Pick a base language; optionally override per scope (docs/code/ui separately)."
+_wizard_sub_language() {
+  _wizard_subheader "Language" "Language for AI-generated content; pick default for auto-detect."
 
   local lang_opts=("en" "pt-br" "es" "fr" "de" "zh" "other")
   local current_default="${WIZARD_LANGUAGE:-en}"
@@ -715,14 +722,8 @@ _wizard_step_language() {
   fi
 }
 
-_wizard_step_hooks() {
-  _wizard_banner
-  _wizard_intro "7/11" "Hooks" \
-    "Lifecycle hooks Claude Code runs automatically around tool use, session" \
-    "start, and context compaction." \
-    "Quality gates they enforce: block --no-verify, detect secrets in diffs," \
-    "auto-format on save, warn on console.log leftovers, trim stale transcripts." \
-    "Skip to keep Claude Code unconstrained; nothing is enforced automatically."
+_wizard_sub_hooks() {
+  _wizard_subheader "Hooks" "Lifecycle enforcement: block --no-verify, detect secrets, auto-format."
 
   local current_default="y"
   [[ "$WIZARD_HOOKS" == "false" ]] && current_default="n"
@@ -734,14 +735,8 @@ _wizard_step_hooks() {
   fi
 }
 
-_wizard_step_workflow() {
-  _wizard_banner
-  _wizard_intro "8/11" "Workflow Commands" \
-    "Guided dev-flow slash commands: /octopus:branch-create, :pr-open," \
-    ":pr-review, :pr-comments, :pr-merge, :release, :update." \
-    "Enforces Octopus conventions — branch naming, Conventional Commits," \
-    "PR template, squash merge, auto-assigned reviewers." \
-    "Requires 'gh' (GitHub CLI) >= 2.0 installed and authenticated."
+_wizard_sub_workflow() {
+  _wizard_subheader "Workflow commands" "/octopus:branch-create, :pr-open, :pr-review, ... (requires gh >= 2.0)."
 
   local gh_available=0
   command -v gh &>/dev/null && gh_available=1
@@ -761,12 +756,8 @@ _wizard_step_workflow() {
   fi
 }
 
-_wizard_step_reviewers() {
-  _wizard_banner
-  _wizard_intro "9/11" "GitHub Reviewers" \
-    "Default reviewers assigned automatically when /octopus:pr-review runs." \
-    "Saves typing the same team members on every PR." \
-    "Leave blank to skip — /octopus:pr-review will prompt each time."
+_wizard_sub_reviewers() {
+  _wizard_subheader "Default reviewers" "Auto-assigned on /octopus:pr-review."
 
   local current_default=""
   if [[ ${#WIZARD_REVIEWERS[@]} -gt 0 ]]; then
@@ -787,25 +778,21 @@ _wizard_step_reviewers() {
   fi
 }
 
-_wizard_step_commands() {
-  _wizard_banner
-  _wizard_intro "10/11" "Custom Commands" \
-    "Your own project slash commands (/octopus:db-reset, :seed, :deploy-staging, ...)." \
-    "Each command is a shell invocation wrapped so any configured agent can run it." \
-    "Skip to finish without adding any — you can always re-run 'octopus setup --reconfigure'."
+_wizard_sub_commands() {
+  _wizard_subheader "Custom commands" "Project slash commands (e.g. /octopus:db-reset)."
 
   WIZARD_COMMANDS=()
 
+  # Gate: ask once whether to add any. Most users answer no.
+  if ! _ask_yn "Add any custom commands?" "n"; then
+    return 0
+  fi
+
   while true; do
     echo ""
-    if ! _ask_yn "Add a custom command?" "n"; then
-      break
-    fi
-
-    echo ""
-    _ask_text "  Command name (e.g. db-reset)" ""
+    _ask_text "  Command name (leave blank to finish)" ""
     local cmd_name="$WIZARD_TEXT"
-    [[ -z "$cmd_name" ]] && echo "  Skipped (empty name)." && continue
+    [[ -z "$cmd_name" ]] && break
 
     _ask_text "  Description" ""
     local cmd_desc="$WIZARD_TEXT"
@@ -819,13 +806,8 @@ _wizard_step_commands() {
   done
 }
 
-_wizard_step_knowledge() {
-  _wizard_banner
-  _wizard_intro "11/11" "Knowledge Modules" \
-    "Curated domain context (business rules, system overview, glossary) that" \
-    "Octopus injects into agent prompts so they understand your project." \
-    "Lives under 'knowledge/'; each subdirectory is a module." \
-    "none = skip · auto-discover = use every folder · explicit-list = pick modules by name."
+_wizard_sub_knowledge() {
+  _wizard_subheader "Knowledge modules" "Domain context Octopus injects into agents."
 
   local opts=("none" "auto-discover" "explicit-list")
   local default="none"
@@ -853,6 +835,203 @@ _wizard_step_knowledge() {
   esac
 }
 
+_wizard_sub_advanced_flags() {
+  _wizard_subheader "Advanced flags" \
+    "Boris-tip opt-ins: worktree, memory, dream, sandbox, githubAction."
+  _wizard_hints \
+    "worktree|Tolerate git worktrees for parallel sub-agent work (required by /batch)" \
+    "memory|Auto-capture persistent memory across sessions" \
+    "dream|Ship the 'dream' subagent that consolidates stale memory (requires memory)" \
+    "sandbox|Run tool calls inside Claude Code's sandbox (defense-in-depth)" \
+    "githubAction|Scaffold .github/workflows/claude.yml for automated PR review"
+
+  local items=(worktree memory dream sandbox githubAction)
+  local defaults=("${WIZARD_ADVANCED_FLAGS[@]}")
+
+  _multiselect \
+    "Enable advanced settings" \
+    "TAB=toggle · ENTER=confirm" \
+    items defaults
+
+  WIZARD_ADVANCED_FLAGS=("${WIZARD_SELECTED[@]}")
+}
+
+_wizard_sub_permission_mode() {
+  _wizard_subheader "Permission mode" \
+    "auto = classifier auto-approves · plan = require plan mode · acceptEdits = auto-approve edits only."
+
+  local perm_opts=("default (ask every time)" "auto" "plan" "acceptEdits")
+  local perm_default="default (ask every time)"
+  [[ -n "$WIZARD_PERMISSION_MODE" ]] && perm_default="$WIZARD_PERMISSION_MODE"
+  _select_one \
+    "Permission mode" \
+    "Applies to Claude only" \
+    perm_opts \
+    "$perm_default"
+  if [[ "$WIZARD_TEXT" == "default"* ]]; then
+    WIZARD_PERMISSION_MODE=""
+  else
+    WIZARD_PERMISSION_MODE="$WIZARD_TEXT"
+  fi
+}
+
+_wizard_sub_output_style() {
+  _wizard_subheader "Output style" \
+    "Standardize the tone of Claude's replies across the team."
+
+  local style_opts=("default (each dev decides)" "concise" "verbose" "structured" "explanatory")
+  local style_default="default (each dev decides)"
+  [[ -n "$WIZARD_OUTPUT_STYLE" ]] && style_default="$WIZARD_OUTPUT_STYLE"
+  _select_one \
+    "Output style" \
+    "Applies to Claude only" \
+    style_opts \
+    "$style_default"
+  if [[ "$WIZARD_TEXT" == "default"* ]]; then
+    WIZARD_OUTPUT_STYLE=""
+  else
+    WIZARD_OUTPUT_STYLE="$WIZARD_TEXT"
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# Groups — 5 top-level steps composed from sub-questions above.
+# Each group prints the banner (first call) + one step intro, then invokes
+# its sub-questions. Sub-questions print their own subheader only.
+# ---------------------------------------------------------------------------
+
+_wizard_total_groups() {
+  # Group 5 (advanced) is Claude-only; count it only when claude is selected.
+  local a
+  for a in "${WIZARD_AGENTS[@]}"; do
+    [[ "$a" == "claude" ]] && { echo 5; return; }
+  done
+  echo 4
+}
+
+_wizard_group_basics() {
+  _wizard_banner
+  _wizard_intro "1/${WIZARD_TOTAL_GROUPS:-5}" "Basics" \
+    "The minimum decisions every repo needs: which AI assistants to configure" \
+    "and which language they should use for generated content."
+  _wizard_sub_agents
+  _wizard_sub_language
+}
+
+_wizard_group_capabilities() {
+  _wizard_banner
+  _wizard_intro "2/${WIZARD_TOTAL_GROUPS:-5}" "What the AI knows and does" \
+    "Rules ('common' always added), reusable skills, specialized role personas," \
+    "and curated knowledge modules injected into agent prompts." \
+    "Every sub-section is optional."
+  _wizard_sub_rules
+  _wizard_sub_skills
+  _wizard_sub_roles
+  _wizard_sub_knowledge
+}
+
+_wizard_group_integrations() {
+  _wizard_banner
+  _wizard_intro "3/${WIZARD_TOTAL_GROUPS:-5}" "Integrations" \
+    "External tool integrations via Model Context Protocol. Each server may" \
+    "require secrets — fill them into .env.octopus after setup."
+  _wizard_sub_mcp
+}
+
+_wizard_group_workflow() {
+  _wizard_banner
+  _wizard_intro "4/${WIZARD_TOTAL_GROUPS:-5}" "Team workflow" \
+    "Quality gates (hooks) and developer-flow slash commands (/octopus:pr-*)." \
+    "Reviewers asked only when workflow is enabled; custom commands only on opt-in."
+  _wizard_sub_hooks
+  _wizard_sub_workflow
+  if [[ "$WIZARD_WORKFLOW" == "true" ]]; then
+    _wizard_sub_reviewers
+  fi
+  _wizard_sub_commands
+}
+
+_wizard_group_advanced() {
+  _wizard_banner
+  _wizard_intro "5/${WIZARD_TOTAL_GROUPS:-5}" "Advanced Claude Code settings (optional)" \
+    "Opt-ins for Claude Code behaviors standardized by Boris Cherny's tips." \
+    "These only affect the Claude agent; other assistants ignore them." \
+    "Safe to skip — every option defaults to Claude Code's native behavior."
+  _wizard_sub_advanced_flags
+  _wizard_sub_permission_mode
+  _wizard_sub_output_style
+}
+
+# ---------------------------------------------------------------------------
+# Pre-flight: Install scope (RM-018)
+# ---------------------------------------------------------------------------
+
+# _wizard_scope_prompt
+# Sets $OCTOPUS_SCOPE via a single-select when the caller did not already
+# provide one via CLI flag or env var. Skipped entirely when the scope is
+# already pinned.
+_wizard_scope_prompt() {
+  # Scope already resolved (flag/env/manifest)? Skip.
+  if [[ -n "${OCTOPUS_SCOPE_PINNED:-}" ]]; then return 0; fi
+
+  _wizard_banner
+  printf "  %s\n\n" "$(_bold "Install scope")"
+  if [[ "${WIZARD_RECONFIGURE:-0}" != "1" ]]; then
+    printf "  %s\n"   "$(_dim "This repository — config lives next to the code (default for project-specific rules).")"
+    printf "  %s\n\n" "$(_dim "User account — config lives in ~/.config/octopus/ and merges with every CC session on this machine.")"
+  fi
+
+  local opts=("This repository" "User account")
+  local default="This repository"
+  [[ "${OCTOPUS_SCOPE:-repo}" == "user" ]] && default="User account"
+
+  _select_one \
+    "Where to install" \
+    "Repo-scope layers on top of user-scope at agent-read time — you can do both." \
+    opts \
+    "$default"
+
+  if [[ "$WIZARD_TEXT" == "User"* ]]; then
+    export OCTOPUS_SCOPE="user"
+  else
+    export OCTOPUS_SCOPE="repo"
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# Pre-flight: Quick vs Full setup
+# ---------------------------------------------------------------------------
+
+# _wizard_mode_prompt
+# Returns via $WIZARD_MODE: "quick" or "full"
+# Quick runs only basics (agents) + workflow (hooks + workflow flag), leaving
+# every other field at empty/default. Users can rerun with --reconfigure to
+# walk the full flow later.
+_wizard_mode_prompt() {
+  _wizard_banner
+  printf "  %s\n\n" "$(_bold "Choose setup mode")"
+  if [[ "${WIZARD_RECONFIGURE:-0}" != "1" ]]; then
+    printf "  %s\n"   "$(_dim "Quick = 3 questions; everything else gets sensible empty defaults.")"
+    printf "  %s\n\n" "$(_dim "Full  = 5 grouped steps; walk through every option.")"
+  fi
+
+  local opts=("Quick (3 questions)" "Full (5 steps)")
+  local default="Quick (3 questions)"
+  [[ "${WIZARD_RECONFIGURE:-0}" == "1" ]] && default="Full (5 steps)"
+
+  _select_one \
+    "Setup mode" \
+    "Re-run 'octopus setup --reconfigure' any time to adjust." \
+    opts \
+    "$default"
+
+  if [[ "$WIZARD_TEXT" == "Quick"* ]]; then
+    WIZARD_MODE="quick"
+  else
+    WIZARD_MODE="full"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # YAML generation
 # ---------------------------------------------------------------------------
@@ -862,6 +1041,12 @@ _generate_octopus_yml() {
 
   out+="# Generated by octopus setup wizard"$'\n'
   out+="# Edit this file and re-run 'octopus setup' to apply changes"$'\n'
+
+  # scope — emit only when explicitly 'user'; absence means 'repo' default.
+  if [[ "${OCTOPUS_SCOPE:-repo}" == "user" ]]; then
+    out+=$'\n'
+    out+="scope: user"$'\n'
+  fi
 
   # agents
   out+=$'\n'
@@ -982,6 +1167,22 @@ _generate_octopus_yml() {
     fi
   fi
 
+  # Advanced settings — Boris-tip passthroughs (RM-011 through RM-016)
+  local advanced_flag
+  local has_advanced=0
+  for advanced_flag in "${WIZARD_ADVANCED_FLAGS[@]}"; do
+    [[ -n "$advanced_flag" ]] && { has_advanced=1; break; }
+  done
+  if (( has_advanced )) || [[ -n "$WIZARD_PERMISSION_MODE" ]] || [[ -n "$WIZARD_OUTPUT_STYLE" ]]; then
+    out+=$'\n'
+    out+="# Advanced Claude Code settings (RM-011 through RM-016)"$'\n'
+    for advanced_flag in "${WIZARD_ADVANCED_FLAGS[@]}"; do
+      [[ -n "$advanced_flag" ]] && out+="${advanced_flag}: true"$'\n'
+    done
+    [[ -n "$WIZARD_PERMISSION_MODE" ]] && out+="permissionMode: ${WIZARD_PERMISSION_MODE}"$'\n'
+    [[ -n "$WIZARD_OUTPUT_STYLE"    ]] && out+="outputStyle: ${WIZARD_OUTPUT_STYLE}"$'\n'
+  fi
+
   printf '%s' "$out"
 }
 
@@ -1018,16 +1219,24 @@ _prefill_from_existing() {
     [[ "$line" =~ ^[[:space:]]*# ]] && continue
     [[ -z "${line// }" ]] && continue
 
-    # Detect section headers
-    if [[ "$line" =~ ^([a-z_]+): ]]; then
+    # Detect section headers (support camelCase keys like permissionMode, githubAction)
+    if [[ "$line" =~ ^([a-zA-Z_]+): ]]; then
       section="${BASH_REMATCH[1]}"
       local val="${line#*: }"
       val="${val%"${val##*[! ]}"}"
       case "$section" in
-        hooks)    [[ -n "$val" ]] && WIZARD_HOOKS="$val" ;;
-        workflow) [[ -n "$val" ]] && WIZARD_WORKFLOW="$val" ;;
-        language) [[ -n "$val" ]] && WIZARD_LANGUAGE="$val" ;;
-        knowledge)[[ "$val" == "true" || "$val" == "false" ]] && WIZARD_KNOWLEDGE="$val" ;;
+        scope)          [[ -n "$val" ]] && { export OCTOPUS_SCOPE="$val"; OCTOPUS_SCOPE_PINNED=1; } ;;
+        hooks)          [[ -n "$val" ]] && WIZARD_HOOKS="$val" ;;
+        workflow)       [[ -n "$val" ]] && WIZARD_WORKFLOW="$val" ;;
+        language)       [[ -n "$val" ]] && WIZARD_LANGUAGE="$val" ;;
+        knowledge)      [[ "$val" == "true" || "$val" == "false" ]] && WIZARD_KNOWLEDGE="$val" ;;
+        worktree)       [[ "$val" == "true" ]] && WIZARD_ADVANCED_FLAGS+=("worktree") ;;
+        memory)         [[ "$val" == "true" ]] && WIZARD_ADVANCED_FLAGS+=("memory") ;;
+        dream)          [[ "$val" == "true" ]] && WIZARD_ADVANCED_FLAGS+=("dream") ;;
+        sandbox)        [[ "$val" == "true" ]] && WIZARD_ADVANCED_FLAGS+=("sandbox") ;;
+        githubAction)   [[ "$val" == "true" ]] && WIZARD_ADVANCED_FLAGS+=("githubAction") ;;
+        permissionMode) [[ -n "$val" ]] && WIZARD_PERMISSION_MODE="$val" ;;
+        outputStyle)    [[ -n "$val" ]] && WIZARD_OUTPUT_STYLE="$val" ;;
       esac
     fi
 
@@ -1076,17 +1285,19 @@ run_setup_wizard() {
     return 0  # caller will fall back to template copy
   fi
 
-  _detect_platform    # sets WIZARD_IS_WINDOWS, WIZARD_COLORS, WIZARD_UNICODE
+  _detect_platform    # sets WIZARD_IS_WINDOWS
   _detect_tui_backend # uses WIZARD_IS_WINDOWS to skip whiptail/dialog on Windows
   _apply_wizard_theme # tames the default loud palettes (override with OCTOPUS_WIZARD_THEME=default)
 
   # Pre-fill from existing config when reconfiguring
   if [[ "$reconfigure" == "--reconfigure" && -f "$project_root/.octopus.yml" ]]; then
+    WIZARD_RECONFIGURE=1
     echo ""
     echo "  $(_dim "Pre-filling from existing .octopus.yml...")"
     _prefill_from_existing "$project_root/.octopus.yml"
     sleep 0.5
   else
+    WIZARD_RECONFIGURE=0
     # Sensible defaults for fresh setup
     WIZARD_AGENTS=(claude)
     WIZARD_HOOKS="true"
@@ -1094,18 +1305,54 @@ run_setup_wizard() {
     command -v gh &>/dev/null && WIZARD_WORKFLOW="true"
   fi
 
-  # Run all steps
-  _wizard_step_agents
-  _wizard_step_rules
-  _wizard_step_skills
-  _wizard_step_roles
-  _wizard_step_mcp
-  _wizard_step_language
-  _wizard_step_hooks
-  _wizard_step_workflow
-  _wizard_step_reviewers
-  _wizard_step_commands
-  _wizard_step_knowledge
+  # Pre-flight: scope (RM-018) — only asks if the caller didn't pin via
+  # --scope / env / manifest.
+  _wizard_scope_prompt
+
+  # If the user picked a different scope in the prompt, the manifest target
+  # changes too. Re-resolve project_root so _generate_octopus_yml writes to
+  # the right location.
+  if [[ "$OCTOPUS_SCOPE" == "user" ]]; then
+    project_root="${XDG_CONFIG_HOME:-$HOME/.config}/octopus"
+    mkdir -p "$project_root"
+  fi
+
+  # Pre-flight: Quick vs Full. Quick runs only Basics + Workflow hooks flag,
+  # Full walks the 5 grouped steps.
+  _wizard_mode_prompt
+
+  if [[ "$WIZARD_MODE" == "quick" ]]; then
+    # Quick: just agents + hooks + workflow. Everything else stays default.
+    _wizard_banner
+    _wizard_intro "1/1" "Quick setup" \
+      "Three questions, sensible defaults for the rest."
+    _wizard_sub_agents
+    _wizard_sub_hooks
+    _wizard_sub_workflow
+    if [[ "$WIZARD_WORKFLOW" == "true" ]]; then
+      _wizard_sub_reviewers
+    fi
+  else
+    # Full: compute total group count (5 or 4 depending on whether claude is
+    # selected; agents is picked in group 1 so we peek at the default here
+    # and recompute after the fact if the user changed it).
+    WIZARD_TOTAL_GROUPS="$(_wizard_total_groups)"
+    _wizard_group_basics
+    # Recompute after user may have added/removed claude
+    WIZARD_TOTAL_GROUPS="$(_wizard_total_groups)"
+    _wizard_group_capabilities
+    _wizard_group_integrations
+    _wizard_group_workflow
+    # Skip the advanced step entirely when claude is not configured
+    local has_claude=0
+    local a
+    for a in "${WIZARD_AGENTS[@]}"; do
+      [[ "$a" == "claude" ]] && { has_claude=1; break; }
+    done
+    if (( has_claude )); then
+      _wizard_group_advanced
+    fi
+  fi
 
   # Preview and confirm
   if ! _wizard_preview_and_confirm; then
