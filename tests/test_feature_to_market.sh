@@ -53,3 +53,11 @@ for f in brand.md voice.md; do
 done
 
 echo "PASS: brand + voice defaults present"
+
+echo "Test 5: default audience + hashtags templates exist"
+
+for f in audience.md hashtags.md; do
+  [[ -f "$TEMPLATES/$f" ]] || { echo "FAIL: template $f missing"; exit 1; }
+done
+
+echo "PASS: audience + hashtags defaults present"
