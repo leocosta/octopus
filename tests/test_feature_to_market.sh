@@ -118,3 +118,14 @@ grep -q "^## Composition with social-media role$" "$SKILL_FILE" \
   || { echo "FAIL: '## Composition with social-media role' missing"; exit 1; }
 
 echo "PASS: errors and composition documented"
+
+echo "Test 12: slash command file exists"
+
+CMD_FILE="$SCRIPT_DIR/commands/feature-to-market.md"
+[[ -f "$CMD_FILE" ]] || { echo "FAIL: $CMD_FILE missing"; exit 1; }
+head -n 5 "$CMD_FILE" | grep -q "^name: feature-to-market$" \
+  || { echo "FAIL: command frontmatter 'name' missing"; exit 1; }
+grep -q "feature-to-market" "$CMD_FILE" \
+  || { echo "FAIL: command body does not reference the skill"; exit 1; }
+
+echo "PASS: slash command present"
