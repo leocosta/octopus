@@ -1,0 +1,12 @@
+name: growth
+description: Ship features as launch kits — social posts, email, LP copy, changelog.
+category: intent
+persona_question: "Does your team produce marketing content alongside code?"
+persona_default: false
+skills:
+  - feature-to-market
+roles:
+  - social-media
+rules: []
+mcp: []
+hooks: null

@@ -1,0 +1,11 @@
+name: starter
+description: Baseline for any repo — ADRs, feature lifecycle, context budget.
+category: foundation
+skills:
+  - adr
+  - feature-lifecycle
+  - context-budget
+roles: []
+rules: []
+mcp: []
+hooks: null
