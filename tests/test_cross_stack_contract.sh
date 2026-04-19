@@ -21,3 +21,17 @@ for flag in "--base" "--stacks" "--only" "--write-report"; do
   grep -q -- "$flag" "$SKILL_FILE" || { echo "FAIL: flag $flag missing"; exit 1; }
 done
 echo "PASS: invocation documented"
+
+echo "Test 3: SKILL.md documents stack discovery"
+grep -q "^## Stack Discovery$" "$SKILL_FILE" \
+  || { echo "FAIL: '## Stack Discovery' missing"; exit 1; }
+grep -q "\.octopus\.yml" "$SKILL_FILE" \
+  || { echo "FAIL: manifest override mention missing"; exit 1; }
+grep -q "stacks:" "$SKILL_FILE" \
+  || { echo "FAIL: stacks map reference missing"; exit 1; }
+echo "PASS: stack discovery documented"
+
+echo "Test 4: default patterns template exists"
+TEMPLATES="$SCRIPT_DIR/skills/cross-stack-contract/templates"
+[[ -f "$TEMPLATES/patterns.md" ]] || { echo "FAIL: patterns.md missing"; exit 1; }
+echo "PASS: patterns template present"

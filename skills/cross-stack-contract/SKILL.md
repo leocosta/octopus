@@ -43,3 +43,41 @@ compatible so reports can be concatenated in a single PR comment.
   `endpoint-added,endpoint-removed,dto,enum,status,auth,params`.
 - `--write-report` — also save
   `docs/reviews/YYYY-MM-DD-contract-<slug>.md`.
+
+## Stack Discovery
+
+Resolve stack roots in this order:
+
+1. **Manifest override.** `.octopus.yml` may declare:
+   ```yaml
+   stacks:
+     api: api/src
+     app: app/src
+     lp: lp/src
+   ```
+   Keys are role names; values are repo-relative paths. The role names
+   `api`, `app`, and `lp` are conventional — any other names are
+   accepted and treated as additional stacks.
+
+2. **Autodetection** (used when the manifest has no `stacks:` map):
+   - `api` — first directory containing `*.csproj`, `*.sln`, or a
+     `package.json` whose `dependencies` include `express`, `fastify`,
+     `hono`, or `@nestjs/core`. Probe order: `api/`, `apps/api/`,
+     `backend/`, `server/`.
+   - `app` — first directory with a `package.json` whose
+     `dependencies` include `react`, `vue`, or `@angular/core`. Probe
+     order: `app/`, `apps/app/`, `frontend/`, `web/`.
+   - `lp` — first directory with `astro.config.*` or `next.config.*`
+     that is distinct from `app`. Probe order: `lp/`, `apps/lp/`,
+     `landing/`, `site/`.
+
+3. **Unresolvable role** — warn and skip. If fewer than two stacks
+   resolve, the skill aborts (nothing to compare).
+
+Override patterns live at:
+
+- `docs/cross-stack-contract/patterns.md` (canonical)
+- `docs/CROSS_STACK_CONTRACT_PATTERNS.md` (uppercase compat)
+- `skills/cross-stack-contract/templates/patterns.md` (embedded default)
+
+Override files **append** to the defaults.
