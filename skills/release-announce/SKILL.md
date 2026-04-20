@@ -195,10 +195,33 @@ layout:
 voice:
   tone: calm              # calm | bold | playful | formal
   persona: guide          # guide | host | reporter | friend
+intent: retaining         # retaining | expanding | repairing | educating
+brand:
+  signature: "— the Octopus team"
+  cta_style: invitational # imperative | invitational | informative
+  hero_pattern: product-led # product-led | customer-led | team-led
 ```
 
 All fields required. Colors must be `#RRGGBB`. Enum values exactly as
 listed above.
+
+**`intent`** governs the reader outcome the announcement is optimising for:
+
+- `retaining` — reassure existing users that staying is the right call.
+- `expanding` — show the user they have more capability than yesterday.
+- `repairing` — acknowledge a visible issue and prove it is fixed.
+- `educating` — teach the user how to use something already shipped.
+
+**`brand`** carries identity that must survive a theme swap:
+
+- `signature` — short recurring line appended to long-form channels
+  (email footer, last slack line, final slide).
+- `cta_style` — verb register for every CTA (`imperative` → "Update now",
+  `invitational` → "Take a look when you have a minute", `informative` →
+  "Available in Settings → Integrations").
+- `hero_pattern` — protagonist of the hero section (`product-led` → the
+  feature is the subject; `customer-led` → "You asked for…"; `team-led` →
+  "We spent the sprint on…").
 
 Nine presets ship in v1: `classic` (default), `jade`, `dark`, `bold`,
 `newsletter`, `sunset`, `ocean`, `terminal`, `paper`.

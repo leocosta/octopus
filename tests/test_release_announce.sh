@@ -148,3 +148,13 @@ grep -q "release-announce" "$SCRIPT_DIR/docs/features/skills.md" \
   || { echo "FAIL: skills.md missing release-announce row"; exit 1; }
 
 echo "PASS: command + wizard + bundle + docs wired"
+
+echo "Test 13: SKILL.md documents intent + brand in Theme Schema"
+for token in "^intent:" "^brand:" "signature:" "cta_style:" "hero_pattern:" \
+             "retaining" "expanding" "repairing" "educating" \
+             "imperative" "invitational" "informative" \
+             "product-led" "customer-led" "team-led"; do
+  grep -qE "$token" "$SKILL_FILE" \
+    || { echo "FAIL: Theme Schema missing '$token'"; exit 1; }
+done
+echo "PASS: intent + brand documented in Theme Schema"
