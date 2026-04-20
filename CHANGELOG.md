@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.14.0] - 2026-04-20
+
+🧭 Task routing matrix (RM-034) lands as a canonical markdown fragment at `skills/_shared/task-routing.md`, embedded byte-identically in the three starter workflow skills (`implement`, `debugging`, `receiving-code-review`). Four signal categories — Stack/language (paths, stack traces), Domain-audit (billing keywords, multi-tenant queries, cross-stack diffs, secrets), Cross-workflow (feature vs. bug vs. review handoffs), Risk-profile (large-scale change, migration, release) — map observable task signals to the companion skills worth consulting. Graceful degradation: when a companion skill isn't installed, the main workflow continues and surfaces a one-line hint rather than blocking.
+
+🔄 Replaces the RM-034 stub paragraph in all three skills; the `## Task Routing` heading stays in place, so the section-level structural tests are unaffected. Per-skill tests (`test_implement.sh`, `test_debugging.sh`, `test_receiving_code_review.sh`) now check for the `<!-- BEGIN task-routing -->` marker instead of the `RM-034` placeholder string.
+
+🧪 New `tests/test_task_routing.sh` enforces byte-identical sync between the canonical fragment and the three SKILL.md embeds via `awk` block extraction and `diff`, so any future drift fails CI with a 20-line diff preview. `skills/_shared/` is deliberately outside the `skills/*/SKILL.md` discovery glob, so the fragment is an authoring-only artifact — never delivered as a skill.
+
 ## [1.13.0] - 2026-04-20
 
 🔒 New destructive-action guard hook intercepts dangerous Bash commands before the agent runs them. `hooks/pre-tool-use/destructive-guard.sh` is a PreToolUse/Bash hook that matches a curated blocklist (`rm -rf`, `git push --force`, `git reset --hard`, `git checkout --`, `git clean -f`, `DROP TABLE`, `DROP DATABASE`, `TRUNCATE`, `DELETE FROM` without `WHERE`, `chmod -R 777`, `find ... -delete`, `npm uninstall -g`, `curl | bash`) and blocks with exit code 2 plus a stderr message that explains the rule and how to bypass. The bypass is a `# destructive-guard-ok: <reason>` marker in the command text itself — the reason must be non-empty and surfaces in command history and code review, so the override is visible rather than silent. A legitimate `DELETE FROM t WHERE expired < now();` is not blocked; the guard only trips when the WHERE clause is absent.
