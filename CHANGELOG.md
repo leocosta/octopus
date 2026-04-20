@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.14.1] - 2026-04-20
+
+🐛 Fixes a silent install regression where `octopus install --latest` and `octopus update --latest` would stamp the new version's name over the current `RELEASE_ROOT` via a symlink — so `~/.octopus-cli/cache/v1.14.0` could end up pointing to a v1.8.0 tree, and `octopus setup` would silently deliver the old command/skill set. The shim's `install_release` now detects the mismatch: when `RELEASE_ROOT`'s git tag doesn't match the requested version, it delegates to `install.sh` (either the one bundled in the release tree or a fresh copy fetched from GitHub) with a new `--no-shim-setup` flag that runs the download/extract path without touching the running shim. Self-install bootstrap (the dev-checkout case where `RELEASE_ROOT == target`) still works as before.
+
+🧪 New `tests/test_install_release.sh` covers both paths: (a) when the requested version can't be fetched, no bogus symlink is left behind; (b) the self-install bootstrap still succeeds and writes metadata.
+
+**Upgrade note:** users whose cache contains symlinked version dirs (e.g. `v1.14.0 -> v1.8.0`) should delete the broken entry and reinstall: `rm ~/.octopus-cli/cache/v1.14.0 && curl -fsSL https://github.com/leocosta/octopus/releases/latest/download/install.sh | bash -s -- --version v1.14.0 --force`. Once on v1.14.1, the bug can't recur.
+
 ## [1.14.0] - 2026-04-20
 
 🧭 Task routing matrix (RM-034) lands as a canonical markdown fragment at `skills/_shared/task-routing.md`, embedded byte-identically in the three starter workflow skills (`implement`, `debugging`, `receiving-code-review`). Four signal categories — Stack/language (paths, stack traces), Domain-audit (billing keywords, multi-tenant queries, cross-stack diffs, secrets), Cross-workflow (feature vs. bug vs. review handoffs), Risk-profile (large-scale change, migration, release) — map observable task signals to the companion skills worth consulting. Graceful degradation: when a companion skill isn't installed, the main workflow continues and surfaces a one-line hint rather than blocking.

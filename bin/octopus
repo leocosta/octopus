@@ -85,20 +85,79 @@ ensure_cache_dirs() {
   mkdir -p "$CACHE_DIR"
 }
 
+_release_matches_version() {
+  local root="$1"
+  local version="$2"
+  [[ -f "$root/cli/octopus.sh" ]] || return 1
+  [[ -d "$root/.git" ]] || return 1
+  local tag
+  tag="$(git -C "$root" describe --tags --exact-match HEAD 2>/dev/null || true)"
+  [[ -n "$tag" && "$tag" == "$version" ]]
+}
+
+_download_release_via_installer() {
+  local version="$1"
+  local installer
+  local installer_tmp=""
+  if [[ -x "$RELEASE_ROOT/install.sh" ]]; then
+    installer="$RELEASE_ROOT/install.sh"
+  else
+    installer_tmp="$(mktemp)"
+    local url="https://raw.githubusercontent.com/$RELEASE_OWNER/$RELEASE_REPO/main/install.sh"
+    if ! curl -fsSL "$url" -o "$installer_tmp"; then
+      rm -f "$installer_tmp"
+      echo "Error: failed to fetch installer from $url" >&2
+      return 1
+    fi
+    installer="$installer_tmp"
+  fi
+  OCTOPUS_CACHE_DIR="$CACHE_ROOT" bash "$installer" \
+    --version "$version" --no-shim-setup --force
+  local rc=$?
+  [[ -n "$installer_tmp" ]] && rm -f "$installer_tmp"
+  return "$rc"
+}
+
 install_release() {
   local version="$1"
   ensure_cache_dirs
   local target="$CACHE_DIR/$version"
-  if [[ "$RELEASE_ROOT" != "$target" && ( -e "$target" || -L "$target" ) ]]; then
-    rm -rf "$target"
-  fi
+
+  # Bootstrap case: the shim is already inside the cache at the target path.
   if [[ "$RELEASE_ROOT" == "$target" ]]; then
     mkdir -p "$target"
-  else
+    local checksum
+    checksum="$(compute_release_checksum "$RELEASE_ROOT")"
+    write_metadata "$version" "$checksum"
+    echo "Installed Octopus $version (cached at $target)"
+    return 0
+  fi
+
+  # Dev checkout whose tag matches the requested version: symlink it.
+  if _release_matches_version "$RELEASE_ROOT" "$version"; then
+    [[ -L "$target" || -e "$target" ]] && rm -rf "$target"
     ln -s "$RELEASE_ROOT" "$target"
+    local checksum
+    checksum="$(compute_release_checksum "$target")"
+    write_metadata "$version" "$checksum"
+    echo "Installed Octopus $version (cached at $target)"
+    return 0
+  fi
+
+  # RELEASE_ROOT is a different version — download the requested release
+  # instead of stamping its name on the wrong tree.
+  [[ -L "$target" || -e "$target" ]] && rm -rf "$target"
+  if ! _download_release_via_installer "$version"; then
+    echo "Error: could not install Octopus $version." >&2
+    echo "Try: curl -fsSL https://github.com/$RELEASE_OWNER/$RELEASE_REPO/releases/latest/download/install.sh | bash -s -- --version $version --force" >&2
+    exit 1
+  fi
+  if [[ ! -f "$target/cli/octopus.sh" ]]; then
+    echo "Error: installer completed but $target is missing expected files." >&2
+    exit 1
   fi
   local checksum
-  checksum="$(compute_release_checksum "$RELEASE_ROOT")"
+  checksum="$(compute_release_checksum "$target")"
   write_metadata "$version" "$checksum"
   echo "Installed Octopus $version (cached at $target)"
 }
