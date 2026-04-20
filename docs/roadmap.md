@@ -83,21 +83,6 @@ Cluster 4 closes the gap by shipping an `implement` skill (RM-030),
 a `debugging` skill (RM-031), a `receiving-code-review` skill
 (RM-032), and a destructive-action guard hook (RM-033).
 
-- **RM-034** 🔴 High — Task routing inside the `implement` skill.
-  At the start of every implementation task, classify the work
-  (layer: backend / frontend / infra / data / config / refactor;
-  scope: feature / bugfix / refactor / migration; risk: isolated /
-  cross-cutting / large-scale; pattern: CRUD / CQRS / event-driven
-  / stateless / stateful) and dispatch to the matching sub-skill or
-  role (`dotnet` + `backend-specialist` for `api/**/*.cs`;
-  `frontend-specialist` role for `app/**/*.tsx`; `debugging` for
-  bug keywords; simplify-only path for refactors without new
-  tests; reinforced plan-before-code + ADR for cross-module / large-
-  scale work). Graceful degradation — when a needed sub-skill is
-  not installed, continue with `rules/common/` and surface a hint
-  to add it to `.octopus.yml`. RM-030's spec must reserve a
-  routing hook so the core skill ships ready for this extension.
-
 ---
 
 ## In Progress
@@ -136,3 +121,4 @@ _No items in progress._
 | RM-031 | `debugging` skill — universal bug-fix workflow (reproduce, isolate, regression test, document) as an active-by-default skill in `starter` | completed → [Spec](specs/debugging.md) | 2026-04-19 |
 | RM-032 | `receiving-code-review` skill — universal PR-feedback discipline (verify, ask for evidence, separate reasoned/preference, never performative, clarify ambiguity) as an active-by-default skill in `starter` | completed → [Spec](specs/receiving-code-review.md) | 2026-04-19 |
 | RM-033 | Destructive-action guard hook — PreToolUse/Bash script blocking `rm -rf`, `git push --force`, `DROP TABLE`, `DELETE FROM` without `WHERE`, etc., with `# destructive-guard-ok: <reason>` bypass and `destructiveGuard: false` opt-out | completed → [Spec](specs/destructive-action-guard.md) | 2026-04-19 |
+| RM-034 | Task routing — shared decision matrix embedded in `implement` / `debugging` / `receiving-code-review` via canonical fragment at `skills/_shared/task-routing.md`, with drift-prevention test | completed → [Spec](specs/task-routing.md) | 2026-04-20 |
