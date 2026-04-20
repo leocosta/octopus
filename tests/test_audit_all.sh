@@ -64,3 +64,16 @@ for dep in security-scan money-review tenant-scope-audit; do
   fi
 done
 echo "PASS: quality-gates bundle minimized to audit-all"
+
+echo "Test 7: slash command + wizard"
+CMD="$SCRIPT_DIR/commands/audit-all.md"
+[[ -f "$CMD" ]] || { echo "FAIL: command file missing"; exit 1; }
+head -n 5 "$CMD" | grep -q "^name: audit-all$" \
+  || { echo "FAIL: command frontmatter 'name' missing"; exit 1; }
+
+WIZARD="$SCRIPT_DIR/cli/lib/setup-wizard.sh"
+grep -E "^[[:space:]]*local items=\(.*audit-all.*\)" "$WIZARD" >/dev/null \
+  || { echo "FAIL: audit-all not in wizard items"; exit 1; }
+grep -q "audit-all|" "$WIZARD" \
+  || { echo "FAIL: audit-all not in wizard hints"; exit 1; }
+echo "PASS: command + wizard wired"
