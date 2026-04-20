@@ -135,3 +135,67 @@ One commit per logical step, not one macro-commit at the end:
   linter, typecheck). Never skip hooks with `--no-verify`.
 - Each commit message follows `core/commit-conventions.md` —
   conventional-commit prefix, clear scope, imperative voice.
+
+## Task Routing
+
+When an implementation task starts, consider whether any
+domain-specific skills should be consulted alongside the five
+core practices — `backend-patterns` or `dotnet` for server-side
+work, the `frontend-specialist` role for UI work, the
+`debugging` skill (when installed) for bug-fix flows, the
+`receiving-code-review` skill (when installed) for PR feedback
+loops.
+
+RM-034 will replace this paragraph with a decision matrix that
+auto-selects the right sub-skill per task based on the files
+touched, the prompt keywords, and the risk profile. Until
+RM-034 ships, the agent uses judgment and the installed-skills
+list.
+
+## Integration with Other Skills
+
+- **`rules/common/*`** — always-on static rules ("what the code
+  should be"). This skill supplies the dynamic side ("how to get
+  there"). Never re-state rule content here; reference only.
+- **`feature-lifecycle`** — governs documentation (RFC → Spec →
+  ADR → Knowledge). `implement` governs code. A task with both
+  a docs ask and a code ask triggers both skills; they compose
+  without conflict.
+- **`debugging` (RM-031, future)** — when a task starts from a
+  bug report or a failing test, delegate to `debugging` for the
+  reproduce → isolate → fix → regression flow. The TDD loop in
+  this skill still applies to the fix itself.
+- **`receiving-code-review` (RM-032, future)** — PR feedback
+  loops go through that skill; `implement` resumes for each
+  implementation step the reviewer asks for.
+- **Audit skills** (`security-scan`, `money-review`,
+  `tenant-scope-audit`, `cross-stack-contract`, `audit-all`) —
+  pre-merge review. `implement` is pre-audit.
+- **`superpowers:*` skills** — when the user has the
+  superpowers plugin installed, its skills (TDD, systematic
+  debugging, verification-before-completion, …) cover the same
+  ground as some practices here. Composition rule: the more
+  specific skill wins per practice. If
+  `superpowers:test-driven-development` is active, it drives
+  TDD; `implement` still owns the other four practices.
+
+## Anti-Patterns
+
+This skill forbids, by name:
+
+- Writing implementation code before the failing test (for
+  testable behavior).
+- "fix later" comments (`TODO`, `FIXME`) checked in — either fix
+  now or open a tracked issue / RM before merging.
+- Macro-commits covering multiple logical steps.
+- `--no-verify` / `--no-gpg-sign` on commits. Fix the hook
+  failure or ask.
+- Declaring success ("it works", "tests pass", "done") without
+  attaching verification evidence.
+- Editing code in response to critique without understanding the
+  critique. Defer to `receiving-code-review` (RM-032) when it
+  ships.
+- Premature abstraction — interfaces, options bags, or factory
+  functions without a second caller.
+- Duplicating content from `rules/common/*` into this skill body.
+  References only.
