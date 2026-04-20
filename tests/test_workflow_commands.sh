@@ -39,6 +39,24 @@ grep -q "Instructions" "$TMPDIR/.claude/commands/octopus:pr-open.md" || { echo "
 
 echo "PASS: workflow commands for Claude"
 
+# --- Test 1b: every delivered command carries a description frontmatter ---
+echo "Test 1b: every delivered command has a description"
+for delivered in "$TMPDIR/.claude/commands/"octopus:*.md; do
+  [[ -f "$delivered" ]] || continue
+  # First line must be '---' and a 'description:' line must exist inside the opening block.
+  first_line="$(head -1 "$delivered")"
+  if [[ "$first_line" != "---" ]]; then
+    echo "FAIL: $(basename "$delivered") does not start with frontmatter"
+    exit 1
+  fi
+  desc="$(awk '/^---$/{c++; if(c>=2) exit} c==1 && /^description:/{print; exit}' "$delivered")"
+  if [[ -z "$desc" ]]; then
+    echo "FAIL: $(basename "$delivered") is missing description in frontmatter"
+    exit 1
+  fi
+done
+echo "PASS: every delivered command has a description"
+
 # --- Test 2: workflow: false generates nothing ---
 echo "Test 2: Workflow disabled"
 

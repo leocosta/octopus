@@ -3,6 +3,11 @@ name: plan-backlog-hygiene
 description: Scan planning directories + roadmap for orphan plans, concluded-but-not-archived, duplicates, broken links, roadmap orphans, and stale plans.
 ---
 
+---
+description: Scan planning directories + roadmap for orphan plans, concluded-but-not-archived, duplicates, broken links, roadmap orphans, and stale plans.
+agent: code
+---
+
 # /octopus:plan-backlog-hygiene
 
 ## Purpose

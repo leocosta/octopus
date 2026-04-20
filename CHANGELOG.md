@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.14.2] - 2026-04-20
+
+🐛 Fixes missing descriptions for 10 slash commands in Claude Code's `/` list: `/octopus:implement`, `/octopus:debugging`, `/octopus:receiving-code-review`, `/octopus:audit-all`, `/octopus:cross-stack-contract`, `/octopus:money-review`, `/octopus:tenant-scope-audit`, `/octopus:plan-backlog-hygiene`, `/octopus:feature-to-market`, `/octopus:release-announce`. The command templates should ship with **two** frontmatter blocks — an outer Octopus metadata block (stripped at delivery) and an inner Claude-readable block (`description:` + `agent:`, preserved). The newer commands were authored with only the outer block, so `strip_frontmatter` removed the entire header and the delivered files had no description for Claude Code to render.
+
+🧪 New `Test 1b` in `tests/test_workflow_commands.sh` asserts every delivered command starts with a frontmatter block containing a `description:` line, preventing this drift on future command additions.
+
 ## [1.14.1] - 2026-04-20
 
 🐛 Fixes a silent install regression where `octopus install --latest` and `octopus update --latest` would stamp the new version's name over the current `RELEASE_ROOT` via a symlink — so `~/.octopus-cli/cache/v1.14.0` could end up pointing to a v1.8.0 tree, and `octopus setup` would silently deliver the old command/skill set. The shim's `install_release` now detects the mismatch: when `RELEASE_ROOT`'s git tag doesn't match the requested version, it delegates to `install.sh` (either the one bundled in the release tree or a fresh copy fetched from GitHub) with a new `--no-shim-setup` flag that runs the download/extract path without touching the running shim. Self-install bootstrap (the dev-checkout case where `RELEASE_ROOT == target`) still works as before.

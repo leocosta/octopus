@@ -3,6 +3,11 @@ name: release-announce
 description: Generate a themed release announcement kit for existing users — landing page, email, Slack, Discord, in-app banner, status page, X thread, WhatsApp, slide deck.
 ---
 
+---
+description: Generate a themed release announcement kit for existing users — landing page, email, Slack, Discord, in-app banner, status page, X thread, WhatsApp, slide deck.
+agent: code
+---
+
 # /octopus:release-announce
 
 ## Purpose
