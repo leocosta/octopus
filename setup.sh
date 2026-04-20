@@ -164,6 +164,110 @@ expand_bundles() {
   _dedupe_array OCTOPUS_ROLES
   _dedupe_array OCTOPUS_RULES
   _dedupe_array OCTOPUS_MCP
+
+  # Resolve skill-level depends_on after bundle union so composer
+  # skills pull their dependencies regardless of whether the bundle
+  # or the user's explicit list introduced them.
+  _resolve_skill_dependencies
+}
+
+# Reads the 'depends_on:' block from a skill's SKILL.md frontmatter
+# and echoes each declared dependency name, one per line. Returns
+# empty if the field is absent or malformed (by design — an edge
+# case should not take the whole setup down).
+_read_skill_depends_on() {
+  local skill_name="$1"
+  local skill_file="$OCTOPUS_DIR/skills/${skill_name}/SKILL.md"
+  [[ -f "$skill_file" ]] || return 0
+
+  python3 - "$skill_file" <<'PYEOF'
+import re, sys
+
+with open(sys.argv[1]) as f:
+    lines = f.readlines()
+
+in_fm = False
+fm_lines = []
+for line in lines:
+    stripped = line.strip()
+    if stripped == "---":
+        if not in_fm:
+            in_fm = True
+            continue
+        break
+    if in_fm:
+        fm_lines.append(line.rstrip())
+
+in_deps = False
+for line in fm_lines:
+    if re.match(r"^depends_on:\s*$", line):
+        in_deps = True
+        continue
+    if in_deps:
+        m = re.match(r"^\s+-\s+([a-z0-9][a-z0-9_-]*)\s*$", line)
+        if m:
+            print(m.group(1))
+        elif re.match(r"^[a-z_]+:", line):
+            break
+PYEOF
+}
+
+# Walk OCTOPUS_SKILLS, pulling in any dependency declared via
+# 'depends_on:' on each skill's SKILL.md frontmatter. Loops until
+# the set stabilizes. Warns on a missing dep, aborts on a cycle or
+# excessive depth.
+_resolve_skill_dependencies() {
+  local max_passes=5
+  local pass=0
+  local changed="true"
+
+  while [[ "$changed" == "true" ]]; do
+    changed="false"
+    pass=$((pass + 1))
+    if [[ "$pass" -gt "$max_passes" ]]; then
+      echo "Error: skill dependency resolution exceeded $max_passes passes — possible cycle." >&2
+      return 1
+    fi
+
+    local -a visiting=("${OCTOPUS_SKILLS[@]}")
+    local skill dep
+    for skill in "${visiting[@]}"; do
+      while IFS= read -r dep; do
+        [[ -z "$dep" ]] && continue
+
+        if [[ "$dep" == "$skill" ]]; then
+          echo "Error: skill dependency cycle detected: $skill → $dep" >&2
+          return 1
+        fi
+
+        local already="false"
+        local s
+        for s in "${OCTOPUS_SKILLS[@]}"; do
+          if [[ "$s" == "$dep" ]]; then already="true"; break; fi
+        done
+        if [[ "$already" == "true" ]]; then continue; fi
+
+        if [[ ! -f "$OCTOPUS_DIR/skills/${dep}/SKILL.md" ]]; then
+          echo "Warning: skill '$skill' depends_on '$dep', but $OCTOPUS_DIR/skills/${dep}/SKILL.md was not found — skipping." >&2
+          continue
+        fi
+
+        OCTOPUS_SKILLS+=("$dep")
+        changed="true"
+
+        local back
+        while IFS= read -r back; do
+          if [[ "$back" == "$skill" ]]; then
+            echo "Error: skill dependency cycle detected: $skill → $dep → $skill" >&2
+            return 1
+          fi
+        done < <(_read_skill_depends_on "$dep")
+      done < <(_read_skill_depends_on "$skill")
+    done
+  done
+
+  _dedupe_array OCTOPUS_SKILLS
+  return 0
 }
 
 # _dedupe_array <name-of-array>

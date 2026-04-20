@@ -1,0 +1,23 @@
+---
+ref: {{REF}}
+base: {{BASE}}
+audits_ran: [{{AUDIT_NAMES}}]
+generated_by: octopus:audit-all
+generated_at: {{TODAY}}
+summary: "{{BLOCK_COUNT}} block, {{WARN_COUNT}} warn, {{INFO_COUNT}} info"
+---
+
+## 🎯 Summary
+
+audit-all: **{{BLOCK_COUNT}} block**, {{WARN_COUNT}} warn,
+{{INFO_COUNT}} info across {{AUDITS_RAN}} audits
+({{AUDIT_NAMES}}). Files touched: {{FILES_TOUCHED}}.
+Cross-audit hotspots: {{HOTSPOT_COUNT}}.
+
+## 🔥 Cross-audit hotspots
+
+Files flagged by more than one audit — prioritize these first.
+
+{{HOTSPOTS_TABLE}}
+
+---

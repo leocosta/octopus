@@ -35,7 +35,7 @@ bundles are delivered automatically when you run `octopus setup`.
 | Bundle | Category | What you get |
 |---|---|---|
 | `starter` | foundation | `adr`, `feature-lifecycle`, `context-budget` |
-| `quality-gates` | intent | `security-scan`, `money-review`, `tenant-scope-audit` + `backend-specialist` role |
+| `quality-gates` | intent | `audit-all` (pulls `security-scan`, `money-review`, `tenant-scope-audit` via `depends_on`) + `backend-specialist` role |
 | `growth` | intent | `feature-to-market`, `release-announce` + `social-media` role |
 | `docs-discipline` | intent | `plan-backlog-hygiene`, `continuous-learning` + `tech-writer` role |
 | `cross-stack` | intent | `cross-stack-contract` + `backend-specialist` + `frontend-specialist` roles |

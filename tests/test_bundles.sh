@@ -95,7 +95,7 @@ OCTOPUS_BUNDLES=("starter" "quality-gates")
 
 expand_bundles
 
-expected_skills=(adr feature-lifecycle context-budget security-scan money-review tenant-scope-audit)
+expected_skills=(adr feature-lifecycle context-budget audit-all security-scan money-review tenant-scope-audit cross-stack-contract)
 printf '%s\n' "${OCTOPUS_SKILLS[@]}" | sort -u > /tmp/got.$$
 printf '%s\n' "${expected_skills[@]}" | sort -u > /tmp/exp.$$
 diff -q /tmp/got.$$ /tmp/exp.$$ >/dev/null \
@@ -151,11 +151,152 @@ parse_octopus_yml "$TMPDIR/.octopus.yml"
 expand_bundles
 
 # 3 (starter) + 3 (quality-gates) = 6 distinct skills
-[[ ${#OCTOPUS_SKILLS[@]} -eq 6 ]] \
-  || { echo "FAIL: expected 6 skills after bundle expansion, got ${#OCTOPUS_SKILLS[@]}"; exit 1; }
+[[ ${#OCTOPUS_SKILLS[@]} -eq 8 ]] \
+  || { echo "FAIL: expected 8 skills after bundle expansion, got ${#OCTOPUS_SKILLS[@]}"; exit 1; }
 
 printf '%s\n' "${OCTOPUS_ROLES[@]}" | grep -q "^backend-specialist$" \
   || { echo "FAIL: backend-specialist role missing after expansion"; exit 1; }
 
 rm -rf "$TMPDIR"
 echo "PASS: bundles-only manifest expands to full component lists"
+
+echo "Test 10: depends_on — happy path resolves dependency chain"
+
+OCTOPUS_SKILLS=()
+OCTOPUS_ROLES=()
+OCTOPUS_RULES=()
+OCTOPUS_MCP=()
+OCTOPUS_BUNDLES=()
+
+FAKE=$(mktemp -d)
+mkdir -p "$FAKE/skills/parent-skill" "$FAKE/skills/child-skill"
+cat > "$FAKE/skills/parent-skill/SKILL.md" <<'EOF'
+---
+name: parent-skill
+description: parent
+---
+# parent
+EOF
+cat > "$FAKE/skills/child-skill/SKILL.md" <<'EOF'
+---
+name: child-skill
+description: child
+depends_on:
+  - parent-skill
+---
+# child
+EOF
+
+OCTOPUS_DIR_SAVED="$OCTOPUS_DIR"
+OCTOPUS_DIR="$FAKE"
+OCTOPUS_SKILLS=(child-skill)
+
+_resolve_skill_dependencies
+
+OCTOPUS_DIR="$OCTOPUS_DIR_SAVED"
+
+printf '%s\n' "${OCTOPUS_SKILLS[@]}" | grep -q "^parent-skill$" \
+  || { echo "FAIL: parent-skill not pulled in via depends_on"; exit 1; }
+printf '%s\n' "${OCTOPUS_SKILLS[@]}" | grep -q "^child-skill$" \
+  || { echo "FAIL: child-skill dropped"; exit 1; }
+
+rm -rf "$FAKE"
+echo "PASS: depends_on resolves child → parent"
+
+echo "Test 11: depends_on — missing dep warns and continues"
+
+FAKE=$(mktemp -d)
+mkdir -p "$FAKE/skills/orphan-skill"
+cat > "$FAKE/skills/orphan-skill/SKILL.md" <<'EOF'
+---
+name: orphan-skill
+description: orphan
+depends_on:
+  - does-not-exist
+---
+# orphan
+EOF
+
+OCTOPUS_DIR_SAVED="$OCTOPUS_DIR"
+OCTOPUS_DIR="$FAKE"
+OCTOPUS_SKILLS=(orphan-skill)
+
+_resolve_skill_dependencies 2>/tmp/ra_warn.$$ || true
+
+OCTOPUS_DIR="$OCTOPUS_DIR_SAVED"
+
+grep -q "does-not-exist" /tmp/ra_warn.$$ \
+  || { echo "FAIL: missing dep warning did not mention 'does-not-exist'"; rm -f /tmp/ra_warn.$$; rm -rf "$FAKE"; exit 1; }
+printf '%s\n' "${OCTOPUS_SKILLS[@]}" | grep -q "^orphan-skill$" \
+  || { echo "FAIL: orphan-skill was dropped when dep is missing"; exit 1; }
+
+rm -f /tmp/ra_warn.$$
+rm -rf "$FAKE"
+echo "PASS: missing dep warns but keeps the parent"
+
+echo "Test 12: depends_on — cycle is detected and aborts"
+
+FAKE=$(mktemp -d)
+mkdir -p "$FAKE/skills/a-skill" "$FAKE/skills/b-skill"
+cat > "$FAKE/skills/a-skill/SKILL.md" <<'EOF'
+---
+name: a-skill
+description: a
+depends_on:
+  - b-skill
+---
+EOF
+cat > "$FAKE/skills/b-skill/SKILL.md" <<'EOF'
+---
+name: b-skill
+description: b
+depends_on:
+  - a-skill
+---
+EOF
+
+OCTOPUS_DIR_SAVED="$OCTOPUS_DIR"
+OCTOPUS_DIR="$FAKE"
+OCTOPUS_SKILLS=(a-skill)
+
+if ( _resolve_skill_dependencies ) 2>/tmp/ra_cycle.$$ ; then
+  echo "FAIL: cycle was not detected"
+  rm -f /tmp/ra_cycle.$$; rm -rf "$FAKE"; exit 1
+fi
+
+OCTOPUS_DIR="$OCTOPUS_DIR_SAVED"
+
+grep -q "cycle" /tmp/ra_cycle.$$ \
+  || { echo "FAIL: cycle error message missing"; cat /tmp/ra_cycle.$$; rm -f /tmp/ra_cycle.$$; rm -rf "$FAKE"; exit 1; }
+
+rm -f /tmp/ra_cycle.$$
+rm -rf "$FAKE"
+echo "PASS: cycle detected and aborts"
+
+echo "Test 13: depends_on — skills without the field are untouched"
+
+FAKE=$(mktemp -d)
+mkdir -p "$FAKE/skills/plain-skill"
+cat > "$FAKE/skills/plain-skill/SKILL.md" <<'EOF'
+---
+name: plain-skill
+description: plain, no deps
+---
+# plain
+EOF
+
+OCTOPUS_DIR_SAVED="$OCTOPUS_DIR"
+OCTOPUS_DIR="$FAKE"
+OCTOPUS_SKILLS=(plain-skill)
+
+_resolve_skill_dependencies
+
+OCTOPUS_DIR="$OCTOPUS_DIR_SAVED"
+
+[[ "${#OCTOPUS_SKILLS[@]}" -eq 1 ]] \
+  || { echo "FAIL: skills count changed unexpectedly"; exit 1; }
+[[ "${OCTOPUS_SKILLS[0]}" == "plain-skill" ]] \
+  || { echo "FAIL: plain-skill replaced"; exit 1; }
+
+rm -rf "$FAKE"
+echo "PASS: skills without depends_on are untouched"

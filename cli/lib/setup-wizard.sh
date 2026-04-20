@@ -671,12 +671,13 @@ _wizard_sub_bundles() {
 }
 
 _wizard_sub_skills() {
-  local items=(adr backend-patterns context-budget continuous-learning cross-stack-contract dotnet e2e-testing feature-lifecycle feature-to-market money-review plan-backlog-hygiene release-announce security-scan tenant-scope-audit)
+  local items=(adr audit-all backend-patterns context-budget continuous-learning cross-stack-contract dotnet e2e-testing feature-lifecycle feature-to-market money-review plan-backlog-hygiene release-announce security-scan tenant-scope-audit)
   local defaults=("${WIZARD_SKILLS[@]}")
 
   _wizard_subheader "Skills" "Reusable AI capabilities exposed as slash commands."
   _wizard_hints \
     "adr|record Architecture Decision Records" \
+    "audit-all|run all quality audits in parallel with consolidated report" \
     "backend-patterns|apply repo/service/DI patterns" \
     "context-budget|monitor and trim the conversation context" \
     "continuous-learning|capture lessons learned per session" \
@@ -693,7 +694,7 @@ _wizard_sub_skills() {
 
   _multiselect \
     "Select skills" \
-    "adr · backend-patterns · context-budget · continuous-learning · cross-stack-contract · dotnet · e2e-testing · feature-lifecycle · feature-to-market · money-review · plan-backlog-hygiene · release-announce · security-scan · tenant-scope-audit" \
+    "adr · audit-all · backend-patterns · context-budget · continuous-learning · cross-stack-contract · dotnet · e2e-testing · feature-lifecycle · feature-to-market · money-review · plan-backlog-hygiene · release-announce · security-scan · tenant-scope-audit" \
     items defaults
 
   WIZARD_SKILLS=("${WIZARD_SELECTED[@]}")
