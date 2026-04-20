@@ -9,6 +9,7 @@ them natively, other assistants get them inlined into their output file.
 | Skill | What it does | Bundle | Tutorial |
 |---|---|---|---|
 | `adr` | Create and manage Architecture Decision Records (ADRs) to document significant technical decisions. | `starter` | — |
+| `audit-all` | Composer skill — runs `security-scan`, `money-review`, `tenant-scope-audit`, and `cross-stack-contract` in parallel with shared file discovery and a consolidated report with cross-audit hotspots. | `quality-gates` | [audit-all.md](audit-all.md) |
 | `backend-patterns` | Backend architecture decision patterns for multi-stack projects (Node.js, .NET, Python). | `dotnet-api` / `node-api` | — |
 | `context-budget` | Audit and optimize AI-agent context-window usage to reduce token overhead and improve response quality. | `starter` | — |
 | `continuous-learning` | Captures insights, tests hypotheses, and promotes confirmed patterns to rules — a learning loop that makes the agent sharper over time. | `docs-discipline` | — |
