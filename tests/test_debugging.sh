@@ -63,3 +63,12 @@ BUNDLE="$SCRIPT_DIR/bundles/starter.yml"
 grep -q -- "- debugging" "$BUNDLE" \
   || { echo "FAIL: debugging missing from starter bundle"; exit 1; }
 echo "PASS: starter bundle lists debugging"
+
+echo "Test 9: README + skills.md list debugging + tutorial exists"
+grep -q "debugging" "$SCRIPT_DIR/README.md" \
+  || { echo "FAIL: README missing 'debugging'"; exit 1; }
+grep -q "| \`debugging\` |" "$SCRIPT_DIR/docs/features/skills.md" \
+  || { echo "FAIL: skills.md missing debugging row"; exit 1; }
+TUTORIAL="$SCRIPT_DIR/docs/features/debugging.md"
+[[ -f "$TUTORIAL" ]] || { echo "FAIL: tutorial $TUTORIAL missing"; exit 1; }
+echo "PASS: README + skills.md + tutorial wired"
