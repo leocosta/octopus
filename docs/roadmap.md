@@ -55,6 +55,57 @@ roadmap-first when the idea still needs shaping.
 - **RM-029** 🟡 Medium — Post-merge hook that suggests relevant
   audits based on the diff (touched files + keywords).
 
+### Cluster 4 — Implementation practices
+
+Octopus today covers **static rules** (what the code should be) via
+`rules/common/*`. It does not codify **process practices** (how to
+get there). The table below shows which code-assistant practices
+(from Boris Cherny's Claude Code tips and industry guides) are
+covered, partially covered (⚠️), or missing.
+
+| Practice | Today | Planned |
+|---|---|---|
+| Static coding style (KISS, DRY, YAGNI, naming) | ✅ `rules/common/coding-style.md` | — |
+| Quality gates (pre-commit, formatters, typecheck) | ✅ `rules/common/quality.md` | — |
+| Security rules (secrets, validation, injection) | ✅ `rules/common/security.md` | — |
+| Testing principles (AAA, behavior > implementation) | ✅ `rules/common/testing.md` | — |
+| Design patterns (repository, service layer) | ✅ `rules/common/patterns.md` | — |
+| **TDD loop** (red → green → refactor → commit) | ❌ | RM-030 |
+| **Plan-before-code gate** (approved plan for non-trivial work) | ⚠️ mentioned in CLAUDE.md, not enforced | RM-030 |
+| **Verification-before-completion** (run tests before "done") | ❌ | RM-030 |
+| **Simplify pass** (post-change review) | ⚠️ `/simplify` mentioned, no skill | RM-030 |
+| **Commit cadence** (atomic commits per step) | ⚠️ `core/commit-conventions.md` but no enforcement | RM-030 |
+| **Systematic debugging** (reproduce → isolate → fix → regression) | ❌ | RM-031 |
+| **Receiving code review** (technical rigor over deference) | ❌ | RM-032 |
+| **Ask-before-destructive** (rm, push --force, DROP) | ❌ (Claude prompt has it; Octopus-managed agents don't) | RM-033 |
+
+Cluster 4 closes the gap by shipping an `implement` skill (RM-030),
+a `debugging` skill (RM-031), a `receiving-code-review` skill
+(RM-032), and a destructive-action guard hook (RM-033).
+
+- **RM-030** 🔴 High — `implement` skill consolidating five workflow
+  practices: TDD loop, plan-before-code gate, verification-before-
+  completion, simplify pass, commit cadence. Enters the `starter`
+  bundle as baseline for every repo. Pairs with `feature-lifecycle`
+  (docs → this one: code).
+- **RM-031** 🟡 Medium — `debugging` skill: systematic protocol for
+  bugs and test failures — reproduce deterministically → isolate via
+  bisect / hypothesis-test-refute → fix with regression test first →
+  capture non-obvious cause in commit message or ADR. Enters
+  `quality-gates` as companion to the audit skills.
+- **RM-032** 🟡 Medium — `receiving-code-review` skill: technical
+  rigor when responding to PR feedback — verify critique against
+  the code, ask for evidence on generic comments, separate
+  reasoned feedback from preference, never make a performative
+  change to close a thread without agreement. Enters
+  `quality-gates`.
+- **RM-033** 🟢 Low — Destructive-action guard hook: PreToolUse
+  hook intercepting `rm -rf`, `git push --force`, `git reset --hard`,
+  `DROP TABLE`, `DELETE FROM` without `WHERE`; prompts for
+  confirmation with a reason. Activated via `.octopus.yml`
+  `destructiveGuard: true`; default-enabled when the
+  `quality-gates` bundle is active.
+
 ---
 
 ## In Progress
