@@ -63,3 +63,12 @@ BUNDLE="$SCRIPT_DIR/bundles/starter.yml"
 grep -q -- "- receiving-code-review" "$BUNDLE" \
   || { echo "FAIL: receiving-code-review missing from starter bundle"; exit 1; }
 echo "PASS: starter bundle lists receiving-code-review"
+
+echo "Test 9: README + skills.md list receiving-code-review + tutorial exists"
+grep -q "receiving-code-review" "$SCRIPT_DIR/README.md" \
+  || { echo "FAIL: README missing 'receiving-code-review'"; exit 1; }
+grep -q "| \`receiving-code-review\` |" "$SCRIPT_DIR/docs/features/skills.md" \
+  || { echo "FAIL: skills.md missing receiving-code-review row"; exit 1; }
+TUTORIAL="$SCRIPT_DIR/docs/features/receiving-code-review.md"
+[[ -f "$TUTORIAL" ]] || { echo "FAIL: tutorial $TUTORIAL missing"; exit 1; }
+echo "PASS: README + skills.md + tutorial wired"
