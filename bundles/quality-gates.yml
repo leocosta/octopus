@@ -4,9 +4,7 @@ category: intent
 persona_question: "Is this a SaaS product for external customers (billing, multi-tenant)?"
 persona_default: false
 skills:
-  - security-scan
-  - money-review
-  - tenant-scope-audit
+  - audit-all
 roles:
   - backend-specialist
 rules: []

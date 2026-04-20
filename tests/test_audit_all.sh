@@ -52,3 +52,15 @@ grep -q "^## Errors$" "$SKILL_FILE" \
 grep -q "^## Graceful Degradation$" "$SKILL_FILE" \
   || { echo "FAIL: '## Graceful Degradation' missing"; exit 1; }
 echo "PASS: errors + degradation documented"
+
+echo "Test 6: quality-gates bundle lists audit-all + includes deps via resolver"
+BUNDLE="$SCRIPT_DIR/bundles/quality-gates.yml"
+grep -q -- "- audit-all" "$BUNDLE" \
+  || { echo "FAIL: quality-gates missing audit-all"; exit 1; }
+for dep in security-scan money-review tenant-scope-audit; do
+  if grep -q -- "- $dep" "$BUNDLE"; then
+    echo "FAIL: $dep should not be listed explicitly in quality-gates (arrives via depends_on)"
+    exit 1
+  fi
+done
+echo "PASS: quality-gates bundle minimized to audit-all"

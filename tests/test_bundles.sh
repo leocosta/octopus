@@ -95,7 +95,7 @@ OCTOPUS_BUNDLES=("starter" "quality-gates")
 
 expand_bundles
 
-expected_skills=(adr feature-lifecycle context-budget security-scan money-review tenant-scope-audit)
+expected_skills=(adr feature-lifecycle context-budget audit-all security-scan money-review tenant-scope-audit cross-stack-contract)
 printf '%s\n' "${OCTOPUS_SKILLS[@]}" | sort -u > /tmp/got.$$
 printf '%s\n' "${expected_skills[@]}" | sort -u > /tmp/exp.$$
 diff -q /tmp/got.$$ /tmp/exp.$$ >/dev/null \
@@ -151,8 +151,8 @@ parse_octopus_yml "$TMPDIR/.octopus.yml"
 expand_bundles
 
 # 3 (starter) + 3 (quality-gates) = 6 distinct skills
-[[ ${#OCTOPUS_SKILLS[@]} -eq 6 ]] \
-  || { echo "FAIL: expected 6 skills after bundle expansion, got ${#OCTOPUS_SKILLS[@]}"; exit 1; }
+[[ ${#OCTOPUS_SKILLS[@]} -eq 8 ]] \
+  || { echo "FAIL: expected 8 skills after bundle expansion, got ${#OCTOPUS_SKILLS[@]}"; exit 1; }
 
 printf '%s\n' "${OCTOPUS_ROLES[@]}" | grep -q "^backend-specialist$" \
   || { echo "FAIL: backend-specialist role missing after expansion"; exit 1; }
