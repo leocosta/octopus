@@ -18,3 +18,8 @@ layout:
 voice:
   tone: bold
   persona: host
+intent: expanding
+brand:
+  signature: "— the {{PRODUCT_NAME}} team"
+  cta_style: imperative
+  hero_pattern: team-led

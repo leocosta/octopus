@@ -158,3 +158,19 @@ for token in "^intent:" "^brand:" "signature:" "cta_style:" "hero_pattern:" \
     || { echo "FAIL: Theme Schema missing '$token'"; exit 1; }
 done
 echo "PASS: intent + brand documented in Theme Schema"
+
+echo "Test 14: all 9 preset themes declare intent + brand"
+for name in classic jade dark bold newsletter sunset ocean terminal paper; do
+  f="$THEMES/${name}.yml"
+  grep -qE "^intent: (retaining|expanding|repairing|educating)$" "$f" \
+    || { echo "FAIL: $name missing intent"; exit 1; }
+  grep -q "^brand:$" "$f" \
+    || { echo "FAIL: $name missing brand block"; exit 1; }
+  grep -q "  signature:" "$f" \
+    || { echo "FAIL: $name missing brand.signature"; exit 1; }
+  grep -qE "  cta_style: (imperative|invitational|informative)$" "$f" \
+    || { echo "FAIL: $name missing brand.cta_style"; exit 1; }
+  grep -qE "  hero_pattern: (product-led|customer-led|team-led)$" "$f" \
+    || { echo "FAIL: $name missing brand.hero_pattern"; exit 1; }
+done
+echo "PASS: all presets carry intent + brand"

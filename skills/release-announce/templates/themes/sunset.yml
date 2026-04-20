@@ -18,3 +18,8 @@ layout:
 voice:
   tone: playful
   persona: friend
+intent: retaining
+brand:
+  signature: "— the {{PRODUCT_NAME}} team"
+  cta_style: invitational
+  hero_pattern: team-led
