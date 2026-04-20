@@ -51,3 +51,88 @@ Engagement is implicit — Claude Code discovers this skill from
 description matches the task. Users who want explicit control
 can invoke `/octopus:receiving-code-review <ref>` for a
 single-comment walk.
+
+## The Five Rules
+
+The protocol is five rules applied to every comment before any
+code change. Skip a rule only with a stated reason.
+
+### Rule 1. Verify the critique against the code
+
+Before accepting any feedback as valid, read the code the
+reviewer pointed at. Confirm the critique is actually correct —
+does the code behave the way the reviewer claims? Does the
+concern apply?
+
+If the reviewer is wrong (the code already handles the case, or
+the claim doesn't match what the code does), say so. Politely
+and with evidence: quote the specific lines that contradict the
+critique. A reviewer who is wrong wants to know, not to be
+agreed with.
+
+If the reviewer is right, acknowledge it and proceed to the
+remaining rules before making any change.
+
+### Rule 2. Ask for evidence on generic comments
+
+Generic critiques — "this is ugly", "seems wrong", "could be
+better", "I don't like this" — cannot be acted on because they
+don't describe a concrete concern. Respond asking for
+specificity: "which part is ugly — the name, the structure,
+the nesting?" or "what would you expect instead?".
+
+Never infer what a generic comment probably means and change
+code based on your inference. The reviewer has context you
+don't; ask them to share it.
+
+### Rule 3. Separate reasoned feedback from preference
+
+Some critiques carry a technical reason (performance,
+maintainability, consistency with the project, correctness,
+security). Others are preference (aesthetic choice, personal
+style, "I would write it differently").
+
+Reasoned feedback gets weight — restate the reason in your
+acknowledgement so the reviewer sees you understood it, then
+decide whether to apply, push back with a counter-reason, or
+propose an alternative.
+
+Preference feedback is valid too, but it's a negotiation, not
+an instruction. Say so honestly: "I'd stick with X because Y,
+but happy to switch if you feel strongly." Don't treat
+preference as authority.
+
+### Rule 4. Never make performative changes
+
+A performative change is one made to close a review thread
+without understanding why. It's an anti-pattern because:
+
+- The reviewer's actual concern stays unaddressed (you shipped
+  something, but not what they asked for).
+- The code gets worse (you edited something you didn't
+  understand).
+- The next similar comment creates the same pattern.
+
+If you don't understand the feedback, engage Rule 2 (ask for
+evidence) or Rule 5 (ask for clarification). If you understand
+and disagree, engage Rule 3 (separate reasoned from preference
+and push back on preference). Never change code with the goal
+of closing a thread.
+
+### Rule 5. Ask for clarification on ambiguity
+
+When a critique is ambiguous — the words allow more than one
+reading, the example points at several possible issues, the
+suggestion has multiple implementations — ask before acting.
+
+Examples of ambiguity to clarify:
+
+- "This could be a helper" — which scope? A function in this
+  file, a module-level helper, a shared utility?
+- "Handle the error case" — which error case? What should the
+  handler do?
+- "Rename this" — to what?
+
+Acting on your best guess creates a second round of feedback
+and wastes the reviewer's time. One clarifying question saves
+that.
