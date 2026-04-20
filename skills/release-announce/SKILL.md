@@ -139,8 +139,8 @@ For a given theme name `N`, load the YAML from:
 Fail fast with a list of available theme names when `N` cannot be
 resolved.
 
-**Backwards compatibility:** when a theme YAML is loaded without `intent`
-or `brand` (legacy themes written without `intent`), apply these defaults
+**Backwards compatibility:** a theme YAML loaded without intent or
+`brand` (legacy themes written without intent) is handled with defaults
 and emit a warning pointing to the offending file: `intent: retaining`,
 `brand.cta_style: informative`, `brand.hero_pattern: product-led`,
 `brand.signature: ""`. Do not fail. Third-party themes under
