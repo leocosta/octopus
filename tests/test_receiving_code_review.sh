@@ -57,3 +57,9 @@ grep -E "^[[:space:]]*local items=\(.*receiving-code-review.*\)" "$WIZARD" >/dev
 grep -q "receiving-code-review|" "$WIZARD" \
   || { echo "FAIL: receiving-code-review not in wizard hints"; exit 1; }
 echo "PASS: command + wizard wired"
+
+echo "Test 8: starter bundle includes receiving-code-review"
+BUNDLE="$SCRIPT_DIR/bundles/starter.yml"
+grep -q -- "- receiving-code-review" "$BUNDLE" \
+  || { echo "FAIL: receiving-code-review missing from starter bundle"; exit 1; }
+echo "PASS: starter bundle lists receiving-code-review"
