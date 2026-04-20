@@ -136,3 +136,67 @@ Examples of ambiguity to clarify:
 Acting on your best guess creates a second round of feedback
 and wastes the reviewer's time. One clarifying question saves
 that.
+
+## Task Routing
+
+When a code-review response starts, consider whether
+domain-specific skills help — `money-review` for comments on
+billing / tax / splits, `tenant-scope-audit` for multi-tenant
+data access concerns, `cross-stack-contract` for comments that
+touch both API and frontend, `debugging` when the reviewer
+points at a bug rather than a style issue.
+
+RM-034 will replace this paragraph with a decision matrix that
+auto-selects the right companion skill per comment based on
+the files it touches, the language of the comment, and the
+risk profile. Until RM-034 ships, the agent uses judgment and
+the installed-skills list.
+
+## Integration with Other Skills
+
+- **`/octopus:pr-comments`** — the command that drives the
+  feedback loop. Mechanics (list comments, iterate, open
+  threads) are in that command; discipline (how to process
+  each comment) is in this skill. The two compose —
+  `pr-comments` runs the loop, this skill governs each
+  iteration.
+- **`/octopus:pr-review`** — writes a review for someone
+  else's PR. Different role, different skill; this skill never
+  engages on that flow.
+- **`implement`** — when a comment asks for a code change
+  (feature, refactor, new test), `implement`'s five practices
+  drive the edit itself. This skill ensures the change is the
+  right change before `implement` runs.
+- **`debugging`** — when a comment flags a bug the reviewer
+  spotted, hand off to `debugging` (reproduce → isolate → fix
+  with regression test → document). This skill still owns
+  Rule 1 (verify the critique) before the handoff.
+- **`rules/common/*`** — always-on static rules. This skill
+  never re-states rule content; reference only.
+- **`superpowers:receiving-code-review`** — when the
+  superpowers plugin is installed, that skill wins per rule on
+  the practices it covers. This skill still owns Octopus-native
+  integration with `pr-comments` and the handoffs to
+  `implement` / `debugging`.
+
+## Anti-Patterns
+
+This skill forbids, by name:
+
+- Accepting a critique as correct without reading the code it
+  points at.
+- Changing code to close a review thread without understanding
+  the concern (performative compliance).
+- Treating reviewer preference as a technical requirement.
+- Acting on your inference of what a generic comment "probably"
+  means instead of asking.
+- Making a change and then discovering during the diff review
+  that it doesn't match the reviewer's actual ask — should have
+  been a clarifying question on ambiguity first.
+- Pushing back on every comment without reading the code first
+  (the opposite failure from blind deference).
+- Deleting a reviewer's comment thread without resolving or
+  acknowledging it.
+- Batching a fix for one comment with unrelated changes — each
+  comment's response gets its own commit so the reviewer can
+  re-review atomically.
