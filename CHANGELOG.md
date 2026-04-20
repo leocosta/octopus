@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10.0] - 2026-04-19
+
+✨ New `implement` skill codifies the universal implementation workflow. Active by default on every code-editing task — the skill joins the `starter` foundation bundle so every repo running `octopus setup` picks it up automatically. The body documents five practices in a fixed order: (1) TDD loop (red → green → refactor → commit for observable behavior); (2) plan-before-code gate (present a short plan on tasks touching > 2 files or with ambiguous approach); (3) verification-before-completion (run the project's test/typecheck/format and attach output before declaring work done); (4) simplify pass (re-read changed code with the simplifier lens before committing); (5) commit cadence (one commit per logical step, hooks must pass, never `--no-verify`).
+
+🎨 Stack-neutral by design. The skill does not duplicate `rules/common/*` (static rules) or compete with language-specific skills (`dotnet`, `backend-patterns`, `e2e-testing`). When the user has the `superpowers:*` plugin installed, composition rule is "the more specific skill wins per practice" — superpowers drives TDD / systematic debugging / verification when active; `implement` fills the other gaps. Section `## Task Routing` reserves an extension hook for RM-034, which will auto-dispatch to the right sub-skill or role per task (backend / frontend / infra / data / refactor / bug).
+
+📝 Ships with tutorial at `docs/features/implement.md`, wizard registration, README + skills.md updates, roadmap transition (RM-030 moves to Completed), and 9 structural tests covering frontmatter, all six required sections, the five practice headers, Task Routing mentioning RM-034, Anti-Patterns naming core violations, slash command, bundle membership, wizard wiring, and tutorial presence.
+
 ## [1.9.0] - 2026-04-19
 
 ✨ New `audit-all` composer skill runs `security-scan`, `money-review`, `tenant-scope-audit`, and `cross-stack-contract` in parallel against one ref with shared file discovery and a consolidated severity report. Instead of four sequential invocations (each duplicating ref resolution, diff computation, file classification), `audit-all` does the discovery work once, partitions touched files by domain (money / tenant / webhook / auth / api-contract / frontend-consumer / secrets / config), dispatches four subagents via `superpowers:dispatching-parallel-agents`, then merges the four reports into one output with a **cross-audit hotspots table** — files flagged by ≥ 2 audits surface at the top for triage. Every sub-report keeps its own `🚫/⚠/ℹ + confidence` footer so reviewers can paste an audit's section into a PR thread.
