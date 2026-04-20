@@ -34,9 +34,9 @@ for section in "^## Task Routing$" "^## Integration with Other Skills$" "^## Ant
     || { echo "FAIL: '$section' missing"; exit 1; }
 done
 
-echo "Test 5: Task Routing stub references RM-034"
-grep -q "RM-034" "$SKILL_FILE" \
-  || { echo "FAIL: Task Routing stub does not mention RM-034"; exit 1; }
+echo "Test 5: Task Routing section embeds the shared canonical fragment"
+grep -q "<!-- BEGIN task-routing -->" "$SKILL_FILE" \
+  || { echo "FAIL: Task Routing section missing the shared-fragment marker"; exit 1; }
 
 echo "Test 6: Anti-Patterns forbids key anti-patterns"
 for pattern in "performative" "generic comment" "preference" "ambiguity" "Batching"; do
