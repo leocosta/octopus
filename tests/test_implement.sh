@@ -63,3 +63,12 @@ BUNDLE="$SCRIPT_DIR/bundles/starter.yml"
 grep -q -- "- implement" "$BUNDLE" \
   || { echo "FAIL: implement missing from starter bundle"; exit 1; }
 echo "PASS: starter bundle lists implement"
+
+echo "Test 9: README + skills.md list implement"
+grep -q "implement" "$SCRIPT_DIR/README.md" \
+  || { echo "FAIL: README missing 'implement'"; exit 1; }
+grep -q "| \`implement\` |" "$SCRIPT_DIR/docs/features/skills.md" \
+  || { echo "FAIL: skills.md missing implement row"; exit 1; }
+TUTORIAL="$SCRIPT_DIR/docs/features/implement.md"
+[[ -f "$TUTORIAL" ]] || { echo "FAIL: tutorial $TUTORIAL missing"; exit 1; }
+echo "PASS: README + skills.md + tutorial wired"
