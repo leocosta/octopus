@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.0] - 2026-04-19
+
+✨ New `audit-all` composer skill runs `security-scan`, `money-review`, `tenant-scope-audit`, and `cross-stack-contract` in parallel against one ref with shared file discovery and a consolidated severity report. Instead of four sequential invocations (each duplicating ref resolution, diff computation, file classification), `audit-all` does the discovery work once, partitions touched files by domain (money / tenant / webhook / auth / api-contract / frontend-consumer / secrets / config), dispatches four subagents via `superpowers:dispatching-parallel-agents`, then merges the four reports into one output with a **cross-audit hotspots table** — files flagged by ≥ 2 audits surface at the top for triage. Every sub-report keeps its own `🚫/⚠/ℹ + confidence` footer so reviewers can paste an audit's section into a PR thread.
+
+🔧 New `depends_on:` skill-frontmatter mechanism. A skill can declare `depends_on: [skill-a, skill-b]` in its frontmatter; `expand_bundles()` walks the list after bundle expansion, pulls each dependency, loops until stable, warns on missing deps, aborts on cycles or excessive depth (5 passes). This lets `audit-all` declare its four audit dependencies in one place — `bundles/quality-gates.yml` now lists only `audit-all`, the four individual audits arrive automatically. Individual audits remain first-class and invocable directly via `/octopus:security-scan`, `/octopus:money-review`, etc.
+
+🎨 Graceful degradation: `audit-all` adapts to what's installed. A missing dependency skips that audit with a warning; the summary line reports "{N} of 4 audits ran; install {list} to enable the rest". When `superpowers:dispatching-parallel-agents` is unavailable (non-Claude-Code agents), execution falls back to sequential with a one-line notice; output shape is identical. v1 always exits 0 (guidance, not gate).
+
+📝 Ships with tutorial at `docs/features/audit-all.md`, updates to README / skills.md / bundles.md tables, closes RM-028 in the roadmap. 13 structural tests (7 for the skill itself + 4 new `depends_on` scenarios in `test_bundles.sh` covering happy path, missing-dep warning, cycle detection, no-deps skills).
+
 ## [1.8.2] - 2026-04-19
 
 📝 Every slash-command tutorial heading now shows the fully-qualified `/octopus:<name>` form. Before, the level-1 heading in `commands/*.md` rendered as `# /<name>`, which made the `octopus:` namespace look like a typo to new users who saw only the tutorial. Fixed across all 10 user-invoked commands: `cross-stack-contract`, `doc-adr`, `doc-research`, `doc-rfc`, `doc-spec`, `feature-to-market`, `money-review`, `plan-backlog-hygiene`, `release-announce`, `tenant-scope-audit`.
