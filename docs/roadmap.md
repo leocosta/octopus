@@ -52,8 +52,6 @@ roadmap-first when the idea still needs shaping.
 - **RM-027** 🟡 Medium — Bundle / skill diff preview in the Full-mode
   wizard: show impact (lines / approx tokens) before confirming a
   selection.
-- **RM-028** 🔴 High — `/octopus:audit-all <ref>`: shared file
-  discovery + four audits run in parallel + concatenated output.
 - **RM-029** 🟡 Medium — Post-merge hook that suggests relevant
   audits based on the diff (touched files + keywords).
 
@@ -90,3 +88,4 @@ _No items in progress._
 | RM-019 | Dedup the shim embedded in `install.sh` | completed → [Spec](specs/shim-dedup.md) | 2026-04-18 |
 | RM-020 | Release signing pipeline | completed → [Spec](specs/release-signing-pipeline.md) | 2026-04-18 |
 | RM-021 | Fix pre-existing test failures | completed → [Spec](specs/test-triage.md) | 2026-04-18 |
+| RM-028 | `/octopus:audit-all` — parallel run of quality audits | completed → [Spec](specs/audit-all.md) | 2026-04-19 |
