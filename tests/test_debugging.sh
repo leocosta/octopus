@@ -18,3 +18,12 @@ grep -q "^## Overview$" "$SKILL_FILE" \
 grep -q "^## When to Engage$" "$SKILL_FILE" \
   || { echo "FAIL: '## When to Engage' missing"; exit 1; }
 echo "PASS: Overview + When to Engage present"
+
+echo "Test 3: SKILL.md documents all four phases"
+grep -q "^## The Four Phases$" "$SKILL_FILE" \
+  || { echo "FAIL: '## The Four Phases' missing"; exit 1; }
+for h in "### Phase 1. Reproduce deterministically" "### Phase 2. Isolate" "### Phase 3. Fix with a regression test first" "### Phase 4. Document non-obvious cause"; do
+  grep -qF "$h" "$SKILL_FILE" \
+    || { echo "FAIL: phase header '$h' missing"; exit 1; }
+done
+echo "PASS: all four phases documented"
