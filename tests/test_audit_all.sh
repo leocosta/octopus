@@ -21,3 +21,14 @@ for flag in "--base" "--only" "--write-report"; do
   grep -q -- "$flag" "$SKILL_FILE" || { echo "FAIL: flag $flag missing"; exit 1; }
 done
 echo "PASS: invocation documented"
+
+echo "Test 3: SKILL.md documents discovery + parallel execution"
+for section in "^## Shared File Discovery$" "^## Parallel Execution$"; do
+  grep -qE "$section" "$SKILL_FILE" \
+    || { echo "FAIL: '$section' missing"; exit 1; }
+done
+grep -q "superpowers:dispatching-parallel-agents" "$SKILL_FILE" \
+  || { echo "FAIL: parallel dispatch reference missing"; exit 1; }
+grep -q "domain" "$SKILL_FILE" \
+  || { echo "FAIL: domain tagging mention missing"; exit 1; }
+echo "PASS: discovery + parallel sections documented"
