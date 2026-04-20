@@ -174,3 +174,13 @@ for name in classic jade dark bold newsletter sunset ocean terminal paper; do
     || { echo "FAIL: $name missing brand.hero_pattern"; exit 1; }
 done
 echo "PASS: all presets carry intent + brand"
+
+echo "Test 15: SKILL.md documents Highlight Structure (FBE)"
+grep -q "^## Highlight Structure (FBE)$" "$SKILL_FILE" \
+  || { echo "FAIL: FBE section missing"; exit 1; }
+for token in "feature:" "benefit:" "evidence:" \
+             "projection by" "retaining" "expanding" "repairing" "educating"; do
+  grep -qi "$token" "$SKILL_FILE" \
+    || { echo "FAIL: FBE section missing token '$token'"; exit 1; }
+done
+echo "PASS: FBE documented"

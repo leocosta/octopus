@@ -83,6 +83,43 @@ user-facing channels — always re-voice.
 
 Abort with the 5 nearest fuzzy matches when a ref cannot be resolved.
 
+## Highlight Structure (FBE)
+
+Between ref resolution and channel rendering, every highlight is expanded
+into a three-field record before any output is produced:
+
+```yaml
+- title: "Tab-switch logout fixed"
+  category: fix
+  source: { tag: v1.7.1, rm: RM-042 }
+  feature: "Auth refresh loop was retrying indefinitely on expired refresh tokens; now redirects to login after one failed attempt."
+  benefit: "You stay signed in when you switch tabs, and won't hit a stuck spinner if your session truly expires."
+  evidence: "Affected ~3% of daily active sessions; metrics cleared 2026-04-18."
+```
+
+- `feature` and `benefit` are required; `evidence` is encouraged whenever
+  the source material supports it (numbers, before/after, concrete
+  example). When no evidence is available, omit the field — never
+  fabricate.
+- `feature` may reuse CHANGELOG prose; `benefit` must be re-voiced in
+  second person ("you can now…"). Never copy changelog text verbatim.
+- The theme's `voice.tone` and `voice.persona` constrain wording; the
+  `--audience` flag modulates depth.
+
+**Projection by `intent`** — channel renderers pick which fields to
+surface based on the theme's `intent`:
+
+| intent | primary | secondary | tertiary |
+|--------|---------|-----------|----------|
+| `retaining` | evidence | benefit | — |
+| `expanding` | benefit | feature | evidence |
+| `repairing` | feature | evidence | benefit |
+| `educating` | benefit | example from evidence | feature |
+
+Compact channels (`in-app-banner`, `x-announcement`) render only the
+primary field. Full channels (`email`, `slides`, `index.html`) render
+all available fields, visually prioritised.
+
 ## Theme Resolution
 
 Resolve the theme in this cascade (first match wins):
