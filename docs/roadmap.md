@@ -83,12 +83,6 @@ Cluster 4 closes the gap by shipping an `implement` skill (RM-030),
 a `debugging` skill (RM-031), a `receiving-code-review` skill
 (RM-032), and a destructive-action guard hook (RM-033).
 
-- **RM-032** 🟡 Medium — `receiving-code-review` skill: technical
-  rigor when responding to PR feedback — verify critique against
-  the code, ask for evidence on generic comments, separate
-  reasoned feedback from preference, never make a performative
-  change to close a thread without agreement. Enters
-  `quality-gates`.
 - **RM-033** 🟢 Low — Destructive-action guard hook: PreToolUse
   hook intercepting `rm -rf`, `git push --force`, `git reset --hard`,
   `DROP TABLE`, `DELETE FROM` without `WHERE`; prompts for
@@ -146,3 +140,4 @@ _No items in progress._
 | RM-028 | `/octopus:audit-all` — parallel run of quality audits | completed → [Spec](specs/audit-all.md) | 2026-04-19 |
 | RM-030 | `implement` skill — universal workflow codified as an active-by-default skill (TDD, plan gate, verification, simplify, commit cadence) | completed → [Spec](specs/implement.md) | 2026-04-19 |
 | RM-031 | `debugging` skill — universal bug-fix workflow (reproduce, isolate, regression test, document) as an active-by-default skill in `starter` | completed → [Spec](specs/debugging.md) | 2026-04-19 |
+| RM-032 | `receiving-code-review` skill — universal PR-feedback discipline (verify, ask for evidence, separate reasoned/preference, never performative, clarify ambiguity) as an active-by-default skill in `starter` | completed → [Spec](specs/receiving-code-review.md) | 2026-04-19 |
