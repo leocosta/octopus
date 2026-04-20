@@ -105,6 +105,20 @@ a `debugging` skill (RM-031), a `receiving-code-review` skill
   confirmation with a reason. Activated via `.octopus.yml`
   `destructiveGuard: true`; default-enabled when the
   `quality-gates` bundle is active.
+- **RM-034** 🔴 High — Task routing inside the `implement` skill.
+  At the start of every implementation task, classify the work
+  (layer: backend / frontend / infra / data / config / refactor;
+  scope: feature / bugfix / refactor / migration; risk: isolated /
+  cross-cutting / large-scale; pattern: CRUD / CQRS / event-driven
+  / stateless / stateful) and dispatch to the matching sub-skill or
+  role (`dotnet` + `backend-specialist` for `api/**/*.cs`;
+  `frontend-specialist` role for `app/**/*.tsx`; `debugging` for
+  bug keywords; simplify-only path for refactors without new
+  tests; reinforced plan-before-code + ADR for cross-module / large-
+  scale work). Graceful degradation — when a needed sub-skill is
+  not installed, continue with `rules/common/` and surface a hint
+  to add it to `.octopus.yml`. RM-030's spec must reserve a
+  routing hook so the core skill ships ready for this extension.
 
 ---
 
