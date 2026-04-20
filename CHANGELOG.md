@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.14.5] - 2026-04-20
+
+🎨 Install banner now renders a filled-silhouette octopus in coral (ANSI 210) — round head with two eye holes, geometric smile, two side arms and a fringe of bottom tentacles. 19 rows × 50 cols of `M`-pixel art, every row centered on col 24.5.
+
 ## [1.14.4] - 2026-04-20
 
 🎨 Install banner now uses a reddish palette: coral head with bright-yellow eyes and a white smile on top, tentacles fading from dark red to deep red as they curl outward, and a bold-coral `OCTOPUS` title below. Uses 256-color ANSI escapes (terminals that lack 256-color support render the glyphs in the default foreground — still a recognizable octopus).

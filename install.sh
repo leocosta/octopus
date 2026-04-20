@@ -22,12 +22,8 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Banner palette (256-color; banner_supports_color gates use)
-BANNER_CORAL='\033[38;5;203m'
-BANNER_DARK='\033[38;5;124m'
-BANNER_DEEP='\033[38;5;88m'
-BANNER_EYE='\033[1;38;5;226m'
-BANNER_MOUTH='\033[1;38;5;231m'
+# Banner palette
+BANNER_BODY='\033[1;38;5;210m'
 BANNER_TITLE='\033[1;38;5;210m'
 
 info()    { echo -e "${BLUE}ℹ  $1${NC}"; }
@@ -393,18 +389,25 @@ check_path() {
 main() {
   printf '%b\n' \
     "" \
-    "${BANNER_CORAL}             ,-\"\"\"\"\"\"\"\"-,${NC}" \
-    "${BANNER_CORAL}           ,'            ',${NC}" \
-    "${BANNER_CORAL}          /    ${BANNER_EYE}(o)${BANNER_CORAL}  ${BANNER_EYE}(o)${BANNER_CORAL}    \\\\${NC}" \
-    "${BANNER_CORAL}         |        ${BANNER_MOUTH}\\\\_/${BANNER_CORAL}        |${NC}" \
-    "${BANNER_CORAL}          \\\\                /${NC}" \
-    "${BANNER_CORAL}           )______________(${NC}" \
-    "${BANNER_DARK}          / / | |  |  | \\\\ \\\\${NC}" \
-    "${BANNER_DARK}         / /  | |  |  |  \\\\ \\\\${NC}" \
-    "${BANNER_DARK}        ( (   | |  |  |   ) )${NC}" \
-    "${BANNER_DARK}         \\\\ \\\\  | |  |  |  / /${NC}" \
-    "${BANNER_DEEP}          \\\\ \\\\ | |  |  | / /${NC}" \
-    "${BANNER_DEEP}           '-' '  '  ' '-'${NC}" \
+    "${BANNER_BODY}                   MMMMMMMMMMMM                   ${NC}" \
+    "${BANNER_BODY}                MMMMMMMMMMMMMMMMMM                ${NC}" \
+    "${BANNER_BODY}              MMMMMMMMMMMMMMMMMMMMMM              ${NC}" \
+    "${BANNER_BODY}            MMMMMMMMMMMMMMMMMMMMMMMMMM            ${NC}" \
+    "${BANNER_BODY}          MMMMMMMMMMMMMMMMMMMMMMMMMMMMMM          ${NC}" \
+    "${BANNER_BODY}         MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM         ${NC}" \
+    "${BANNER_BODY}         MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM         ${NC}" \
+    "${BANNER_BODY}         MMMMMM   MMMMMMMMMMMMMM   MMMMMM         ${NC}" \
+    "${BANNER_BODY}         MMMMMM   MMMMMMMMMMMMMM   MMMMMM         ${NC}" \
+    "${BANNER_BODY}         MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM         ${NC}" \
+    "${BANNER_BODY}         MMMMMMMMMMMM___MM___MMMMMMMMMMMM         ${NC}" \
+    "${BANNER_BODY}         MMMMMMMMMM|___|__|___|MMMMMMMMMM         ${NC}" \
+    "${BANNER_BODY}   MM    MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM    MM   ${NC}" \
+    "${BANNER_BODY} MMMM  MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM  MMMM ${NC}" \
+    "${BANNER_BODY} MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM ${NC}" \
+    "${BANNER_BODY} MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM ${NC}" \
+    "${BANNER_BODY}  MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM  ${NC}" \
+    "${BANNER_BODY}     MMMM  MMMM  MMMM  MMMM  MMMM  MMMM  MMMM     ${NC}" \
+    "${BANNER_BODY}      MM    MM    MM    MM    MM    MM    MM      ${NC}" \
     "" \
     "  ${BANNER_TITLE}OCTOPUS${NC}  CLI Installer" \
     ""
