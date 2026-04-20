@@ -88,3 +88,44 @@ Rules:
 - Honor `--only=<list>` after dependency resolution: the flag
   narrows what runs now; it does not remove skills from
   `.octopus.yml`.
+
+## Consolidated Report
+
+Output shape:
+
+```
+## 🎯 Summary
+audit-all: {{BLOCK_COUNT}} block, {{WARN_COUNT}} warn, {{INFO_COUNT}}
+info across {{AUDITS_RAN}} audits ({{AUDIT_NAMES}}). Files touched:
+{{FILES_TOUCHED}}. Cross-audit hotspots: {{HOTSPOT_COUNT}}.
+
+## 🔥 Cross-audit hotspots
+
+Files flagged by more than one audit — prioritize these first.
+
+{{HOTSPOTS_TABLE}}
+
+## 🔒 security-scan
+<security-scan's own output>
+
+## 💰 money-review
+<money-review's own output>
+
+## 🏢 tenant-scope-audit
+<tenant-scope-audit's own output>
+
+## 🔁 cross-stack-contract
+<cross-stack-contract's own output>
+```
+
+Every sub-report keeps its own summary footer (e.g.
+`money-review: 1 block, 2 warn, 0 info (...)`), so reviewers can
+paste a single audit's block into a PR thread for focused
+comments.
+
+With `--write-report`: the same content goes to
+`docs/reviews/YYYY-MM-DD-audit-all-<slug>.md` with frontmatter
+(`ref`, `base`, `audits_ran`, `generated_at`, `summary`).
+
+The header template lives at
+`skills/audit-all/templates/report-header.md.tmpl`.

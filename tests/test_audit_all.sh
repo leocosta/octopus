@@ -32,3 +32,16 @@ grep -q "superpowers:dispatching-parallel-agents" "$SKILL_FILE" \
 grep -q "domain" "$SKILL_FILE" \
   || { echo "FAIL: domain tagging mention missing"; exit 1; }
 echo "PASS: discovery + parallel sections documented"
+
+echo "Test 4: SKILL.md documents consolidated report + template exists"
+grep -q "^## Consolidated Report$" "$SKILL_FILE" \
+  || { echo "FAIL: '## Consolidated Report' missing"; exit 1; }
+grep -q "Cross-audit hotspots" "$SKILL_FILE" \
+  || { echo "FAIL: hotspots table mention missing"; exit 1; }
+TMPL="$SCRIPT_DIR/skills/audit-all/templates/report-header.md.tmpl"
+[[ -f "$TMPL" ]] || { echo "FAIL: report-header template missing"; exit 1; }
+grep -q "{{AUDITS_RAN}}" "$TMPL" \
+  || { echo "FAIL: template missing {{AUDITS_RAN}}"; exit 1; }
+grep -q "{{HOTSPOTS_TABLE}}" "$TMPL" \
+  || { echo "FAIL: template missing {{HOTSPOTS_TABLE}}"; exit 1; }
+echo "PASS: report + template present"
