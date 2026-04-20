@@ -234,3 +234,14 @@ README_TPL="$TPL/readme.md.tmpl"
 grep -q "narrative.yml" "$README_TPL" \
   || { echo "FAIL: readme.md.tmpl does not link narrative.yml"; exit 1; }
 echo "PASS: README template links narrative.yml"
+
+echo "Test 20: SKILL.md documents backwards compat + --design-from validation"
+grep -qi "without intent" "$SKILL_FILE" \
+  || { echo "FAIL: SKILL.md missing legacy-theme fallback note"; exit 1; }
+grep -qi "warning" "$SKILL_FILE" \
+  || { echo "FAIL: SKILL.md should mention warning on legacy themes"; exit 1; }
+grep -q -- "--design-from" "$SKILL_FILE" \
+  || { echo "FAIL: --design-from reference missing"; exit 1; }
+grep -qE "intent.*(required|must)" "$SKILL_FILE" \
+  || { echo "FAIL: --design-from validation of intent missing"; exit 1; }
+echo "PASS: compat + design-from documented"

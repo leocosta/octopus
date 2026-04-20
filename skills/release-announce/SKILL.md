@@ -139,6 +139,14 @@ For a given theme name `N`, load the YAML from:
 Fail fast with a list of available theme names when `N` cannot be
 resolved.
 
+**Backwards compatibility:** when a theme YAML is loaded without `intent`
+or `brand` (legacy themes written without `intent`), apply these defaults
+and emit a warning pointing to the offending file: `intent: retaining`,
+`brand.cta_style: informative`, `brand.hero_pattern: product-led`,
+`brand.signature: ""`. Do not fail. Third-party themes under
+`docs/release-announce/themes/` written before this version continue to
+work; consumer repos are nudged to add the fields on next run.
+
 ### `--design-from` contract with frontend-design
 
 When `--design-from="<prompt>"` is passed:
@@ -157,7 +165,11 @@ When `--design-from="<prompt>"` is passed:
    `{grid,timeline,stack}`, `layout.density` in
    `{compact,comfortable,spacious}`, `voice.tone` in
    `{calm,bold,playful,formal}`, `voice.persona` in
-   `{guide,host,reporter,friend}`.
+   `{guide,host,reporter,friend}`, `intent` is required and must be in
+   `{retaining,expanding,repairing,educating}`, `brand.cta_style` in
+   `{imperative,invitational,informative}`, `brand.hero_pattern` in
+   `{product-led,customer-led,team-led}`, and `brand.signature` is a
+   non-empty string.
 4. Persist to `docs/release-announce/themes/<slug>.yml` where
    `<slug>` is the lowercase-kebab form of the prompt (max 40 chars).
 5. Continue with that theme. Subsequent runs can reuse it via
@@ -363,6 +375,9 @@ Fail fast with actionable messages:
 - **`CHANGELOG.md` missing** → warn, continue with git log only.
 - **`--design-from` without frontend-design available** → abort with
   guidance to install the skill or pick a preset.
+- **`--design-from` output missing `intent` or `brand`** → abort with
+  the list of missing required fields; the user retries with a more
+  specific prompt.
 - **Invalid theme YAML (from `--design-from` or a repo override)** →
   abort, list the validation failures.
 - **Output directory already exists** → abort unless a `--force`
