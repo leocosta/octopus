@@ -71,3 +71,26 @@ set -e
 [[ "$code" -eq 2 ]] \
   || { echo "FAIL: expected exit 2, got $code"; exit 1; }
 echo "PASS: block exits 2"
+
+echo "Test 6: hooks.json registers destructive-guard under PreToolUse/Bash"
+HOOKS_JSON="$SCRIPT_DIR/hooks/hooks.json"
+python3 - "$HOOKS_JSON" <<'PYEOF'
+import json, sys
+with open(sys.argv[1]) as f:
+    data = json.load(f)
+entries = data.get("PreToolUse", [])
+found = False
+for entry in entries:
+    if entry.get("matcher") != "Bash":
+        continue
+    for hook in entry.get("hooks", []):
+        if hook.get("id") == "destructive-guard":
+            found = True
+            if not hook.get("command", "").endswith("pre-tool-use/destructive-guard.sh"):
+                print(f"FAIL: wrong command path: {hook.get('command')}")
+                sys.exit(1)
+if not found:
+    print("FAIL: destructive-guard not registered under PreToolUse/Bash")
+    sys.exit(1)
+print("PASS: hooks.json registration")
+PYEOF
