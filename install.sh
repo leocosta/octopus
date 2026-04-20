@@ -384,14 +384,21 @@ check_path() {
 # Main installation flow
 main() {
   echo ""
-  echo -e "${GREEN}        ___"
-  echo      "       /   \\"
-  echo      "      | o o |"
-  echo      "       \\_^_/"
-  echo      "      /||||||\\"
-  echo      "     / |||||| \\"
-  echo -e   "    /  ||||||  \\\\${NC}"
-  echo ""
+  printf '%b' "${GREEN}"
+  cat <<'BANNER'
+                 _.-""-._
+              .-'   __   '-.
+            /     (oo)(oo)    \
+           |       \  ^  /     |
+            \       '---'     /
+             '-.,_       _,.-'
+              .-'  \  |  /  '-.
+             / /  / | | | \  \ \
+            ( ( (  | | | |  ) ) )
+             \ \  \ | | | /  / /
+              '-'  '-' '-'  '-'
+BANNER
+  printf '%b\n\n' "${NC}"
   echo "  Octopus CLI Installer"
   echo ""
 
