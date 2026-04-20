@@ -57,3 +57,9 @@ grep -E "^[[:space:]]*local items=\(.*implement.*\)" "$WIZARD" >/dev/null \
 grep -q "implement|" "$WIZARD" \
   || { echo "FAIL: implement not in wizard hints"; exit 1; }
 echo "PASS: command + wizard wired"
+
+echo "Test 8: starter bundle includes implement"
+BUNDLE="$SCRIPT_DIR/bundles/starter.yml"
+grep -q -- "- implement" "$BUNDLE" \
+  || { echo "FAIL: implement missing from starter bundle"; exit 1; }
+echo "PASS: starter bundle lists implement"
