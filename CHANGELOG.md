@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.15.0] - 2026-04-20
+
+✨ The `auto-format` PostToolUse hook gained lint-fix capabilities alongside formatting — TS/JS now runs `biome check --write`, which also organizes imports and applies safe lint fixes, with a fallback to `eslint --fix` + `prettier`. On the .NET side, the hook now prefers **CSharpier** when available and falls back to `dotnet format --include` as before. Formatter failures are surfaced as a single-line message on stderr without blocking the hook. File-extension coverage was expanded to include `mjs`, `cjs`, `jsonc`, and `csx`.
+
+✨ The `release-announce` skill received a Cagan-style refinement covering intent, FBE, and narrative.
+
 ## [1.14.5] - 2026-04-20
 
 🎨 Install banner now renders a filled-silhouette octopus in coral (ANSI 210) — round head with two eye holes, geometric smile, two side arms and a fringe of bottom tentacles. 19 rows × 50 cols of `M`-pixel art, every row centered on col 24.5.
