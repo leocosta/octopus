@@ -22,6 +22,14 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Banner palette (256-color; banner_supports_color gates use)
+BANNER_CORAL='\033[38;5;203m'
+BANNER_DARK='\033[38;5;124m'
+BANNER_DEEP='\033[38;5;88m'
+BANNER_EYE='\033[1;38;5;226m'
+BANNER_MOUTH='\033[1;38;5;231m'
+BANNER_TITLE='\033[1;38;5;210m'
+
 info()    { echo -e "${BLUE}ℹ  $1${NC}"; }
 success() { echo -e "${GREEN}✓  $1${NC}"; }
 warn()    { echo -e "${YELLOW}⚠  $1${NC}"; }
@@ -383,24 +391,23 @@ check_path() {
 
 # Main installation flow
 main() {
-  echo ""
-  printf '%b' "${GREEN}"
-  cat <<'BANNER'
-                 _.-""-._
-              .-'   __   '-.
-            /     (oo)(oo)    \
-           |       \  ^  /     |
-            \       '---'     /
-             '-.,_       _,.-'
-              .-'  \  |  /  '-.
-             / /  / | | | \  \ \
-            ( ( (  | | | |  ) ) )
-             \ \  \ | | | /  / /
-              '-'  '-' '-'  '-'
-BANNER
-  printf '%b\n\n' "${NC}"
-  echo "  Octopus CLI Installer"
-  echo ""
+  printf '%b\n' \
+    "" \
+    "${BANNER_CORAL}             ,-\"\"\"\"\"\"\"\"-,${NC}" \
+    "${BANNER_CORAL}           ,'            ',${NC}" \
+    "${BANNER_CORAL}          /    ${BANNER_EYE}(o)${BANNER_CORAL}  ${BANNER_EYE}(o)${BANNER_CORAL}    \\\\${NC}" \
+    "${BANNER_CORAL}         |        ${BANNER_MOUTH}\\\\_/${BANNER_CORAL}        |${NC}" \
+    "${BANNER_CORAL}          \\\\                /${NC}" \
+    "${BANNER_CORAL}           )______________(${NC}" \
+    "${BANNER_DARK}          / / | |  |  | \\\\ \\\\${NC}" \
+    "${BANNER_DARK}         / /  | |  |  |  \\\\ \\\\${NC}" \
+    "${BANNER_DARK}        ( (   | |  |  |   ) )${NC}" \
+    "${BANNER_DARK}         \\\\ \\\\  | |  |  |  / /${NC}" \
+    "${BANNER_DEEP}          \\\\ \\\\ | |  |  | / /${NC}" \
+    "${BANNER_DEEP}           '-' '  '  ' '-'${NC}" \
+    "" \
+    "  ${BANNER_TITLE}OCTOPUS${NC}  CLI Installer" \
+    ""
 
   check_prerequisites
 

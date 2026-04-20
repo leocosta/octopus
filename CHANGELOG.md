@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.14.4] - 2026-04-20
+
+🎨 Install banner now uses a reddish palette: coral head with bright-yellow eyes and a white smile on top, tentacles fading from dark red to deep red as they curl outward, and a bold-coral `OCTOPUS` title below. Uses 256-color ANSI escapes (terminals that lack 256-color support render the glyphs in the default foreground — still a recognizable octopus).
+
 ## [1.14.3] - 2026-04-20
 
 ✨ New ASCII-art banner for `install.sh`. The previous design (tiny head + stacked `|` lines as tentacles) read more like a broom than an octopus. Replaced with a recognizable octopus — domed head with eyes and mouth, three curling tentacles on each side — kept in green via the existing color scheme. Rendering switched from seven `echo -e` calls to a `cat <<'BANNER'` heredoc wrapped in `printf '%b'` for the color codes, so the literal art is easier to read and edit in source.
