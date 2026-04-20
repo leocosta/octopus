@@ -94,3 +94,12 @@ if not found:
     sys.exit(1)
 print("PASS: hooks.json registration")
 PYEOF
+
+echo "Test 7: docs + README wiring"
+TUTORIAL="$SCRIPT_DIR/docs/features/destructive-action-guard.md"
+[[ -f "$TUTORIAL" ]] || { echo "FAIL: tutorial $TUTORIAL missing"; exit 1; }
+grep -q "destructive-guard" "$SCRIPT_DIR/docs/features/hooks.md" \
+  || { echo "FAIL: hooks.md missing destructive-guard row"; exit 1; }
+grep -q "destructiveGuard" "$SCRIPT_DIR/README.md" \
+  || { echo "FAIL: README missing destructiveGuard field"; exit 1; }
+echo "PASS: docs + README wired"
