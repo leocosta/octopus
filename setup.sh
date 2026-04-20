@@ -57,6 +57,7 @@ declare -a OCTOPUS_RULES=()
 declare -a OCTOPUS_SKILLS=()
 declare -a OCTOPUS_BUNDLES=()
 OCTOPUS_HOOKS="false"
+OCTOPUS_DESTRUCTIVE_GUARD="true"   # RM-033: default enabled when hooks are on
 declare -a OCTOPUS_AGENTS=()
 declare -A OCTOPUS_AGENT_OUTPUT=()
 declare -a OCTOPUS_MCP=()
@@ -330,6 +331,7 @@ parse_octopus_yml() {
         dream)        OCTOPUS_DREAM="$val" ;;
         sandbox)      OCTOPUS_SANDBOX="$val" ;;
         githubAction) OCTOPUS_GITHUB_ACTION="$val" ;;
+        destructiveGuard) OCTOPUS_DESTRUCTIVE_GUARD="$val" ;;
       esac
       current_section=""
       continue
@@ -1097,14 +1099,21 @@ with open(settings_path) as f:
 with open(hooks_path) as f:
     hooks = json.load(f)
 
-# Filter disabled hooks (comma-separated list from env)
+# Filter disabled hooks (comma-separated list from env).
+# Hook ids live inside each matcher entry's `hooks` array, so filter at
+# both levels: drop nested hooks whose id matches, then drop matcher
+# entries whose `hooks` array ends up empty.
 if disabled:
     disabled_set = set(d.strip() for d in disabled.split(",") if d.strip())
     for event_type in list(hooks.keys()):
-        hooks[event_type] = [
-            h for h in hooks[event_type]
-            if h.get("id", "") not in disabled_set
-        ]
+        new_entries = []
+        for entry in hooks[event_type]:
+            inner = entry.get("hooks", [])
+            filtered = [h for h in inner if h.get("id", "") not in disabled_set]
+            if filtered:
+                entry["hooks"] = filtered
+                new_entries.append(entry)
+        hooks[event_type] = new_entries
 
 # Rewrite relative "octopus/hooks/..." paths to absolute install paths so
 # Claude Code can execute them regardless of its current working directory.
@@ -2082,6 +2091,18 @@ _replay_captured_diagnostics() {
     fi
   done < "$log"
 }
+
+# Opt-out for destructive-action guard (RM-033): append to
+# OCTOPUS_DISABLED_HOOKS so the existing filter in deliver_hooks
+# removes the hook from the rendered settings.json.
+if [[ "$OCTOPUS_DESTRUCTIVE_GUARD" == "false" ]]; then
+  if [[ -n "${OCTOPUS_DISABLED_HOOKS:-}" ]]; then
+    OCTOPUS_DISABLED_HOOKS="${OCTOPUS_DISABLED_HOOKS},destructive-guard"
+  else
+    OCTOPUS_DISABLED_HOOKS="destructive-guard"
+  fi
+  export OCTOPUS_DISABLED_HOOKS
+fi
 
 for agent in "${OCTOPUS_AGENTS[@]}"; do
   ui_step "Configuring $agent"
