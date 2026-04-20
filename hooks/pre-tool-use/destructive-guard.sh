@@ -23,7 +23,7 @@ patterns=(
   'rm -rf (recursive force delete)|\brm[[:space:]]+(-[a-zA-Z]*r[a-zA-Z]*f|-[a-zA-Z]*f[a-zA-Z]*r)\b'
   'git push --force (rewrites remote history)|\bgit[[:space:]]+push[[:space:]]+(.*[[:space:]])?(--force|-f)\b'
   'git reset --hard (discards local changes)|\bgit[[:space:]]+reset[[:space:]]+(.*[[:space:]])?--hard\b'
-  'git checkout -- (discards uncommitted edits)|\bgit[[:space:]]+checkout[[:space:]]+--\b'
+  'git checkout -- (discards uncommitted edits)|\bgit[[:space:]]+checkout[[:space:]]+--([[:space:]]|$)'
   'git clean -f (irreversibly removes untracked files)|\bgit[[:space:]]+clean[[:space:]]+(-[a-zA-Z]*f[a-zA-Z]*|-[a-zA-Z]*f)\b'
   'DROP TABLE (destroys database table)|\bDROP[[:space:]]+TABLE\b'
   'DROP DATABASE (destroys entire database)|\bDROP[[:space:]]+DATABASE\b'
