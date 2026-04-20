@@ -3,6 +3,11 @@ name: receiving-code-review
 description: Walk the Octopus PR-feedback discipline — verify, ask for evidence, separate reasoned vs preference, never performative, clarify ambiguity.
 ---
 
+---
+description: Walk the Octopus PR-feedback discipline — verify, ask for evidence, separate reasoned vs preference, never performative, clarify ambiguity.
+agent: code
+---
+
 # /octopus:receiving-code-review
 
 ## Purpose

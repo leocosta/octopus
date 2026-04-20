@@ -3,6 +3,11 @@ name: cross-stack-contract
 description: Detect API-vs-frontend contract drift in multi-stack monorepos — endpoints, DTOs, enums, status codes, auth rules, params.
 ---
 
+---
+description: Detect API-vs-frontend contract drift in multi-stack monorepos — endpoints, DTOs, enums, status codes, auth rules, params.
+agent: code
+---
+
 # /octopus:cross-stack-contract
 
 ## Purpose

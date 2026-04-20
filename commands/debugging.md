@@ -3,6 +3,11 @@ name: debugging
 description: Walk the Octopus bug-fix protocol — reproduce, isolate, regression test, document non-obvious cause.
 ---
 
+---
+description: Walk the Octopus bug-fix protocol — reproduce, isolate, regression test, document non-obvious cause.
+agent: code
+---
+
 # /octopus:debugging
 
 ## Purpose
