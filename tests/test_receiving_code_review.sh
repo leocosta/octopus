@@ -44,3 +44,16 @@ for pattern in "performative" "generic comment" "preference" "ambiguity" "Batchi
     || { echo "FAIL: Anti-Patterns missing '$pattern'"; exit 1; }
 done
 echo "PASS: routing + integration + anti-patterns documented"
+
+echo "Test 7: slash command + wizard registration"
+CMD="$SCRIPT_DIR/commands/receiving-code-review.md"
+[[ -f "$CMD" ]] || { echo "FAIL: command file missing"; exit 1; }
+head -n 5 "$CMD" | grep -q "^name: receiving-code-review$" \
+  || { echo "FAIL: command frontmatter 'name' missing"; exit 1; }
+
+WIZARD="$SCRIPT_DIR/cli/lib/setup-wizard.sh"
+grep -E "^[[:space:]]*local items=\(.*receiving-code-review.*\)" "$WIZARD" >/dev/null \
+  || { echo "FAIL: receiving-code-review not in wizard items array"; exit 1; }
+grep -q "receiving-code-review|" "$WIZARD" \
+  || { echo "FAIL: receiving-code-review not in wizard hints"; exit 1; }
+echo "PASS: command + wizard wired"
