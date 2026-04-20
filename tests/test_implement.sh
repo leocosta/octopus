@@ -18,3 +18,12 @@ grep -q "^## Overview$" "$SKILL_FILE" \
 grep -q "^## When to Engage$" "$SKILL_FILE" \
   || { echo "FAIL: '## When to Engage' missing"; exit 1; }
 echo "PASS: Overview + When to Engage present"
+
+echo "Test 3: SKILL.md documents all five practices"
+grep -q "^## The Five Practices$" "$SKILL_FILE" \
+  || { echo "FAIL: '## The Five Practices' missing"; exit 1; }
+for h in "### 1. TDD loop" "### 2. Plan-before-code gate" "### 3. Verification-before-completion" "### 4. Simplify pass" "### 5. Commit cadence"; do
+  grep -qF "$h" "$SKILL_FILE" \
+    || { echo "FAIL: practice header '$h' missing"; exit 1; }
+done
+echo "PASS: all five practices documented"
