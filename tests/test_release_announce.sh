@@ -199,3 +199,32 @@ for token in "{{RELEASE_HEADLINE}}" "{{RELEASE_PROOF}}" "{{CTA_TEXT}}" "{{CTA_HR
     || { echo "FAIL: narrative template missing '$token'"; exit 1; }
 done
 echo "PASS: Release Narrative documented + template present"
+
+echo "Test 17: channel templates reference narrative tokens"
+for f in slack.md.tmpl discord.md.tmpl in-app-banner.md.tmpl \
+         status-page.md.tmpl x-announcement.md.tmpl whatsapp.md.tmpl; do
+  grep -q "{{RELEASE_HEADLINE}}" "$CH_DIR/$f" \
+    || { echo "FAIL: $f missing {{RELEASE_HEADLINE}}"; exit 1; }
+done
+for f in index.html.tmpl email.html.tmpl slides.html.tmpl; do
+  grep -q "{{RELEASE_HEADLINE}}" "$HTML_DIR/$f" \
+    || { echo "FAIL: $f missing {{RELEASE_HEADLINE}}"; exit 1; }
+done
+for f in slack.md.tmpl discord.md.tmpl; do
+  grep -q "{{HIGHLIGHTS_PRIMARY}}" "$CH_DIR/$f" \
+    || { echo "FAIL: $f missing {{HIGHLIGHTS_PRIMARY}} (FBE projection)"; exit 1; }
+done
+grep -q "{{HIGHLIGHTS_PRIMARY}}" "$HTML_DIR/email.html.tmpl" \
+  || { echo "FAIL: email.html.tmpl missing {{HIGHLIGHTS_PRIMARY}}"; exit 1; }
+grep -q "{{BRAND_SIGNATURE}}" "$HTML_DIR/email.html.tmpl" \
+  || { echo "FAIL: email.html.tmpl missing {{BRAND_SIGNATURE}}"; exit 1; }
+echo "PASS: channel templates use narrative + FBE + brand tokens"
+
+echo "Test 18: SKILL.md describes generation pipeline ordering"
+grep -q "^## Generation Pipeline$" "$SKILL_FILE" \
+  || { echo "FAIL: Generation Pipeline section missing"; exit 1; }
+for step in "refs" "FBE" "narrative" "channel"; do
+  grep -qi "$step" "$SKILL_FILE" \
+    || { echo "FAIL: pipeline step '$step' missing"; exit 1; }
+done
+echo "PASS: generation pipeline documented"
