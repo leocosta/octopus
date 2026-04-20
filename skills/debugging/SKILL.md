@@ -122,3 +122,57 @@ Decide based on the scope:
 
 Silent fixes ("it works now") that skip this phase are how the
 same bug recurs six months later under a different symptom.
+
+## Task Routing
+
+When a debugging task starts, consider whether domain-specific
+skills help — `dotnet` for .NET stack traces, the
+`frontend-specialist` role for UI-layer bugs,
+`tenant-scope-audit` for multi-tenant data-leak bugs,
+`money-review` for financial regressions.
+
+RM-034 will replace this paragraph with a decision matrix that
+auto-selects the right companion skill per bug based on files
+touched, error messages, and risk profile. Until RM-034 ships,
+the agent uses judgment and the installed-skills list.
+
+## Integration with Other Skills
+
+- **`implement`** — features workflow. `debugging` handles bug
+  triage up through the fix; the TDD loop inside `implement` is
+  reused in Phase 3. They are paired members of the `starter`
+  bundle.
+- **`audit-all`** — pre-merge audit. Run after a bug fix before
+  opening the PR, especially when the fix touches billing, tenant
+  scope, or cross-stack contracts.
+- **`continuous-learning`** — when a Phase 4 finding is a
+  recurring pattern, capture it there so future agents avoid the
+  same class of bug.
+- **`rules/common/*`** — always-on static rules. `debugging`
+  never re-states rule content; reference only.
+- **`feature-lifecycle`** — if the bug has architectural
+  implications, escalate to an ADR via `/octopus:doc-adr`.
+- **`superpowers:systematic-debugging`** — when the superpowers
+  plugin is installed, that skill wins per phase on the
+  practices it covers. `debugging` still owns Phase 4 (Octopus-
+  native integration with `continuous-learning` / ADR).
+
+## Anti-Patterns
+
+This skill forbids, by name:
+
+- Proposing a fix without reproducing the bug first (for
+  reproducible failures).
+- Committing a fix without a regression test.
+- Reading code to guess the cause instead of forming a hypothesis
+  and testing it.
+- Swallowing errors (empty `try`/`catch`, `|| true`, generic
+  `ignore` handlers) to make the failure go away.
+- Silent retry with backoff as a first response to a transient
+  failure — investigate before retrying.
+- Hiding the bug behind a feature flag or env toggle without
+  investigating the root cause.
+- "Works on my machine" / "sometimes happens" declarations
+  accepted without a reproduction path.
+- Macro-commits that fold bisect artifacts, exploratory edits,
+  the fix, and the regression test into one commit.

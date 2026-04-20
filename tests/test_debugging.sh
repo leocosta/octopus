@@ -27,3 +27,20 @@ for h in "### Phase 1. Reproduce deterministically" "### Phase 2. Isolate" "### 
     || { echo "FAIL: phase header '$h' missing"; exit 1; }
 done
 echo "PASS: all four phases documented"
+
+echo "Test 4: SKILL.md has Task Routing + Integration + Anti-Patterns"
+for section in "^## Task Routing$" "^## Integration with Other Skills$" "^## Anti-Patterns$"; do
+  grep -qE "$section" "$SKILL_FILE" \
+    || { echo "FAIL: '$section' missing"; exit 1; }
+done
+
+echo "Test 5: Task Routing stub references RM-034"
+grep -q "RM-034" "$SKILL_FILE" \
+  || { echo "FAIL: Task Routing stub does not mention RM-034"; exit 1; }
+
+echo "Test 6: Anti-Patterns forbids key anti-patterns"
+for pattern in "without reproducing" "regression test" "silent retry" "feature flag" "Macro-commits"; do
+  grep -qF "$pattern" "$SKILL_FILE" \
+    || { echo "FAIL: Anti-Patterns missing '$pattern'"; exit 1; }
+done
+echo "PASS: routing + integration + anti-patterns documented"
