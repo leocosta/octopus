@@ -87,6 +87,12 @@ skills: []
 # Hooks — lifecycle automation (Claude Code only)
 hooks: true
 
+# Destructive-action guard (default: true when hooks: true).
+# Blocks `rm -rf`, `git push --force`, `DROP TABLE`, `DELETE FROM`
+# without `WHERE`, and similar. Bypass with
+# `# destructive-guard-ok: <reason>` on the command itself.
+destructiveGuard: true
+
 # MCP servers — external tool integrations
 # Available: notion, github, slack, postgres
 mcp:

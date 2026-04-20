@@ -8,6 +8,7 @@ Lifecycle hooks that automate quality enforcement for Claude Code. Other agents 
 |---|---|---|
 | `block-no-verify` | PreToolUse | Blocks `--no-verify` in git commands |
 | `detect-secrets` | PreToolUse | Warns about hardcoded secrets |
+| `destructive-guard` | PreToolUse / Bash | Blocks `rm -rf`, `git push --force`, `DROP TABLE`, `DELETE FROM` without `WHERE`, etc. Bypass via `# destructive-guard-ok: <reason>` marker. Opt-out via `destructiveGuard: false`. See [destructive-action-guard.md](destructive-action-guard.md). |
 | `git-push-reminder` | PreToolUse | Reminds to review before pushing |
 | `format-check` | PreToolUse | Checks formatting on file writes |
 | `auto-format` | PostToolUse | Auto-formats edited files |
