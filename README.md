@@ -81,7 +81,7 @@ bundles:
 rules: []
 
 # Skills — optional extras on top of what bundles provide.
-# Available: adr, audit-all, backend-patterns, context-budget, continuous-learning, cross-stack-contract, dotnet, e2e-testing, feature-lifecycle, feature-to-market, money-review, plan-backlog-hygiene, release-announce, security-scan, tenant-scope-audit
+# Available: adr, audit-all, backend-patterns, context-budget, continuous-learning, cross-stack-contract, dotnet, e2e-testing, feature-lifecycle, feature-to-market, implement, money-review, plan-backlog-hygiene, release-announce, security-scan, tenant-scope-audit
 skills: []
 
 # Hooks — lifecycle automation (Claude Code only)
