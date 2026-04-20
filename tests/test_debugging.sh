@@ -57,3 +57,9 @@ grep -E "^[[:space:]]*local items=\(.*debugging.*\)" "$WIZARD" >/dev/null \
 grep -q "debugging|" "$WIZARD" \
   || { echo "FAIL: debugging not in wizard hints"; exit 1; }
 echo "PASS: command + wizard wired"
+
+echo "Test 8: starter bundle includes debugging"
+BUNDLE="$SCRIPT_DIR/bundles/starter.yml"
+grep -q -- "- debugging" "$BUNDLE" \
+  || { echo "FAIL: debugging missing from starter bundle"; exit 1; }
+echo "PASS: starter bundle lists debugging"
