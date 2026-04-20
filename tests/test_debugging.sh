@@ -39,7 +39,7 @@ grep -q "RM-034" "$SKILL_FILE" \
   || { echo "FAIL: Task Routing stub does not mention RM-034"; exit 1; }
 
 echo "Test 6: Anti-Patterns forbids key anti-patterns"
-for pattern in "without reproducing" "regression test" "silent retry" "feature flag" "Macro-commits"; do
+for pattern in "without reproducing" "regression test" "Silent retry" "feature flag" "Macro-commits"; do
   grep -qF "$pattern" "$SKILL_FILE" \
     || { echo "FAIL: Anti-Patterns missing '$pattern'"; exit 1; }
 done
