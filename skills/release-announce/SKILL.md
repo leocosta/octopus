@@ -83,6 +83,43 @@ user-facing channels — always re-voice.
 
 Abort with the 5 nearest fuzzy matches when a ref cannot be resolved.
 
+## Highlight Structure (FBE)
+
+Between ref resolution and channel rendering, every highlight is expanded
+into a three-field record before any output is produced:
+
+```yaml
+- title: "Tab-switch logout fixed"
+  category: fix
+  source: { tag: v1.7.1, rm: RM-042 }
+  feature: "Auth refresh loop was retrying indefinitely on expired refresh tokens; now redirects to login after one failed attempt."
+  benefit: "You stay signed in when you switch tabs, and won't hit a stuck spinner if your session truly expires."
+  evidence: "Affected ~3% of daily active sessions; metrics cleared 2026-04-18."
+```
+
+- `feature` and `benefit` are required; `evidence` is encouraged whenever
+  the source material supports it (numbers, before/after, concrete
+  example). When no evidence is available, omit the field — never
+  fabricate.
+- `feature` may reuse CHANGELOG prose; `benefit` must be re-voiced in
+  second person ("you can now…"). Never copy changelog text verbatim.
+- The theme's `voice.tone` and `voice.persona` constrain wording; the
+  `--audience` flag modulates depth.
+
+**Projection by `intent`** — channel renderers pick which fields to
+surface based on the theme's `intent`:
+
+| intent | primary | secondary | tertiary |
+|--------|---------|-----------|----------|
+| `retaining` | evidence | benefit | — |
+| `expanding` | benefit | feature | evidence |
+| `repairing` | feature | evidence | benefit |
+| `educating` | benefit | example from evidence | feature |
+
+Compact channels (`in-app-banner`, `x-announcement`) render only the
+primary field. Full channels (`email`, `slides`, `index.html`) render
+all available fields, visually prioritised.
+
 ## Theme Resolution
 
 Resolve the theme in this cascade (first match wins):
@@ -102,6 +139,14 @@ For a given theme name `N`, load the YAML from:
 Fail fast with a list of available theme names when `N` cannot be
 resolved.
 
+**Backwards compatibility:** a theme YAML loaded without intent or
+`brand` (legacy themes written without intent) is handled with defaults
+and emit a warning pointing to the offending file: `intent: retaining`,
+`brand.cta_style: informative`, `brand.hero_pattern: product-led`,
+`brand.signature: ""`. Do not fail. Third-party themes under
+`docs/release-announce/themes/` written before this version continue to
+work; consumer repos are nudged to add the fields on next run.
+
 ### `--design-from` contract with frontend-design
 
 When `--design-from="<prompt>"` is passed:
@@ -120,7 +165,11 @@ When `--design-from="<prompt>"` is passed:
    `{grid,timeline,stack}`, `layout.density` in
    `{compact,comfortable,spacious}`, `voice.tone` in
    `{calm,bold,playful,formal}`, `voice.persona` in
-   `{guide,host,reporter,friend}`.
+   `{guide,host,reporter,friend}`, `intent` is required and must be in
+   `{retaining,expanding,repairing,educating}`, `brand.cta_style` in
+   `{imperative,invitational,informative}`, `brand.hero_pattern` in
+   `{product-led,customer-led,team-led}`, and `brand.signature` is a
+   non-empty string.
 4. Persist to `docs/release-announce/themes/<slug>.yml` where
    `<slug>` is the lowercase-kebab form of the prompt (max 40 chars).
 5. Continue with that theme. Subsequent runs can reuse it via
@@ -128,6 +177,74 @@ When `--design-from="<prompt>"` is passed:
 
 If both `--design-from` and `--theme` are passed,
 `--design-from` wins; log a warning.
+
+## Release Narrative
+
+Before any channel is rendered, a canonical narrative file is written:
+
+```
+docs/releases/<YYYY-MM-DD-slug>/narrative.yml
+```
+
+Schema:
+
+```yaml
+headline: "Fewer surprise logouts, faster exports, one new way to share."
+proof: "The tab-switch logout is fixed, CSV exports are 4× faster, and shared links now carry viewer permissions."
+cta:
+  text: "See what's new"
+  url: "https://app.example.com/whats-new"
+```
+
+Constraints:
+
+- `headline` ≤ 80 characters, single sentence, consistent with the
+  theme's `intent`.
+- `proof` ≤ 280 characters; 2–4 concrete points drawn from highlights'
+  `benefit` and `evidence`.
+- `cta.text` follows the theme's `brand.cta_style` register.
+- `cta.url` resolves against the release landing page unless an override
+  is provided.
+
+**Contract with channels:** every channel template reads `narrative.yml`
+for the hero opening and the CTA. **No channel may invent its own
+headline or CTA.** Channels only decide *how* to expand, compact, or
+fragment the narrative:
+
+- `email.html` — narrative in header + all highlights fully projected.
+- `slack.md` / `discord.md` — narrative as preamble + top 3 highlights
+  with primary FBE field per theme intent.
+- `in-app-banner.md` — `headline` + `cta` only.
+- `x-announcement.md` — `headline` as post 1; `proof` fragmented across
+  posts 2–3 if a thread.
+- `whatsapp.md` — `headline` + one highlight benefit per line.
+- `status-page.md` — `headline` as title, `proof` as body.
+- `slides.html` — narrative as opening slide; highlights per subsequent
+  slide.
+
+## Generation Pipeline
+
+Always execute in this order:
+
+1. **Resolve refs** → raw highlights from `CHANGELOG.md`, `git log`,
+   and `docs/roadmap.md`.
+2. **FBE expansion** → rewrite each highlight into
+   `{feature, benefit, evidence}`. Theme-agnostic; depends only on
+   `--audience`.
+3. **Theme load** → palette, typography, layout, voice, **intent**,
+   **brand** (cascade from §Theme Resolution).
+4. **Narrative synthesis** → `headline`, `proof`, `cta` derived from
+   the FBE records and constrained by `intent` + `brand.cta_style`.
+   Written to `narrative.yml`.
+5. **Canonical artefacts** → `README.md`, `narrative.yml`, `index.html`,
+   `notes.md`, `theme.yml`.
+6. **Channel projections** → each channel reads `narrative.yml` for
+   hero/CTA, then projects highlights using the FBE priority table for
+   the theme's `intent`.
+
+Channels never re-synthesise the narrative. If a channel needs a
+shorter headline, it truncates `narrative.yml` — it does not invent
+one.
 
 ## Output
 
@@ -140,6 +257,8 @@ prefix; an RM → `rm-NNN`; multi-ref → `release-YYYY-MM-DD`).
 - `README.md` — index linking every other file + frontmatter with
   `generated_at`, `generated_by`, `refs`, `theme`, `audience`,
   `channels`.
+- `narrative.yml` — canonical message-mother (headline, proof, CTA). All
+  channels project from it.
 - `index.html` — themed landing page. Hero + highlights grouped by
   category + CTA. All CSS inline; no external assets.
 - `notes.md` — plain markdown fallback suitable for a docs site or
@@ -195,10 +314,33 @@ layout:
 voice:
   tone: calm              # calm | bold | playful | formal
   persona: guide          # guide | host | reporter | friend
+intent: retaining         # retaining | expanding | repairing | educating
+brand:
+  signature: "— the Octopus team"
+  cta_style: invitational # imperative | invitational | informative
+  hero_pattern: product-led # product-led | customer-led | team-led
 ```
 
 All fields required. Colors must be `#RRGGBB`. Enum values exactly as
 listed above.
+
+**`intent`** governs the reader outcome the announcement is optimising for:
+
+- `retaining` — reassure existing users that staying is the right call.
+- `expanding` — show the user they have more capability than yesterday.
+- `repairing` — acknowledge a visible issue and prove it is fixed.
+- `educating` — teach the user how to use something already shipped.
+
+**`brand`** carries identity that must survive a theme swap:
+
+- `signature` — short recurring line appended to long-form channels
+  (email footer, last slack line, final slide).
+- `cta_style` — verb register for every CTA (`imperative` → "Update now",
+  `invitational` → "Take a look when you have a minute", `informative` →
+  "Available in Settings → Integrations").
+- `hero_pattern` — protagonist of the hero section (`product-led` → the
+  feature is the subject; `customer-led` → "You asked for…"; `team-led` →
+  "We spent the sprint on…").
 
 Nine presets ship in v1: `classic` (default), `jade`, `dark`, `bold`,
 `newsletter`, `sunset`, `ocean`, `terminal`, `paper`.
@@ -233,6 +375,9 @@ Fail fast with actionable messages:
 - **`CHANGELOG.md` missing** → warn, continue with git log only.
 - **`--design-from` without frontend-design available** → abort with
   guidance to install the skill or pick a preset.
+- **`--design-from` output missing `intent` or `brand`** → abort with
+  the list of missing required fields; the user retries with a more
+  specific prompt.
 - **Invalid theme YAML (from `--design-from` or a repo override)** →
   abort, list the validation failures.
 - **Output directory already exists** → abort unless a `--force`

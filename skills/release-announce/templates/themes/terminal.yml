@@ -18,3 +18,8 @@ layout:
 voice:
   tone: bold
   persona: reporter
+intent: repairing
+brand:
+  signature: "— the {{PRODUCT_NAME}} team"
+  cta_style: informative
+  hero_pattern: product-led

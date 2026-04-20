@@ -148,3 +148,100 @@ grep -q "release-announce" "$SCRIPT_DIR/docs/features/skills.md" \
   || { echo "FAIL: skills.md missing release-announce row"; exit 1; }
 
 echo "PASS: command + wizard + bundle + docs wired"
+
+echo "Test 13: SKILL.md documents intent + brand in Theme Schema"
+for token in "^intent:" "^brand:" "signature:" "cta_style:" "hero_pattern:" \
+             "retaining" "expanding" "repairing" "educating" \
+             "imperative" "invitational" "informative" \
+             "product-led" "customer-led" "team-led"; do
+  grep -qE "$token" "$SKILL_FILE" \
+    || { echo "FAIL: Theme Schema missing '$token'"; exit 1; }
+done
+echo "PASS: intent + brand documented in Theme Schema"
+
+echo "Test 14: all 9 preset themes declare intent + brand"
+for name in classic jade dark bold newsletter sunset ocean terminal paper; do
+  f="$THEMES/${name}.yml"
+  grep -qE "^intent: (retaining|expanding|repairing|educating)$" "$f" \
+    || { echo "FAIL: $name missing intent"; exit 1; }
+  grep -q "^brand:$" "$f" \
+    || { echo "FAIL: $name missing brand block"; exit 1; }
+  grep -q "  signature:" "$f" \
+    || { echo "FAIL: $name missing brand.signature"; exit 1; }
+  grep -qE "  cta_style: (imperative|invitational|informative)$" "$f" \
+    || { echo "FAIL: $name missing brand.cta_style"; exit 1; }
+  grep -qE "  hero_pattern: (product-led|customer-led|team-led)$" "$f" \
+    || { echo "FAIL: $name missing brand.hero_pattern"; exit 1; }
+done
+echo "PASS: all presets carry intent + brand"
+
+echo "Test 15: SKILL.md documents Highlight Structure (FBE)"
+grep -q "^## Highlight Structure (FBE)$" "$SKILL_FILE" \
+  || { echo "FAIL: FBE section missing"; exit 1; }
+for token in "feature:" "benefit:" "evidence:" \
+             "projection by" "retaining" "expanding" "repairing" "educating"; do
+  grep -qi "$token" "$SKILL_FILE" \
+    || { echo "FAIL: FBE section missing token '$token'"; exit 1; }
+done
+echo "PASS: FBE documented"
+
+echo "Test 16: SKILL.md documents Release Narrative and narrative.yml"
+grep -q "^## Release Narrative$" "$SKILL_FILE" \
+  || { echo "FAIL: Release Narrative section missing"; exit 1; }
+for token in "headline:" "proof:" "cta:" "narrative.yml"; do
+  grep -q "$token" "$SKILL_FILE" \
+    || { echo "FAIL: narrative token '$token' missing"; exit 1; }
+done
+NAR_TPL="$SCRIPT_DIR/skills/release-announce/templates/narrative.yml.tmpl"
+[[ -f "$NAR_TPL" ]] || { echo "FAIL: narrative.yml.tmpl missing"; exit 1; }
+for token in "{{RELEASE_HEADLINE}}" "{{RELEASE_PROOF}}" "{{CTA_TEXT}}" "{{CTA_HREF}}"; do
+  grep -q "$token" "$NAR_TPL" \
+    || { echo "FAIL: narrative template missing '$token'"; exit 1; }
+done
+echo "PASS: Release Narrative documented + template present"
+
+echo "Test 17: channel templates reference narrative tokens"
+for f in slack.md.tmpl discord.md.tmpl in-app-banner.md.tmpl \
+         status-page.md.tmpl x-announcement.md.tmpl whatsapp.md.tmpl; do
+  grep -q "{{RELEASE_HEADLINE}}" "$CH_DIR/$f" \
+    || { echo "FAIL: $f missing {{RELEASE_HEADLINE}}"; exit 1; }
+done
+for f in index.html.tmpl email.html.tmpl slides.html.tmpl; do
+  grep -q "{{RELEASE_HEADLINE}}" "$HTML_DIR/$f" \
+    || { echo "FAIL: $f missing {{RELEASE_HEADLINE}}"; exit 1; }
+done
+for f in slack.md.tmpl discord.md.tmpl; do
+  grep -q "{{HIGHLIGHTS_PRIMARY}}" "$CH_DIR/$f" \
+    || { echo "FAIL: $f missing {{HIGHLIGHTS_PRIMARY}} (FBE projection)"; exit 1; }
+done
+grep -q "{{HIGHLIGHTS_PRIMARY}}" "$HTML_DIR/email.html.tmpl" \
+  || { echo "FAIL: email.html.tmpl missing {{HIGHLIGHTS_PRIMARY}}"; exit 1; }
+grep -q "{{BRAND_SIGNATURE}}" "$HTML_DIR/email.html.tmpl" \
+  || { echo "FAIL: email.html.tmpl missing {{BRAND_SIGNATURE}}"; exit 1; }
+echo "PASS: channel templates use narrative + FBE + brand tokens"
+
+echo "Test 18: SKILL.md describes generation pipeline ordering"
+grep -q "^## Generation Pipeline$" "$SKILL_FILE" \
+  || { echo "FAIL: Generation Pipeline section missing"; exit 1; }
+for step in "refs" "FBE" "narrative" "channel"; do
+  grep -qi "$step" "$SKILL_FILE" \
+    || { echo "FAIL: pipeline step '$step' missing"; exit 1; }
+done
+echo "PASS: generation pipeline documented"
+
+echo "Test 19: release README template links narrative.yml"
+README_TPL="$TPL/readme.md.tmpl"
+grep -q "narrative.yml" "$README_TPL" \
+  || { echo "FAIL: readme.md.tmpl does not link narrative.yml"; exit 1; }
+echo "PASS: README template links narrative.yml"
+
+echo "Test 20: SKILL.md documents backwards compat + --design-from validation"
+grep -qi "without intent" "$SKILL_FILE" \
+  || { echo "FAIL: SKILL.md missing legacy-theme fallback note"; exit 1; }
+grep -qi "warning" "$SKILL_FILE" \
+  || { echo "FAIL: SKILL.md should mention warning on legacy themes"; exit 1; }
+grep -q -- "--design-from" "$SKILL_FILE" \
+  || { echo "FAIL: --design-from reference missing"; exit 1; }
+grep -qE "intent.*(required|must)" "$SKILL_FILE" \
+  || { echo "FAIL: --design-from validation of intent missing"; exit 1; }
+echo "PASS: compat + design-from documented"

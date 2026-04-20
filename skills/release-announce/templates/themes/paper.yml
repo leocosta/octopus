@@ -18,3 +18,8 @@ layout:
 voice:
   tone: calm
   persona: reporter
+intent: educating
+brand:
+  signature: "— the {{PRODUCT_NAME}} team"
+  cta_style: informative
+  hero_pattern: product-led
