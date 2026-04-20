@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.14.3] - 2026-04-20
+
+✨ New ASCII-art banner for `install.sh`. The previous design (tiny head + stacked `|` lines as tentacles) read more like a broom than an octopus. Replaced with a recognizable octopus — domed head with eyes and mouth, three curling tentacles on each side — kept in green via the existing color scheme. Rendering switched from seven `echo -e` calls to a `cat <<'BANNER'` heredoc wrapped in `printf '%b'` for the color codes, so the literal art is easier to read and edit in source.
+
 ## [1.14.2] - 2026-04-20
 
 🐛 Fixes missing descriptions for 10 slash commands in Claude Code's `/` list: `/octopus:implement`, `/octopus:debugging`, `/octopus:receiving-code-review`, `/octopus:audit-all`, `/octopus:cross-stack-contract`, `/octopus:money-review`, `/octopus:tenant-scope-audit`, `/octopus:plan-backlog-hygiene`, `/octopus:feature-to-market`, `/octopus:release-announce`. The command templates should ship with **two** frontmatter blocks — an outer Octopus metadata block (stripped at delivery) and an inner Claude-readable block (`description:` + `agent:`, preserved). The newer commands were authored with only the outer block, so `strip_frontmatter` removed the entire header and the delivered files had no description for Claude Code to render.
