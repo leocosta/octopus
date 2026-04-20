@@ -31,6 +31,7 @@ error()   { echo -e "${RED}✗  $1${NC}" >&2; }
 VERSION=""
 FORCE=false
 UNINSTALL=false
+NO_SHIM_SETUP=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -68,6 +69,10 @@ while [[ $# -gt 0 ]]; do
       UNINSTALL=true
       shift
       ;;
+    --no-shim-setup)
+      NO_SHIM_SETUP=true
+      shift
+      ;;
     --help|-h)
       echo "Octopus CLI Installer"
       echo ""
@@ -78,6 +83,7 @@ while [[ $# -gt 0 ]]; do
       echo "  install.sh --cache-root <path> Override ~/.octopus-cli cache location"
       echo "  install.sh --force            Reinstall even if already installed"
       echo "  install.sh --uninstall        Remove Octopus CLI"
+      echo "  install.sh --no-shim-setup    Download release without touching the shim (used by the CLI when backfilling a version)"
       echo "  install.sh --help             Show this help"
       echo ""
       echo "Environment:"
@@ -406,11 +412,13 @@ main() {
   update_symlink "$VERSION"
   write_metadata "$VERSION"
 
-  # Install shim (copied from the downloaded release tree — see RM-019)
-  install_shim "$VERSION"
-
-  # Path check
-  check_path
+  # Install shim (copied from the downloaded release tree — see RM-019).
+  # Skipped when invoked by the CLI shim itself to backfill a different version
+  # without clobbering the currently-running binary.
+  if [[ "$NO_SHIM_SETUP" != true ]]; then
+    install_shim "$VERSION"
+    check_path
+  fi
 
   echo ""
   echo -e "${GREEN}  ✓  Octopus CLI ${VERSION} installed!${NC}"
