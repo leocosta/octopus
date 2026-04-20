@@ -1,0 +1,14 @@
+# narrative.yml — canonical message-mother for this release.
+# Every channel projects from this file. No channel may introduce its
+# own headline or CTA.
+generated_by: octopus:release-announce
+generated_at: {{TODAY}}
+refs: {{RELEASE_REFS}}
+theme: {{THEME_NAME}}
+intent: {{THEME_INTENT}}
+
+headline: "{{RELEASE_HEADLINE}}"   # <= 80 chars, single sentence
+proof: "{{RELEASE_PROOF}}"         # <= 280 chars, 2-4 concrete points
+cta:
+  text: "{{CTA_TEXT}}"             # styled per brand.cta_style
+  url: "{{CTA_HREF}}"

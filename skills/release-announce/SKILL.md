@@ -166,6 +166,74 @@ When `--design-from="<prompt>"` is passed:
 If both `--design-from` and `--theme` are passed,
 `--design-from` wins; log a warning.
 
+## Release Narrative
+
+Before any channel is rendered, a canonical narrative file is written:
+
+```
+docs/releases/<YYYY-MM-DD-slug>/narrative.yml
+```
+
+Schema:
+
+```yaml
+headline: "Fewer surprise logouts, faster exports, one new way to share."
+proof: "The tab-switch logout is fixed, CSV exports are 4× faster, and shared links now carry viewer permissions."
+cta:
+  text: "See what's new"
+  url: "https://app.example.com/whats-new"
+```
+
+Constraints:
+
+- `headline` ≤ 80 characters, single sentence, consistent with the
+  theme's `intent`.
+- `proof` ≤ 280 characters; 2–4 concrete points drawn from highlights'
+  `benefit` and `evidence`.
+- `cta.text` follows the theme's `brand.cta_style` register.
+- `cta.url` resolves against the release landing page unless an override
+  is provided.
+
+**Contract with channels:** every channel template reads `narrative.yml`
+for the hero opening and the CTA. **No channel may invent its own
+headline or CTA.** Channels only decide *how* to expand, compact, or
+fragment the narrative:
+
+- `email.html` — narrative in header + all highlights fully projected.
+- `slack.md` / `discord.md` — narrative as preamble + top 3 highlights
+  with primary FBE field per theme intent.
+- `in-app-banner.md` — `headline` + `cta` only.
+- `x-announcement.md` — `headline` as post 1; `proof` fragmented across
+  posts 2–3 if a thread.
+- `whatsapp.md` — `headline` + one highlight benefit per line.
+- `status-page.md` — `headline` as title, `proof` as body.
+- `slides.html` — narrative as opening slide; highlights per subsequent
+  slide.
+
+## Generation Pipeline
+
+Always execute in this order:
+
+1. **Resolve refs** → raw highlights from `CHANGELOG.md`, `git log`,
+   and `docs/roadmap.md`.
+2. **FBE expansion** → rewrite each highlight into
+   `{feature, benefit, evidence}`. Theme-agnostic; depends only on
+   `--audience`.
+3. **Theme load** → palette, typography, layout, voice, **intent**,
+   **brand** (cascade from §Theme Resolution).
+4. **Narrative synthesis** → `headline`, `proof`, `cta` derived from
+   the FBE records and constrained by `intent` + `brand.cta_style`.
+   Written to `narrative.yml`.
+5. **Canonical artefacts** → `README.md`, `narrative.yml`, `index.html`,
+   `notes.md`, `theme.yml`.
+6. **Channel projections** → each channel reads `narrative.yml` for
+   hero/CTA, then projects highlights using the FBE priority table for
+   the theme's `intent`.
+
+Channels never re-synthesise the narrative. If a channel needs a
+shorter headline, it truncates `narrative.yml` — it does not invent
+one.
+
 ## Output
 
 Create `docs/releases/YYYY-MM-DD-<slug>/` where `<slug>` is derived
@@ -177,6 +245,8 @@ prefix; an RM → `rm-NNN`; multi-ref → `release-YYYY-MM-DD`).
 - `README.md` — index linking every other file + frontmatter with
   `generated_at`, `generated_by`, `refs`, `theme`, `audience`,
   `channels`.
+- `narrative.yml` — canonical message-mother (headline, proof, CTA). All
+  channels project from it.
 - `index.html` — themed landing page. Hero + highlights grouped by
   category + CTA. All CSS inline; no external assets.
 - `notes.md` — plain markdown fallback suitable for a docs site or

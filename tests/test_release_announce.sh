@@ -184,3 +184,18 @@ for token in "feature:" "benefit:" "evidence:" \
     || { echo "FAIL: FBE section missing token '$token'"; exit 1; }
 done
 echo "PASS: FBE documented"
+
+echo "Test 16: SKILL.md documents Release Narrative and narrative.yml"
+grep -q "^## Release Narrative$" "$SKILL_FILE" \
+  || { echo "FAIL: Release Narrative section missing"; exit 1; }
+for token in "headline:" "proof:" "cta:" "narrative.yml"; do
+  grep -q "$token" "$SKILL_FILE" \
+    || { echo "FAIL: narrative token '$token' missing"; exit 1; }
+done
+NAR_TPL="$SCRIPT_DIR/skills/release-announce/templates/narrative.yml.tmpl"
+[[ -f "$NAR_TPL" ]] || { echo "FAIL: narrative.yml.tmpl missing"; exit 1; }
+for token in "{{RELEASE_HEADLINE}}" "{{RELEASE_PROOF}}" "{{CTA_TEXT}}" "{{CTA_HREF}}"; do
+  grep -q "$token" "$NAR_TPL" \
+    || { echo "FAIL: narrative template missing '$token'"; exit 1; }
+done
+echo "PASS: Release Narrative documented + template present"
