@@ -45,3 +45,10 @@ grep -q "{{AUDITS_RAN}}" "$TMPL" \
 grep -q "{{HOTSPOTS_TABLE}}" "$TMPL" \
   || { echo "FAIL: template missing {{HOTSPOTS_TABLE}}"; exit 1; }
 echo "PASS: report + template present"
+
+echo "Test 5: SKILL.md documents errors + graceful degradation"
+grep -q "^## Errors$" "$SKILL_FILE" \
+  || { echo "FAIL: '## Errors' missing"; exit 1; }
+grep -q "^## Graceful Degradation$" "$SKILL_FILE" \
+  || { echo "FAIL: '## Graceful Degradation' missing"; exit 1; }
+echo "PASS: errors + degradation documented"

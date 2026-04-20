@@ -129,3 +129,33 @@ With `--write-report`: the same content goes to
 
 The header template lives at
 `skills/audit-all/templates/report-header.md.tmpl`.
+
+## Errors
+
+- **Unresolvable `ref`** → print the 5 nearest fuzzy matches (tags
+  + RMs + branch names from `git for-each-ref`) and exit 1 before
+  creating any files.
+- **Not a git repo** → abort with "run inside a git repository".
+- **No installed audit skills** → abort with
+  "audit-all requires at least one installed audit skill".
+- **Empty diff** → print "audit-all: no changes to review" and
+  exit 0.
+- **Unrecognized `--only` value** → abort, list valid values
+  (`security,money,tenant,cross-stack`).
+
+## Graceful Degradation
+
+`audit-all` adapts to what's actually installed:
+
+- If `depends_on` resolution (see `setup.sh _resolve_skill_dependencies`)
+  skipped a dependency because its SKILL.md is missing, that audit
+  is absent from the run. The summary line reports
+  `{N} of 4 audits ran; install {list} to enable the rest`.
+- If the parallel-dispatch mechanism is unavailable (non-Claude-Code
+  agents), execution falls back to sequential with a one-line
+  notice. Output shape is identical.
+- `--only=<list>` further narrows what runs even when more audits
+  are installed.
+
+v1 always exits 0 (guidance, not gate). A future RM can add
+`--fail-on=block` for CI.
