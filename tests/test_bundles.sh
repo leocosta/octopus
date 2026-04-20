@@ -65,9 +65,9 @@ OCTOPUS_MCP=()
 
 _load_bundle "starter"
 
-# starter contributes adr, feature-lifecycle, context-budget, implement, debugging
+# starter contributes adr, feature-lifecycle, context-budget, implement, debugging, receiving-code-review
 printf '%s\n' "${OCTOPUS_SKILLS[@]}" | sort > /tmp/got_skills.$$
-printf '%s\n' adr feature-lifecycle context-budget implement debugging | sort > /tmp/exp_skills.$$
+printf '%s\n' adr feature-lifecycle context-budget implement debugging receiving-code-review | sort > /tmp/exp_skills.$$
 diff -q /tmp/got_skills.$$ /tmp/exp_skills.$$ >/dev/null \
   || { echo "FAIL: starter did not populate skills correctly"; exit 1; }
 rm -f /tmp/got_skills.$$ /tmp/exp_skills.$$
@@ -95,7 +95,7 @@ OCTOPUS_BUNDLES=("starter" "quality-gates")
 
 expand_bundles
 
-expected_skills=(adr feature-lifecycle context-budget implement debugging audit-all security-scan money-review tenant-scope-audit cross-stack-contract)
+expected_skills=(adr feature-lifecycle context-budget implement debugging receiving-code-review audit-all security-scan money-review tenant-scope-audit cross-stack-contract)
 printf '%s\n' "${OCTOPUS_SKILLS[@]}" | sort -u > /tmp/got.$$
 printf '%s\n' "${expected_skills[@]}" | sort -u > /tmp/exp.$$
 diff -q /tmp/got.$$ /tmp/exp.$$ >/dev/null \
@@ -151,8 +151,8 @@ parse_octopus_yml "$TMPDIR/.octopus.yml"
 expand_bundles
 
 # 3 (starter) + 3 (quality-gates) = 6 distinct skills
-[[ ${#OCTOPUS_SKILLS[@]} -eq 10 ]] \
-  || { echo "FAIL: expected 10 skills after bundle expansion, got ${#OCTOPUS_SKILLS[@]}"; exit 1; }
+[[ ${#OCTOPUS_SKILLS[@]} -eq 11 ]] \
+  || { echo "FAIL: expected 11 skills after bundle expansion, got ${#OCTOPUS_SKILLS[@]}"; exit 1; }
 
 printf '%s\n' "${OCTOPUS_ROLES[@]}" | grep -q "^backend-specialist$" \
   || { echo "FAIL: backend-specialist role missing after expansion"; exit 1; }
