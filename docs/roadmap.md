@@ -83,12 +83,6 @@ Cluster 4 closes the gap by shipping an `implement` skill (RM-030),
 a `debugging` skill (RM-031), a `receiving-code-review` skill
 (RM-032), and a destructive-action guard hook (RM-033).
 
-- **RM-033** 🟢 Low — Destructive-action guard hook: PreToolUse
-  hook intercepting `rm -rf`, `git push --force`, `git reset --hard`,
-  `DROP TABLE`, `DELETE FROM` without `WHERE`; prompts for
-  confirmation with a reason. Activated via `.octopus.yml`
-  `destructiveGuard: true`; default-enabled when the
-  `quality-gates` bundle is active.
 - **RM-034** 🔴 High — Task routing inside the `implement` skill.
   At the start of every implementation task, classify the work
   (layer: backend / frontend / infra / data / config / refactor;
@@ -141,3 +135,4 @@ _No items in progress._
 | RM-030 | `implement` skill — universal workflow codified as an active-by-default skill (TDD, plan gate, verification, simplify, commit cadence) | completed → [Spec](specs/implement.md) | 2026-04-19 |
 | RM-031 | `debugging` skill — universal bug-fix workflow (reproduce, isolate, regression test, document) as an active-by-default skill in `starter` | completed → [Spec](specs/debugging.md) | 2026-04-19 |
 | RM-032 | `receiving-code-review` skill — universal PR-feedback discipline (verify, ask for evidence, separate reasoned/preference, never performative, clarify ambiguity) as an active-by-default skill in `starter` | completed → [Spec](specs/receiving-code-review.md) | 2026-04-19 |
+| RM-033 | Destructive-action guard hook — PreToolUse/Bash script blocking `rm -rf`, `git push --force`, `DROP TABLE`, `DELETE FROM` without `WHERE`, etc., with `# destructive-guard-ok: <reason>` bypass and `destructiveGuard: false` opt-out | completed → [Spec](specs/destructive-action-guard.md) | 2026-04-19 |

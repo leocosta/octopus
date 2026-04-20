@@ -90,5 +90,55 @@ PYEOF
 
 rm -rf "$TMPDIR"
 
+echo "Test: destructive-guard is injected by default"
+TMPDIR2=$(mktemp -d)
+mkdir -p "$TMPDIR2/.claude"
+echo '{"permissions": {}, "hooks": {}, "mcpServers": {}}' > "$TMPDIR2/.claude/settings.json"
+PROJECT_ROOT="$TMPDIR2"
+MANIFEST_CAP_HOOKS="true"
+MANIFEST_DELIVERY_HOOKS_METHOD="settings_json"
+MANIFEST_DELIVERY_HOOKS_TARGET=".claude/settings.json"
+unset OCTOPUS_DISABLED_HOOKS || true
+
+deliver_hooks "claude" >/dev/null
+
+grep -q '"id": "destructive-guard"' "$TMPDIR2/.claude/settings.json" \
+  || { echo "FAIL: destructive-guard missing from rendered settings"; exit 1; }
+echo "PASS: destructive-guard injected by default"
+rm -rf "$TMPDIR2"
+
+echo "Test: destructive-guard is filtered out when disabled"
+TMPDIR3=$(mktemp -d)
+mkdir -p "$TMPDIR3/.claude"
+echo '{"permissions": {}, "hooks": {}, "mcpServers": {}}' > "$TMPDIR3/.claude/settings.json"
+PROJECT_ROOT="$TMPDIR3"
+MANIFEST_CAP_HOOKS="true"
+MANIFEST_DELIVERY_HOOKS_METHOD="settings_json"
+MANIFEST_DELIVERY_HOOKS_TARGET=".claude/settings.json"
+export OCTOPUS_DISABLED_HOOKS="destructive-guard"
+
+deliver_hooks "claude" >/dev/null
+
+if grep -q '"id": "destructive-guard"' "$TMPDIR3/.claude/settings.json"; then
+  echo "FAIL: destructive-guard should have been filtered out"
+  exit 1
+fi
+echo "PASS: destructive-guard filtered via OCTOPUS_DISABLED_HOOKS"
+unset OCTOPUS_DISABLED_HOOKS
+rm -rf "$TMPDIR3"
+
+echo "Test: destructiveGuard manifest field parses to OCTOPUS_DESTRUCTIVE_GUARD"
+TMPDIR4=$(mktemp -d)
+cat > "$TMPDIR4/test.yml" <<'EOF'
+hooks: true
+destructiveGuard: false
+EOF
+OCTOPUS_DESTRUCTIVE_GUARD="true"
+parse_octopus_yml "$TMPDIR4/test.yml"
+[[ "$OCTOPUS_DESTRUCTIVE_GUARD" == "false" ]] \
+  || { echo "FAIL: expected OCTOPUS_DESTRUCTIVE_GUARD=false, got '$OCTOPUS_DESTRUCTIVE_GUARD'"; exit 1; }
+echo "PASS: destructiveGuard parsed"
+rm -rf "$TMPDIR4"
+
 echo ""
 echo "All hooks injection tests passed!"

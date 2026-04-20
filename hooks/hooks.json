@@ -31,6 +31,16 @@
       ]
     },
     {
+      "matcher": "Bash",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "octopus/hooks/pre-tool-use/destructive-guard.sh",
+          "id": "destructive-guard"
+        }
+      ]
+    },
+    {
       "matcher": "Write|Edit",
       "hooks": [
         {
