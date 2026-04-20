@@ -13,6 +13,7 @@ them natively, other assistants get them inlined into their output file.
 | `backend-patterns` | Backend architecture decision patterns for multi-stack projects (Node.js, .NET, Python). | `dotnet-api` / `node-api` | — |
 | `context-budget` | Audit and optimize AI-agent context-window usage to reduce token overhead and improve response quality. | `starter` | — |
 | `continuous-learning` | Captures insights, tests hypotheses, and promotes confirmed patterns to rules — a learning loop that makes the agent sharper over time. | `docs-discipline` | — |
+| `debugging` | Active-by-default bug-fix workflow — reproduce deterministically, isolate, fix with a regression test first, document non-obvious cause. Pair for `implement` in the `starter` bundle. | `starter` | [debugging.md](debugging.md) |
 | `cross-stack-contract` | Detect API-vs-frontend contract drift in multi-stack monorepos (endpoints, DTOs, enums, status codes, auth rules, params). Produces a severity-tiered report with confidence labels. | `cross-stack` | [cross-stack-contract.md](cross-stack-contract.md) |
 | `dotnet` | .NET backend architecture patterns, conventions, and decision trees for ASP.NET Core projects. | `dotnet-api` | — |
 | `e2e-testing` | End-to-end testing patterns with Playwright for reliable, maintainable browser tests. | `dotnet-api` / `node-api` | — |

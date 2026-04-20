@@ -83,11 +83,6 @@ Cluster 4 closes the gap by shipping an `implement` skill (RM-030),
 a `debugging` skill (RM-031), a `receiving-code-review` skill
 (RM-032), and a destructive-action guard hook (RM-033).
 
-- **RM-031** 🟡 Medium — `debugging` skill: systematic protocol for
-  bugs and test failures — reproduce deterministically → isolate via
-  bisect / hypothesis-test-refute → fix with regression test first →
-  capture non-obvious cause in commit message or ADR. Enters
-  `quality-gates` as companion to the audit skills.
 - **RM-032** 🟡 Medium — `receiving-code-review` skill: technical
   rigor when responding to PR feedback — verify critique against
   the code, ask for evidence on generic comments, separate
@@ -150,3 +145,4 @@ _No items in progress._
 | RM-021 | Fix pre-existing test failures | completed → [Spec](specs/test-triage.md) | 2026-04-18 |
 | RM-028 | `/octopus:audit-all` — parallel run of quality audits | completed → [Spec](specs/audit-all.md) | 2026-04-19 |
 | RM-030 | `implement` skill — universal workflow codified as an active-by-default skill (TDD, plan gate, verification, simplify, commit cadence) | completed → [Spec](specs/implement.md) | 2026-04-19 |
+| RM-031 | `debugging` skill — universal bug-fix workflow (reproduce, isolate, regression test, document) as an active-by-default skill in `starter` | completed → [Spec](specs/debugging.md) | 2026-04-19 |
