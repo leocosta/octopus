@@ -228,3 +228,9 @@ for step in "refs" "FBE" "narrative" "channel"; do
     || { echo "FAIL: pipeline step '$step' missing"; exit 1; }
 done
 echo "PASS: generation pipeline documented"
+
+echo "Test 19: release README template links narrative.yml"
+README_TPL="$TPL/readme.md.tmpl"
+grep -q "narrative.yml" "$README_TPL" \
+  || { echo "FAIL: readme.md.tmpl does not link narrative.yml"; exit 1; }
+echo "PASS: README template links narrative.yml"
