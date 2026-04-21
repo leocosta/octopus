@@ -9,8 +9,14 @@ Language: follow .octopus.yml → language.code (commits + PRs live
 under the `code` scope). Fall back to rules/common/language.md
 cascade when the manifest does not specify.
 
-Sections: What, Why, Test plan. Collapse the file list. Sign with
-the Octopus footer.
+Title: the agent supplies a human-friendly title with an emoji via
+`octopus pr-open --title "<emoji> <title>"`. Do NOT use the
+Conventional-Commits `type:` prefix — the emoji already conveys
+intent. See commands/pr-open.md for the emoji → type map.
+
+Sections (fixed order): What, Why, Test plan, References
+(conditional), and a collapsed Files-changed block. Sign with the
+Octopus footer.
 
 Hard rules:
 - Never dump git log as a bullet list.
@@ -18,19 +24,22 @@ Hard rules:
 - The signature line is fixed and always last.
 - Omit a section if there is nothing substantive to say, EXCEPT
   for "What" (always present).
+- Omit "References" entirely when no tracker ID or local spec/ADR
+  path was detected.
 - If no test plan applies, state the reason (e.g. "docs-only
   change, no tests").
+- Each section heading keeps its emoji: 📦 What, 💡 Why,
+  ✅ Test plan, 🔗 References, 📂 Files changed.
 -->
 
-## What
+## 📦 What
 
 <!--
 One short paragraph OR up to 3 bullet points describing the
-substantive change. Reference roadmap IDs (RM-NNN), specs, or ADRs
-when they exist. Do not dump commit messages.
+substantive change. Do not dump commit messages.
 -->
 
-## Why
+## 💡 Why
 
 <!--
 One paragraph on motivation: the problem, the constraint, or the
@@ -38,7 +47,7 @@ roadmap item this closes. Skip this section only when the change is
 truly self-evident (dependency bump, typo fix).
 -->
 
-## Test plan
+## ✅ Test plan
 
 <!--
 Concrete verification: which tests cover this, what the reviewer
@@ -46,8 +55,29 @@ should exercise manually (if anything), or why no test is needed
 (with a reason). Avoid boilerplate like "review the diff".
 -->
 
+## 🔗 References
+
+<!--
+Populate ONLY when at least one of these is detected in the
+branch name, commit messages, or diff. Omit the entire section
+otherwise.
+
+- Roadmap: IDs matching `RM-\d+` → link to
+  `docs/roadmap.md` (append `#<id>` when an entry exists).
+- Jira-like trackers: IDs matching `[A-Z]{2,}-\d+`. Ignore
+  obvious false positives (HTTP-200, ISO-8601, UTF-8, RFC-2119,
+  status codes, etc.) — cross-check against the surrounding text.
+- Notion / ad-hoc trackers: full URLs or `[tracker: value]`
+  markers present in commit messages.
+- Local specs/ADRs: paths under `docs/specs/*.md` or
+  `docs/adr/*.md` cited in commits.
+
+Format each reference as a bullet `- <label> — <inline link or
+path>`. Keep it tight; one line per reference.
+-->
+
 <details>
-<summary>Files changed (&lt;N&gt;)</summary>
+<summary>📂 Files changed (&lt;N&gt;)</summary>
 
 <!--
 Grouped by change type: added / modified / deleted. Keep paths

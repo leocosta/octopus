@@ -26,6 +26,7 @@ if [[ "$1" == "pr" && "$2" == "create" ]]; then
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --body-file) echo "BODY_FILE_RECEIVED=$2" >> "$STUB_LOG"; shift 2 ;;
+      --title)     echo "TITLE_RECEIVED=$2" >> "$STUB_LOG"; shift 2 ;;
       *) shift ;;
     esac
   done
@@ -85,3 +86,10 @@ grep -q "BODY_FILE_RECEIVED=$BODY" "$STUB_LOG" \
 grep -q "OCTOPUS_PR=" "$TMPDIR/out3.txt" \
   || { echo "FAIL: PR number line missing"; cat "$TMPDIR/out3.txt"; exit 1; }
 echo "PASS: gh pr create receives the body file"
+
+echo "Test 4: explicit --title is passed to gh pr create"
+: > "$STUB_LOG"
+PATH="$STUB_BIN:$PATH" "$CLI" pr-open --target main --body-file "$BODY" --title "🐛 Fix: stale release cache" > "$TMPDIR/out4.txt" 2>&1 || true
+grep -q 'TITLE_RECEIVED=🐛 Fix: stale release cache' "$STUB_LOG" \
+  || { echo "FAIL: gh pr create did not receive the explicit --title"; cat "$STUB_LOG"; exit 1; }
+echo "PASS: --title flag passes through to gh pr create"
