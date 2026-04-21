@@ -6,6 +6,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 echo "Test 1: SKILL.md exists with valid frontmatter"
 
 SKILL_FILE="$SCRIPT_DIR/skills/money-review/SKILL.md"
+SHARED_FILE="$SCRIPT_DIR/skills/_shared/audit-output-format.md"
+[[ -f "$SHARED_FILE" ]] || { echo "FAIL: shared audit-output-format.md missing"; exit 1; }
+
+# Check across SKILL.md + shared conventions file.
+grep_docs() { cat "$SKILL_FILE" "$SHARED_FILE" | grep -q "$@"; }
 [[ -f "$SKILL_FILE" ]] || { echo "FAIL: $SKILL_FILE not found"; exit 1; }
 head -n 5 "$SKILL_FILE" | grep -q "^name: money-review$" \
   || { echo "FAIL: frontmatter 'name: money-review' missing"; exit 1; }
@@ -26,7 +31,7 @@ echo "PASS: invocation documented"
 echo "Test 3: SKILL.md documents file discovery and overrides"
 grep -q "^## File Discovery$" "$SKILL_FILE" \
   || { echo "FAIL: '## File Discovery' missing"; exit 1; }
-grep -q "docs/money-review/patterns.md" "$SKILL_FILE" \
+grep_docs "docs/money-review/patterns.md\|docs/<skill-name>/patterns.md" \
   || { echo "FAIL: override path missing"; exit 1; }
 echo "PASS: file discovery documented"
 
@@ -55,10 +60,10 @@ grep -q "^## Output$" "$SKILL_FILE" \
   || { echo "FAIL: '## Output' missing"; exit 1; }
 grep -q "^## Errors$" "$SKILL_FILE" \
   || { echo "FAIL: '## Errors' missing"; exit 1; }
-grep -q "docs/reviews/" "$SKILL_FILE" \
+grep_docs "docs/reviews/" \
   || { echo "FAIL: report path missing"; exit 1; }
 for sev in "🚫 Block" "⚠ Warn" "ℹ Info"; do
-  grep -q -- "$sev" "$SKILL_FILE" || { echo "FAIL: severity '$sev' missing"; exit 1; }
+  grep_docs -- "$sev" || { echo "FAIL: severity '$sev' missing"; exit 1; }
 done
 echo "PASS: output + errors documented"
 
