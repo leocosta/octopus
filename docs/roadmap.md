@@ -83,14 +83,6 @@ Teams using Octopus today still need the external `superpowers`
 plugin for the spec-design → plan → execute loop. The three items
 below close that gap so the full workflow lives inside Octopus.
 
-- **RM-035** 🔴 High — `/octopus:doc-design` (brainstorming
-  equivalent). Conversational skill that takes a spec stub
-  (from `/octopus:doc-spec` or a roadmap item) and drives an
-  interactive design session — one question at a time,
-  trade-off exploration, approval gates — filling the spec's
-  Design / Implementation / Testing / Risks sections. Produces
-  the same artefact as today (`docs/specs/<slug>.md`) but with
-  substance.
 - **RM-036** 🟡 Medium — `/octopus:doc-plan` (writing-plans
   equivalent). Reads a completed spec and emits a bite-sized
   TDD-style implementation plan under `docs/plans/<slug>.md`
@@ -102,10 +94,10 @@ below close that gap so the full workflow lives inside Octopus.
   it to walk a checklist of tasks from `doc-plan`, with
   checkpoints for human review between tasks.
 
-Entry point: RM-035 first. RM-036 only lands after RM-035
-proves the conversational pattern. RM-037 is the smallest
-increment on top of an existing skill — likely last, once the
-plan-file contract is stable.
+Entry point: RM-035 shipped first (see Completed table).
+RM-036 lands once the conversational pattern has been
+dog-fooded; RM-037 is the smallest increment on top of
+`implement` and likely lands last.
 
 ---
 
@@ -148,3 +140,4 @@ _No items in progress._
 | RM-034 | Task routing — shared decision matrix embedded in `implement` / `debugging` / `receiving-code-review` via canonical fragment at `skills/_shared/task-routing.md`, with drift-prevention test | completed → [Spec](specs/task-routing.md) | 2026-04-20 |
 | RM-024 | Dedup shared preambles into `skills/_shared/audit-output-format.md` (3 audit skills referenced shared conventions) | completed → [Spec](specs/audit-output-format.md) | 2026-04-20 |
 | RM-023 | `/octopus:compress-skill` — per-skill compression pass with human-approved diff, deterministic cleanup + optional LLM rewrite, invariants on frontmatter/headings/code blocks/test anchors | completed → [Spec](specs/compress-skill.md) | 2026-04-20 |
+| RM-035 | `/octopus:doc-design` — interactive spec-design session filling Design, Implementation Plan, Testing, and adaptive (Non-Goals / Risks / Migration) sections via a one-question-at-a-time conversation; HARD-GATE against writing code; chained from `/octopus:doc-spec` | completed → [Spec](specs/doc-design-command.md) | 2026-04-21 |
