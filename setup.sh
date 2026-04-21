@@ -76,8 +76,8 @@ declare -a OCTOPUS_PERMISSIONS_ALLOW=()
 declare -a OCTOPUS_PERMISSIONS_DENY=()
 OCTOPUS_PERMISSIONS_MODE=""             # "explicit" | "defaults" | ""
 OCTOPUS_EFFORT_LEVEL=""                 # "low" | "medium" | "high" | "max"
-OCTOPUS_LANGUAGE_DOCS=""    # language for docs/commits/PRs (empty = auto-detect)
-OCTOPUS_LANGUAGE_CODE=""    # language for code comments (empty = auto-detect)
+OCTOPUS_LANGUAGE_DOCS=""    # language for specs/ADRs/RFCs/README (empty = auto-detect)
+OCTOPUS_LANGUAGE_CODE=""    # language for code comments, commit messages, PR descriptions (empty = auto-detect)
 OCTOPUS_LANGUAGE_UI=""      # language for UI/user-facing content (empty = auto-detect)
 
 # Boris tips — Claude Code settings.json passthroughs
