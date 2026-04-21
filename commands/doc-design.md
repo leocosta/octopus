@@ -192,7 +192,7 @@ Show → approve → write.
 
    Open a PR for review, then — once merged — generate the
    implementation plan with:
-     /octopus:doc-plan <slug>     (available once RM-036 ships)
+     /octopus:doc-plan <slug>
 
    Or create docs/plans/<slug>.md manually following the
    pattern in docs/superpowers/plans/.
