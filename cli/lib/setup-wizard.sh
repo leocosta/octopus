@@ -671,7 +671,7 @@ _wizard_sub_bundles() {
 }
 
 _wizard_sub_skills() {
-  local items=(adr audit-all backend-patterns compress-skill context-budget continuous-learning debugging cross-stack-contract dotnet e2e-testing feature-lifecycle feature-to-market implement money-review plan-backlog-hygiene receiving-code-review release-announce security-scan tenant-scope-audit)
+  local items=(adr audit-all backend-patterns compress-skill context-budget continuous-learning debugging doc-design cross-stack-contract dotnet e2e-testing feature-lifecycle feature-to-market implement money-review plan-backlog-hygiene receiving-code-review release-announce security-scan tenant-scope-audit)
   local defaults=("${WIZARD_SKILLS[@]}")
 
   _wizard_subheader "Skills" "Reusable AI capabilities exposed as slash commands."
@@ -683,6 +683,7 @@ _wizard_sub_skills() {
     "context-budget|monitor and trim the conversation context" \
     "continuous-learning|capture lessons learned per session" \
     "debugging|apply the Octopus bug-fix protocol — reproduce, isolate, regression test, document" \
+    "doc-design|drive an interactive spec-design session filling Design, Testing, and adaptive sections" \
     "cross-stack-contract|detect API-vs-frontend drift in monorepos" \
     "dotnet|.NET-specific build/test/format helpers" \
     "e2e-testing|scaffold end-to-end test suites" \
@@ -698,7 +699,7 @@ _wizard_sub_skills() {
 
   _multiselect \
     "Select skills" \
-    "adr · audit-all · backend-patterns · compress-skill · context-budget · continuous-learning · debugging · cross-stack-contract · dotnet · e2e-testing · feature-lifecycle · feature-to-market · implement · money-review · plan-backlog-hygiene · receiving-code-review · release-announce · security-scan · tenant-scope-audit" \
+    "adr · audit-all · backend-patterns · compress-skill · context-budget · continuous-learning · debugging · doc-design · cross-stack-contract · dotnet · e2e-testing · feature-lifecycle · feature-to-market · implement · money-review · plan-backlog-hygiene · receiving-code-review · release-announce · security-scan · tenant-scope-audit" \
     items defaults
 
   WIZARD_SKILLS=("${WIZARD_SELECTED[@]}")
