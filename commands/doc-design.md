@@ -34,13 +34,19 @@ committed to git; no implementation code is written.
 
 ## HARD-GATE
 
-**HARD-GATE:** this command does not write code, does not create
-branches, and does not dispatch any implementation skill. The
-terminal state is a committed spec in `docs/specs/<slug>.md`.
-Any request during the session that drifts into implementation
-(tests, code edits, branch creation) must be declined — redirect
-the user to `/octopus:doc-plan` (RM-036) or `/octopus:implement`
-once the spec is merged.
+**HARD-GATE:** this command does not write production code, does
+not write tests, does not create implementation branches, and
+does not dispatch any implementation skill. The terminal state
+is a committed spec in `docs/specs/<slug>.md`. Any request during
+the session that drifts into implementation (writing code,
+writing tests, creating a feature branch to code on) must be
+declined — redirect the user to `/octopus:doc-plan` (RM-036) or
+`/octopus:implement` once the spec is merged.
+
+**Docs-only branches are permitted** (and expected when the
+current branch is `main` or `master`). Step 8 creates
+`docs/<slug>-design` solely to carry the spec commit, so the
+change still lands via PR rather than directly on `main`.
 
 ## Instructions
 
@@ -152,10 +158,24 @@ Show → approve → write.
    - Contradictions between sections.
    - Vague wording ("handle edge cases", "add validation
      appropriately", "TBD"). Rewrite inline.
-2. Append to the `## Changelog`:
+2. Consolidate Metadata placeholders:
+   - If the `Author` field still contains `<!-- Your name -->`,
+     replace it with the output of `git config user.name`
+     (fall back to "Unknown" if unset).
+   - Leave other Metadata fields alone — they were set by
+     `doc-spec` or by the user.
+3. Append to the `## Changelog`:
    - `- **YYYY-MM-DD** — Design session completed`
      (replace `YYYY-MM-DD` with today's date).
-3. Commit the spec:
+4. Ensure a docs-only branch exists before committing:
+   ```bash
+   current_branch=$(git rev-parse --abbrev-ref HEAD)
+   if [[ "$current_branch" == "main" || "$current_branch" == "master" ]]; then
+     git checkout -b "docs/<slug>-design"
+   fi
+   ```
+   Never commit the spec directly onto `main` or `master`.
+5. Commit the spec:
    ```bash
    git add docs/specs/<slug>.md
    git commit -m "docs(specs): <slug> — design session
@@ -166,18 +186,20 @@ Show → approve → write.
 
    Co-authored-by: claude <claude@anthropic.com>"
    ```
-4. Print the final message:
+6. Print the final message:
    ```
-   Spec ready at docs/specs/<slug>.md.
+   Spec ready at docs/specs/<slug>.md (branch: docs/<slug>-design).
 
-   To generate the implementation plan, run:
+   Open a PR for review, then — once merged — generate the
+   implementation plan with:
      /octopus:doc-plan <slug>     (available once RM-036 ships)
 
    Or create docs/plans/<slug>.md manually following the
    pattern in docs/superpowers/plans/.
    ```
-5. **STOP.** Do not branch, do not implement, do not dispatch
-   another skill. See the HARD-GATE section above.
+7. **STOP.** Do not implement, do not dispatch another skill,
+   do not open the PR automatically. See the HARD-GATE section
+   above.
 
 ## Idempotency
 

@@ -287,7 +287,32 @@ protocol's generality.
   context or explicit `<slug>`, while `doc-research` owns RM
   generation. The handoff boundary is the spec stub.
 
+## Iteration 1 — dog-food fixes (2026-04-21)
+
+Running `/octopus:doc-design bundle-diff-preview` as the
+dog-food validation surfaced two protocol ambiguities fixed
+in this iteration:
+
+- **HARD-GATE vs Step 8 commit.** The original HARD-GATE said
+  "does not create branches"; Step 8 said "commit the spec".
+  On a clean `main` checkout those rules collide — the session
+  can neither branch (gate) nor commit to `main` (workflow).
+  Clarified: the HARD-GATE now forbids *implementation*
+  branches explicitly; docs-only branches (`docs/<slug>-design`)
+  are permitted. Step 8 now creates one automatically when the
+  current branch is `main` or `master`.
+- **Author placeholder.** The Metadata template ships with
+  `<!-- Your name -->`. Step 8 did not mention consolidating
+  it, so the dog-food run left the placeholder intact until a
+  manual edit. Step 8 now fills Author from `git config
+  user.name` whenever the placeholder is still present.
+
+Tests 9 and 10 in `tests/test_doc_design.sh` enforce both.
+
 ## Changelog
 
 - **2026-04-21** — Initial draft (design session with
   Leonardo Costa).
+- **2026-04-21** — Iteration 1: HARD-GATE clarified,
+  docs-only branch auto-created in Step 8, Author placeholder
+  consolidation documented.
