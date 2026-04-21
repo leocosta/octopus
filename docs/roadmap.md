@@ -77,6 +77,36 @@ Cluster 4 closes the gap by shipping an `implement` skill (RM-030),
 a `debugging` skill (RM-031), a `receiving-code-review` skill
 (RM-032), and a destructive-action guard hook (RM-033).
 
+### Cluster 5 — Superpowers parity (self-sufficient Octopus)
+
+Teams using Octopus today still need the external `superpowers`
+plugin for the spec-design → plan → execute loop. The three items
+below close that gap so the full workflow lives inside Octopus.
+
+- **RM-035** 🔴 High — `/octopus:doc-design` (brainstorming
+  equivalent). Conversational skill that takes a spec stub
+  (from `/octopus:doc-spec` or a roadmap item) and drives an
+  interactive design session — one question at a time,
+  trade-off exploration, approval gates — filling the spec's
+  Design / Implementation / Testing / Risks sections. Produces
+  the same artefact as today (`docs/specs/<slug>.md`) but with
+  substance.
+- **RM-036** 🟡 Medium — `/octopus:doc-plan` (writing-plans
+  equivalent). Reads a completed spec and emits a bite-sized
+  TDD-style implementation plan under `docs/plans/<slug>.md`
+  (or equivalent), with exact file paths, failing-test-first
+  steps, and commit cadence.
+- **RM-037** 🟡 Medium — extend `/octopus:implement` to
+  consume a plan file (executing-plans equivalent). Today the
+  skill codifies the TDD loop for a single task; this extends
+  it to walk a checklist of tasks from `doc-plan`, with
+  checkpoints for human review between tasks.
+
+Entry point: RM-035 first. RM-036 only lands after RM-035
+proves the conversational pattern. RM-037 is the smallest
+increment on top of an existing skill — likely last, once the
+plan-file contract is stable.
+
 ---
 
 ## In Progress
