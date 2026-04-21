@@ -75,8 +75,11 @@ echo "PASS: dev-flow start routed"
 # --- Test 3: pr-open outputs OCTOPUS_PR ---
 echo "Test 3: pr-open output"
 
-output=$("$SCRIPT_DIR/cli/octopus.sh" pr-open --target main 2>&1) || true
+BODY_FIXTURE="$(mktemp)"
+printf '## What\nfixture\n' > "$BODY_FIXTURE"
+output=$("$SCRIPT_DIR/cli/octopus.sh" pr-open --target main --body-file "$BODY_FIXTURE" 2>&1) || true
 echo "$output" | grep -q "OCTOPUS_PR=" || { echo "FAIL: pr-open should output OCTOPUS_PR"; exit 1; }
+rm -f "$BODY_FIXTURE"
 echo "PASS: pr-open outputs PR number"
 
 # --- Test 4: pr-review outputs diff ---

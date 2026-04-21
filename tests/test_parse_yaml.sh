@@ -296,5 +296,28 @@ parse_octopus_yml "$TMPDIR5/.octopus-kdir-default.yml"
 rm -rf "$TMPDIR5"
 echo "PASS: knowledge_dir YAML parsing"
 
+# --- Test: per-scope language.code and language.docs round-trip ---
+echo "Test: per-scope language.code and language.docs round-trip"
+
+OCTOPUS_LANGUAGE_DOCS=""
+OCTOPUS_LANGUAGE_CODE=""
+OCTOPUS_LANGUAGE_UI=""
+
+TMPDIR6=$(mktemp -d)
+cat > "$TMPDIR6/.octopus.yml" << 'EOF'
+agents:
+  - claude
+language:
+  code: en
+  docs: pt-br
+  ui: pt-br
+EOF
+parse_octopus_yml "$TMPDIR6/.octopus.yml"
+[[ "$OCTOPUS_LANGUAGE_CODE" == "en" ]] || { echo "FAIL: language.code expected 'en', got '$OCTOPUS_LANGUAGE_CODE'"; exit 1; }
+[[ "$OCTOPUS_LANGUAGE_DOCS" == "pt-br" ]] || { echo "FAIL: language.docs expected 'pt-br', got '$OCTOPUS_LANGUAGE_DOCS'"; exit 1; }
+[[ "$OCTOPUS_LANGUAGE_UI" == "pt-br" ]] || { echo "FAIL: language.ui expected 'pt-br', got '$OCTOPUS_LANGUAGE_UI'"; exit 1; }
+rm -rf "$TMPDIR6"
+echo "PASS: per-scope language parses"
+
 rm -rf "$TMPDIR"
 echo "PASS: all YAML parsing tests passed"

@@ -25,8 +25,8 @@ rules:
 #
 # Per-scope form:
 # language:
-#   docs: pt-br    # specs, ADRs, RFCs, commit messages, PR descriptions
-#   code: en       # identifiers (always en), code comments
+#   docs: pt-br    # specs, ADRs, RFCs, README
+#   code: en       # identifiers (always en), code comments, commit messages, PR descriptions
 #   ui: pt-br      # user-facing messages, UI text, app copy
 
 # Skills (symlinked to .claude/skills/)

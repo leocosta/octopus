@@ -768,10 +768,10 @@ _wizard_sub_language() {
   if _ask_yn "Configure language per-scope (docs/code/ui separately)?" "n"; then
     WIZARD_LANGUAGE_EXPANDED=1
     echo ""
-    _ask_text "Docs language (specs, ADRs, commits, PRs)" "$base"
+    _ask_text "Docs language (specs, ADRs, RFCs, README)" "$base"
     WIZARD_LANGUAGE_DOCS="$WIZARD_TEXT"
 
-    _ask_text "Code language (code comments; identifiers always en)" "en"
+    _ask_text "Code language (code comments, commit messages, PR descriptions; identifiers always en)" "en"
     WIZARD_LANGUAGE_CODE="$WIZARD_TEXT"
 
     _ask_text "UI language (user-facing messages, app copy)" "$base"
