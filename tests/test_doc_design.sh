@@ -25,7 +25,7 @@ echo "PASS: template + doc-spec references present"
 echo "Test 3: command documents the HARD-GATE"
 grep -q "HARD-GATE:" "$CMD_FILE" \
   || { echo "FAIL: 'HARD-GATE:' anchor missing"; exit 1; }
-grep -qE "do not write code|never writes (production )?code|does not write code" "$CMD_FILE" \
+grep -qE "do not write (production )?code|never writes (production )?code|does not write (production )?code" "$CMD_FILE" \
   || { echo "FAIL: explicit 'do not write code' prohibition missing"; exit 1; }
 echo "PASS: HARD-GATE documented"
 
@@ -61,3 +61,17 @@ grep -q "/octopus:doc-design" "$SPEC_CMD_FILE" \
 grep -qE "design session|continue into|start design" "$SPEC_CMD_FILE" \
   || { echo "FAIL: doc-spec missing the design-session chain prompt"; exit 1; }
 echo "PASS: doc-spec chains into doc-design"
+
+echo "Test 9: HARD-GATE allows docs-only branches and Step 8 creates one"
+grep -q "Docs-only branches are permitted" "$CMD_FILE" \
+  || { echo "FAIL: HARD-GATE should explicitly permit docs-only branches"; exit 1; }
+grep -q "docs/<slug>-design" "$CMD_FILE" \
+  || { echo "FAIL: Step 8 should reference docs/<slug>-design branch"; exit 1; }
+grep -q "Never commit the spec directly onto" "$CMD_FILE" \
+  || { echo "FAIL: Step 8 should forbid committing directly to main/master"; exit 1; }
+echo "PASS: docs-only branch flow documented"
+
+echo "Test 10: Step 8 consolidates Author placeholder"
+grep -qE "Author.*placeholder|git config user\.name" "$CMD_FILE" \
+  || { echo "FAIL: Step 8 should fill Author from git config when still a placeholder"; exit 1; }
+echo "PASS: Author placeholder consolidation documented"
