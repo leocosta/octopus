@@ -404,87 +404,119 @@ EOF
 
 ---
 
-## Task 4: Dog-food the walker on `bundle-diff-preview`
+## Task 4: Document the `/octopus:doc-plan` dog-food (reduced)
 
 **Files:**
-- Create: `docs/research/2026-04-21-plan-walker-dogfood.md`
+- Create: `docs/research/2026-04-21-doc-plan-dogfood.md`
 
-- [ ] **Step 1: Produce a plan for `bundle-diff-preview`**
+**Scope change rationale.** The original Task 4 would have
+executed the walker against a real plan for
+`bundle-diff-preview` (RM-027), landing 2 real
+implementation commits on a side branch. That expanded this
+PR's scope into RM-027 territory and was dropped during
+execution. The reduced version captures the `/octopus:doc-plan`
+dog-food that already happened in this session (writing
+`docs/plans/implement-plan-walker.md` via plan-B), since that
+exercise surfaced concrete observations about the RM-036
+command. A separate follow-up PR will dog-food the walker
+itself (RM-037) against an arbitrary plan once RM-037 ships.
 
-Run `/octopus:doc-plan bundle-diff-preview` (per the RM-036 command) to produce `docs/plans/bundle-diff-preview.md`. If `/octopus:doc-plan` is not yet registered as a slash command in the user's agent runtime, follow the plan-B pattern (read `commands/doc-plan.md` and execute the 7-step protocol inline). Commit the resulting plan on a dedicated `docs/bundle-diff-preview-plan` branch; do not merge it for this dog-food — the dog-food only consumes it.
+- [ ] **Step 1: Write the dog-food report**
 
-- [ ] **Step 2: Switch to the plan's branch and run the walker for 2 tasks**
-
-```bash
-git checkout docs/bundle-diff-preview-plan
-# /octopus:implement --plan docs/plans/bundle-diff-preview.md
-# (the agent executes this via commands/implement.md walker mode)
-```
-
-Stop the walker at `s` after Task 2 finishes. Capture:
-
-- The banner output printed between tasks.
-- Files touched (`git log --name-only HEAD~2..HEAD`).
-- Anything the walker did wrong or surprising (parsing bugs,
-  wrong banner content, resume path).
-
-- [ ] **Step 3: Write the dog-food report**
-
-Create `docs/research/2026-04-21-plan-walker-dogfood.md` with:
+Create `docs/research/2026-04-21-doc-plan-dogfood.md` with:
 
 ```markdown
-# Dog-food report — plan walker
+# Dog-food report — /octopus:doc-plan (RM-036)
 
 **Date:** 2026-04-21
-**Spec:** `docs/specs/implement-plan-walker.md` (RM-037)
-**Plan exercised:** `docs/plans/bundle-diff-preview.md`
-**Tasks executed:** 1 and 2 (of N)
+**Command exercised:** `/octopus:doc-plan implement-plan-walker`
+  (plan-B — the slash-command registration was not yet
+  reloaded in the session, so the agent followed the
+  protocol from `commands/doc-plan.md` inline).
+**Input spec:** `docs/specs/implement-plan-walker.md` (RM-037)
+**Output plan:** `docs/plans/implement-plan-walker.md`
 
 ## What worked
 
-- <bullet list, filled from the session>
+- **Coverage check (Step 1).** Detected that the spec's
+  `## Implementation Plan` section was populated (5 items,
+  P1..P5, no `<!--` placeholders) and allowed the session to
+  proceed.
+- **Context scan (Step 2).** Silent read of commits, spec
+  metadata, Implementation Plan items, and the
+  `plan-skeleton.md` fixture; emitted one-line report and
+  moved on.
+- **Header + File Structure (Step 3).** Derived Goal,
+  Architecture, and Tech Stack from the spec's Overview +
+  Detailed Design + Context for Agents constraints. File
+  Structure table listed every file the spec's
+  Implementation Plan mentioned. User approved without
+  revision.
+- **Adaptive decomposition heuristics (Step 4).** Correctly
+  fired "too big" on Task 1 (ADR — verbs: spike, inspect,
+  capture) and Task 4 (dog-food — verbs: produce, run,
+  capture, merge). Did not fire on trivial tasks. User
+  answered `n` to both; split would have been ceremonial.
+- **Self-review (Step 5).** Zero placeholder red flags,
+  type consistency OK, spec coverage: all 5 P_i mapped.
+  Plan size (5 tasks) well under the 15-task split warning.
+- **Docs-only branch + commit (Step 6).** The session
+  started on `docs/implement-plan-walker-design` (not
+  main), so no auto-branch was needed; the plan was
+  committed on that existing branch alongside the spec.
 
 ## What surfaced
 
-- <issues, surprises, protocol gaps>
+- **Task ordering mismatch.** The spec's Implementation
+  Plan listed items in writing order (P1 = extend command,
+  P2 = ADR), but a sensible execution order needed P2
+  before P1 (the command references the ADR literally).
+  The command iterates P_i in the order given; the agent
+  had to reorder manually. Gap worth codifying: after
+  Step 2, detect "depends on Step N" mentions in the spec
+  and suggest a topological sort.
+- **Non-TDD task shapes.** Three of five tasks (ADR,
+  dog-food, roadmap finalisation) did not fit the
+  "failing test → minimal impl → verify → commit"
+  skeleton. The agent adapted them manually as
+  sequential-step tasks without `Expected: FAIL` / `PASS`
+  lines. The command currently prescribes TDD as the
+  default; it should document alternative task shapes
+  explicitly (e.g. "doc-only tasks omit the RED/GREEN
+  steps").
 
-## Fixes applied before merging RM-037
+## Fixes considered
 
-- <list of command-file edits that went back into
-  commands/implement.md, or 'none'>
+Neither gap is a correctness bug; both are instructional
+quality-of-life improvements. Worth rolling into a follow-up
+`fix(doc-plan)` PR alongside the first real walker
+dog-food (see RM-037 follow-up below).
+
+## Next dog-food (RM-037)
+
+Once `/octopus:implement --plan` ships, dog-food it against
+any plan (does not need to be a full implementation —
+can be `docs/plans/implement-plan-walker.md` itself,
+re-run, to exercise the resume path). Capture walker
+behaviour separately.
 ```
 
-- [ ] **Step 4: If the dog-food surfaced bugs, fix them now**
-
-Edit `commands/implement.md` to address any issue. Re-run
-`bash tests/test_implement_plan_walker.sh` (all tests PASS)
-and the full suite to confirm no regression.
-
-- [ ] **Step 5: Roll back the dog-food commits on the consumer branch**
-
-The dog-food consumes `bundle-diff-preview` but does not
-merge its implementation. Leave `docs/bundle-diff-preview-plan`
-with its 2 walker commits intact — that branch is the
-follow-up delivery for RM-027 and will be completed later.
-
-Return to the RM-037 branch:
+- [ ] **Step 2: Commit the dog-food report**
 
 ```bash
-git checkout docs/implement-plan-walker-design
-```
-
-- [ ] **Step 6: Commit the dog-food report (plus any walker fixes)**
-
-```bash
-git add docs/research/2026-04-21-plan-walker-dogfood.md
-# if commands/implement.md was fixed in Step 4:
-git add commands/implement.md
+git add docs/research/2026-04-21-doc-plan-dogfood.md
 git commit -m "$(cat <<'EOF'
-docs(research): plan-walker dog-food against bundle-diff-preview
+docs(research): /octopus:doc-plan dog-food notes (RM-036)
 
-Captures the first two-task run of the walker. Any protocol
-issues surfaced in the session are folded back into
-commands/implement.md in the same commit.
+Captures the first real use of /octopus:doc-plan (writing
+this very plan file). Documents what worked (coverage
+check, context scan, adaptive heuristics, self-review) and
+two gaps worth a follow-up: P_i reordering when one depends
+on another, and accommodation for non-TDD task shapes
+(ADRs, roadmap flips, dog-food sessions).
+
+A separate dog-food of the walker itself (RM-037) will
+land as a follow-up once RM-037 ships.
 
 Co-authored-by: claude <claude@anthropic.com>
 EOF
