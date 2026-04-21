@@ -76,6 +76,12 @@ patterns = [
         f'git add octopus && git commit -m "chore: update octopus to {version}"',
         'git add octopus && git commit -m "chore: update octopus to ',
     ),
+    (
+        "install --version example",
+        r'--version v\d+\.\d+\.\d+',
+        f'--version {version}',
+        '--version v',
+    ),
 ]
 
 errors = []

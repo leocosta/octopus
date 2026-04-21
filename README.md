@@ -30,7 +30,7 @@ irm https://github.com/leocosta/octopus/releases/latest/download/install.ps1 | i
 
 To install a specific version:
 ```bash
-curl -fsSL https://github.com/leocosta/octopus/releases/latest/download/install.sh | bash -s -- --version v0.15.0
+curl -fsSL https://github.com/leocosta/octopus/releases/latest/download/install.sh | bash -s -- --version v1.16.0
 ```
 
 After installation, verify with `octopus doctor`.

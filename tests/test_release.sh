@@ -111,6 +111,7 @@ cat > "$SYNC_REPO/README.md" << 'EOF'
 cd octopus && git fetch --tags && git checkout v2.1.0 && cd ..
 ./octopus/setup.sh
 git add octopus && git commit -m "chore: update octopus to v2.1.0"
+curl -fsSL https://example.com/install.sh | bash -s -- --version v2.1.0
 ```
 EOF
 cat > "$SYNC_REPO/CHANGELOG.md" << 'EOF'
@@ -128,6 +129,7 @@ cd "$SYNC_REPO"
 grep -q 'version-v2.2.0-blue' README.md || { echo "FAIL: README badge should be updated"; cat README.md; exit 1; }
 grep -q 'git checkout v2.2.0' README.md || { echo "FAIL: README checkout example should be updated"; cat README.md; exit 1; }
 grep -q 'chore: update octopus to v2.2.0' README.md || { echo "FAIL: README commit example should be updated"; cat README.md; exit 1; }
+grep -q -- '--version v2.2.0' README.md || { echo "FAIL: README install --version example should be updated"; cat README.md; exit 1; }
 last_files=$(git show --name-only --format= HEAD)
 echo "$last_files" | grep -q '^CHANGELOG.md$' || { echo "FAIL: release commit should include CHANGELOG.md"; echo "$last_files"; exit 1; }
 echo "$last_files" | grep -q '^README.md$' || { echo "FAIL: release commit should include README.md"; echo "$last_files"; exit 1; }
