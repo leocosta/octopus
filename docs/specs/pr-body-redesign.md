@@ -1,6 +1,6 @@
 # Spec: PR body redesign — agent-driven narrative + language scope fix
 
-**Status:** Draft
+**Status:** Implemented (2026-04-20)
 **Date:** 2026-04-20
 **Related:** `commands/pr-open.md`, `cli/lib/pr-open.sh`,
 `cli/pr-body-default.md`, `.octopus.example.yml`,
