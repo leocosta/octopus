@@ -1,16 +1,21 @@
 # pr-open.sh — Open a PR following project conventions
-# Usage: octopus.sh pr-open --target <branch> --body-file <path>
+# Usage: octopus.sh pr-open --target <branch> --body-file <path> [--title <string>]
 #
 # The PR body is written by the agent via /octopus:pr-open (see
 # commands/pr-open.md and cli/pr-body-default.md). This script does
 # not generate body text; it only pushes the branch and calls gh.
+# The --title flag lets the agent supply a human-friendly title
+# with an emoji; when absent, the title is derived from the branch
+# name as before.
 
 TARGET=""
 BODY_FILE=""
+PR_TITLE_ARG=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --target)    TARGET="$2"; shift 2 ;;
     --body-file) BODY_FILE="$2"; shift 2 ;;
+    --title)     PR_TITLE_ARG="$2"; shift 2 ;;
     *) echo "Unknown option: $1"; exit 1 ;;
   esac
 done
@@ -41,9 +46,13 @@ fi
 
 git push -u origin "$CURRENT_BRANCH"
 
-PR_TYPE=$(echo "$CURRENT_BRANCH" | cut -d/ -f1)
-PR_DESC=$(echo "$CURRENT_BRANCH" | cut -d/ -f2- | tr '-' ' ')
-PR_TITLE="${PR_TYPE}: ${PR_DESC}"
+if [[ -n "$PR_TITLE_ARG" ]]; then
+  PR_TITLE="$PR_TITLE_ARG"
+else
+  PR_TYPE=$(echo "$CURRENT_BRANCH" | cut -d/ -f1)
+  PR_DESC=$(echo "$CURRENT_BRANCH" | cut -d/ -f2- | tr '-' ' ')
+  PR_TITLE="${PR_TYPE}: ${PR_DESC}"
+fi
 
 gh pr create --base "$TARGET" --title "$PR_TITLE" --body-file "$BODY_FILE"
 

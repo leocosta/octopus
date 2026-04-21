@@ -191,6 +191,32 @@ human self-review in dev-flow Step 3.
   not reproducibility, and the self-review step shows the result
   before it ships.
 
+## Iteration 1 — section emojis, References, agent-written title (2026-04-20)
+
+After the first PR shipped (#61), three polish items landed in a
+follow-up:
+
+- **Section emojis.** Each heading in the body carries an emoji for
+  scanability: `📦 What`, `💡 Why`, `✅ Test plan`,
+  `🔗 References`, `📂 Files changed`. The template codifies these;
+  the command's hard rules forbid dropping them.
+- **References section.** When the branch name, commits, or diff
+  mention a roadmap ID (`RM-\d+`), Jira-style tracker
+  (`[A-Z]{2,}-\d+` with a false-positive deny-list for HTTP codes,
+  ISO standards, etc.), a Notion / GitHub URL, or a local spec/ADR
+  path, the agent surfaces them in a `🔗 References` section.
+  Omitted entirely when nothing is detected.
+- **Agent-written title.** `cli/lib/pr-open.sh` accepts
+  `--title <string>`; when absent it falls back to the
+  branch-derived title (`feat: foo bar`) for backwards
+  compatibility. The command tells the agent to write a
+  human-friendly title prefixed with an emoji
+  (`🐛 Fix: …`, `✨ Feat: …`, …) — no Conventional-Commits prefix,
+  because the emoji conveys the type.
+
+Test coverage: `tests/test_pr_open.sh` Test 4 asserts the `--title`
+flag round-trips into `gh pr create`.
+
 ## Out of scope
 
 - Machine-checking that PRs contain the signature (possible
