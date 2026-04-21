@@ -6,6 +6,7 @@ persona_default: false
 skills:
   - plan-backlog-hygiene
   - continuous-learning
+  - compress-skill
 roles:
   - tech-writer
 rules: []
