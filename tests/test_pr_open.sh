@@ -61,3 +61,12 @@ set -e
 [[ $code -ne 0 ]] || { echo "FAIL: expected non-zero exit"; cat "$TMPDIR/out1.txt"; exit 1; }
 grep -q "body-file" "$TMPDIR/out1.txt" || { echo "FAIL: error message should mention --body-file"; cat "$TMPDIR/out1.txt"; exit 1; }
 echo "PASS: pr-open requires --body-file"
+
+echo "Test 2: pr-open with nonexistent --body-file aborts"
+set +e
+PATH="$STUB_BIN:$PATH" "$CLI" pr-open --target main --body-file "$TMPDIR/missing.md" > "$TMPDIR/out2.txt" 2>&1
+code=$?
+set -e
+[[ $code -ne 0 ]] || { echo "FAIL: expected non-zero exit"; cat "$TMPDIR/out2.txt"; exit 1; }
+grep -q "Body file not found" "$TMPDIR/out2.txt" || { echo "FAIL: error should mention 'Body file not found'"; cat "$TMPDIR/out2.txt"; exit 1; }
+echo "PASS: pr-open rejects missing body file"
