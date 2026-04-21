@@ -46,4 +46,26 @@ resolved="$(grep -o '"version"[[:space:]]*:[[:space:]]*"[^"]*"' "$HOME/.octopus-
 unset OCTOPUS_API_ENDPOINT
 rm -rf "$MOCK_SERVER_DIR"
 
+echo "Test 5: update without flags prefers latest remote over installed metadata"
+LOCAL_TAG="$(git -C "$SCRIPT_DIR" describe --tags --abbrev=0 2>/dev/null)"
+if [[ -z "$LOCAL_TAG" ]]; then
+  echo "SKIP: no local git tag; cannot exercise update without flags"
+else
+  rm -f "$LOCKFILE"
+  mkdir -p "$HOME/.octopus-cli"
+  cat > "$HOME/.octopus-cli/metadata.json" <<EOF
+{"version":"v0.0.1","checksum":"","installed_at":"","release_path":""}
+EOF
+  MOCK_DIR="$(mktemp -d)"
+  echo "{\"tag_name\":\"$LOCAL_TAG\"}" > "$MOCK_DIR/latest"
+  export OCTOPUS_API_ENDPOINT="file://$MOCK_DIR/latest"
+  $CLI update >/dev/null 2>&1 || true
+  resolved="$(grep -o '"version"[[:space:]]*:[[:space:]]*"[^"]*"' "$HOME/.octopus-cli/metadata.json" | sed -E 's/.*"([^"]+)"$/\1/')"
+  [[ "$resolved" == "$LOCAL_TAG" ]] \
+    || { echo "FAIL: update should prefer latest ($LOCAL_TAG), got '$resolved'"; exit 1; }
+  unset OCTOPUS_API_ENDPOINT
+  rm -rf "$MOCK_DIR"
+  echo "PASS: update without flags prefers latest"
+fi
+
 echo "PASS: global CLI sanity checks"
