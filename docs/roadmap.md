@@ -83,14 +83,10 @@ Teams using Octopus today still need the external `superpowers`
 plugin for the spec-design → plan → execute loop. The three items
 below close that gap so the full workflow lives inside Octopus.
 
-- **RM-037** 🟡 Medium — extend `/octopus:implement` to
-  consume a plan file (executing-plans equivalent). Today the
-  skill codifies the TDD loop for a single task; this extends
-  it to walk a checklist of tasks from `doc-plan`, with
-  checkpoints for human review between tasks.
-
-Entry point: RM-035 shipped first, then RM-036. RM-037 is
-the smallest increment on top of `implement` and lands last.
+Cluster 5 is complete. All three legs of the
+design → plan → execute loop ship inside Octopus: RM-035
+(`/octopus:doc-design`), RM-036 (`/octopus:doc-plan`), and
+RM-037 (`/octopus:implement --plan`).
 
 ---
 
@@ -135,3 +131,4 @@ _No items in progress._
 | RM-023 | `/octopus:compress-skill` — per-skill compression pass with human-approved diff, deterministic cleanup + optional LLM rewrite, invariants on frontmatter/headings/code blocks/test anchors | completed → [Spec](specs/compress-skill.md) | 2026-04-20 |
 | RM-035 | `/octopus:doc-design` — interactive spec-design session filling Design, Implementation Plan, Testing, and adaptive (Non-Goals / Risks / Migration) sections via a one-question-at-a-time conversation; HARD-GATE against writing code; chained from `/octopus:doc-spec` | completed → [Spec](specs/doc-design-command.md) | 2026-04-21 |
 | RM-036 | `/octopus:doc-plan` — reads a completed spec and writes `docs/plans/<slug>.md` (bite-sized, TDD-style, matches superpowers:writing-plans vocabulary); adaptive "too big / too small" task decomposition; HARD-GATE against writing code; docs-only branch auto-created when starting from main | completed → [Spec](specs/doc-plan-command.md) | 2026-04-21 |
+| RM-037 | `/octopus:implement` gains a `--plan` walker mode that executes a plan file task-by-task, dispatching the existing single-task TDD loop per task, pausing for human review between tasks, flipping checkboxes in place for resume, and closing Cluster 5 | completed → [Spec](specs/implement-plan-walker.md) | 2026-04-21 |
