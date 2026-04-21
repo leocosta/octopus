@@ -26,14 +26,12 @@ on any billing PR.
 /octopus:money-review [ref] [--base=main] [--write-report] [--only=<families>]
 ```
 
-**Arguments / options:**
+Flags `ref`, `--base`, `--only`, `--write-report` follow the shared
+convention — see [`skills/_shared/audit-output-format.md`](../_shared/audit-output-format.md).
 
-- `ref` (optional) — PR (`#123`/URL), branch name, or commit SHA.
-  Default: current HEAD vs its upstream.
-- `--base=<branch>` — base for the diff. Default: `main`.
-- `--write-report` — also save `docs/reviews/YYYY-MM-DD-money-<slug>.md`.
-- `--only=<list>` — comma-separated subset of inspection families:
-  `types,rounding,tests,env,idempotency,webhook,disclosure`. Default: all.
+Valid `--only` families:
+`types,rounding,tests,env,idempotency,webhook,disclosure`.
+Report prefix: `money`.
 
 ## File Discovery
 
@@ -49,13 +47,9 @@ A file is "money-touched" if any of the following match in the diff of
    - `\bdecimal\b` in `*.cs` files near `cents|centavos|amount|valor`
    - `asaas|stripe|mercadopago`
    - `webhook` combined with `signature|hmac|signing`
-3. **Repo overrides** — the file cascade applies (first match wins):
-   - `docs/money-review/patterns.md` (canonical)
-   - `docs/MONEY_REVIEW_PATTERNS.md` (uppercase compat)
-   - `skills/money-review/templates/patterns.md` (embedded default)
-
-   The repo override **appends** tokens/patterns; it does not replace the
-   defaults. Same rule for `providers.md`.
+3. **Repo overrides** — override cascade for `patterns.md` and
+   `providers.md` follows the shared convention (see
+   [`_shared/audit-output-format.md`](../_shared/audit-output-format.md)).
 
 A separate "spec set" is collected: any `docs/specs/*.md`,
 `docs/research/*.md`, or `docs/roadmap.md` section touched by the same
@@ -179,55 +173,25 @@ Severity: ⚠ Warn.
 
 ## Output
 
-**Default (chat):** one markdown block with three headings, each listing
-findings for that severity with the format
-`Tn **family**: <description> [file:line]`.
+Severity headings, trailer, and `--write-report` frontmatter follow
+the shared format — see
+[`_shared/audit-output-format.md`](../_shared/audit-output-format.md).
+Skill-specific notes:
 
-```
-## 🚫 Block (N)
-- T4 **env**: `ASAAS_SPLIT_PERCENT_BOLETO` added to `api/.env.sandbox`
-  but missing in `api/.env`. `api/.env.sandbox:42`
-
-## ⚠ Warn (N)
-- T1 **types**: `double Fee` — prefer `decimal`.
-  `api/src/.../FeeCalculator.cs:17`
-
-## ℹ Info (N)
-- T3 **tests**: no test file touched for
-  `api/src/.../SplitCalculator.cs`.
-```
-
-Always end with: `money-review: N block, N warn, N info`.
-
-**With `--write-report`:** same content written to
-`docs/reviews/YYYY-MM-DD-money-<slug>.md` with a frontmatter block:
-
-```yaml
----
-ref: feat/billing-v2
-base: main
-generated_by: octopus:money-review
-generated_at: 2026-04-19
-summary: "0 block, 3 warn, 1 info"
----
-```
-
-The slug is derived from the branch name or PR number: lowercase ASCII,
-non-alphanumeric runs collapsed to `-`, max 40 chars.
+- Finding ID prefix: `T1`–`T7`.
+- Trailer: `money-review: N block, N warn, N info`.
+- Report path: `docs/reviews/YYYY-MM-DD-money-<slug>.md`.
 
 ## Errors
 
-- **Not in a git repo** → abort.
-- **Base branch not found** → abort with "run `git fetch` or pass
-  `--base=<branch>`".
-- **No money-touched files** → print "no money-related changes detected"
-  and exit 0 with `money-review: 0 block, 0 warn, 0 info`.
-- **Override file malformed** → print a warning, ignore the override,
-  continue with defaults.
-- **Unrecognized `--only` family** → abort, list valid families.
+Shared errors (not in git repo, base branch missing, no relevant
+files, malformed override, unrecognized `--only`) behave per the
+shared convention. Skill-specific wording:
+
+- **No money-touched files** → `no money-related changes detected`.
 
 ## Composition
 
-- Run `security-scan` first (secrets/injection) and `money-review` after
-  (money-logic). Both findings together form the pre-merge safety net.
-- Output is plain markdown designed to paste into a PR comment as-is.
+Run `security-scan` first (secrets/injection), then `money-review`
+(money-logic). Both form the pre-merge safety net; output is plain
+markdown designed to paste into a PR comment as-is.

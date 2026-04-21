@@ -31,12 +31,6 @@ roadmap-first when the idea still needs shaping.
   (paths / keywords / tools). Agents that concatenate (Copilot, Codex,
   Gemini, OpenCode) replace non-matching skills with a 3-line stub.
   Estimate: −40% to −70% of the output file.
-- **RM-023** 🟡 Medium — `/octopus:compress-skill` — compression pass
-  per skill with a human-approved diff. Estimate: −25% per skill.
-- **RM-024** 🟢 Low — Dedup shared preambles into
-  `skills/_shared/audit-output-format.md` (4 audit skills repeat ~60
-  lines of preamble each).
-
 ### Cluster 2 — Reduce LLM calls
 
 - **RM-025** 🔴 High — Pre-LLM deterministic pass: audit skills run
@@ -122,3 +116,5 @@ _No items in progress._
 | RM-032 | `receiving-code-review` skill — universal PR-feedback discipline (verify, ask for evidence, separate reasoned/preference, never performative, clarify ambiguity) as an active-by-default skill in `starter` | completed → [Spec](specs/receiving-code-review.md) | 2026-04-19 |
 | RM-033 | Destructive-action guard hook — PreToolUse/Bash script blocking `rm -rf`, `git push --force`, `DROP TABLE`, `DELETE FROM` without `WHERE`, etc., with `# destructive-guard-ok: <reason>` bypass and `destructiveGuard: false` opt-out | completed → [Spec](specs/destructive-action-guard.md) | 2026-04-19 |
 | RM-034 | Task routing — shared decision matrix embedded in `implement` / `debugging` / `receiving-code-review` via canonical fragment at `skills/_shared/task-routing.md`, with drift-prevention test | completed → [Spec](specs/task-routing.md) | 2026-04-20 |
+| RM-024 | Dedup shared preambles into `skills/_shared/audit-output-format.md` (3 audit skills referenced shared conventions) | completed → [Spec](specs/audit-output-format.md) | 2026-04-20 |
+| RM-023 | `/octopus:compress-skill` — per-skill compression pass with human-approved diff, deterministic cleanup + optional LLM rewrite, invariants on frontmatter/headings/code blocks/test anchors | completed → [Spec](specs/compress-skill.md) | 2026-04-20 |

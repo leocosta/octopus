@@ -32,17 +32,17 @@ compatible so reports can be concatenated in a single PR comment.
 /octopus:cross-stack-contract [ref] [--base=main] [--stacks=<list>] [--only=<checks>] [--write-report]
 ```
 
-**Arguments / options:**
+Flags `ref`, `--base`, `--only`, `--write-report` follow the shared
+convention — see [`_shared/audit-output-format.md`](../_shared/audit-output-format.md).
 
-- `ref` (optional) — PR (`#123`/URL), branch name, or commit SHA.
-  Default: current HEAD vs its upstream.
-- `--base=<branch>` — base for the diff. Default: `main`.
+Skill-specific flag:
+
 - `--stacks=<list>` — comma-separated subset of stacks (`api`, `app`,
   `lp`, or custom names from `.octopus.yml`). Default: all detected.
-- `--only=<list>` — comma-separated subset of checks:
-  `endpoint-added,endpoint-removed,dto,enum,status,auth,params`.
-- `--write-report` — also save
-  `docs/reviews/YYYY-MM-DD-contract-<slug>.md`.
+
+Valid `--only` checks:
+`endpoint-added,endpoint-removed,dto,enum,status,auth,params`.
+Report prefix: `contract`.
 
 ## Stack Discovery
 
@@ -74,13 +74,8 @@ Resolve stack roots in this order:
 3. **Unresolvable role** — warn and skip. If fewer than two stacks
    resolve, the skill aborts (nothing to compare).
 
-Override patterns live at:
-
-- `docs/cross-stack-contract/patterns.md` (canonical)
-- `docs/CROSS_STACK_CONTRACT_PATTERNS.md` (uppercase compat)
-- `skills/cross-stack-contract/templates/patterns.md` (embedded default)
-
-Override files **append** to the defaults.
+Override cascade for `patterns.md` follows the shared convention
+(see [`_shared/audit-output-format.md`](../_shared/audit-output-format.md)).
 
 ## Inspection Checks
 
@@ -189,62 +184,34 @@ Severity: ⚠ Warn.
 
 ## Output
 
-**Default (chat):** one markdown block with three severity headings,
-each finding formatted as
-`Cn **check** (confidence): <description> [api-file:line ↔ frontend-file:line]`.
+Severity headings, confidence labels, and `--write-report`
+frontmatter follow the shared format — see
+[`_shared/audit-output-format.md`](../_shared/audit-output-format.md).
+Skill-specific notes:
 
-```
-## 🚫 Block (N)
-- C2 **endpoint-removed** (high): `GET /students/{id}/profile` removed
-  in `api/.../StudentsController.cs:82`, still called in
-  `app/src/hooks/useStudentProfile.ts:14`.
-
-## ⚠ Warn (N)
-- C3 **dto** (medium): field `StudentDto.fullName` removed in
-  `api/.../StudentDto.cs:9`, still declared in
-  `app/src/types/student.ts:5`.
-
-## ℹ Info (N)
-- C1 **endpoint-added** (low): `POST /classes/{id}/archive` added;
-  no consumer detected in app or lp.
-```
-
-Always end with:
-`cross-stack-contract: N block, N warn, N info (<stacks compared>)`.
-
-**With `--write-report`:** content is persisted to
-`docs/reviews/YYYY-MM-DD-contract-<slug>.md` with frontmatter:
-
-```yaml
----
-ref: feat/api-v2
-base: main
-stacks: [api, app, lp]
-generated_by: octopus:cross-stack-contract
-generated_at: 2026-04-19
-summary: "1 block, 2 warn, 1 info"
----
-```
-
-The slug is derived from the branch name or PR number (lowercase ASCII,
-max 40 chars).
+- Finding ID prefix: `C1`–`C7`.
+- Finding lines cite both sides:
+  `[<api-file>:<line> ↔ <frontend-file>:<line>]`.
+- Trailer appends the compared stacks:
+  `cross-stack-contract: N block, N warn, N info (<stacks compared>)`.
+- Report path: `docs/reviews/YYYY-MM-DD-contract-<slug>.md`.
+- Frontmatter adds a `stacks:` list.
 
 ## Errors
 
-- **No stacks detected** → abort with the message "add `stacks:` to
-  `.octopus.yml` or run from a supported monorepo layout".
-- **Only one stack detected** → print "nothing to compare" and exit 0
+Shared errors (not in git repo, base branch missing, no relevant
+files, unrecognized `--only`) behave per the shared convention.
+Skill-specific errors:
+
+- **No stacks detected** → abort with `add stacks: to .octopus.yml or
+  run from a supported monorepo layout`.
+- **Only one stack detected** → print `nothing to compare` and exit 0
   with `cross-stack-contract: 0 block, 0 warn, 0 info`.
-- **Base branch missing** → abort with `--base` hint.
-- **No contract-relevant changes** → print "no contract changes
-  detected" and exit 0.
-- **Unrecognized `--only` check** → abort, list valid checks.
+- **No contract-relevant changes** → print `no contract changes
+  detected` and exit 0.
 
 ## Composition
 
-Runs well alongside `money-review` and `security-scan`. All three emit
-the same three-heading severity format so the reports can be
-concatenated into a single PR comment without extra formatting work.
-
-The findings are guidance, not a gate. Reviewers decide whether to
-block, require changes, or accept with a note.
+Composes with `money-review` and `security-scan`. Findings are
+guidance, not a gate — reviewers decide whether to block, require
+changes, or accept with a note.

@@ -5,7 +5,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 echo "Test 1: SKILL.md exists with valid frontmatter"
 SKILL_FILE="$SCRIPT_DIR/skills/cross-stack-contract/SKILL.md"
+SHARED_FILE="$SCRIPT_DIR/skills/_shared/audit-output-format.md"
 [[ -f "$SKILL_FILE" ]] || { echo "FAIL: $SKILL_FILE not found"; exit 1; }
+[[ -f "$SHARED_FILE" ]] || { echo "FAIL: shared audit-output-format.md missing"; exit 1; }
+grep_docs() { cat "$SKILL_FILE" "$SHARED_FILE" | grep -q "$@"; }
 head -n 5 "$SKILL_FILE" | grep -q "^name: cross-stack-contract$" \
   || { echo "FAIL: frontmatter 'name' missing"; exit 1; }
 head -n 10 "$SKILL_FILE" | grep -q "^description:" \
@@ -54,12 +57,12 @@ grep -q "^## Output$" "$SKILL_FILE" \
   || { echo "FAIL: '## Output' missing"; exit 1; }
 grep -q "^## Errors$" "$SKILL_FILE" \
   || { echo "FAIL: '## Errors' missing"; exit 1; }
-grep -q "docs/reviews/" "$SKILL_FILE" \
+grep_docs "docs/reviews/" \
   || { echo "FAIL: report path missing"; exit 1; }
 for sev in "🚫 Block" "⚠ Warn" "ℹ Info"; do
-  grep -q -- "$sev" "$SKILL_FILE" || { echo "FAIL: severity '$sev' missing"; exit 1; }
+  grep_docs -- "$sev" || { echo "FAIL: severity '$sev' missing"; exit 1; }
 done
-grep -q "confidence" "$SKILL_FILE" || { echo "FAIL: confidence label missing"; exit 1; }
+grep_docs "confidence" || { echo "FAIL: confidence label missing"; exit 1; }
 echo "PASS: output + errors documented"
 
 echo "Test 7: slash command exists"
