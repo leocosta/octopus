@@ -77,6 +77,28 @@ Cluster 4 closes the gap by shipping an `implement` skill (RM-030),
 a `debugging` skill (RM-031), a `receiving-code-review` skill
 (RM-032), and a destructive-action guard hook (RM-033).
 
+### Cluster 5 — Superpowers parity (self-sufficient Octopus)
+
+Teams using Octopus today still need the external `superpowers`
+plugin for the spec-design → plan → execute loop. The three items
+below close that gap so the full workflow lives inside Octopus.
+
+- **RM-036** 🟡 Medium — `/octopus:doc-plan` (writing-plans
+  equivalent). Reads a completed spec and emits a bite-sized
+  TDD-style implementation plan under `docs/plans/<slug>.md`
+  (or equivalent), with exact file paths, failing-test-first
+  steps, and commit cadence.
+- **RM-037** 🟡 Medium — extend `/octopus:implement` to
+  consume a plan file (executing-plans equivalent). Today the
+  skill codifies the TDD loop for a single task; this extends
+  it to walk a checklist of tasks from `doc-plan`, with
+  checkpoints for human review between tasks.
+
+Entry point: RM-035 shipped first (see Completed table).
+RM-036 lands once the conversational pattern has been
+dog-fooded; RM-037 is the smallest increment on top of
+`implement` and likely lands last.
+
 ---
 
 ## In Progress
@@ -118,3 +140,4 @@ _No items in progress._
 | RM-034 | Task routing — shared decision matrix embedded in `implement` / `debugging` / `receiving-code-review` via canonical fragment at `skills/_shared/task-routing.md`, with drift-prevention test | completed → [Spec](specs/task-routing.md) | 2026-04-20 |
 | RM-024 | Dedup shared preambles into `skills/_shared/audit-output-format.md` (3 audit skills referenced shared conventions) | completed → [Spec](specs/audit-output-format.md) | 2026-04-20 |
 | RM-023 | `/octopus:compress-skill` — per-skill compression pass with human-approved diff, deterministic cleanup + optional LLM rewrite, invariants on frontmatter/headings/code blocks/test anchors | completed → [Spec](specs/compress-skill.md) | 2026-04-20 |
+| RM-035 | `/octopus:doc-design` — interactive spec-design session filling Design, Implementation Plan, Testing, and adaptive (Non-Goals / Risks / Migration) sections via a one-question-at-a-time conversation; HARD-GATE against writing code; chained from `/octopus:doc-spec` | completed → [Spec](specs/doc-design-command.md) | 2026-04-21 |

@@ -55,3 +55,12 @@ If no slug is provided, ask the user for a short descriptive name (kebab-case).
    - If an RFC was found: "Linked to RFC: docs/rfcs/..."
    - Remind them to fill in the design sections
    - Suggest: "The 'Context for Agents' section helps AI assistants understand what knowledge and skills are relevant for implementation"
+
+9. Offer to continue into the design session:
+   - Detect whether the current session is interactive. If
+     stdin is not a TTY (e.g. the command was invoked by a
+     script or another tool), skip this step silently.
+   - Otherwise ask: `"Continue into the design session now? (y/N)"`.
+   - On `y` (or `yes`), invoke `/octopus:doc-design ${SLUG}`.
+   - On `N` or empty input, exit normally with the report from
+     step 8.
