@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.16.0] - 2026-04-20
+
+✨ New `/octopus:compress-skill` command — shrinks a `SKILL.md` by ~25% without changing its meaning. A deterministic cleanup pass runs first (collapses blank runs, strips meta prose, shortens example lists); the LLM rewrite pass only fires when the target is not met. Invariants are enforced after each step: frontmatter stays byte-identical, every string the skill's test file greps for is preserved, headings are untouched, and fenced code blocks are copied verbatim. Dry-run is the default; `--apply` writes the result. Registered in the `docs-discipline` bundle and the setup wizard.
+
+♻️ Refactored the three pre-merge audit skills (`money-review`, `tenant-scope-audit`, `cross-stack-contract`) to share conventions via `skills/_shared/audit-output-format.md`. Severity format, override cascade, `--write-report` frontmatter, and common errors now live in one file; each SKILL.md keeps only its skill-specific content. Tests were updated to look for conventions across both the skill file and the shared fragment.
+
 ## [1.15.0] - 2026-04-20
 
 ✨ The `auto-format` PostToolUse hook gained lint-fix capabilities alongside formatting — TS/JS now runs `biome check --write`, which also organizes imports and applies safe lint fixes, with a fallback to `eslint --fix` + `prettier`. On the .NET side, the hook now prefers **CSharpier** when available and falls back to `dotnet format --include` as before. Formatter failures are surfaced as a single-line message on stderr without blocking the hook. File-extension coverage was expanded to include `mjs`, `cjs`, `jsonc`, and `csx`.
