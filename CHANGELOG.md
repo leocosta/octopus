@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.19.0] - 2026-04-21
+
+This release completes **Cluster 5**, bringing the full spec-design → plan →
+execute workflow natively into Octopus — no external `superpowers` plugin
+required for the design loop.
+
+✨ Three new slash commands land in this release. `/octopus:doc-design` opens
+an interactive spec-design session that walks through Design, Implementation
+Plan, Testing Strategy, and adaptive sections (Non-Goals, Risks, Migration)
+via a one-question-at-a-time conversation, finishing with a self-review pass
+and an automatic docs-only branch commit. `/octopus:doc-plan` reads a
+completed spec and writes a `docs/plans/<slug>.md` plan file using
+bite-sized, TDD-style tasks with adaptive decomposition heuristics ("too big"
+and "too small" guards) and a 15-task split warning. `/octopus:implement`
+gains a `--plan PATH` walker mode that executes a plan file task-by-task:
+it dispatches the existing single-task TDD loop per task, flips each task's
+checkboxes in place after the commit (strategy documented in
+`docs/adr/001-plan-walker-checkbox-commit.md`), and pauses for human review
+between tasks with a `Continue / stop / redo-current` prompt. A
+`--resume-from TaskN` flag allows picking up an interrupted session.
+HARD-GATE: the walker never pushes, never opens PRs, never creates branches.
+
+🐛 A fix to `/octopus:doc-design` clarifies the HARD-GATE wording (docs-only
+branches are explicitly permitted) and adds automatic docs-only branch
+creation when the session starts on `main` or `master`, preventing accidental
+spec commits directly to the main branch.
+
+📝 Design sessions produced specs for two upcoming Cluster 3 items:
+bundle-diff-preview (RM-027, wizard impact annotations) and
+post-merge-audit-hook (RM-029, post-push audit suggestions) — both spec-only,
+no implementation yet.
+
+🔧 The install banner was trimmed from 19 to 12 rows for a less intrusive
+first-run experience.
+
 ## [1.18.0] - 2026-04-20
 
 ✨ `/octopus:pr-open` gained three polish items on top of the earlier redesign. Every section heading now carries an emoji for scanability — `📦 What`, `💡 Why`, `✅ Test plan`, `🔗 References`, `📂 Files changed`. The agent scans branch names, commits, and diffs for roadmap IDs (`RM-NNN`), Jira-style trackers (`[A-Z]{2,}-\d+` with a deny-list for HTTP codes and ISO standards), Notion and GitHub URLs, and local `docs/specs/*.md` / `docs/adr/*.md` paths, surfacing hits in a new conditional `🔗 References` section. The CLI now accepts `--title <string>`; when the agent supplies a human-friendly title prefixed with a type emoji (`🐛 Fix: …`, `✨ Feat: …`, …), it replaces the old branch-derived `feat: foo` title.
