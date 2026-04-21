@@ -81,6 +81,24 @@ resolve_version() {
   cli_version_from_git
 }
 
+# Resolves the target version for `octopus update` (no explicit flag).
+# Unlike resolve_version, this never falls back to metadata.json — that
+# field records what is already installed, not where `update` should go.
+resolve_update_target() {
+  if lockfile="$(find_lockfile)"; then
+    local lock_version
+    lock_version="$(read_lock_version "$lockfile")"
+    [[ -n "$lock_version" ]] && { echo "$lock_version"; return 0; }
+  fi
+  local remote
+  remote="$(resolve_latest_remote_version || true)"
+  if [[ -n "$remote" ]]; then
+    echo "$remote"
+    return 0
+  fi
+  cli_version_from_git
+}
+
 ensure_cache_dirs() {
   mkdir -p "$CACHE_DIR"
 }
@@ -314,8 +332,12 @@ command_update() {
     esac
   done
   if [[ -z "$version" ]]; then
-    echo "Resolving latest version..."
-    version="$(resolve_version)"
+    if lockfile="$(find_lockfile)"; then
+      echo "Using version pinned in $lockfile..."
+    else
+      echo "Resolving latest version..."
+    fi
+    version="$(resolve_update_target)"
   fi
   echo "Updating to Octopus $version..."
   install_release "$version"
