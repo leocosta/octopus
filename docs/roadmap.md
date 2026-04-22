@@ -31,10 +31,8 @@ _RM-022 complete. Cluster 1 now has no open items._
 
 ### Cluster 2 — Reduce LLM calls
 
-- **RM-025** 🔴 High — Pre-LLM deterministic pass: audit skills run
-  `grep`/`rg` for raw pattern matching first; the LLM only classifies
-  severity and writes the human-readable message. Estimate: −60%
-  tokens per audit run.
+_RM-025 complete. Cluster 2 has one open item._
+
 - **RM-026** 🟡 Medium — Cache audit outputs keyed by
   `hash(diff) + skill-version`. Re-running the same audit becomes
   zero-cost until the diff changes.
@@ -131,3 +129,4 @@ _No items in progress._
 | RM-036 | `/octopus:doc-plan` — reads a completed spec and writes `docs/plans/<slug>.md` (bite-sized, TDD-style, matches superpowers:writing-plans vocabulary); adaptive "too big / too small" task decomposition; HARD-GATE against writing code; docs-only branch auto-created when starting from main | completed → [Spec](specs/doc-plan-command.md) | 2026-04-21 |
 | RM-037 | `/octopus:implement` gains a `--plan` walker mode that executes a plan file task-by-task, dispatching the existing single-task TDD loop per task, pausing for human review between tasks, flipping checkboxes in place for resume, and closing Cluster 5 | completed → [Spec](specs/implement-plan-walker.md) | 2026-04-21 |
 | RM-022 | Lazy skill activation via `triggers:` frontmatter — path/keyword/tool evaluation at setup time in `concatenate_from_manifest`; non-matching skills replaced with 3-line stub; 6 domain-specific skills annotated | completed → [Spec](specs/lazy-skill-activation.md) | 2026-04-22 |
+| RM-025 | Pre-LLM deterministic audit pass — shared fragment `_shared/audit-pre-pass.md` + `pre_pass:` frontmatter block; 4-step protocol (candidate files → early exit → line filter → scoped diff) wired into all 4 audit skills | completed → [Spec](specs/pre-llm-audit-pass.md) | 2026-04-22 |
