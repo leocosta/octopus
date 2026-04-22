@@ -470,6 +470,13 @@ WIZARD_AGENTS=()
 WIZARD_RULES=()
 WIZARD_SKILLS=()
 WIZARD_ROLES=()
+declare -A ROLE_SKILL_MAP=(
+  ["backend-specialist"]="backend-patterns tenant-scope-audit money-review security-scan debugging"
+  ["frontend-specialist"]="e2e-testing cross-stack-contract debugging"
+  ["product-manager"]="adr plan-backlog-hygiene feature-lifecycle doc-design doc-plan"
+  ["tech-writer"]="adr doc-design doc-plan continuous-learning"
+  ["social-media"]="feature-to-market release-announce"
+)
 WIZARD_MCP=()
 WIZARD_BUNDLES=()
 WIZARD_LANGUAGE=""
@@ -707,29 +714,59 @@ _wizard_sub_skills() {
   local items=(adr audit-all backend-patterns compress-skill context-budget continuous-learning debugging doc-design doc-plan cross-stack-contract dotnet e2e-testing feature-lifecycle feature-to-market implement money-review plan-backlog-hygiene receiving-code-review release-announce security-scan tenant-scope-audit)
   local defaults=("${WIZARD_SKILLS[@]}")
 
+  local -A recommended=()
+  local role skill
+  for role in "${WIZARD_ROLES[@]}"; do
+    for skill in ${ROLE_SKILL_MAP[$role]:-}; do
+      recommended[$skill]=1
+    done
+  done
+
   _wizard_subheader "Skills" "Reusable AI capabilities exposed as slash commands."
-  _wizard_hints \
-    "adr|record Architecture Decision Records" \
-    "audit-all|run all quality audits in parallel with consolidated report" \
-    "backend-patterns|apply repo/service/DI patterns" \
-    "compress-skill|shrink a SKILL.md by ~25% with diff review and invariants" \
-    "context-budget|monitor and trim the conversation context" \
-    "continuous-learning|capture lessons learned per session" \
-    "debugging|apply the Octopus bug-fix protocol — reproduce, isolate, regression test, document" \
-    "doc-design|drive an interactive spec-design session filling Design, Testing, and adaptive sections" \
-    "doc-plan|turn a completed spec into a bite-sized, TDD-style implementation plan under docs/plans/<slug>.md" \
-    "cross-stack-contract|detect API-vs-frontend drift in monorepos" \
-    "dotnet|.NET-specific build/test/format helpers" \
-    "e2e-testing|scaffold end-to-end test suites" \
-    "feature-lifecycle|spec → PR → release helpers" \
-    "feature-to-market|turn a shipped feature into a launch kit" \
-    "implement|apply the Octopus workflow — TDD, plan gate, verification, simplify, commit cadence" \
-    "money-review|audit money-logic changes for split/tax/rounding bugs" \
-    "plan-backlog-hygiene|audit plans/ and roadmap for stale, orphan, or duplicate items" \
-    "receiving-code-review|apply the Octopus PR-feedback discipline — verify, ask, clarify, never performative" \
-    "release-announce|themed release kit for existing users (HTML + channels + slides)" \
-    "security-scan|scan diffs for secrets and vulnerabilities" \
+
+  local raw_hints=(
+    "adr|record Architecture Decision Records"
+    "audit-all|run all quality audits in parallel with consolidated report"
+    "backend-patterns|apply repo/service/DI patterns"
+    "compress-skill|shrink a SKILL.md by ~25% with diff review and invariants"
+    "context-budget|monitor and trim the conversation context"
+    "continuous-learning|capture lessons learned per session"
+    "debugging|apply the Octopus bug-fix protocol — reproduce, isolate, regression test, document"
+    "doc-design|drive an interactive spec-design session filling Design, Testing, and adaptive sections"
+    "doc-plan|turn a completed spec into a bite-sized, TDD-style implementation plan under docs/plans/<slug>.md"
+    "cross-stack-contract|detect API-vs-frontend drift in monorepos"
+    "dotnet|.NET-specific build/test/format helpers"
+    "e2e-testing|scaffold end-to-end test suites"
+    "feature-lifecycle|spec → PR → release helpers"
+    "feature-to-market|turn a shipped feature into a launch kit"
+    "implement|apply the Octopus workflow — TDD, plan gate, verification, simplify, commit cadence"
+    "money-review|audit money-logic changes for split/tax/rounding bugs"
+    "plan-backlog-hygiene|audit plans/ and roadmap for stale, orphan, or duplicate items"
+    "receiving-code-review|apply the Octopus PR-feedback discipline — verify, ask, clarify, never performative"
+    "release-announce|themed release kit for existing users (HTML + channels + slides)"
+    "security-scan|scan diffs for secrets and vulnerabilities"
     "tenant-scope-audit|audit multi-tenant data-scope enforcement (query filters, raw SQL, ownership)"
+  )
+
+  local annotated_hints=()
+  local hint skill_name desc
+  for hint in "${raw_hints[@]}"; do
+    skill_name="${hint%%|*}"
+    desc="${hint#*|}"
+    if [[ -n "${recommended[$skill_name]:-}" ]]; then
+      annotated_hints+=("${skill_name}|★ ${desc}")
+    else
+      annotated_hints+=("${hint}")
+    fi
+  done
+
+  _wizard_hints "${annotated_hints[@]}"
+
+  if [[ ${#WIZARD_ROLES[@]} -gt 0 ]]; then
+    local roles_joined
+    roles_joined="$(IFS=", "; printf '%s' "${WIZARD_ROLES[*]}")"
+    printf "  %s\n\n" "$(_dim "★ = recommended for: ${roles_joined}")"
+  fi
 
   _multiselect \
     "Select skills" \
@@ -1019,8 +1056,8 @@ _wizard_group_capabilities() {
     "and curated knowledge modules injected into agent prompts." \
     "Every sub-section is optional."
   _wizard_sub_rules
-  _wizard_sub_skills
   _wizard_sub_roles
+  _wizard_sub_skills
   _wizard_sub_knowledge
 }
 
