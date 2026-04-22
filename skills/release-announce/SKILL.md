@@ -7,6 +7,10 @@ description: >
   channel messages (email, Slack, Discord, in-app banner, status page,
   X/Twitter, WhatsApp, slide deck). Supports preset themes and on-demand
   custom theme synthesis via frontend-design.
+triggers:
+  paths: ["CHANGELOG.md", "docs/releases/**", "releases/**"]
+  keywords: ["release", "changelog", "announce", "version"]
+  tools: []
 ---
 
 # Release-Announce Protocol

@@ -1,6 +1,10 @@
 ---
 name: backend-patterns
 description: Backend architecture decision patterns for multi-stack projects (Node.js, .NET, Python)
+triggers:
+  paths: ["src/**", "app/**", "api/**", "**/*.py", "**/*.js", "**/*.ts"]
+  keywords: ["express", "fastapi", "django", "nestjs", "fastify", "flask"]
+  tools: []
 ---
 
 # Backend Architecture Patterns
