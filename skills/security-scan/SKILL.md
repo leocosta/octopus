@@ -1,6 +1,10 @@
 ---
 name: security-scan
 description: Security audit checklist for AI agent configurations, environment variables, and project dependencies
+triggers:
+  paths: []
+  keywords: ["auth", "jwt", "oauth", "secret", "token", "sql", "password", "credential"]
+  tools: []
 ---
 
 # Security Scan

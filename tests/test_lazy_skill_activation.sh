@@ -61,3 +61,24 @@ grep -q "^triggers:" "$SCRIPT_DIR/skills/cross-stack-contract/SKILL.md" \
 grep -q 'openapi\|contracts' "$SCRIPT_DIR/skills/cross-stack-contract/SKILL.md" \
   || { echo "FAIL: cross-stack-contract triggers missing expected paths"; exit 1; }
 echo "PASS"
+
+echo "Test 9: security-scan has triggers: with keywords"
+grep -q "^triggers:" "$SCRIPT_DIR/skills/security-scan/SKILL.md" \
+  || { echo "FAIL: security-scan missing triggers:"; exit 1; }
+grep -q 'auth\|jwt\|secret\|token' "$SCRIPT_DIR/skills/security-scan/SKILL.md" \
+  || { echo "FAIL: security-scan triggers missing expected keywords"; exit 1; }
+echo "PASS"
+
+echo "Test 10: money-review has triggers: with keywords"
+grep -q "^triggers:" "$SCRIPT_DIR/skills/money-review/SKILL.md" \
+  || { echo "FAIL: money-review missing triggers:"; exit 1; }
+grep -q 'payment\|stripe\|billing\|invoice' "$SCRIPT_DIR/skills/money-review/SKILL.md" \
+  || { echo "FAIL: money-review triggers missing expected keywords"; exit 1; }
+echo "PASS"
+
+echo "Test 11: tenant-scope-audit has triggers: with keywords"
+grep -q "^triggers:" "$SCRIPT_DIR/skills/tenant-scope-audit/SKILL.md" \
+  || { echo "FAIL: tenant-scope-audit missing triggers:"; exit 1; }
+grep -q 'tenant\|org\|workspace' "$SCRIPT_DIR/skills/tenant-scope-audit/SKILL.md" \
+  || { echo "FAIL: tenant-scope-audit triggers missing expected keywords"; exit 1; }
+echo "PASS"
