@@ -39,31 +39,21 @@ _RM-027 and RM-029 complete. Cluster 3 has no open items._
 
 ### Cluster 4 — Implementation practices
 
-Octopus today covers **static rules** (what the code should be) via
-`rules/common/*`. It does not codify **process practices** (how to
-get there). The table below shows which code-assistant practices
-(from Boris Cherny's Claude Code tips and industry guides) are
-covered, partially covered (⚠️), or missing.
+_RM-030, RM-031, RM-032, and RM-033 complete. Cluster 4 has no open items._
 
-| Practice | Today | Planned |
-|---|---|---|
-| Static coding style (KISS, DRY, YAGNI, naming) | ✅ `rules/common/coding-style.md` | — |
-| Quality gates (pre-commit, formatters, typecheck) | ✅ `rules/common/quality.md` | — |
-| Security rules (secrets, validation, injection) | ✅ `rules/common/security.md` | — |
-| Testing principles (AAA, behavior > implementation) | ✅ `rules/common/testing.md` | — |
-| Design patterns (repository, service layer) | ✅ `rules/common/patterns.md` | — |
-| **TDD loop** (red → green → refactor → commit) | ❌ | RM-030 |
-| **Plan-before-code gate** (approved plan for non-trivial work) | ⚠️ mentioned in CLAUDE.md, not enforced | RM-030 |
-| **Verification-before-completion** (run tests before "done") | ❌ | RM-030 |
-| **Simplify pass** (post-change review) | ⚠️ `/simplify` mentioned, no skill | RM-030 |
-| **Commit cadence** (atomic commits per step) | ⚠️ `core/commit-conventions.md` but no enforcement | RM-030 |
-| **Systematic debugging** (reproduce → isolate → fix → regression) | ❌ | RM-031 |
-| **Receiving code review** (technical rigor over deference) | ❌ | RM-032 |
-| **Ask-before-destructive** (rm, push --force, DROP) | ❌ (Claude prompt has it; Octopus-managed agents don't) | RM-033 |
+All process practices are now covered:
 
-Cluster 4 closes the gap by shipping an `implement` skill (RM-030),
-a `debugging` skill (RM-031), a `receiving-code-review` skill
-(RM-032), and a destructive-action guard hook (RM-033).
+| Practice | Coverage |
+|---|---|
+| Static coding style (KISS, DRY, YAGNI, naming) | ✅ `rules/common/coding-style.md` |
+| Quality gates (pre-commit, formatters, typecheck) | ✅ `rules/common/quality.md` |
+| Security rules (secrets, validation, injection) | ✅ `rules/common/security.md` |
+| Testing principles (AAA, behavior > implementation) | ✅ `rules/common/testing.md` |
+| Design patterns (repository, service layer) | ✅ `rules/common/patterns.md` |
+| TDD loop + plan gate + verification + simplify + commit cadence | ✅ `implement` skill (RM-030) |
+| Systematic debugging | ✅ `debugging` skill (RM-031) |
+| Receiving code review | ✅ `receiving-code-review` skill (RM-032) |
+| Ask-before-destructive (rm, push --force, DROP) | ✅ destructive-action guard hook (RM-033) |
 
 ### Cluster 5 — Superpowers parity (self-sufficient Octopus)
 
@@ -126,4 +116,8 @@ _No items in progress._
 | RM-027 | Skill impact table in Full-mode wizard — `_skill_impact_table()` in `setup-wizard.sh` shows lines and ~tokens per selected skill after multiselect | completed | 2026-04-22 |
 | RM-029 | Post-merge audit hook — `pre-push-audit-suggest.sh` + `cli/lib/audit-map.sh` map diff to relevant audits; advisory only, never blocks; installed by setup when `workflow: true` + audit skill present | completed → [Spec](specs/post-merge-audit-hook.md) | 2026-04-22 |
 | RM-039 | Bundles setup — declarative YAML bundle files (`bundles/<name>.yml`), `expand_bundles()` preprocessing in `setup.sh`, Quick-mode persona mini-wizard in `setup-wizard.sh`, 7 curated bundles (starter, quality-gates, growth, docs-discipline, cross-stack, dotnet-api, node-api) | completed → [Spec](specs/bundles-setup.md) | 2026-04-19 |
+| RM-040 | Hook injection idempotency — `deliver_hooks()` merges by hook `id` instead of full replace; re-running `octopus setup` preserves manually added hooks | completed | 2026-04-22 |
+| RM-041 | Lazy activation for remaining 8 skills — `triggers:` frontmatter added to `audit-all`, `backend-patterns`, `batch`, `compress-skill`, `continuous-learning`, `feature-to-market`, `plan-backlog-hygiene`, `release-announce` | completed | 2026-04-22 |
+| RM-042 | `--dry-run` mode for `octopus setup` — `OCTOPUS_DRY_RUN` guard in every `deliver_*()` function prints `[dry-run] would …` without writing; `tests/test_dry_run.sh` with 16 cases | completed | 2026-04-22 |
+| RM-043 | `octopus uninstall` — guided teardown removing symlinks, agent files, slash commands, hooks/permissions from `settings.json`, gitignore entries; optional removal of `.env.octopus`, GitHub Action, manifest | completed | 2026-04-22 |
 | RM-038 | `social-media` role — Senior Social Media Strategist persona with platform-native X/Instagram copy, approval-gated publishing, visual asset briefs, and evidence hierarchy; `scripts/x_post.py` for local credential-safe publishing | completed → [Spec](specs/social-media-role.md) | 2026-04-04 |
