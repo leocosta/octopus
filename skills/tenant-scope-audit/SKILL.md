@@ -8,6 +8,10 @@ description: >
   joins to unfiltered tables, and cross-tenant admin endpoints without
   explicit markers. Produces a severity-tiered report with confidence
   labels.
+triggers:
+  paths: []
+  keywords: ["tenant", "org", "workspace", "multi-tenant", "organization"]
+  tools: []
 ---
 
 # Tenant-Scope-Audit Protocol
