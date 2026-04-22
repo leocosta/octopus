@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.20.0] - 2026-04-22
+
+✨ This release ships **RM-022 — Lazy Skill Activation**, the first item
+from Cluster 1 (Reduce tokens loaded per session). A new `triggers:`
+frontmatter block in `SKILL.md` lets each skill declare when it is
+relevant — by file paths, keywords, or manifest tools. When
+`octopus setup` generates a concatenated agent output (Copilot, Codex,
+Gemini, OpenCode), skills whose triggers don't match the project are
+replaced with a compact 3-line stub instead of their full content. Skills
+without a `triggers:` block are always included in full, preserving
+complete backward compatibility.
+
+Six domain-specific skills ship with trigger annotations out of the box:
+`e2e-testing`, `dotnet`, and `cross-stack-contract` activate on file
+paths (spec files, `.csproj`, OpenAPI docs); `security-scan`,
+`money-review`, and `tenant-scope-audit` activate on keywords in README
+and project metadata. Dog-food against this repo (bash/markdown, no
+framework code) measured −1,326 lines saved across the 6 guarded skills,
+exceeding the RM-022 target of ≥ 40% reduction in output size for
+typical projects.
+
+📝 A completed design spec for RM-022 was added to `docs/specs/` via
+`/octopus:doc-design`.
+
 ## [1.19.0] - 2026-04-21
 
 This release completes **Cluster 5**, bringing the full spec-design → plan →
