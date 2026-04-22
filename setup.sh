@@ -1249,7 +1249,24 @@ for event_type, entries in hooks.items():
             if cmd.startswith("octopus/hooks/"):
                 hook["command"] = install_root + "/" + cmd[len("octopus/"):]
 
-settings["hooks"] = hooks
+# Merge new hooks into existing ones, deduplicating by hook id so that
+# user-added hooks survive repeated setup runs.
+existing = settings.get("hooks", {})
+for event_type, new_matchers in hooks.items():
+    existing_matchers = existing.get(event_type, [])
+    seen_ids = {
+        h.get("id")
+        for m in existing_matchers
+        for h in m.get("hooks", [])
+        if h.get("id")
+    }
+    for matcher in new_matchers:
+        fresh = [h for h in matcher.get("hooks", []) if h.get("id") not in seen_ids]
+        if fresh:
+            existing_matchers.append({**matcher, "hooks": fresh})
+            seen_ids.update(h.get("id") for h in fresh if h.get("id"))
+    existing[event_type] = existing_matchers
+settings["hooks"] = existing
 with open(settings_path, "w") as f:
     json.dump(settings, f, indent=2)
     f.write("\n")
