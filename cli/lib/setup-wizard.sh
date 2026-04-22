@@ -670,6 +670,39 @@ _wizard_sub_bundles() {
   done
 }
 
+# _skill_impact_table <skill_name...>
+# Prints a table showing SKILL.md line count and ~token estimate per skill.
+_skill_impact_table() {
+  local skills=("$@")
+  [[ ${#skills[@]} -eq 0 ]] && return 0
+
+  local skills_dir
+  skills_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/skills"
+
+  printf "\n  %s\n" "$(_dim "Impact of selected skills:")"
+  printf "  %-30s %8s %10s\n" "Skill" "Lines" "~Tokens"
+  printf "  %s\n" "$(printf '─%.0s' {1..50})"
+
+  local total_lines=0 total_tokens=0
+  local skill lines tokens
+  for skill in "${skills[@]}"; do
+    local skill_file="$skills_dir/$skill/SKILL.md"
+    if [[ -f "$skill_file" ]]; then
+      lines=$(wc -l < "$skill_file")
+    else
+      lines=0
+    fi
+    tokens=$(( lines * 4 ))
+    total_lines=$(( total_lines + lines ))
+    total_tokens=$(( total_tokens + tokens ))
+    printf "  %-30s %8d %10d\n" "$skill" "$lines" "$tokens"
+  done
+
+  printf "  %s\n" "$(printf '─%.0s' {1..50})"
+  printf "  %-30s %8d %10d\n" "Total" "$total_lines" "$total_tokens"
+  printf "\n"
+}
+
 _wizard_sub_skills() {
   local items=(adr audit-all backend-patterns compress-skill context-budget continuous-learning debugging doc-design doc-plan cross-stack-contract dotnet e2e-testing feature-lifecycle feature-to-market implement money-review plan-backlog-hygiene receiving-code-review release-announce security-scan tenant-scope-audit)
   local defaults=("${WIZARD_SKILLS[@]}")
@@ -702,6 +735,8 @@ _wizard_sub_skills() {
     "Select skills" \
     "adr · audit-all · backend-patterns · compress-skill · context-budget · continuous-learning · debugging · doc-design · doc-plan · cross-stack-contract · dotnet · e2e-testing · feature-lifecycle · feature-to-market · implement · money-review · plan-backlog-hygiene · receiving-code-review · release-announce · security-scan · tenant-scope-audit" \
     items defaults
+
+  _skill_impact_table "${WIZARD_SELECTED[@]}"
 
   WIZARD_SKILLS=("${WIZARD_SELECTED[@]}")
 }
