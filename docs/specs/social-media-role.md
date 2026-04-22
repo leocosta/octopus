@@ -6,8 +6,9 @@
 |---|---|
 | **Date** | 2026-04-04 |
 | **Author** | Codex |
-| **Status** | Draft |
+| **Status** | Implemented |
 | **RFC** | N/A |
+| **Roadmap** | RM-038 |
 
 ## Problem Statement
 
