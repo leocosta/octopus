@@ -6,7 +6,7 @@
 |---|---|
 | **Date** | 2026-04-22 |
 | **Author** | Leonardo Costa |
-| **Status** | Draft |
+| **Status** | Implemented (2026-04-22) |
 | **RFC** | N/A |
 | **Roadmap** | RM-022 |
 

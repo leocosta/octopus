@@ -33,7 +33,7 @@
 - Modify: `setup.sh`
 - Create: `tests/test_lazy_skill_activation.sh`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```bash
 #!/usr/bin/env bash
@@ -111,12 +111,12 @@ rm -rf "$FAKE_PROJ"
 Run: `bash tests/test_lazy_skill_activation.sh`
 Expected: FAIL — `_skill_has_triggers: command not found`
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `bash tests/test_lazy_skill_activation.sh 2>&1 | head -5`
 Expected: FAIL with function not found or sourcing error
 
-- [ ] **Step 3: Add helpers to setup.sh**
+- [x] **Step 3: Add helpers to setup.sh**
 
 Add the following block immediately before `concatenate_from_manifest()`:
 
@@ -235,7 +235,7 @@ PYEOF
 }
 ```
 
-- [ ] **Step 4: Update concatenate_from_manifest skills loop**
+- [x] **Step 4: Update concatenate_from_manifest skills loop**
 
 Replace the existing skills loop inside `concatenate_from_manifest`:
 
@@ -269,12 +269,12 @@ for skill in "${OCTOPUS_SKILLS[@]}"; do
 done
 ```
 
-- [ ] **Step 5: Run test to verify it passes**
+- [x] **Step 5: Run test to verify it passes**
 
 Run: `bash tests/test_lazy_skill_activation.sh`
 Expected: PASS (all 5 tests)
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add setup.sh tests/test_lazy_skill_activation.sh
@@ -290,7 +290,7 @@ git commit -m "feat(setup): lazy skill activation via triggers: frontmatter"
 - Modify: `skills/dotnet/SKILL.md`
 - Modify: `skills/cross-stack-contract/SKILL.md`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `tests/test_lazy_skill_activation.sh`:
 
@@ -320,12 +320,12 @@ echo "PASS"
 Run: `bash tests/test_lazy_skill_activation.sh`
 Expected: FAIL on Tests 6–8
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `bash tests/test_lazy_skill_activation.sh 2>&1 | grep -E "FAIL|Test [678]"`
 Expected: FAIL on Tests 6, 7, 8
 
-- [ ] **Step 3: Add triggers: to the three skills**
+- [x] **Step 3: Add triggers: to the three skills**
 
 In `skills/e2e-testing/SKILL.md`, insert after the `description:` block, before the closing `---`:
 
@@ -354,12 +354,12 @@ triggers:
   tools: []
 ```
 
-- [ ] **Step 4: Run to verify it passes**
+- [x] **Step 4: Run to verify it passes**
 
 Run: `bash tests/test_lazy_skill_activation.sh`
 Expected: PASS (all tests including 6–8)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add skills/e2e-testing/SKILL.md skills/dotnet/SKILL.md skills/cross-stack-contract/SKILL.md
@@ -375,7 +375,7 @@ git commit -m "feat(skills): add path triggers to e2e-testing, dotnet, cross-sta
 - Modify: `skills/money-review/SKILL.md`
 - Modify: `skills/tenant-scope-audit/SKILL.md`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `tests/test_lazy_skill_activation.sh`:
 
@@ -405,12 +405,12 @@ echo "PASS"
 Run: `bash tests/test_lazy_skill_activation.sh`
 Expected: FAIL on Tests 9–11
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `bash tests/test_lazy_skill_activation.sh 2>&1 | grep -E "FAIL|Test (9|10|11)"`
 Expected: FAIL on Tests 9, 10, 11
 
-- [ ] **Step 3: Add triggers: to the three skills**
+- [x] **Step 3: Add triggers: to the three skills**
 
 In `skills/security-scan/SKILL.md`, insert after the `description:` block, before the closing `---`:
 
@@ -439,12 +439,12 @@ triggers:
   tools: []
 ```
 
-- [ ] **Step 4: Run to verify it passes**
+- [x] **Step 4: Run to verify it passes**
 
 Run: `bash tests/test_lazy_skill_activation.sh`
 Expected: PASS (all 11 tests)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add skills/security-scan/SKILL.md skills/money-review/SKILL.md skills/tenant-scope-audit/SKILL.md
@@ -460,7 +460,7 @@ git commit -m "feat(skills): add keyword triggers to security-scan, money-review
 - Modify: `docs/roadmap.md`
 - Modify: `docs/specs/lazy-skill-activation.md`
 
-- [ ] **Step 1: Capture baseline line count**
+- [x] **Step 1: Capture baseline line count**
 
 ```bash
 # Identify a concatenated agent output (e.g. Copilot or Gemini if configured)
@@ -470,7 +470,7 @@ ls agents/ 2>/dev/null || echo "no agents dir"
 wc -l .claude/CLAUDE.md 2>/dev/null || echo "no CLAUDE.md (template mode — measure a concat agent instead)"
 ```
 
-- [ ] **Step 2: Run octopus setup and measure reduction**
+- [x] **Step 2: Run octopus setup and measure reduction**
 
 ```bash
 octopus setup
@@ -479,11 +479,11 @@ wc -l .claude/CLAUDE.md
 grep "inactive" .claude/CLAUDE.md 2>/dev/null || echo "no stubs found (template mode agent)"
 ```
 
-- [ ] **Step 3: Write research doc at docs/research/2026-04-22-lazy-skill-dogfood.md**
+- [x] **Step 3: Write research doc at docs/research/2026-04-22-lazy-skill-dogfood.md**
 
 Capture: skills stubbed vs. full, before/after line counts and % reduction, any parsing issues or false negatives, fixes applied.
 
-- [ ] **Step 4: Move RM-022 to Completed in docs/roadmap.md**
+- [x] **Step 4: Move RM-022 to Completed in docs/roadmap.md**
 
 In the Backlog section, remove the RM-022 bullet. Add to the Completed table:
 
@@ -491,7 +491,7 @@ In the Backlog section, remove the RM-022 bullet. Add to the Completed table:
 | RM-022 | Lazy skill activation via `triggers:` frontmatter — path/keyword/tool evaluation at setup time; non-matching skills replaced with 3-line stub in concatenated outputs | completed → [Spec](specs/lazy-skill-activation.md) | 2026-04-22 |
 ```
 
-- [ ] **Step 5: Flip spec Status**
+- [x] **Step 5: Flip spec Status**
 
 In `docs/specs/lazy-skill-activation.md`, change:
 ```
@@ -502,7 +502,7 @@ to:
 | **Status** | Implemented (2026-04-22) |
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add docs/research/2026-04-22-lazy-skill-dogfood.md docs/roadmap.md docs/specs/lazy-skill-activation.md

@@ -27,10 +27,8 @@ roadmap-first when the idea still needs shaping.
 
 ### Cluster 1 — Reduce tokens loaded per session
 
-- **RM-022** 🔴 High — Lazy skill activation via frontmatter `triggers:`
-  (paths / keywords / tools). Agents that concatenate (Copilot, Codex,
-  Gemini, OpenCode) replace non-matching skills with a 3-line stub.
-  Estimate: −40% to −70% of the output file.
+_RM-022 complete. Cluster 1 now has no open items._
+
 ### Cluster 2 — Reduce LLM calls
 
 - **RM-025** 🔴 High — Pre-LLM deterministic pass: audit skills run
@@ -132,3 +130,4 @@ _No items in progress._
 | RM-035 | `/octopus:doc-design` — interactive spec-design session filling Design, Implementation Plan, Testing, and adaptive (Non-Goals / Risks / Migration) sections via a one-question-at-a-time conversation; HARD-GATE against writing code; chained from `/octopus:doc-spec` | completed → [Spec](specs/doc-design-command.md) | 2026-04-21 |
 | RM-036 | `/octopus:doc-plan` — reads a completed spec and writes `docs/plans/<slug>.md` (bite-sized, TDD-style, matches superpowers:writing-plans vocabulary); adaptive "too big / too small" task decomposition; HARD-GATE against writing code; docs-only branch auto-created when starting from main | completed → [Spec](specs/doc-plan-command.md) | 2026-04-21 |
 | RM-037 | `/octopus:implement` gains a `--plan` walker mode that executes a plan file task-by-task, dispatching the existing single-task TDD loop per task, pausing for human review between tasks, flipping checkboxes in place for resume, and closing Cluster 5 | completed → [Spec](specs/implement-plan-walker.md) | 2026-04-21 |
+| RM-022 | Lazy skill activation via `triggers:` frontmatter — path/keyword/tool evaluation at setup time in `concatenate_from_manifest`; non-matching skills replaced with 3-line stub; 6 domain-specific skills annotated | completed → [Spec](specs/lazy-skill-activation.md) | 2026-04-22 |
