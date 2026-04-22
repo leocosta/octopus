@@ -754,6 +754,119 @@ generate_from_template() {
   fi
 }
 
+# Cache git-tracked files once (used by _skill_triggers_match)
+_OCTOPUS_GIT_FILES=""
+if git rev-parse --is-inside-work-tree &>/dev/null 2>&1; then
+  _OCTOPUS_GIT_FILES=$(git ls-files)
+fi
+
+_skill_has_triggers() {
+  local skill_file="$OCTOPUS_DIR/skills/${1}/SKILL.md"
+  grep -q "^triggers:" "$skill_file" 2>/dev/null
+}
+
+_skill_triggers_match() {
+  local skill_name="$1"
+  local skill_file="$OCTOPUS_DIR/skills/${skill_name}/SKILL.md"
+
+  local paths_raw keywords_raw tools_raw
+  paths_raw=$(python3 - "$skill_file" <<'PYEOF'
+import sys, re
+content = open(sys.argv[1]).read()
+m = re.search(r'^---\n(.*?)\n---', content, re.DOTALL)
+if not m: sys.exit(0)
+fm = m.group(1)
+tm = re.search(r'triggers:\s*\n((?:\s+\S.*\n)*)', fm)
+if not tm: sys.exit(0)
+pm = re.search(r'paths:\s*\[([^\]]*)\]', tm.group(0))
+if pm:
+    items = [x.strip().strip('"\'') for x in pm.group(1).split(',') if x.strip()]
+    print('\n'.join(items))
+PYEOF
+)
+  keywords_raw=$(python3 - "$skill_file" <<'PYEOF'
+import sys, re
+content = open(sys.argv[1]).read()
+m = re.search(r'^---\n(.*?)\n---', content, re.DOTALL)
+if not m: sys.exit(0)
+fm = m.group(1)
+tm = re.search(r'triggers:\s*\n((?:\s+\S.*\n)*)', fm)
+if not tm: sys.exit(0)
+km = re.search(r'keywords:\s*\[([^\]]*)\]', tm.group(0))
+if km:
+    items = [x.strip().strip('"\'') for x in km.group(1).split(',') if x.strip()]
+    print('\n'.join(items))
+PYEOF
+)
+  tools_raw=$(python3 - "$skill_file" <<'PYEOF'
+import sys, re
+content = open(sys.argv[1]).read()
+m = re.search(r'^---\n(.*?)\n---', content, re.DOTALL)
+if not m: sys.exit(0)
+fm = m.group(1)
+tm = re.search(r'triggers:\s*\n((?:\s+\S.*\n)*)', fm)
+if not tm: sys.exit(0)
+tl = re.search(r'tools:\s*\[([^\]]*)\]', tm.group(0))
+if tl:
+    items = [x.strip().strip('"\'') for x in tl.group(1).split(',') if x.strip()]
+    print('\n'.join(items))
+PYEOF
+)
+
+  # paths: glob → ERE, match against cached git ls-files
+  while IFS= read -r pat; do
+    [[ -z "$pat" ]] && continue
+    local regex
+    regex=$(echo "$pat" | sed \
+      's/\./\\./g;
+       s/\*\*/DSTAR/g;
+       s/\*/[^\/]*/g;
+       s/DSTAR/.*/g')
+    echo "$_OCTOPUS_GIT_FILES" | grep -qE "$regex" && return 0
+  done <<< "$paths_raw"
+
+  # keywords: grep in project root files and docs/
+  while IFS= read -r kw; do
+    [[ -z "$kw" ]] && continue
+    grep -rqiE "$kw" README* package.json pyproject.toml docs/ 2>/dev/null && return 0
+  done <<< "$keywords_raw"
+
+  # tools: match against OCTOPUS_MANIFEST_TOOLS array
+  while IFS= read -r tool; do
+    [[ -z "$tool" ]] && continue
+    [[ " ${OCTOPUS_MANIFEST_TOOLS[*]:-} " == *" $tool "* ]] && return 0
+  done <<< "$tools_raw"
+
+  return 1
+}
+
+_skill_triggers_summary() {
+  local skill_file="$OCTOPUS_DIR/skills/${1}/SKILL.md"
+  python3 - "$skill_file" <<'PYEOF'
+import sys, re
+content = open(sys.argv[1]).read()
+m = re.search(r'^---\n(.*?)\n---', content, re.DOTALL)
+if not m: print("configured triggers"); sys.exit(0)
+fm = m.group(1)
+tm = re.search(r'triggers:\s*\n((?:\s+\S.*\n)*)', fm)
+if not tm: print("configured triggers"); sys.exit(0)
+parts = []
+pm = re.search(r'paths:\s*\[([^\]]*)\]', tm.group(0))
+if pm:
+    items = [x.strip().strip('"\'') for x in pm.group(1).split(',') if x.strip()]
+    if items: parts.append("paths matching " + ", ".join(items))
+km = re.search(r'keywords:\s*\[([^\]]*)\]', tm.group(0))
+if km:
+    items = [x.strip().strip('"\'') for x in km.group(1).split(',') if x.strip()]
+    if items: parts.append("keywords: " + ", ".join(items))
+tl = re.search(r'tools:\s*\[([^\]]*)\]', tm.group(0))
+if tl:
+    items = [x.strip().strip('"\'') for x in tl.group(1).split(',') if x.strip()]
+    if items: parts.append("tools: " + ", ".join(items))
+print("; ".join(parts) if parts else "configured triggers")
+PYEOF
+}
+
 concatenate_from_manifest() {
   local agent="$1"
   local output_path="$2"
@@ -829,7 +942,17 @@ concatenate_from_manifest() {
   if [[ "$MANIFEST_CAP_SKILLS" != "true" ]]; then
     for skill in "${OCTOPUS_SKILLS[@]}"; do
       local skill_file="$OCTOPUS_DIR/skills/$skill/SKILL.md"
-      if [[ -f "$skill_file" ]]; then
+      [[ -f "$skill_file" ]] || continue
+      if _skill_has_triggers "$skill" && ! _skill_triggers_match "$skill"; then
+        local summary
+        summary=$(_skill_triggers_summary "$skill")
+        {
+          echo ""
+          echo "# ${skill} (inactive — triggers not matched at setup)"
+          echo "Activate when: ${summary}."
+          echo "Full protocol: read \`octopus/skills/${skill}/SKILL.md\` if conditions arise."
+        } >> "$full_output"
+      else
         echo "" >> "$full_output"
         cat "$skill_file" >> "$full_output"
       fi
