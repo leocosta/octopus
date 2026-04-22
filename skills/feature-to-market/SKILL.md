@@ -5,6 +5,10 @@ description: >
   into a versioned multi-channel launch kit under
   docs/marketing/launches/YYYY-MM-DD-<slug>/ — posts, email, LP copy,
   commercial changelog, video script, and optional image assets.
+triggers:
+  paths: ["docs/marketing/**", "docs/launches/**", "roadmap.md"]
+  keywords: ["launch", "marketing", "announcement", "go-to-market", "channel"]
+  tools: []
 ---
 
 # Feature-to-Market Protocol

@@ -82,3 +82,21 @@ grep -q "^triggers:" "$SCRIPT_DIR/skills/tenant-scope-audit/SKILL.md" \
 grep -q 'tenant\|org\|workspace' "$SCRIPT_DIR/skills/tenant-scope-audit/SKILL.md" \
   || { echo "FAIL: tenant-scope-audit triggers missing expected keywords"; exit 1; }
 echo "PASS"
+
+echo "Test 12: plan-backlog-hygiene has triggers: with paths and keywords"
+grep -q "^triggers:" "$SCRIPT_DIR/skills/plan-backlog-hygiene/SKILL.md" \
+  || { echo "FAIL: plan-backlog-hygiene missing triggers:"; exit 1; }
+grep -q 'plans/\|roadmap' "$SCRIPT_DIR/skills/plan-backlog-hygiene/SKILL.md" \
+  || { echo "FAIL: plan-backlog-hygiene triggers missing expected paths"; exit 1; }
+grep -q 'plan\|backlog\|roadmap' "$SCRIPT_DIR/skills/plan-backlog-hygiene/SKILL.md" \
+  || { echo "FAIL: plan-backlog-hygiene triggers missing expected keywords"; exit 1; }
+echo "PASS"
+
+echo "Test 13: release-announce has triggers: with paths and keywords"
+grep -q "^triggers:" "$SCRIPT_DIR/skills/release-announce/SKILL.md" \
+  || { echo "FAIL: release-announce missing triggers:"; exit 1; }
+grep -q 'CHANGELOG\|releases/' "$SCRIPT_DIR/skills/release-announce/SKILL.md" \
+  || { echo "FAIL: release-announce triggers missing expected paths"; exit 1; }
+grep -q 'release\|changelog\|announce' "$SCRIPT_DIR/skills/release-announce/SKILL.md" \
+  || { echo "FAIL: release-announce triggers missing expected keywords"; exit 1; }
+echo "PASS"

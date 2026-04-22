@@ -1,6 +1,10 @@
 ---
 name: batch
 description: Fan out a prompt across many targets (files / modules / directories) running each in an isolated git worktree, then merge results back.
+triggers:
+  paths: ["packages/**", "modules/**", "apps/**", ".worktrees/**"]
+  keywords: ["monorepo", "workspace", "turborepo", "lerna", "nx"]
+  tools: []
 ---
 
 # Batch — parallel fan-out with worktree isolation

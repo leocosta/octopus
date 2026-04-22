@@ -10,6 +10,10 @@ depends_on:
   - money-review
   - tenant-scope-audit
   - cross-stack-contract
+triggers:
+  paths: ["openapi/**", "contracts/**", "**/openapi.yaml", "**/openapi.json"]
+  keywords: ["auth", "jwt", "payment", "invoice", "stripe", "tenant", "org", "workspace"]
+  tools: []
 ---
 
 # Audit-All Protocol

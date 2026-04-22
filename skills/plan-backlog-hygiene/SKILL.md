@@ -6,6 +6,10 @@ description: >
   `archive/`, duplicates for the same RM, broken internal links,
   roadmap entries without a plan, and stale plans. Default mode is
   read-only; `--fix` applies reversible moves to `plans/archive/`.
+triggers:
+  paths: ["plans/**", "docs/plans/**", "docs/roadmap.md", "roadmap.md"]
+  keywords: ["plan", "backlog", "roadmap", "RM-"]
+  tools: []
 ---
 
 # Plan-Backlog-Hygiene Protocol

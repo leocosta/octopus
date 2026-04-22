@@ -6,6 +6,10 @@ description: >
   Anchors extracted from the skill's test file are preserved;
   frontmatter, headings, and code blocks are never modified. Dry-run
   by default; `--apply` writes the result.
+triggers:
+  paths: ["skills/**/*.md", ".octopus/**", "octopus/**"]
+  keywords: []
+  tools: []
 ---
 
 # Compress-Skill Protocol

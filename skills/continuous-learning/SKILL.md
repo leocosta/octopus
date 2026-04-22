@@ -4,6 +4,10 @@ description: >
   Continuous learning system that captures insights, tests hypotheses, and
   promotes confirmed patterns to rules. Inspired by the Claude.md learning
   protocol — adapted for multi-agent environments (Kilo Code, Codex, Copilot, etc.)
+triggers:
+  paths: ["knowledge/**", "docs/learning/**", "docs/research/**"]
+  keywords: ["learning", "hypothesis", "knowledge", "insight", "pattern"]
+  tools: []
 ---
 
 # Continuous Learning Protocol
