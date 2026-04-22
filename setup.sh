@@ -703,12 +703,23 @@ ensure_common_rule() {
   fi
 }
 
+# --- Dry-run support ---
+
+_dry_run_log() {
+  printf "  \033[2m[dry-run]\033[0m %s\n" "$*"
+}
+
 # --- Manifest-driven generation functions ---
 
 generate_from_template() {
   local agent="$1"
   local output_path="$2"
   local full_output="$(_install_root)/$output_path"
+
+  if [[ "${OCTOPUS_DRY_RUN:-}" == "true" ]]; then
+    _dry_run_log "would write: $output_path"
+    return 0
+  fi
 
   echo "Generating $agent config (template) → $output_path"
   mkdir -p "$(dirname "$full_output")"
@@ -1026,6 +1037,10 @@ LANGEOF
 deliver_rules() {
   local agent="$1"
   if [[ "$MANIFEST_CAP_RULES" != "true" ]]; then return; fi
+  if [[ "${OCTOPUS_DRY_RUN:-}" == "true" ]]; then
+    _dry_run_log "would symlink rules → $MANIFEST_DELIVERY_RULES_TARGET (${OCTOPUS_RULES[*]:-none})"
+    return 0
+  fi
 
   local method="$MANIFEST_DELIVERY_RULES_METHOD"
   local target="$(_install_root)/$MANIFEST_DELIVERY_RULES_TARGET"
@@ -1060,6 +1075,10 @@ deliver_skills() {
   local agent="$1"
   if [[ "$MANIFEST_CAP_SKILLS" != "true" ]]; then return; fi
   if [[ ${#OCTOPUS_SKILLS[@]} -eq 0 ]]; then return; fi
+  if [[ "${OCTOPUS_DRY_RUN:-}" == "true" ]]; then
+    _dry_run_log "would symlink skills → $MANIFEST_DELIVERY_SKILLS_TARGET (${OCTOPUS_SKILLS[*]})"
+    return 0
+  fi
 
   local method="$MANIFEST_DELIVERY_SKILLS_METHOD"
   local target="$(_install_root)/$MANIFEST_DELIVERY_SKILLS_TARGET"
@@ -1135,6 +1154,10 @@ deliver_knowledge() {
   local agent="$1"
   [[ ${#KNOWLEDGE_MODULES[@]} -eq 0 ]] && return
   [[ "$MANIFEST_CAP_KNOWLEDGE" != "true" ]] && return
+  if [[ "${OCTOPUS_DRY_RUN:-}" == "true" ]]; then
+    _dry_run_log "would symlink knowledge → $MANIFEST_DELIVERY_KNOWLEDGE_TARGET"
+    return 0
+  fi
 
   local method="$MANIFEST_DELIVERY_KNOWLEDGE_METHOD"
   # Strip trailing slash so ln -s works correctly
@@ -1153,6 +1176,10 @@ generate_knowledge_index() {
   local knowledge_dir="$(_install_root)/$OCTOPUS_KNOWLEDGE_DIR"
   [[ "$OCTOPUS_KNOWLEDGE_ENABLED" != "true" && ${#KNOWLEDGE_MODULES[@]} -eq 0 ]] && return
   [[ ! -d "$knowledge_dir" ]] && return
+  if [[ "${OCTOPUS_DRY_RUN:-}" == "true" ]]; then
+    _dry_run_log "would write: $OCTOPUS_KNOWLEDGE_DIR/INDEX.md"
+    return 0
+  fi
 
   local index_file="$knowledge_dir/INDEX.md"
 
@@ -1200,6 +1227,10 @@ deliver_hooks() {
   local agent="$1"
   if [[ "$MANIFEST_CAP_HOOKS" != "true" ]]; then return; fi
   if [[ "$OCTOPUS_HOOKS" == "false" ]]; then return; fi
+  if [[ "${OCTOPUS_DRY_RUN:-}" == "true" ]]; then
+    _dry_run_log "would merge hooks → $MANIFEST_DELIVERY_HOOKS_TARGET"
+    return 0
+  fi
 
   local method="$MANIFEST_DELIVERY_HOOKS_METHOD"
 
@@ -1279,6 +1310,10 @@ deliver_permissions() {
   local agent="$1"
   if [[ "$OCTOPUS_PERMISSIONS_MODE" == "" ]]; then return; fi
   if [[ "$MANIFEST_DELIVERY_HOOKS_METHOD" != "settings_json" ]]; then return; fi
+  if [[ "${OCTOPUS_DRY_RUN:-}" == "true" ]]; then
+    _dry_run_log "would merge permissions → $MANIFEST_DELIVERY_HOOKS_TARGET"
+    return 0
+  fi
 
   local settings_file="$(_install_root)/$MANIFEST_DELIVERY_HOOKS_TARGET"
 
@@ -1374,6 +1409,10 @@ deliver_effort_level() {
   if [[ -z "$OCTOPUS_EFFORT_LEVEL" ]]; then return; fi
   if [[ "$agent" != "claude" ]]; then return; fi
   if [[ "$MANIFEST_DELIVERY_HOOKS_METHOD" != "settings_json" ]]; then return; fi
+  if [[ "${OCTOPUS_DRY_RUN:-}" == "true" ]]; then
+    _dry_run_log "would set effortLevel=$OCTOPUS_EFFORT_LEVEL → $MANIFEST_DELIVERY_HOOKS_TARGET"
+    return 0
+  fi
 
   local settings_file="$(_install_root)/$MANIFEST_DELIVERY_HOOKS_TARGET"
 
@@ -1438,6 +1477,11 @@ deliver_boris_settings() {
     return
   fi
 
+  if [[ "${OCTOPUS_DRY_RUN:-}" == "true" ]]; then
+    _dry_run_log "would inject boris-tip settings (${pairs[*]}) → $MANIFEST_DELIVERY_HOOKS_TARGET"
+    return 0
+  fi
+
   echo "Injecting Boris-tip settings into $MANIFEST_DELIVERY_HOOKS_TARGET for $agent..."
 
   python3 - "$settings_file" "${pairs[@]}" <<'PYEOF'
@@ -1482,6 +1526,10 @@ deliver_dream_subagent() {
   fi
 
   local target_dir="$(_install_root)/${MANIFEST_DELIVERY_AGENTS_TARGET:-.claude/agents/}"
+  if [[ "${OCTOPUS_DRY_RUN:-}" == "true" ]]; then
+    _dry_run_log "would copy dream subagent → ${MANIFEST_DELIVERY_AGENTS_TARGET}dream.md"
+    return 0
+  fi
   mkdir -p "$target_dir"
   cp "$source" "$target_dir/dream.md"
   echo "  → ${MANIFEST_DELIVERY_AGENTS_TARGET}dream.md (RM-013)"
@@ -1503,6 +1551,10 @@ deliver_github_action() {
     return
   fi
 
+  if [[ "${OCTOPUS_DRY_RUN:-}" == "true" ]]; then
+    _dry_run_log "would scaffold .github/workflows/claude.yml (RM-016)"
+    return 0
+  fi
   mkdir -p "$target_dir"
   if [[ -f "$target" ]]; then
     echo "  → .github/workflows/claude.yml already exists; leaving intact (delete to regenerate)"
@@ -1644,6 +1696,11 @@ deliver_git_hooks() {
     return 0
   fi
 
+  if [[ "${OCTOPUS_DRY_RUN:-}" == "true" ]]; then
+    _dry_run_log "would install pre-push audit-suggest hook → $target"
+    return 0
+  fi
+
   if [[ -f "$target" ]]; then
     echo "  Chaining Octopus audit-suggest onto existing pre-push hook..."
     printf '\n# octopus:pre-push-audit-suggest\nbash "%s"\n' "$hook_src" >> "$target"
@@ -1657,6 +1714,10 @@ deliver_git_hooks() {
 deliver_roles() {
   local agent="$1"
   if [[ ${#OCTOPUS_ROLES[@]} -eq 0 ]]; then return; fi
+  if [[ "${OCTOPUS_DRY_RUN:-}" == "true" ]]; then
+    _dry_run_log "would deliver roles (${OCTOPUS_ROLES[*]}) → ${MANIFEST_DELIVERY_AGENTS_TARGET}"
+    return 0
+  fi
 
   # Load base content once (cached across calls)
   if [[ -z "${_ROLES_CONTEXT_LOADED:-}" ]]; then
@@ -1733,6 +1794,11 @@ deliver_commands() {
   local agent="$1"
   local output_path="${OCTOPUS_AGENT_OUTPUT[$agent]:-$MANIFEST_OUTPUT}"
   local prefix="${MANIFEST_DELIVERY_COMMANDS_PREFIX:-octopus:}"
+
+  if [[ "${OCTOPUS_DRY_RUN:-}" == "true" ]]; then
+    _dry_run_log "would deliver commands → ${MANIFEST_DELIVERY_COMMANDS_TARGET}"
+    return 0
+  fi
 
   if [[ "$MANIFEST_CAP_COMMANDS" == "true" ]]; then
     # Native delivery: individual command files
@@ -2005,6 +2071,11 @@ deliver_mcp() {
   if [[ "$MANIFEST_CAP_MCP" != "true" ]]; then return; fi
   if [[ ${#OCTOPUS_MCP[@]} -eq 0 ]]; then return; fi
 
+  if [[ "${OCTOPUS_DRY_RUN:-}" == "true" ]]; then
+    _dry_run_log "would inject MCP servers (${OCTOPUS_MCP[*]}) → $MANIFEST_DELIVERY_MCP_TARGET"
+    return 0
+  fi
+
   echo "Injecting MCP servers for $agent..."
 
   # Build merged MCP object once per agent
@@ -2050,6 +2121,10 @@ manage_env() {
   # Copy template if .env.octopus doesn't exist
   if [[ ! -f "$env_file" ]]; then
     if [[ -f "$env_example" ]]; then
+      if [[ "${OCTOPUS_DRY_RUN:-}" == "true" ]]; then
+        _dry_run_log "would create .env.octopus from template"
+        return 0
+      fi
       cp "$env_example" "$env_file"
       # User-scope secrets must not be world-readable.
       _is_user_scope && chmod 600 "$env_file" 2>/dev/null || true
@@ -2116,6 +2191,11 @@ update_gitignore() {
   fi
 
   local gitignore="$(_install_root)/.gitignore"
+
+  if [[ "${OCTOPUS_DRY_RUN:-}" == "true" ]]; then
+    _dry_run_log "would update .gitignore (${ALL_GITIGNORE_ENTRIES[*]})"
+    return 0
+  fi
 
   # Create .gitignore if it doesn't exist
   touch "$gitignore"
