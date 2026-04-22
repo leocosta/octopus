@@ -140,5 +140,31 @@ parse_octopus_yml "$TMPDIR4/test.yml"
 echo "PASS: destructiveGuard parsed"
 rm -rf "$TMPDIR4"
 
+echo "Test: deliver_hooks is idempotent — no duplicate hook ids after two runs"
+TMPDIR5=$(mktemp -d)
+mkdir -p "$TMPDIR5/.claude"
+echo '{"permissions": {}, "hooks": {}, "mcpServers": {}}' > "$TMPDIR5/.claude/settings.json"
+export OCTOPUS_HOOKS="true"
+export PROJECT_ROOT="$TMPDIR5"
+export MANIFEST_CAP_HOOKS="true"
+export MANIFEST_DELIVERY_HOOKS_METHOD="settings_json"
+export MANIFEST_DELIVERY_HOOKS_TARGET=".claude/settings.json"
+export OCTOPUS_DIR="$SCRIPT_DIR"
+unset OCTOPUS_DISABLED_HOOKS
+deliver_hooks "claude"
+deliver_hooks "claude"  # second run — must not duplicate
+hook_ids=$(python3 -c "
+import json, sys
+with open('$TMPDIR5/.claude/settings.json') as f:
+    s = json.load(f)
+ids = [h.get('id') for ev in s.get('hooks', {}).values() for m in ev for h in m.get('hooks', [])]
+dups = [i for i in ids if ids.count(i) > 1]
+print('duplicates:' + ','.join(set(dups)) if dups else 'ok')
+")
+[[ "$hook_ids" == "ok" ]] \
+  || { echo "FAIL: duplicate hook ids found after two deliver_hooks runs: $hook_ids"; exit 1; }
+echo "PASS: deliver_hooks is idempotent"
+rm -rf "$TMPDIR5"
+
 echo ""
 echo "All hooks injection tests passed!"
