@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.21.0] - 2026-04-22
+
+✨ This release ships **RM-025 — Pre-LLM Audit Pass**, completing the token-reduction arc started in v1.20.0. All four audit skills (`money-review`, `security-scan`, `cross-stack-contract`, `tenant-scope-audit`) now run a deterministic grep phase before handing the diff to the LLM. A new shared fragment `skills/_shared/audit-pre-pass.md` defines the four-step protocol: filter candidate files from `git diff --name-only`, exit early if none match, apply an optional line-level filter, and produce a scoped diff containing only relevant files.
+
+Each skill declares its domain patterns via a new `pre_pass:` frontmatter block alongside `triggers:`. On PRs with no relevant files the skill exits immediately with "no changes detected", avoiding any LLM call. 📝 The spec was published separately in PR #73 before implementation, following the doc-design → doc-plan → implement workflow.
+
 ## [1.20.0] - 2026-04-22
 
 ✨ This release ships **RM-022 — Lazy Skill Activation**, the first item
