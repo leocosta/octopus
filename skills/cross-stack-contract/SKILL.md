@@ -11,6 +11,9 @@ triggers:
   paths: ["openapi/**", "contracts/**", "**/openapi.yaml", "**/openapi.json", "**/swagger.yaml"]
   keywords: []
   tools: []
+pre_pass:
+  file_patterns: "controller|endpoint|route|openapi|swagger|dto|request|response|contract"
+  line_patterns: "\\[Route\\]|\\[HttpGet\\]|\\[HttpPost\\]|app\\.map|MapGet|MapPost|fetch\\(|axios\\."
 ---
 
 # Cross-Stack Contract Protocol
@@ -47,6 +50,12 @@ Skill-specific flag:
 Valid `--only` checks:
 `endpoint-added,endpoint-removed,dto,enum,status,auth,params`.
 Report prefix: `contract`.
+
+## File Discovery
+
+Follow the Pre-Pass protocol in `skills/_shared/audit-pre-pass.md`.
+Use this skill's `pre_pass.file_patterns` and `pre_pass.line_patterns` from the frontmatter.
+Proceed to stack discovery and inspection checks only with the scoped diff produced by Step 4.
 
 ## Stack Discovery
 

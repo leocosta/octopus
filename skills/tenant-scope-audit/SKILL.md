@@ -12,6 +12,9 @@ triggers:
   paths: []
   keywords: ["tenant", "org", "workspace", "multi-tenant", "organization"]
   tools: []
+pre_pass:
+  file_patterns: "tenant|org|workspace|organization|scope"
+  line_patterns: "tenantId|orgId|workspaceId|TenantId|OrgId"
 ---
 
 # Tenant-Scope-Audit Protocol
@@ -68,24 +71,9 @@ back to defaults, and continue.
 
 ## File Discovery
 
-A file is tenant-relevant if any of the following holds for the diff
-of `<ref>` against `--base`:
-
-1. **Path tokens** — path contains any of: `Controller`, `Service`,
-   `Repository`, `DbContext`, `Queries`, `Commands`, `Entity`,
-   `Domain`, or `Handlers`.
-2. **Content references** — added/modified lines mention the
-   configured `field` (default `TenantId`) or the configured
-   `context` (default `AppDbContext`).
-3. **Signal regex** (case-sensitive):
-   - `IgnoreQueryFilters\(\)`
-   - `FromSqlRaw\(|ExecuteSqlRaw\(|Database\.SqlQuery`
-   - `HasQueryFilter\(`
-   - `\[Authorize\(.*Admin`
-   - `public class \w+Controller`
-4. **Repo overrides** — override cascade follows the shared
-   convention (see
-   [`_shared/audit-output-format.md`](../_shared/audit-output-format.md)).
+Follow the Pre-Pass protocol in `skills/_shared/audit-pre-pass.md`.
+Use this skill's `pre_pass.file_patterns` and `pre_pass.line_patterns` from the frontmatter.
+Proceed to inspection checks only with the scoped diff produced by Step 4.
 
 ## Inspection Checks
 
