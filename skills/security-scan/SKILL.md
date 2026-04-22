@@ -16,7 +16,7 @@ pre_pass:
 
 Follow the Pre-Pass protocol in `skills/_shared/audit-pre-pass.md`.
 Use this skill's `pre_pass.file_patterns` and `pre_pass.line_patterns` from the frontmatter.
-Proceed to audit areas only with the scoped diff produced by Step 4.
+Then follow the Cache protocol in `skills/_shared/audit-cache.md` before proceeding to audit areas.
 
 ## When to Use
 

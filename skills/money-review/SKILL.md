@@ -44,7 +44,7 @@ Report prefix: `money`.
 
 Follow the Pre-Pass protocol in `skills/_shared/audit-pre-pass.md`.
 Use this skill's `pre_pass.file_patterns` and `pre_pass.line_patterns` from the frontmatter.
-Proceed to inspection checks only with the scoped diff produced by Step 4.
+Then follow the Cache protocol in `skills/_shared/audit-cache.md` before proceeding to inspection checks.
 
 A separate "spec set" is collected: any `docs/specs/*.md`,
 `docs/research/*.md`, or `docs/roadmap.md` section touched by the same
