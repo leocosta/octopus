@@ -77,10 +77,19 @@ Step 4 — scoped diff output
 
 **4.3 Integration in the 4 audit skills**
 
-The existing `## File Discovery` section in each skill is **replaced** by:
+The existing file-discovery section in each skill is **replaced** by a reference to the shared fragment. The section heading varies per skill:
+
+| Skill | Section to replace |
+|---|---|
+| `money-review` | `## File Discovery` |
+| `security-scan` | `## File Discovery` |
+| `tenant-scope-audit` | `## File Discovery` |
+| `cross-stack-contract` | `## Stack Discovery` |
+
+Replacement content (heading retained, body replaced):
 
 ```markdown
-## File Discovery
+## File Discovery   <!-- or ## Stack Discovery for cross-stack-contract -->
 
 Follow the Pre-Pass protocol in `skills/_shared/audit-pre-pass.md`.
 Use this skill's `pre_pass.file_patterns` and `pre_pass.line_patterns` from the frontmatter.
@@ -114,7 +123,7 @@ Regression risk: low. The only behavioral change is early-exit on PRs with no re
 
 3. **Update `skills/security-scan/SKILL.md`** — same, with security patterns (including `\.env`)
 
-4. **Update `skills/cross-stack-contract/SKILL.md`** — same, with contract patterns
+4. **Update `skills/cross-stack-contract/SKILL.md`** — same, with contract patterns; note: replace `## Stack Discovery` (not `## File Discovery`) with the shared fragment reference
 
 5. **Update `skills/tenant-scope-audit/SKILL.md`** — same, with tenant patterns
 
