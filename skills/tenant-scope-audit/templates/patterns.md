@@ -3,6 +3,17 @@
 > Embedded default. Override at `docs/tenant-scope-audit/patterns.md`.
 > Overrides append; they do not replace the defaults.
 
+## Path tokens
+
+tenant, multitenant, tenancy, organization, workspace, academy, scope
+
+## Content regex
+
+- `IgnoreQueryFilters`
+- `FromSqlRaw|FromSqlInterpolated|ExecuteSqlRaw|ExecuteSqlInterpolated`
+- `tenant_id|tenantid|org_id|organization_id|workspace_id`
+- `AllTenants|CrossTenant|SuperAdmin`
+
 ## Tenant field names (T3 raw SQL check)
 
 Recognized tenant column names (case-insensitive substring match

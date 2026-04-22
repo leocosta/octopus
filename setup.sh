@@ -65,6 +65,7 @@ declare -a OCTOPUS_CMD_NAMES=()
 declare -a OCTOPUS_CMD_DESCS=()
 declare -a OCTOPUS_CMD_RUNS=()
 OCTOPUS_WORKFLOW=false
+OCTOPUS_POST_MERGE_AUDIT_HOOK="true"   # RM-029: default enabled; set false to opt out
 declare -a OCTOPUS_ROLES=()
 declare -a OCTOPUS_REVIEWERS=()
 OCTOPUS_KNOWLEDGE_ENABLED="false"
@@ -332,6 +333,7 @@ parse_octopus_yml() {
         sandbox)      OCTOPUS_SANDBOX="$val" ;;
         githubAction) OCTOPUS_GITHUB_ACTION="$val" ;;
         destructiveGuard) OCTOPUS_DESTRUCTIVE_GUARD="$val" ;;
+        postMergeAuditHook) OCTOPUS_POST_MERGE_AUDIT_HOOK="$val" ;;
       esac
       current_section=""
       continue
@@ -1588,6 +1590,53 @@ normalize_role_frontmatter_for_agent() {
   done
 }
 
+deliver_git_hooks() {
+  # RM-029: install pre-push audit-suggest hook into the repo's git hooks dir.
+  # Conditions: workflow: true, postMergeAuditHook not false, at least one audit skill present.
+  [[ "$OCTOPUS_WORKFLOW" == "true" ]] || return 0
+  [[ "$OCTOPUS_POST_MERGE_AUDIT_HOOK" == "false" ]] && return 0
+
+  # Check if any audit skill is installed.
+  local _has_audit=0
+  for _skill in "${OCTOPUS_SKILLS[@]}"; do
+    case "$_skill" in
+      money-review|tenant-scope-audit|cross-stack-contract|security-scan|audit-all)
+        _has_audit=1; break ;;
+    esac
+  done
+  (( _has_audit )) || return 0
+
+  # Resolve hooks dir (core.hooksPath or .git/hooks).
+  local hooks_dir
+  hooks_dir="$(git rev-parse --git-dir 2>/dev/null)/hooks"
+  local core_hooks
+  core_hooks="$(git config --local core.hooksPath 2>/dev/null || true)"
+  [[ -n "$core_hooks" ]] && hooks_dir="$core_hooks"
+
+  mkdir -p "$hooks_dir"
+  local target="$hooks_dir/pre-push"
+  local hook_src="$OCTOPUS_DIR/hooks/git/pre-push-audit-suggest.sh"
+
+  if [[ ! -f "$hook_src" ]]; then
+    echo "WARNING: pre-push-audit-suggest.sh not found at $hook_src — skipping git hook install." >&2
+    return 0
+  fi
+
+  # Idempotent: skip if already installed.
+  if [[ -f "$target" ]] && grep -q "octopus:pre-push-audit-suggest" "$target" 2>/dev/null; then
+    return 0
+  fi
+
+  if [[ -f "$target" ]]; then
+    echo "  Chaining Octopus audit-suggest onto existing pre-push hook..."
+    printf '\n# octopus:pre-push-audit-suggest\nbash "%s"\n' "$hook_src" >> "$target"
+  else
+    cp "$hook_src" "$target"
+    chmod +x "$target"
+    echo "  Installed pre-push audit-suggest hook at $target"
+  fi
+}
+
 deliver_roles() {
   local agent="$1"
   if [[ ${#OCTOPUS_ROLES[@]} -eq 0 ]]; then return; fi
@@ -2248,6 +2297,9 @@ done
 
 # 3b. Generate knowledge index
 generate_knowledge_index
+
+# 3c. Install git hooks (RM-029: pre-push audit-suggest).
+deliver_git_hooks
 
 # 4. Manage .env
 manage_env
