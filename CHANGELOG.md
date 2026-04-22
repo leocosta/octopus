@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.22.0] - 2026-04-22
+
+✨ This release closes three roadmap items that together make Octopus audits faster and more automatic.
+
+The audit pipeline gains a **content-keyed output cache** (RM-026): each run hashes the scoped diff against the skill's own SKILL.md, stores the result under `.octopus/cache/<skill>/<key>.md`, and replays it instantly on re-runs without calling the LLM. The shared protocol lives in `skills/_shared/audit-cache.md` and is referenced by all four audit skills. A `.gitignore` guard is applied automatically so cache files are never committed.
+
+The Full-mode setup wizard now shows a **skill impact table** before the user confirms their selection (RM-027): the new `_skill_impact_table()` helper in `setup-wizard.sh` reads `wc -l` from each skill's SKILL.md and displays lines and an estimated token count (~4 tokens/line), making the cost of a selection visible upfront.
+
+✨ A new advisory **pre-push git hook** (RM-029) rounds out the release. `cli/lib/audit-map.sh` is a pure bash library that parses the patterns.md cascade for each audit skill — path tokens tested against changed file paths, content regexes tested against added/removed lines — and emits the matched audit names in criticality order. `hooks/git/pre-push-audit-suggest.sh` uses this library to print a suggestion blocklet before every push, listing which Octopus audits the diff is likely to need. The hook is installed by `octopus setup` when `workflow: true` and at least one audit skill is present; it is advisory only, never blocks, and can be skipped with `OCTOPUS_SKIP_AUDIT_HOOK=1` or disabled repo-wide with `postMergeAuditHook: false` in `.octopus.yml`. Chain-mode preserves any pre-existing `pre-push` hook. The `patterns.md` files for `money-review`, `tenant-scope-audit`, and the newly created `security-scan` were migrated to the standard `## Path tokens` / `## Content regex` schema the library expects.
+
 ## [1.21.0] - 2026-04-22
 
 ✨ This release ships **RM-025 — Pre-LLM Audit Pass**, completing the token-reduction arc started in v1.20.0. All four audit skills (`money-review`, `security-scan`, `cross-stack-contract`, `tenant-scope-audit`) now run a deterministic grep phase before handing the diff to the LLM. A new shared fragment `skills/_shared/audit-pre-pass.md` defines the four-step protocol: filter candidate files from `git diff --name-only`, exit early if none match, apply an optional line-level filter, and produce a scoped diff containing only relevant files.
