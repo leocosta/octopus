@@ -9,6 +9,9 @@ triggers:
   paths: []
   keywords: ["payment", "invoice", "stripe", "billing", "subscription", "checkout", "price"]
   tools: []
+pre_pass:
+  file_patterns: "billing|payment|charge|cobran|split|invoice|subscription|asaas|stripe|pix|webhook|refund|reembolso|tax|taxa|fee"
+  line_patterns: "PERCENT[_A-Z]*\\s*=|\\bdecimal\\b|asaas|stripe|mercadopago|webhook.*(signature|hmac)"
 ---
 
 # Money-Review Protocol
@@ -39,21 +42,9 @@ Report prefix: `money`.
 
 ## File Discovery
 
-A file is "money-touched" if any of the following match in the diff of
-`<ref>` against `--base`:
-
-1. **Filename tokens** — path contains any of: `billing`, `payment`,
-   `charge`, `cobran`, `split`, `invoice`, `subscription`, `asaas`,
-   `stripe`, `pix`, `webhook`, `refund`, `reembolso`, `tax`, `taxa`,
-   `fee`.
-2. **Content regex (case-insensitive)** on the added/removed lines:
-   - `\b(PERCENT|PERCENTAGE|RATE|FEE)[_A-Z]*\s*=`
-   - `\bdecimal\b` in `*.cs` files near `cents|centavos|amount|valor`
-   - `asaas|stripe|mercadopago`
-   - `webhook` combined with `signature|hmac|signing`
-3. **Repo overrides** — override cascade for `patterns.md` and
-   `providers.md` follows the shared convention (see
-   [`_shared/audit-output-format.md`](../_shared/audit-output-format.md)).
+Follow the Pre-Pass protocol in `skills/_shared/audit-pre-pass.md`.
+Use this skill's `pre_pass.file_patterns` and `pre_pass.line_patterns` from the frontmatter.
+Proceed to inspection checks only with the scoped diff produced by Step 4.
 
 A separate "spec set" is collected: any `docs/specs/*.md`,
 `docs/research/*.md`, or `docs/roadmap.md` section touched by the same
