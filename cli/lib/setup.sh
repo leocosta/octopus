@@ -24,6 +24,7 @@ for _arg in "$@"; do
   case "$_arg" in
     --scope=*)    CLI_SCOPE="${_arg#--scope=}" ;;
     --reconfigure) RECONFIGURE_FLAG="--reconfigure" ;;
+    --dry-run)    export OCTOPUS_DRY_RUN="true" ;;
     *)             _remaining_args+=("$_arg") ;;
   esac
 done
