@@ -5,9 +5,18 @@ triggers:
   paths: []
   keywords: ["auth", "jwt", "oauth", "secret", "token", "sql", "password", "credential"]
   tools: []
+pre_pass:
+  file_patterns: "auth|jwt|oauth|secret|token|password|credential|permission|role|middleware|\\.env"
+  line_patterns: "password|secret|Bearer|Authorization|SQL|querySelector"
 ---
 
 # Security Scan
+
+## File Discovery
+
+Follow the Pre-Pass protocol in `skills/_shared/audit-pre-pass.md`.
+Use this skill's `pre_pass.file_patterns` and `pre_pass.line_patterns` from the frontmatter.
+Proceed to audit areas only with the scoped diff produced by Step 4.
 
 ## When to Use
 
