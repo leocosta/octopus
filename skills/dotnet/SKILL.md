@@ -1,6 +1,10 @@
 ---
 name: dotnet
 description: .NET backend architecture patterns, conventions, and decision trees for ASP.NET Core projects
+triggers:
+  paths: ["**/*.csproj", "**/*.cs", "**/*.sln", "**/*.fsproj"]
+  keywords: []
+  tools: []
 ---
 
 # .NET Backend Patterns

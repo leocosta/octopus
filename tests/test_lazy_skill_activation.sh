@@ -40,3 +40,24 @@ echo "Test 7: skills without triggers: always full — backward compat guard"
 grep -q "_skill_has_triggers.*&&.*_skill_triggers_match" "$SETUP" \
   || { echo "FAIL: conditional guard missing — skills without triggers: may be stubbed"; exit 1; }
 echo "PASS"
+
+echo "Test 6: e2e-testing has triggers: with paths"
+grep -q "^triggers:" "$SCRIPT_DIR/skills/e2e-testing/SKILL.md" \
+  || { echo "FAIL: e2e-testing missing triggers:"; exit 1; }
+grep -q 'spec.ts\|cypress\|playwright' "$SCRIPT_DIR/skills/e2e-testing/SKILL.md" \
+  || { echo "FAIL: e2e-testing triggers missing expected paths"; exit 1; }
+echo "PASS"
+
+echo "Test 7: dotnet has triggers: with paths"
+grep -q "^triggers:" "$SCRIPT_DIR/skills/dotnet/SKILL.md" \
+  || { echo "FAIL: dotnet missing triggers:"; exit 1; }
+grep -q '\.csproj\|\.cs' "$SCRIPT_DIR/skills/dotnet/SKILL.md" \
+  || { echo "FAIL: dotnet triggers missing expected paths"; exit 1; }
+echo "PASS"
+
+echo "Test 8: cross-stack-contract has triggers: with paths"
+grep -q "^triggers:" "$SCRIPT_DIR/skills/cross-stack-contract/SKILL.md" \
+  || { echo "FAIL: cross-stack-contract missing triggers:"; exit 1; }
+grep -q 'openapi\|contracts' "$SCRIPT_DIR/skills/cross-stack-contract/SKILL.md" \
+  || { echo "FAIL: cross-stack-contract triggers missing expected paths"; exit 1; }
+echo "PASS"

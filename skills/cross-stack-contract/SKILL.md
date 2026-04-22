@@ -7,6 +7,10 @@ description: >
   break callers, DTO/enum field drift, status-code changes, auth-rule
   changes, and param changes. Produces a severity-tiered report with
   confidence labels.
+triggers:
+  paths: ["openapi/**", "contracts/**", "**/openapi.yaml", "**/openapi.json", "**/swagger.yaml"]
+  keywords: []
+  tools: []
 ---
 
 # Cross-Stack Contract Protocol
