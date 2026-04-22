@@ -3,12 +3,12 @@
 > Embedded default. Override at `docs/money-review/patterns.md`.
 > The override appends to these defaults — it does not replace them.
 
-## Filename tokens
+## Path tokens
 
 billing, payment, charge, cobran, split, invoice, subscription, asaas,
 stripe, pix, webhook, refund, reembolso, tax, taxa, fee
 
-## Content regex (case-insensitive)
+## Content regex
 
 - `\b(PERCENT|PERCENTAGE|RATE|FEE)[_A-Z]*\s*=`
 - `\bdecimal\b` near `cents|centavos|amount|valor` (C#)

@@ -66,6 +66,11 @@ mcp: []
 # Requires: gh (GitHub CLI) >= 2.0 installed and authenticated
 # workflow: true
 
+# Pre-push advisory hook — suggests audit skills when pushing code that touches
+# sensitive areas (billing, secrets, tenant scope). Advisory only; never blocks.
+# Installed automatically when workflow: true and audit skills are present.
+# postMergeAuditHook: false  # uncomment to disable
+
 # GitHub reviewers for PRs (used by /octopus:pr-review)
 # reviewers:
 #   - github-username-1

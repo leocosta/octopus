@@ -31,19 +31,11 @@ _RM-022 complete. Cluster 1 now has no open items._
 
 ### Cluster 2 — Reduce LLM calls
 
-_RM-025 complete. Cluster 2 has one open item._
-
-- **RM-026** 🟡 Medium — Cache audit outputs keyed by
-  `hash(diff) + skill-version`. Re-running the same audit becomes
-  zero-cost until the diff changes.
+_RM-025 and RM-026 complete. Cluster 2 has no open items._
 
 ### Cluster 3 — Accelerate workflow (prioritized — next)
 
-- **RM-027** 🟡 Medium — Bundle / skill diff preview in the Full-mode
-  wizard: show impact (lines / approx tokens) before confirming a
-  selection.
-- **RM-029** 🟡 Medium — Post-merge hook that suggests relevant
-  audits based on the diff (touched files + keywords).
+_RM-027 and RM-029 complete. Cluster 3 has no open items._
 
 ### Cluster 4 — Implementation practices
 
@@ -130,3 +122,6 @@ _No items in progress._
 | RM-037 | `/octopus:implement` gains a `--plan` walker mode that executes a plan file task-by-task, dispatching the existing single-task TDD loop per task, pausing for human review between tasks, flipping checkboxes in place for resume, and closing Cluster 5 | completed → [Spec](specs/implement-plan-walker.md) | 2026-04-21 |
 | RM-022 | Lazy skill activation via `triggers:` frontmatter — path/keyword/tool evaluation at setup time in `concatenate_from_manifest`; non-matching skills replaced with 3-line stub; 6 domain-specific skills annotated | completed → [Spec](specs/lazy-skill-activation.md) | 2026-04-22 |
 | RM-025 | Pre-LLM deterministic audit pass — shared fragment `_shared/audit-pre-pass.md` + `pre_pass:` frontmatter block; 4-step protocol (candidate files → early exit → line filter → scoped diff) wired into all 4 audit skills | completed → [Spec](specs/pre-llm-audit-pass.md) | 2026-04-22 |
+| RM-026 | Audit output cache — content-keyed (`sha256(diff + SKILL.md)`) protocol in `skills/_shared/audit-cache.md`; cache check before inspection, cache write after output; `.gitignore` guard | completed → [Spec](specs/audit-output-cache.md) | 2026-04-22 |
+| RM-027 | Skill impact table in Full-mode wizard — `_skill_impact_table()` in `setup-wizard.sh` shows lines and ~tokens per selected skill after multiselect | completed | 2026-04-22 |
+| RM-029 | Post-merge audit hook — `pre-push-audit-suggest.sh` + `cli/lib/audit-map.sh` map diff to relevant audits; advisory only, never blocks; installed by setup when `workflow: true` + audit skill present | completed → [Spec](specs/post-merge-audit-hook.md) | 2026-04-22 |
