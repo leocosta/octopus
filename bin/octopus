@@ -362,8 +362,9 @@ Usage: octopus <command> [args]
 Commands:
   install [--version <tag>] [--latest]   Install a release into the local cache
   update [--version <tag>] [--latest] [--pin]
-  setup [--scope=repo|user] [--reconfigure]
+  setup [--scope=repo|user] [--reconfigure] [--dry-run]
                                           Configure Octopus for this repo (default) or user account
+  uninstall [--scope=repo|user]          Remove Octopus artifacts from this repo or user account
   doctor                                 Inspect the cached installation
   <other>                                Delegate to the existing workflow CLI
 EOF
