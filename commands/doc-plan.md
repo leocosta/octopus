@@ -101,6 +101,24 @@ Report in one line: `"Scanned N commits + spec
 6. On `skip` — emit a minimal header (Goal + Spec link
    only), no File Structure table.
 
+### Step 3b — Pipeline frontmatter generation
+
+After the user approves the File Structure (Step 3), generate the `pipeline:` frontmatter block:
+
+1. Assign each plan item an `id`: `t1`, `t2`, ... in order.
+2. Infer `agent` from task keywords:
+   - migration, schema, model, query, endpoint, API, service → `backend-specialist`
+   - component, screen, page, UI, form, style → `frontend-specialist`
+   - doc, spec, README, changelog, ADR → `tech-writer`
+   - review, audit, security, check → `reviewer`
+   - (no match) → `backend-specialist`
+3. Infer `depends_on`: a task depends on the last task of any agent whose output it logically needs. Tasks with no shared context with previous tasks start with `depends_on: []`.
+4. Show the generated frontmatter block. Ask: `"Pipeline routing looks right? (y / revise)"`.
+5. On `y` — prepend the frontmatter to the plan buffer before writing.
+6. Inline each task `id` into the plan body as `**t1**`, `**t2**`, etc. in the checkbox lines: `- [ ] **t1** — <original task description>`.
+
+Agent inference is a starting point — users are expected to adjust `agent` and `depends_on` in the plan file before running `octopus control --plan`.
+
 ### Step 4 — Task decomposition (adaptive)
 
 For each `P_i` in `P1..PN`:
