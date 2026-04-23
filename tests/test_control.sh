@@ -9,6 +9,11 @@ bash "$CLI_DIR/octopus.sh" control --help \
   || { echo "FAIL: control --help returned non-zero"; exit 1; }
 echo "PASS"
 
+echo "Test: octopus control --help mentions dashboard"
+bash "$CLI_DIR/octopus.sh" control --help | grep -q "dashboard" \
+  || { echo "FAIL: --help missing 'dashboard'"; exit 1; }
+echo "PASS"
+
 echo "Test: app.tcss exists and defines accent color"
 grep -q "7B2FBE" "$REPO_DIR/cli/control/app.tcss" \
   || { echo "FAIL: accent color missing from app.tcss"; exit 1; }
