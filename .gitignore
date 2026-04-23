@@ -19,3 +19,4 @@ AGENTS.md
 cli/control/__pycache__/
 tests/__pycache__/
 .opencode/package-lock.json
+.worktrees/
