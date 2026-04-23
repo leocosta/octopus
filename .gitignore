@@ -15,3 +15,7 @@
 .opencode/settings.json
 .claude/knowledge/
 AGENTS.md
+.octopus/queue/
+cli/control/__pycache__/
+tests/__pycache__/
+.opencode/package-lock.json
