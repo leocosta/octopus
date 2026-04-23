@@ -55,7 +55,7 @@ if [[ -n "$PLAN_FILE" ]]; then
     exit 1
   fi
   ui_info "Running pipeline from plan: $PLAN_FILE"
-  PYTHONPATH="$(dirname "$CLI_DIR")" python3 -m cli.control.pipeline "$PLAN_FILE" "${@:1}"
+  PYTHONPATH="$(dirname "$CLI_DIR")" python3 -m cli.control.pipeline "$PLAN_FILE"
   exit $?
 fi
 
@@ -65,7 +65,12 @@ if [[ -n "$FROM_SPEC" ]]; then
     ui_error "Spec file not found: $FROM_SPEC"
     exit 1
   fi
-  SLUG=$(basename "$FROM_SPEC" .md)
+  SLUG=$(basename "$FROM_SPEC" .md \
+    | tr '[:upper:]' '[:lower:]' \
+    | sed 's/[^a-z0-9]/-/g' \
+    | sed 's/--*/-/g' \
+    | cut -c1-40 \
+    | sed 's/-$//')
   ui_info "Generating pipeline plan from spec: $FROM_SPEC"
   claude --print "/octopus:doc-plan $SLUG"
   PLAN_FILE="docs/plans/${SLUG}.md"
@@ -118,6 +123,10 @@ SLUG=$(printf '%s' "$DESCRIPTION" \
   | sed 's/--*/-/g' \
   | cut -c1-40 \
   | sed 's/-$//')
+if [[ -z "$SLUG" ]]; then
+  ui_error "Could not derive a slug from the description. Use more descriptive text."
+  exit 1
+fi
 ui_info "Slug: $SLUG"
 
 claude --print "/octopus:doc-research $SLUG
