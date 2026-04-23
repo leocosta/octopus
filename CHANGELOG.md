@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.23.1] - 2026-04-22
+
+🐛 Fixes `octopus control` failing with `No module named 'cli'` when invoked outside the repository root. The fix sets `PYTHONPATH` to the parent of `CLI_DIR` before launching `python3 -m cli.control.app`, so module resolution works correctly regardless of the current working directory.
+
 ## [1.23.0] - 2026-04-22
 
 ✨ This release delivers **RM-044 — `octopus control`**, a self-contained TUI dashboard (Python/textual) that lets a single developer orchestrate multiple Claude Code agent sessions locally without external infrastructure.
