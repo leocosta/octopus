@@ -31,11 +31,11 @@ class Scheduler(threading.Thread):
         super().__init__(daemon=True)
         self.path = schedule_path
         self.on_fire = on_fire
-        self._stop = threading.Event()
+        self._stop_event = threading.Event()
         self._parser = CronParser()
 
     def run(self) -> None:
-        while not self._stop.wait(timeout=30):
+        while not self._stop_event.wait(timeout=30):
             if not self.path.exists() or not _YAML_AVAILABLE:
                 continue
             entries = yaml.safe_load(self.path.read_text()) or []
@@ -47,4 +47,4 @@ class Scheduler(threading.Thread):
                     self.on_fire(entry)
 
     def stop(self) -> None:
-        self._stop.set()
+        self._stop_event.set()
