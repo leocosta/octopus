@@ -17,4 +17,4 @@ if [[ "${1:-}" == "--help" ]]; then
 fi
 
 _check_python_deps "$@"
-python3 -m cli.control.app "$@"
+PYTHONPATH="$(dirname "$CLI_DIR")" python3 -m cli.control.app "$@"
