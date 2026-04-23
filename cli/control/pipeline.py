@@ -10,6 +10,8 @@ import yaml
 from .process_manager import ProcessManager
 from .queue import TaskQueue
 
+_POLL_INTERVAL = 2  # seconds between agent status checks
+
 
 @dataclass
 class PipelineTask:
@@ -134,7 +136,7 @@ class PipelineRunner:
                 # Deadlock: remaining tasks blocked by failed deps
                 break
 
-            time.sleep(2)
+            time.sleep(_POLL_INTERVAL)
 
         pipeline_ok = all(t.status in ("done", "skipped") for t in self._tasks)
         if not pipeline_ok:
@@ -158,4 +160,4 @@ class PipelineRunner:
             code = self.pm.exit_code("reviewer")
             if code is not None:
                 return code == 0
-            time.sleep(2)
+            time.sleep(_POLL_INTERVAL)

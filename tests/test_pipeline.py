@@ -155,13 +155,13 @@ def test_review_gate_skipped_when_no_review_skill(tmp_path, monkeypatch):
 
 def test_review_gate_returns_true_on_zero_exit(tmp_path, monkeypatch):
     runner, _ = make_runner(tmp_path)
-    monkeypatch.setattr(runner.pm, "launch", lambda **kw: 1)
+    monkeypatch.setattr(runner.pm, "launch", lambda role, prompt, model, cwd=None, isolate=False: 1)
     monkeypatch.setattr(runner.pm, "exit_code", lambda role: 0)
     assert runner.run_review_gate() is True
 
 
 def test_review_gate_returns_false_on_nonzero_exit(tmp_path, monkeypatch):
     runner, _ = make_runner(tmp_path)
-    monkeypatch.setattr(runner.pm, "launch", lambda **kw: 1)
+    monkeypatch.setattr(runner.pm, "launch", lambda role, prompt, model, cwd=None, isolate=False: 1)
     monkeypatch.setattr(runner.pm, "exit_code", lambda role: 1)
     assert runner.run_review_gate() is False
