@@ -74,10 +74,11 @@ Detached processes are reconnected automatically on the next
 Pressing `[a]` opens an inline prompt bar at the bottom of the TUI.
 Input is interpreted in three modes, evaluated in order:
 
-1. **Slash command** — `/skill-name [args]`
-   e.g. `/audit-all`, `/doc-design octopus-control`, `/security-scan src/auth/`.
+1. **Slash command** — `/skill-name [args] [--model <model>]`
+   e.g. `/audit-all`, `/security-scan src/auth/ --model opus`.
    Maps directly to the Octopus skill of that name. The skill's `SKILL.md`
-   is injected as the Claude Code session prompt.
+   is injected as the Claude Code session prompt. `--model` overrides model
+   resolution for this task only.
 
 2. **Natural language** — free text run through the existing trigger-matching
    engine (same keyword + path scoring used in lazy skill activation).
@@ -90,6 +91,13 @@ Input is interpreted in three modes, evaluated in order:
 3. **Raw instruction** — unmatched free text sent verbatim as the Claude Code
    prompt with no skill wrapper.
 
+Model resolution runs before the task is queued, in priority order:
+
+1. `--model <value>` flag on the slash command or NL input.
+2. `model:` field in the skill's `SKILL.md` frontmatter (if present).
+3. `model:` field in the role's frontmatter (already defined for most roles).
+4. Global default: `sonnet`.
+
 The resulting task is written to `.octopus/queue/<ts>-<role>.json`:
 
 ```json
@@ -97,11 +105,16 @@ The resulting task is written to `.octopus/queue/<ts>-<role>.json`:
   "id": "<ts>",
   "role": "backend-specialist",
   "skill": "security-scan",
+  "model": "claude-sonnet-4-6",
   "prompt": "<resolved text>",
   "status": "queued",
   "created_at": "<iso8601>"
 }
 ```
+
+`model` is always stored as the resolved full model ID (e.g.
+`claude-opus-4-7`) so the queue entry is self-contained and reproducible
+regardless of later default changes.
 
 #### Process Manager
 
@@ -109,10 +122,13 @@ Each agent session is a Claude Code subprocess launched in a dedicated worktree:
 
 ```bash
 git worktree add .octopus/worktrees/<role> -b octopus/<role>/<ts>
-claude --model sonnet --print "<prompt>" \
+claude --model <resolved-model> --print "<prompt>" \
   > .octopus/logs/<role>.log 2>&1 &
 echo $! > .octopus/pids/<role>.pid
 ```
+
+`<resolved-model>` comes from the task's `model` field (already resolved
+at enqueue time via the priority chain above).
 
 stdout/stderr are tailed into the TUI output panel via a background reader
 thread. On task completion (process exits 0), status is updated to `done`;
@@ -190,9 +206,12 @@ are added inside it.
    Dependencies: step 2.
 
 4. **`cli/control/skill_matcher.py`**
-   Reads `triggers:` from each `SKILL.md`; scores user input by
-   keyword/path match. Resolves slash commands (`/skill-name`) and
-   natural language → skill + confirmation prompt.
+   Reads `triggers:` and `model:` from each `SKILL.md` frontmatter; scores
+   user input by keyword/path match. Resolves slash commands (`/skill-name
+   [--model <m>]`) and natural language → skill + confirmation prompt.
+   Runs model resolution (explicit flag → skill frontmatter → role
+   frontmatter → `sonnet` default) and returns the full model ID alongside
+   the resolved prompt.
    Dependencies: step 3.
 
 5. **`cli/control/scheduler.py`**
@@ -233,7 +252,9 @@ are added inside it.
 
 **Unit (Python):**
 - `skill_matcher`: slash → skill, NL → match + confirm, NL → no match → raw,
-  ambiguous → picker shown. Input: mock `SKILL.md` `triggers:`; no Claude call.
+  ambiguous → picker shown. Model resolution: explicit flag wins, then skill
+  frontmatter, then role frontmatter, then default. Input: mock `SKILL.md`
+  frontmatter; no Claude call.
 - `queue`: enqueue/dequeue round-trip, status transitions, concurrent writes
   (two enqueues at same millisecond → distinct files).
 - `scheduler`: cron parser (`"daily 09:00"`, `"Mon 08:00"`, `"on: push"`),
@@ -285,3 +306,4 @@ are added inside it.
 
 - **2026-04-22** — Initial stub created
 - **2026-04-22** — Design session completed
+- **2026-04-22** — Added flexible model resolution (explicit flag → skill frontmatter → role frontmatter → default)
