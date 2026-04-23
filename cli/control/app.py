@@ -23,6 +23,7 @@ class OctopusControl(App):
     BINDINGS = [
         Binding("a", "add_task", "Add task"),
         Binding("k", "kill_agent", "Kill"),
+        Binding("ctrl+d", "cleanup_queue", "Clean queue"),
         Binding("tab", "focus_next", "Focus", show=False),
         Binding("q", "request_quit", "Quit"),
     ]
@@ -36,6 +37,7 @@ class OctopusControl(App):
         self._agents: dict[str, int] = {}
         self._awaiting_exit: bool = False
         self._scheduler: Scheduler | None = None
+        self._cleanup_tick: int = 0
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -71,6 +73,10 @@ class OctopusControl(App):
         self._dispatch_next()
         self._refresh_roster()
         self._refresh_queue()
+        self._cleanup_tick += 1
+        if self._cleanup_tick % 30 == 0:
+            self.queue.cleanup(keep_last=50)
+            self._refresh_queue()
 
     def _reap_dead_agents(self) -> None:
         dead = []
@@ -208,6 +214,11 @@ class OctopusControl(App):
             model=result.model,
             prompt=result.raw_prompt,
         )
+        self._refresh_queue()
+
+    def action_cleanup_queue(self) -> None:
+        removed = self.queue.cleanup(keep_last=0)
+        self.notify(f"Removed {removed} completed task(s)")
         self._refresh_queue()
 
     # ── Kill ──────────────────────────────────────────────────────────────────
