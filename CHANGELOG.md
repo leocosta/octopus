@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.23.0] - 2026-04-22
+
+✨ This release delivers **RM-044 — `octopus control`**, a self-contained TUI dashboard (Python/textual) that lets a single developer orchestrate multiple Claude Code agent sessions locally without external infrastructure.
+
+The new `octopus control` subcommand opens a four-panel terminal UI: an **AgentRoster** that polls running agent PIDs every second and adopts orphaned sessions on startup; a **TaskQueue** backed by JSON files under `.octopus/queue/` with nanosecond-precision IDs for collision-free concurrent writes; a **SchedulePanel** driven by a background cron thread that reads `.octopus/schedule.yml` and fires tasks on `daily HH:MM` or weekday rules; and an **OutputPanel** that tails agent log files asynchronously. A command bar (bound to `a`) accepts both slash commands (`/security-scan src/auth/`) and natural-language prompts, resolved to a skill and model by the new `SkillMatcher` — which reads skill frontmatter and respects per-skill model overrides over the role default. Pressing `q` with agents running prompts a `stop / detach / cancel` choice so sessions are never silently killed. The UI is styled with the Octopus palette (`#7B2FBE` accent, `#00B4D8` ocean, `#1a1a2e` background) and panel focus borders.
+
+The process manager launches Claude Code as a subprocess in an isolated git worktree under `.octopus/worktrees/<role>/`, writes a PID file, and streams output to a per-role log. Fifteen new tests cover the full stack: `bash tests/test_control.sh` exercises CLI routing and the integration path for `adopt_orphans`; `pytest` covers launch/kill, queue ops, cron firing, and all skill-matcher branches including ambiguous NL input and empty strings.
+
+🐛 The hook delivery system was hardened: `deliver_hooks()` now merges by hook `id` instead of replacing the full array, so re-running `octopus setup` no longer clobbers manually added hooks. ✨ Eight additional skills (`audit-all`, `backend-patterns`, `batch`, `compress-skill`, `continuous-learning`, `feature-to-market`, `plan-backlog-hygiene`, `release-announce`) gained `triggers:` frontmatter, completing lazy activation coverage. 🔧 A `--dry-run` mode was added to `octopus setup` — every `deliver_*()` function checks `OCTOPUS_DRY_RUN` and prints what it would do without touching the filesystem, backed by 16 test cases.
+
 ## [1.22.0] - 2026-04-22
 
 ✨ This release closes three roadmap items that together make Octopus audits faster and more automatic.
