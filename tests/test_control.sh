@@ -133,3 +133,17 @@ EOF
   fi
 }
 test_control_plan_dry_run
+
+# Test: octopus run --help shows usage
+test_run_help() {
+  local output
+  output=$(bash cli/octopus.sh run --help 2>&1)
+  if echo "$output" | grep -q "Usage: octopus run"; then
+    echo "PASS: octopus run --help"
+  else
+    echo "FAIL: octopus run --help — output was:"
+    echo "$output"
+    return 1
+  fi
+}
+test_run_help
