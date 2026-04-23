@@ -15,9 +15,15 @@ class ProcessManager:
             d.mkdir(parents=True, exist_ok=True)
 
     def _run_claude(self, role: str, prompt: str, model: str, log_path: Path) -> int:
+        # --print runs a single non-interactive turn; cwd stays in project root
         cmd = ["claude", "--model", model, "--print", prompt]
         with open(log_path, "w") as f:
-            p = subprocess.Popen(cmd, stdout=f, stderr=subprocess.STDOUT)
+            p = subprocess.Popen(
+                cmd,
+                stdout=f,
+                stderr=subprocess.STDOUT,
+                cwd=Path.cwd(),
+            )
         return p.pid
 
     def launch(self, role: str, prompt: str, model: str) -> int:
