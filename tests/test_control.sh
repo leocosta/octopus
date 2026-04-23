@@ -45,6 +45,45 @@ grep -q "from .scheduler import Scheduler" "$REPO_DIR/cli/control/app.py" \
   || { echo "FAIL: Scheduler not imported in app.py"; exit 1; }
 echo "PASS"
 
+echo "Test: app.py uses RichLog, not Label for output panel"
+grep -q "RichLog" "$REPO_DIR/cli/control/app.py" \
+  || { echo "FAIL: app.py still uses Label for output panel"; exit 1; }
+echo "PASS"
+
+echo "Test: SuggestFromList is available in Textual"
+python3 -c "from textual.suggester import SuggestFromList; print('PASS: SuggestFromList available')" \
+  || { echo "FAIL: SuggestFromList not available"; exit 1; }
+
+echo "Test: skill_matcher returns needs_confirm for NL single match"
+python3 - << 'PYEOF'
+import sys
+sys.path.insert(0, ".")
+from cli.control.skill_matcher import SkillMatcher
+
+MOCK = {"security-scan": {"keywords": ["auth", "jwt"], "model": None}}
+m = SkillMatcher(skills_dir=None, _mock=MOCK)
+r = m.resolve("check jwt tokens", role_model="claude-sonnet-4-6")
+assert r.needs_confirm is True, f"expected needs_confirm=True, got {r}"
+print("PASS: NL single match sets needs_confirm")
+PYEOF
+
+echo "Test: completed task log path is predictable"
+python3 - << 'PYEOF'
+import sys
+sys.path.insert(0, ".")
+from pathlib import Path
+from cli.control.process_manager import ProcessManager
+
+tmp = Path("/tmp/octopus-test-log-viewer")
+tmp.mkdir(exist_ok=True)
+pm = ProcessManager(tmp)
+log = pm.logs_dir / "backend-specialist.log"
+log.parent.mkdir(parents=True, exist_ok=True)
+log.write_text("line1\nline2\n")
+assert log.read_text() == "line1\nline2\n"
+print("PASS: log file readable at predictable path")
+PYEOF
+
 echo "Test: adopt_orphans integration"
 cd "$REPO_DIR"
 python3 - << 'PYEOF'

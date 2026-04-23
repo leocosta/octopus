@@ -6,7 +6,8 @@ from pathlib import Path
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
-from textual.widgets import DataTable, Footer, Header, Input, Label, ListItem, ListView
+from textual.suggester import SuggestFromList
+from textual.widgets import DataTable, Footer, Header, Input, Label, ListItem, ListView, RichLog
 
 from .process_manager import ProcessManager
 from .queue import TaskQueue
@@ -15,6 +16,9 @@ from .skill_matcher import SkillMatcher
 
 # Skills live in .claude/skills/ relative to the project root, not .octopus/
 _SKILLS_DIR = Path(".claude") / "skills"
+
+_SPINNER = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+_STATUS_LABEL = {"queued": "○", "running": "●", "done": "✓", "failed": "✗"}
 
 
 class OctopusControl(App):
@@ -38,6 +42,7 @@ class OctopusControl(App):
         self._awaiting_exit: bool = False
         self._scheduler: Scheduler | None = None
         self._cleanup_tick: int = 0
+        self._tick: int = 0
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -47,7 +52,7 @@ class OctopusControl(App):
             with Vertical(id="right"):
                 yield ListView(id="queue")
                 yield DataTable(id="schedule")
-        yield Label("", id="output")
+        yield RichLog(id="output", markup=True, highlight=False, wrap=True)
         yield Input(placeholder="[a] /skill args  or  natural language", id="cmd", classes="hidden")
         yield Footer()
 
@@ -59,6 +64,8 @@ class OctopusControl(App):
         self._agents = self.pm.adopt_orphans()
         self._refresh_roster()
         self._refresh_queue()
+        skill_names = [f"/{s}" for s in self._matcher._catalog]
+        self.query_one("#cmd", Input).suggester = SuggestFromList(skill_names, case_sensitive=False)
         schedule_path = self.octopus_dir / "schedule.yml"
         self._scheduler = Scheduler(schedule_path, on_fire=self._on_schedule_fire)
         self._scheduler.start()
@@ -151,21 +158,22 @@ class OctopusControl(App):
     # ── Log streaming ─────────────────────────────────────────────────────────
 
     async def _stream_log(self, role: str) -> None:
+        log_widget = self.query_one("#output", RichLog)
         log_path = self.pm.logs_dir / f"{role}.log"
-        # Wait up to 3 s for the log file to appear
         for _ in range(30):
             if log_path.exists():
                 break
             await asyncio.sleep(0.1)
         if not log_path.exists():
             return
+        log_widget.clear()
+        log_widget.write(f"─── {role} ───")
         with open(log_path) as f:
             while True:
                 line = f.readline()
                 if line:
-                    self.query_one("#output", Label).update(line.rstrip())
+                    log_widget.write(line.rstrip())
                 else:
-                    # Stop tailing when the agent process is gone
                     if role not in self._agents:
                         break
                     await asyncio.sleep(0.2)
@@ -175,8 +183,10 @@ class OctopusControl(App):
     def _refresh_roster(self) -> None:
         table = self.query_one("#agents", DataTable)
         table.clear()
+        frame = _SPINNER[self._tick % len(_SPINNER)]
+        self._tick += 1
         for role, pid in self._agents.items():
-            table.add_row(role, str(pid), "● running", key=role)
+            table.add_row(role, str(pid), f"{frame} running", key=role)
 
     def _refresh_queue(self) -> None:
         lv = self.query_one("#queue", ListView)
@@ -185,13 +195,34 @@ class OctopusControl(App):
             status = task["status"]
             role = task["role"]
             skill = task.get("skill") or "–"
-            lv.append(ListItem(Label(f"[{status}] {role} / {skill}")))
+            icon = _STATUS_LABEL.get(status, "?")
+            lv.append(ListItem(Label(f"{icon} [{status}] {role} / {skill}")))
 
     def _selected_role(self) -> str:
         table = self.query_one("#agents", DataTable)
         if table.cursor_row is not None and table.row_count > 0:
             return str(table.get_cell_at((table.cursor_row, 0)))
         return "agent"
+
+    def on_list_view_selected(self, event: ListView.Selected) -> None:
+        tasks = self.queue.list_all()
+        idx = event.list_view.index
+        if idx is None or idx >= len(tasks):
+            return
+        task = tasks[idx]
+        if task["status"] not in ("done", "failed"):
+            return
+        log_widget = self.query_one("#output", RichLog)
+        log_widget.clear()
+        role = task["role"]
+        log_path = self.pm.logs_dir / f"{role}.log"
+        status_label = "[green]done[/green]" if task["status"] == "done" else "[red]failed[/red]"
+        log_widget.write(f"─── {role} ({status_label}) ───")
+        if log_path.exists():
+            for line in log_path.read_text().splitlines():
+                log_widget.write(line)
+        else:
+            log_widget.write("[dim]No log file found[/dim]")
 
     # ── Command bar ───────────────────────────────────────────────────────────
 
@@ -208,6 +239,20 @@ class OctopusControl(App):
         if not text:
             return
         result = self._matcher.resolve(text, role_model="claude-sonnet-4-6")
+        if result.ambiguous:
+            options = ", ".join(f"/{s}" for s in result.ambiguous)
+            self.notify(f"Ambiguous match: {options}", severity="warning", timeout=5)
+            return
+        if result.needs_confirm:
+            self.notify(
+                f"Matched /{result.skill} — re-submit to confirm",
+                severity="information",
+                timeout=4,
+            )
+            cmd_widget.value = f"/{result.skill} {result.raw_prompt}".strip()
+            cmd_widget.remove_class("hidden")
+            cmd_widget.focus()
+            return
         self.queue.enqueue(
             role=self._selected_role(),
             skill=result.skill,

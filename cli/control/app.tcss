@@ -41,6 +41,13 @@ Footer {
     background: $bg;
     color: $text-dim;
     padding: 0 1;
+    height: 1fr;
+    scrollbar-color: $accent;
+}
+
+/* ── Autocomplete suggestion ─────────────────────── */
+.input--suggestion {
+    color: $text-dim;
 }
 
 /* ── Command bar ─────────────────────────────────── */
