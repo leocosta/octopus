@@ -75,12 +75,13 @@ class OctopusControl(App):
                 dead.append(role)
         for role in dead:
             self._agents.pop(role, None)
-            pid_file = self.pm.pids_dir / f"{role}.pid"
-            pid_file.unlink(missing_ok=True)
-            # Mark matching running tasks as done
+            code = self.pm.exit_code(role)
+            final_status = "done" if (code is None or code == 0) else "failed"
+            (self.pm.pids_dir / f"{role}.pid").unlink(missing_ok=True)
+            self.pm.remove_worktree(role)
             for task in self.queue.list_all():
                 if task["role"] == role and task["status"] == "running":
-                    self.queue.update_status(task["id"], "done")
+                    self.queue.update_status(task["id"], final_status)
 
     def _dispatch_next(self) -> None:
         for task in self.queue.list_all():
