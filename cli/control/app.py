@@ -10,6 +10,7 @@ from textual.widgets import DataTable, Footer, Header, Input, Label, ListItem, L
 
 from .process_manager import ProcessManager
 from .queue import TaskQueue
+from .scheduler import Scheduler
 from .skill_matcher import SkillMatcher
 
 # Skills live in .claude/skills/ relative to the project root, not .octopus/
@@ -34,6 +35,7 @@ class OctopusControl(App):
         self._matcher = SkillMatcher(skills_dir=_SKILLS_DIR)
         self._agents: dict[str, int] = {}
         self._awaiting_exit: bool = False
+        self._scheduler: Scheduler | None = None
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -55,6 +57,10 @@ class OctopusControl(App):
         self._agents = self.pm.adopt_orphans()
         self._refresh_roster()
         self._refresh_queue()
+        schedule_path = self.octopus_dir / "schedule.yml"
+        self._scheduler = Scheduler(schedule_path, on_fire=self._on_schedule_fire)
+        self._scheduler.start()
+        self._refresh_schedule()
         # Poll: refresh agent states + dispatch queued tasks
         self.set_interval(2, self._poll)
 
@@ -105,6 +111,36 @@ class OctopusControl(App):
         # Ensure the octopus: namespace prefix used by Claude Code slash commands
         cmd = skill if ":" in skill else f"octopus:{skill}"
         return f"/{cmd} {prompt}".strip()
+
+    # ── Scheduler ────────────────────────────────────────────────────────────
+
+    def _on_schedule_fire(self, entry: dict) -> None:
+        self.queue.enqueue(
+            role=entry.get("role", "agent"),
+            skill=entry.get("skill"),
+            model=entry.get("model", "claude-sonnet-4-6"),
+            prompt=entry.get("prompt", ""),
+        )
+        self.call_from_thread(self._refresh_queue)
+
+    def _refresh_schedule(self) -> None:
+        table = self.query_one("#schedule", DataTable)
+        table.clear()
+        schedule_path = self.octopus_dir / "schedule.yml"
+        if not schedule_path.exists():
+            return
+        try:
+            import yaml
+            entries = yaml.safe_load(schedule_path.read_text()) or []
+        except Exception:
+            return
+        for entry in entries:
+            table.add_row(
+                entry.get("id", "–"),
+                entry.get("when", "–"),
+                entry.get("role", "–"),
+                entry.get("skill", "–"),
+            )
 
     # ── Log streaming ─────────────────────────────────────────────────────────
 
@@ -187,6 +223,8 @@ class OctopusControl(App):
 
     async def action_request_quit(self) -> None:
         if not self._agents:
+            if self._scheduler:
+                self._scheduler.stop()
             self.exit()
             return
         self.notify("stop(s)  detach(d)  cancel(c)", title="Agents running")
@@ -198,6 +236,8 @@ class OctopusControl(App):
         if event.key == "s":
             for role in list(self._agents):
                 self.pm.kill(role)
+            if self._scheduler:
+                self._scheduler.stop()
             self.exit()
         elif event.key == "d":
             self.exit()

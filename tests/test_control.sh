@@ -21,6 +21,30 @@ grep -q "1a1a2e" "$REPO_DIR/cli/control/app.tcss" \
   || { echo "FAIL: background color missing from app.tcss"; exit 1; }
 echo "PASS"
 
+echo "Test: Scheduler starts and stops cleanly"
+python3 - << 'PYEOF'
+import sys
+sys.path.insert(0, ".")
+from pathlib import Path
+from cli.control.scheduler import Scheduler
+
+fired = []
+def on_fire(entry):
+    fired.append(entry)
+
+s = Scheduler(Path("/nonexistent/schedule.yml"), on_fire=on_fire)
+s.start()
+s.stop()
+s.join(timeout=2)
+assert not s.is_alive(), "Scheduler thread did not stop"
+print("PASS: Scheduler starts and stops cleanly")
+PYEOF
+
+echo "Test: app.py imports Scheduler"
+grep -q "from .scheduler import Scheduler" "$REPO_DIR/cli/control/app.py" \
+  || { echo "FAIL: Scheduler not imported in app.py"; exit 1; }
+echo "PASS"
+
 echo "Test: adopt_orphans integration"
 cd "$REPO_DIR"
 python3 - << 'PYEOF'
