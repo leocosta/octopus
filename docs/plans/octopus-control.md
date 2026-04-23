@@ -24,6 +24,7 @@
 | `cli/control/skill_matcher.py` | create | Slash/NL → skill + model resolution |
 | `cli/control/scheduler.py` | create | Cron thread, `schedule.yml` parser, `on:push` flag |
 | `cli/control/app.py` | create | textual `App`: 4 panels, keybindings, exit prompt |
+| `cli/control/app.tcss` | create | Textual CSS — palette, borders, status colors, ASCII octopus header |
 | `.octopus/schedule.yml` | create (example) | Template for user schedules |
 | `tests/test_control.sh` | create | Bash integration tests |
 | `tests/test_skill_matcher.py` | create | Python unit tests |
@@ -629,7 +630,7 @@ git commit -m "feat(control): TUI scaffold — App shell + AgentRoster panel"
 
 ---
 
-## Task 6b: TUI Panels — TaskQueue, SchedulePanel, CommandBar
+## Task 6c: TUI Panels — TaskQueue, SchedulePanel, CommandBar
 
 **Files:**
 - Modify: `cli/control/app.py`
@@ -710,7 +711,7 @@ git commit -m "feat(control): TUI panels — TaskQueue, SchedulePanel, CommandBa
 
 ---
 
-## Task 6c: TUI Live Output + Exit Prompt
+## Task 6d: TUI Live Output + Exit Prompt
 
 **Files:**
 - Modify: `cli/control/app.py`

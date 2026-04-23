@@ -1,0 +1,5 @@
+- id: s1
+  when: "daily 09:00"
+  role: backend-specialist
+  skill: security-scan
+  enabled: true
