@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.23.2] - 2026-04-22
+
+🐛 Fixes three bugs that made `octopus control` non-functional after opening:
+
+Tasks submitted via the command bar were enqueued but never executed — the TUI had no dispatch loop connecting the queue to `ProcessManager.launch()`. A `_poll()` method now runs every 2 seconds, dispatching the next queued task per role, reaping finished PIDs, and refreshing the roster and queue panels automatically.
+
+The async log tailer had no `await asyncio.sleep()`, causing it to busy-loop and block Textual's event loop entirely. The replacement `_stream_log()` coroutine waits 200 ms between empty reads and stops tailing once the agent process exits.
+
+`SkillMatcher` was pointed at `.octopus/skills/` (which does not exist) instead of `.claude/skills/` where Octopus installs skills. Slash commands still work without this fix, but natural-language keyword matching was silently producing an empty catalog.
+
 ## [1.23.1] - 2026-04-22
 
 🐛 Fixes `octopus control` failing with `No module named 'cli'` when invoked outside the repository root. The fix sets `PYTHONPATH` to the parent of `CLI_DIR` before launching `python3 -m cli.control.app`, so module resolution works correctly regardless of the current working directory.
