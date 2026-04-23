@@ -42,3 +42,25 @@ def test_skill_model_wins_over_role(tmp_path):
     m = make_matcher(tmp_path)
     r = m.resolve("/money-review", role_model="claude-sonnet-4-6")
     assert r.model == "claude-opus-4-7"
+
+
+def test_nl_ambiguous(tmp_path):
+    mock = {
+        "security-scan": {"keywords": ["auth", "payment"], "model": None},
+        "money-review":  {"keywords": ["payment", "stripe"], "model": None},
+    }
+    m = SkillMatcher(skills_dir=tmp_path, _mock=mock)
+    r = m.resolve("process payment auth", role_model="claude-sonnet-4-6")
+    assert r.skill is None and r.ambiguous is not None and len(r.ambiguous) >= 2
+
+
+def test_slash_unknown_skill(tmp_path):
+    m = make_matcher(tmp_path)
+    r = m.resolve("/unknown-skill some args", role_model="claude-sonnet-4-6")
+    assert r.skill == "unknown-skill"
+
+
+def test_empty_input(tmp_path):
+    m = make_matcher(tmp_path)
+    r = m.resolve("", role_model="claude-sonnet-4-6")
+    assert r.skill is None and r.raw_prompt == ""

@@ -20,3 +20,24 @@ grep -q "7B2FBE" "$REPO_DIR/cli/control/app.tcss" \
 grep -q "1a1a2e" "$REPO_DIR/cli/control/app.tcss" \
   || { echo "FAIL: background color missing from app.tcss"; exit 1; }
 echo "PASS"
+
+echo "Test: adopt_orphans integration"
+cd "$REPO_DIR"
+python3 - << 'PYEOF'
+import subprocess, sys
+from pathlib import Path
+sys.path.insert(0, ".")
+from cli.control.process_manager import ProcessManager
+
+tmp = Path("/tmp/octopus-test-adopt")
+tmp.mkdir(exist_ok=True)
+pm = ProcessManager(tmp)
+proc = subprocess.Popen(["sleep", "60"])
+(tmp / "pids").mkdir(exist_ok=True)
+(tmp / "pids" / "backend-specialist.pid").write_text(str(proc.pid))
+adopted = pm.adopt_orphans()
+assert "backend-specialist" in adopted, f"not adopted: {adopted}"
+proc.terminate()
+(tmp / "pids" / "backend-specialist.pid").unlink(missing_ok=True)
+print("PASS: adopt_orphans")
+PYEOF
