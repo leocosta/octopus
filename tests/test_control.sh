@@ -104,3 +104,46 @@ proc.terminate()
 (tmp / "pids" / "backend-specialist.pid").unlink(missing_ok=True)
 print("PASS: adopt_orphans")
 PYEOF
+
+# Test: --plan flag with --dry-run exits 0 and prints task list
+test_control_plan_dry_run() {
+  local tmpdir
+  tmpdir=$(mktemp -d)
+  cat > "$tmpdir/plan.md" <<'EOF'
+---
+slug: smoke-test
+pipeline:
+  pr_on_success: false
+tasks:
+  - id: t1
+    agent: backend-specialist
+    depends_on: []
+---
+
+- [ ] **t1** — echo hello
+EOF
+  PYTHONPATH="$(pwd)" python3 -m cli.control.pipeline "$tmpdir/plan.md" --dry-run
+  local rc=$?
+  rm -rf "$tmpdir"
+  if [ "$rc" -eq 0 ]; then
+    echo "PASS: control --plan --dry-run"
+  else
+    echo "FAIL: control --plan --dry-run exited $rc"
+    return 1
+  fi
+}
+test_control_plan_dry_run
+
+# Test: octopus run --help shows usage
+test_run_help() {
+  local output
+  output=$(bash cli/octopus.sh run --help 2>&1)
+  if echo "$output" | grep -q "Usage: octopus run"; then
+    echo "PASS: octopus run --help"
+  else
+    echo "FAIL: octopus run --help — output was:"
+    echo "$output"
+    return 1
+  fi
+}
+test_run_help

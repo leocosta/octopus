@@ -22,7 +22,7 @@ _STATUS_LABEL = {"queued": "○", "running": "●", "done": "✓", "failed": "�
 
 
 class OctopusControl(App):
-    TITLE = "Octopus Control"
+    TITLE = "🐙 Octopus Control"
     CSS_PATH = Path(__file__).parent / "app.tcss"
     BINDINGS = [
         Binding("a", "add_task", "Add task"),

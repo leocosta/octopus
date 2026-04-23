@@ -1,3 +1,18 @@
+---
+slug: <slug>
+generated_by: octopus:doc-plan
+pipeline:
+  review_skill: octopus:codereview
+  pr_on_success: true
+tasks:
+  - id: t1
+    agent: backend-specialist
+    depends_on: []
+  - id: t2
+    agent: backend-specialist
+    depends_on: [t1]
+---
+
 <!--
 plan-skeleton.md — frozen output template for /octopus:doc-plan.
 

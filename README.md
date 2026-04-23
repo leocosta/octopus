@@ -139,8 +139,166 @@ language:
 | **Feature Lifecycle** | RFC/Spec/ADR documentation system | [feature-lifecycle.md](docs/features/feature-lifecycle.md) |
 | **MCP Servers** | External tool integrations | [mcp.md](docs/features/mcp.md) |
 | **Workflow** | PR and branch automation | [workflow.md](docs/features/workflow.md) |
+| **Control** | TUI dashboard for local multi-agent orchestration | [below](#octopus-control) |
+| **Run** | End-to-end pipeline from requirement to PR | [below](#octopus-run) |
 
 See also: [Capability Matrix](docs/capability-matrix.md) · [Agent Manifests](docs/agent-manifests.md) · [Project Structure](docs/project-structure.md)
+
+---
+
+## Octopus Control
+
+A terminal dashboard for running and monitoring multiple AI agents locally — no web browser, no cloud account required.
+
+```bash
+octopus control                                          # open interactive TUI
+octopus control --plan docs/plans/user-auth.md          # run a pipeline plan
+octopus control --install-deps                           # install Python deps (first run)
+```
+
+### TUI layout
+
+```
+┌─ 🐙 Octopus Control ──────────────────────────────────────────┐
+│  ┌─ Agents ──────────────────┐  ┌─ Queue ───────────────────┐ │
+│  │ ● backend-specialist      │  │ ▶ security-scan    2m ago  │ │
+│  │ ● tech-writer             │  │ ○ doc-design       queued  │ │
+│  │ ○ frontend-specialist     │  │ ✓ release-announce done 8m │ │
+│  └───────────────────────────┘  └───────────────────────────┘ │
+│  ┌─ Output ── backend-specialist ───────────────────────────┐  │
+│  │ 10:42:01  Reading src/auth/middleware.ts...              │  │
+│  │ 10:42:07  ✓ 4 tests passed                              │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│  ┌─ Schedule ────────────────────────────────────────────────┐ │
+│  │ ◷ daily 09:00   security-scan   backend-specialist        │ │
+│  └───────────────────────────────────────────────────────────┘ │
+│  [a]dd  [k]ill  [ctrl+d] clean queue  [tab] focus  [q]uit      │
+└────────────────────────────────────────────────────────────────┘
+```
+
+### Keybindings
+
+| Key | Action |
+|---|---|
+| `a` | Add task (opens command bar with skill autocomplete) |
+| `k` | Kill selected agent |
+| `Ctrl+D` | Clean up completed tasks from queue |
+| `Tab` | Cycle panel focus |
+| `q` | Quit (prompts stop / detach / cancel if agents are running) |
+
+### Scheduling agents
+
+Create `.octopus/schedule.yml` to trigger tasks automatically:
+
+```yaml
+- id: daily-security
+  when: "daily 09:00"
+  role: backend-specialist
+  skill: security-scan
+  enabled: true
+
+- id: weekly-docs
+  when: "Mon 08:00"
+  role: tech-writer
+  skill: release-announce
+  enabled: true
+```
+
+---
+
+## Octopus Run
+
+`octopus run` drives a feature from any starting point — a description, a GitHub issue, or an existing spec — all the way to an open PR. Independent tasks execute in parallel on separate agents.
+
+### Entry points
+
+```bash
+# Free text — full pipeline: research → spec → plan → agents → PR
+octopus run "implement JWT authentication with refresh tokens"
+
+# From a GitHub issue
+octopus run --from-issue gh:123
+
+# From an existing spec (skips research)
+octopus run --from-spec docs/specs/user-auth.md
+
+# From an existing enriched plan (executes directly)
+octopus run --plan docs/plans/user-auth.md
+
+# Skip the spec review pause (automation mode)
+octopus run --skip-spec-review "add email verification"
+```
+
+### How it works
+
+```mermaid
+flowchart TD
+    A([free text / issue / spec]) --> B[doc-research]
+    B --> C{{spec review}}
+    C --> D[doc-plan]
+    D --> E[(enriched plan)]
+
+    E --> F[t1 · backend-specialist]
+    F --> G[t2 · backend-specialist]
+    F --> H[t3 · frontend-specialist]
+    G --> I{{review gate}}
+    H --> I
+    I --> J([PR opened])
+
+    style E fill:#16213e,color:#ccc,stroke:#7B2FBE
+    style C fill:#16213e,color:#ccc,stroke:#00B4D8
+    style I fill:#16213e,color:#ccc,stroke:#00B4D8
+    style J fill:#06d6a0,color:#000,stroke:#06d6a0
+```
+
+Tasks with no shared dependencies run in parallel. Each task runs in an isolated git worktree so agents never conflict.
+
+### Enriched plan format
+
+`/octopus:doc-plan` generates this automatically. You can also write it by hand:
+
+```markdown
+---
+slug: user-auth
+generated_by: octopus:doc-plan
+pipeline:
+  review_skill: octopus:codereview
+  pr_on_success: true
+tasks:
+  - id: t1
+    agent: backend-specialist
+    depends_on: []
+  - id: t2
+    agent: backend-specialist   # runs after t1
+    depends_on: [t1]
+  - id: t3
+    agent: frontend-specialist  # runs in parallel with t2
+    depends_on: [t1]
+  - id: t4
+    agent: tech-writer          # runs after t2 and t3 both finish
+    depends_on: [t2, t3]
+---
+
+- [ ] **t1** — Create `users` table and migration
+- [ ] **t2** — Implement auth endpoints (POST /login, POST /register)
+- [ ] **t3** — Login screen and registration form
+- [ ] **t4** — Document the auth API
+```
+
+Checkboxes are ticked in the plan file as tasks complete. If a task fails, the runner pauses and prompts `[r]etry  [s]kip  [a]bort`.
+
+### Execution timeline example
+
+```
+t=0s    t1 dispatched  (backend-specialist)
+t=90s   t1 ✓ → t2 and t3 dispatched in parallel
+t=90s   t2 running (backend-specialist)
+t=90s   t3 running (frontend-specialist)
+t=210s  t2 ✓
+t=240s  t3 ✓ → t4 dispatched
+t=310s  t4 ✓ → review gate
+t=400s  review ✓ → PR #42 opened
+```
 
 ## Updating
 
