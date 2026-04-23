@@ -68,6 +68,19 @@ RM-037 (`/octopus:implement --plan`).
 
 ---
 
+### Cluster 6 — Local agent orchestration (Paperclip-parity, self-contained)
+
+Teams running multiple AI agents today have no coordination layer without
+depending on external SaaS platforms. Cluster 6 adds a self-contained
+TUI-driven runtime so Octopus can orchestrate, schedule, and monitor agents
+locally — no GitHub Actions, no web server, no cloud account required.
+
+| Item | Description |
+|---|---|
+| **RM-044** | `octopus control` — TUI dashboard (Python/textual) with agent roster, task queue, live output panel, and scheduler. Process manager launches Claude Code in git worktrees; task queue stored as `.octopus/queue/*.json`; scheduler reads `.octopus/schedule.yml` with cron-style rules. |
+
+---
+
 ## In Progress
 
 _No items in progress._
