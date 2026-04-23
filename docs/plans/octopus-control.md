@@ -24,6 +24,7 @@
 | `cli/control/skill_matcher.py` | create | Slash/NL → skill + model resolution |
 | `cli/control/scheduler.py` | create | Cron thread, `schedule.yml` parser, `on:push` flag |
 | `cli/control/app.py` | create | textual `App`: 4 panels, keybindings, exit prompt |
+| `cli/control/app.tcss` | create | Textual CSS — palette, borders, status colors, ASCII octopus header |
 | `.octopus/schedule.yml` | create (example) | Template for user schedules |
 | `tests/test_control.sh` | create | Bash integration tests |
 | `tests/test_skill_matcher.py` | create | Python unit tests |
@@ -546,7 +547,125 @@ git commit -m "feat(control): add scheduler (cron parser + background thread)"
 
 ---
 
-## Task 6a: TUI Scaffold — App Shell + AgentRoster
+## Task 6a: TUI Visual Design — Stylesheet + Theme
+
+**Files:**
+- Create: `cli/control/app.tcss`
+
+- [ ] **Step 1: Write the failing test**
+
+```bash
+echo "Test: app.tcss exists and defines accent color"
+grep -q "7B2FBE" cli/control/app.tcss \
+  || { echo "FAIL: accent color missing from app.tcss"; exit 1; }
+grep -q "1a1a2e" cli/control/app.tcss \
+  || { echo "FAIL: background color missing from app.tcss"; exit 1; }
+echo "PASS"
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `bash tests/test_control.sh`
+Expected: FAIL — `app.tcss` does not exist
+
+- [ ] **Step 3: Write minimal implementation**
+
+```css
+/* cli/control/app.tcss */
+
+/* ── Palette ─────────────────────────────────────── */
+$accent:   #7B2FBE;
+$ocean:    #00B4D8;
+$bg:       #1a1a2e;
+$surface:  #16213e;
+$text-dim: #6c757d;
+$green:    #06d6a0;
+$red:      #ef476f;
+
+/* ── App shell ───────────────────────────────────── */
+Screen {
+    background: $bg;
+    color: white;
+}
+
+Header {
+    background: $surface;
+    color: $ocean;
+    text-style: bold;
+}
+
+Footer {
+    background: $surface;
+    color: $text-dim;
+}
+
+/* ── Panels ──────────────────────────────────────── */
+#agents, #queue, #schedule {
+    border: round $surface;
+    background: $surface;
+    padding: 0 1;
+}
+
+#agents:focus-within, #queue:focus-within,
+#output:focus-within, #schedule:focus-within {
+    border: heavy $accent;
+}
+
+#output {
+    border: round $surface;
+    background: $bg;
+    color: $text-dim;
+    padding: 0 1;
+}
+
+/* ── Command bar ─────────────────────────────────── */
+#cmd {
+    dock: bottom;
+    background: $surface;
+    border: heavy $ocean;
+    color: white;
+    margin: 0 1;
+}
+
+#cmd.hidden {
+    display: none;
+}
+
+/* ── Status colors ───────────────────────────────── */
+.status-running { color: $green; }
+.status-idle    { color: $text-dim; }
+.status-failed  { color: $red; }
+.status-queued  { color: $ocean; }
+.status-done    { color: $green; text-style: dim; }
+```
+
+The ASCII octopus header is rendered in `on_mount` via a `Static` widget
+with `$text-dim` markup:
+
+```python
+# in app.py compose():
+yield Static(
+    "[dim]  (\\/)\n ( oo)\n  ||||[/dim]  "
+    f"[bold {self.CSS_VARIABLES['ocean']}]🐙 Octopus Control[/bold]",
+    id="logo"
+)
+```
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `bash tests/test_control.sh`
+Expected: PASS
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add cli/control/app.tcss tests/test_control.sh
+git commit -m "feat(control): TUI visual design — palette, borders, ASCII octopus header"
+```
+
+---
+
+## Task 6b: TUI Scaffold — App Shell + AgentRoster
 
 **Files:**
 - Create: `cli/control/app.py` (skeleton)
@@ -629,7 +748,7 @@ git commit -m "feat(control): TUI scaffold — App shell + AgentRoster panel"
 
 ---
 
-## Task 6b: TUI Panels — TaskQueue, SchedulePanel, CommandBar
+## Task 6c: TUI Panels — TaskQueue, SchedulePanel, CommandBar
 
 **Files:**
 - Modify: `cli/control/app.py`
@@ -710,7 +829,7 @@ git commit -m "feat(control): TUI panels — TaskQueue, SchedulePanel, CommandBa
 
 ---
 
-## Task 6c: TUI Live Output + Exit Prompt
+## Task 6d: TUI Live Output + Exit Prompt
 
 **Files:**
 - Modify: `cli/control/app.py`

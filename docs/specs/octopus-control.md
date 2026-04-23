@@ -159,23 +159,72 @@ existing pre-push git hook installed by Octopus.
 #### TUI Layout (textual)
 
 ```
-┌─ Agents ──────────┐ ┌─ Queue ──────────────────────┐
-│ ● backend-spec    │ │ ▶ security-scan       2m     │
-│ ○ tech-writer     │ │ ○ doc-design          queued │
-└───────────────────┘ └──────────────────────────────┘
-┌─ Output ── backend-specialist ───────────────────────┐
-│ 10:42:01  Reading src/auth/middleware.ts...          │
-│ 10:42:07  ✓ 4 tests passed                          │
-└──────────────────────────────────────────────────────┘
-┌─ Schedule ───────────────────────────────────────────┐
-│ ◷ daily 09:00   security-scan   backend-specialist  │
-└──────────────────────────────────────────────────────┘
-[a]dd  [p]ause  [k]ill  [tab] focus  [q]uit
+┌─ 🐙 Octopus Control ───────────────────────────── v1.23.0 ─ 10:42 ─┐
+│  (\/)                                                                │
+│ ( oo)  octopus control                                               │
+│  ||||                                                                │
+├─────────────────────────────────────────────────────────────────────┤
+│  ┌─ Agents ────────────────┐  ┌─ Queue ───────────────────────────┐ │
+│  │ ● backend-specialist    │  │ ▶ security-scan          2m ago   │ │
+│  │ ● tech-writer           │  │ ○ doc-design             queued   │ │
+│  │ ○ frontend-specialist   │  │ ✓ release-announce       done 8m  │ │
+│  └─────────────────────────┘  └───────────────────────────────────┘ │
+│  ┌─ Output ── backend-specialist ───────────────────────────────────┐│
+│  │ 10:42:01  Reading src/auth/middleware.ts...                      ││
+│  │ 10:42:07  ✓ 4 tests passed                                      ││
+│  └──────────────────────────────────────────────────────────────────┘│
+│  ┌─ Schedule ────────────────────────────────────────────────────────┐│
+│  │ ◷ daily 09:00   security-scan        backend-specialist          ││
+│  └──────────────────────────────────────────────────────────────────┘│
+│  [a]dd  [p]ause  [k]ill  [tab] focus  [q]uit                        │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
 Components: `AgentRoster` (DataTable), `TaskQueue` (ListView),
 `OutputPanel` (RichLog), `SchedulePanel` (DataTable),
 `CommandBar` (Input, shown on `[a]`).
+
+#### Visual Design
+
+The TUI uses a dedicated stylesheet `cli/control/app.tcss` (textual CSS).
+
+**Color palette:**
+
+| Token | Value | Use |
+|---|---|---|
+| `$accent` | `#7B2FBE` | Active panel borders, highlighted rows |
+| `$ocean` | `#00B4D8` | Header title, focused widget outlines |
+| `$bg` | `#1a1a2e` | App background |
+| `$surface` | `#16213e` | Panel backgrounds |
+| `$text-dim` | `#6c757d` | Idle status, timestamps |
+
+**Status indicators** (Unicode, no emoji for terminal compat):
+
+| State | Symbol | Color |
+|---|---|---|
+| Running | `●` | `#06d6a0` (green) |
+| Idle | `○` | `$text-dim` |
+| Queued | `○` | `$text-dim` |
+| Running (queue) | `▶` | `$ocean` |
+| Done | `✓` | `#06d6a0` |
+| Failed | `✗` | `#ef476f` |
+| Scheduled | `◷` | `$accent` |
+
+**Octopus motif** — a 3-line ASCII art rendered in the header bar,
+in `$text-dim` color so it is present but does not compete with content:
+
+```
+  (\/)
+ ( oo)
+  ||||
+```
+
+The 🐙 emoji appears in the window title and `--help` output only.
+The in-TUI art uses plain ASCII/Unicode to ensure compatibility with
+terminals that do not render emoji reliably.
+
+**Panel borders:** active (focused) panel uses `border: heavy $accent`;
+inactive panels use `border: round $surface`. Focus cycles with `[tab]`.
 
 ### Migration / Backward Compatibility
 
