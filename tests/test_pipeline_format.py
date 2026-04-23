@@ -3,6 +3,7 @@ sys.path.insert(0, ".")
 from cli.control.pipeline import parse_pipeline_frontmatter
 from pathlib import Path
 import textwrap
+import pytest
 
 
 PLAN_WITH_PIPELINE = textwrap.dedent("""\
@@ -43,11 +44,8 @@ def test_parse_pipeline_frontmatter_returns_tasks(tmp_path):
 def test_parse_plan_without_pipeline_raises(tmp_path):
     plan = tmp_path / "plan.md"
     plan.write_text("# Simple plan\n\n- [ ] do something\n")
-    try:
+    with pytest.raises(ValueError, match="(?i)pipeline"):
         parse_pipeline_frontmatter(plan)
-        assert False, "Expected ValueError"
-    except ValueError as e:
-        assert "pipeline" in str(e).lower()
 
 
 def test_task_bodies_extracted_from_markdown(tmp_path):

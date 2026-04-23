@@ -112,7 +112,10 @@ After the user approves the File Structure (Step 3), generate the `pipeline:` fr
    - doc, spec, README, changelog, ADR → `tech-writer`
    - review, audit, security, check → `reviewer`
    - (no match) → `backend-specialist`
-3. Infer `depends_on`: a task depends on the last task of any agent whose output it logically needs. Tasks with no shared context with previous tasks start with `depends_on: []`.
+3. Infer `depends_on` using these rules:
+   - Sequential tasks of the same agent always depend on their immediate predecessor (e.g., if backend-specialist has t1 and t3, then t3 depends on t1).
+   - Cross-agent: if a task consumes the output of another agent's task (e.g., a UI task that builds on a completed API), it depends on that agent's last task. When unsure, leave `depends_on: []` and let the user adjust.
+   - Tasks with no shared context with any previous task start with `depends_on: []`.
 4. Show the generated frontmatter block. Ask: `"Pipeline routing looks right? (y / revise)"`.
 5. On `y` — prepend the frontmatter to the plan buffer before writing.
 6. Inline each task `id` into the plan body as `**t1**`, `**t2**`, etc. in the checkbox lines: `- [ ] **t1** — <original task description>`.
