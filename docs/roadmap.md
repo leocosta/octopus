@@ -81,8 +81,20 @@ locally — no GitHub Actions, no web server, no cloud account required.
 
 ### Cluster 7 — Octopus Control UX & completeness
 
-First real-use gap analysis (see [research](research/2026-04-23-octopus-control-gaps.md))
-revealed missing UX polish and several features that are defined in code but not wired up.
+_RM-045..052 complete. Cluster 7 has no open items._
+
+All 8 gaps from the first real-use analysis are resolved (PR #92):
+
+| Item | Resolution |
+|---|---|
+| RM-045 | Typeahead autocomplete — `SuggestFromList` wired to command bar |
+| RM-046 | `RichLog` replaces `Label`; scrollable real-time streaming |
+| RM-047 | Animated spinner in agent roster |
+| RM-048 | `Scheduler` wired into `on_mount`; scheduled tasks now dispatch |
+| RM-049 | Exit code captured via `Popen.poll()`; `failed` state added |
+| RM-050 | Selecting done/failed task in queue loads its log into `RichLog` |
+| RM-051 | `TaskQueue.cleanup(keep_last)`; auto every 30 ticks; `Ctrl+D` |
+| RM-052 | `create_worktree`/`remove_worktree`; `launch(isolate=True)` |
 
 ### RM-045 — Typeahead autocomplete for skills in command bar
 
@@ -279,3 +291,11 @@ _No items in progress._
 | RM-042 | `--dry-run` mode for `octopus setup` — `OCTOPUS_DRY_RUN` guard in every `deliver_*()` function prints `[dry-run] would …` without writing; `tests/test_dry_run.sh` with 16 cases | completed | 2026-04-22 |
 | RM-043 | `octopus uninstall` — guided teardown removing symlinks, agent files, slash commands, hooks/permissions from `settings.json`, gitignore entries; optional removal of `.env.octopus`, GitHub Action, manifest | completed | 2026-04-22 |
 | RM-038 | `social-media` role — Senior Social Media Strategist persona with platform-native X/Instagram copy, approval-gated publishing, visual asset briefs, and evidence hierarchy; `scripts/x_post.py` for local credential-safe publishing | completed → [Spec](specs/social-media-role.md) | 2026-04-04 |
+| RM-045 | Typeahead autocomplete for skills in command bar | completed → PR #92 | 2026-04-23 |
+| RM-046 | Real-time scrollable log panel (RichLog) | completed → PR #92 | 2026-04-23 |
+| RM-047 | Animated status indicator in agent roster | completed → PR #92 | 2026-04-23 |
+| RM-048 | Wire Scheduler into app — dispatch scheduled tasks | completed → PR #92 | 2026-04-23 |
+| RM-049 | Task `failed` state via exit code capture | completed → PR #92 | 2026-04-23 |
+| RM-050 | Log viewer for completed tasks | completed → PR #92 | 2026-04-23 |
+| RM-051 | Queue cleanup — auto-dequeue done/failed tasks | completed → PR #92 | 2026-04-23 |
+| RM-052 | Worktree isolation per agent | completed → PR #92 | 2026-04-23 |
