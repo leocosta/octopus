@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.24.0] - 2026-04-23
+
+✨ This release completes the `octopus control` TUI dashboard with the UX and correctness gaps identified during first real use (RM-045 to RM-052).
+
+The log panel now uses a scrollable `RichLog` widget that streams all agent output in real time — replacing the single-line `Label` that showed only the last line. The agent roster gains an animated spinner to visually confirm that a process is alive. Selecting a completed or failed task in the queue list loads its full log from disk into the same panel, making post-run inspection straightforward.
+
+Skill discovery in the command bar is now driven by `SuggestFromList` typeahead: typing `/` filters available skills inline. Ambiguous natural-language matches surface a warning instead of silently dispatching to the wrong skill; single-match NL hits show the resolved skill in the input for confirmation before enqueue.
+
+On the correctness side, `ProcessManager` now stores `Popen` objects and exposes `exit_code()` via `poll()`. Dead agents are marked `done` or `failed` based on their actual exit code rather than always assumed successful. The `Scheduler` thread — previously defined but never instantiated — is now wired into `on_mount` and dispatches tasks whenever a `.octopus/schedule.yml` entry fires. Queue cleanup lands as `TaskQueue.cleanup(keep_last)`, running automatically every 30 polling ticks and exposed as `Ctrl+D` for manual use. The `worktrees/` directory that `ProcessManager` created at startup but never used is now backed by working `create_worktree` / `remove_worktree` helpers; `launch(isolate=True)` runs agents in a dedicated git worktree and cleans it up on reap.
+
+📝 The gap analysis that prompted these changes is documented in `docs/research/2026-04-23-octopus-control-gaps.md`.
+
 ## [1.23.3] - 2026-04-22
 
 🐛 Fixes slash commands in `octopus control` being sent with the wrong format. `_build_prompt` was reading key `"raw_prompt"` (which doesn't exist in the queue JSON) instead of `"prompt"`, and was building `/security-scan` instead of `/octopus:security-scan` — the namespace Claude Code uses for installed Octopus commands. Both bugs meant queued skill tasks ran without the skill context.
