@@ -11,9 +11,20 @@ _check_python_deps() {
 }
 
 if [[ "${1:-}" == "--help" ]]; then
-  echo "Usage: octopus control [--install-deps]"
-  echo "  Open the TUI agent dashboard."
+  echo "Usage: octopus control [--install-deps] [--plan <plan.md>]"
+  echo "  --plan <file>   Run pipeline runner against an enriched plan file."
+  echo "  (no flag)       Open the interactive TUI agent dashboard."
   exit 0
+fi
+
+if [[ "${1:-}" == "--plan" ]]; then
+  PLAN_FILE="${2:-}"
+  if [[ -z "$PLAN_FILE" ]]; then
+    ui_error "Usage: octopus control --plan <plan.md>"
+    exit 1
+  fi
+  PYTHONPATH="$(dirname "$CLI_DIR")" python3 -m cli.control.pipeline "$PLAN_FILE" "${@:3}"
+  exit $?
 fi
 
 _check_python_deps "$@"

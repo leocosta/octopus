@@ -161,3 +161,38 @@ class PipelineRunner:
             if code is not None:
                 return code == 0
             time.sleep(_POLL_INTERVAL)
+
+
+def main(args: list[str] | None = None) -> None:
+    import sys
+
+    argv = args if args is not None else sys.argv[1:]
+    dry_run = "--dry-run" in argv
+    plan_args = [a for a in argv if not a.startswith("--")]
+
+    if not plan_args:
+        print("Usage: python3 -m cli.control.pipeline <plan.md> [--dry-run]")
+        sys.exit(1)
+
+    plan_path = Path(plan_args[0])
+    if not plan_path.exists():
+        print(f"Error: plan file not found: {plan_path}")
+        sys.exit(1)
+
+    octopus_dir = Path(".octopus")
+    octopus_dir.mkdir(exist_ok=True)
+
+    runner = PipelineRunner(plan_path, octopus_dir)
+
+    if dry_run:
+        print(f"[dry-run] Pipeline: {plan_path}")
+        for t in runner._tasks:
+            print(f"  {t.id}  agent={t.agent}  depends_on={t.depends_on}")
+        sys.exit(0)
+
+    success = runner.run()
+    sys.exit(0 if success else 1)
+
+
+if __name__ == "__main__":
+    main()
