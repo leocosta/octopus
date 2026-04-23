@@ -37,3 +37,12 @@ class TaskQueue:
         for f in self.dir.glob(f"{tid}-*.json"):
             f.unlink()
             return
+
+    def cleanup(self, statuses: list[str] | None = None, keep_last: int = 50) -> int:
+        if statuses is None:
+            statuses = ["done", "failed"]
+        completed = [t for t in self.list_all() if t["status"] in statuses]
+        to_remove = completed[:-keep_last] if keep_last > 0 else completed
+        for task in to_remove:
+            self.dequeue(task["id"])
+        return len(to_remove)
