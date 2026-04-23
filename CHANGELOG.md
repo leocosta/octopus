@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.23.3] - 2026-04-22
+
+🐛 Fixes slash commands in `octopus control` being sent with the wrong format. `_build_prompt` was reading key `"raw_prompt"` (which doesn't exist in the queue JSON) instead of `"prompt"`, and was building `/security-scan` instead of `/octopus:security-scan` — the namespace Claude Code uses for installed Octopus commands. Both bugs meant queued skill tasks ran without the skill context.
+
 ## [1.23.2] - 2026-04-22
 
 🐛 Fixes three bugs that made `octopus control` non-functional after opening:
