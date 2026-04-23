@@ -97,11 +97,13 @@ class OctopusControl(App):
             break  # one dispatch per tick
 
     def _build_prompt(self, task: dict) -> str:
-        if task.get("skill") and task.get("raw_prompt"):
-            return f"/{task['skill']} {task['raw_prompt']}"
-        if task.get("skill"):
-            return f"/{task['skill']}"
-        return task.get("prompt", "")
+        skill = task.get("skill")
+        prompt = task.get("prompt", "")
+        if not skill:
+            return prompt
+        # Ensure the octopus: namespace prefix used by Claude Code slash commands
+        cmd = skill if ":" in skill else f"octopus:{skill}"
+        return f"/{cmd} {prompt}".strip()
 
     # ── Log streaming ─────────────────────────────────────────────────────────
 
