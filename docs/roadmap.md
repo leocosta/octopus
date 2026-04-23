@@ -79,6 +79,151 @@ locally — no GitHub Actions, no web server, no cloud account required.
 |---|---|
 | **RM-044** | `octopus control` — TUI dashboard (Python/textual) with agent roster, task queue, live output panel, and scheduler. Process manager launches Claude Code in git worktrees; task queue stored as `.octopus/queue/*.json`; scheduler reads `.octopus/schedule.yml` with cron-style rules. |
 
+### Cluster 7 — Octopus Control UX & completeness
+
+First real-use gap analysis (see [research](research/2026-04-23-octopus-control-gaps.md))
+revealed missing UX polish and several features that are defined in code but not wired up.
+
+### RM-045 — Typeahead autocomplete for skills in command bar
+
+- **Priority:** 🔴 High
+- **Effort:** medium
+- **Status:** proposed
+- **Added:** 2026-04-23
+- **Research:** [octopus-control-gaps](research/2026-04-23-octopus-control-gaps.md)
+
+When typing in the command bar, show inline suggestions filtered from the loaded skill
+catalog. Uses the existing `SkillMatcher` catalog. Also surfaces the `ambiguous` case
+(currently detected but silently ignored) so the user can pick the intended skill.
+
+**Rationale:** Without autocomplete the user has no discovery path for available skills,
+making the command bar nearly unusable for anyone who doesn't know skill names by heart.
+
+---
+
+### RM-046 — Real-time scrollable log panel (RichLog)
+
+- **Priority:** 🔴 High
+- **Effort:** medium
+- **Status:** proposed
+- **Added:** 2026-04-23
+- **Research:** [octopus-control-gaps](research/2026-04-23-octopus-control-gaps.md)
+
+Replace the single `Label` widget (shows only the last line) with a Textual `RichLog`
+that streams all output from the running agent and supports scroll. Selecting a different
+agent in the roster switches the log view.
+
+**Rationale:** The current single-line output gives no confidence that the agent is doing
+anything useful. Users reported being unable to tell if the agent was running at all.
+
+---
+
+### RM-047 — Animated status indicator in agent roster
+
+- **Priority:** 🔴 High
+- **Effort:** low
+- **Status:** proposed
+- **Added:** 2026-04-23
+- **Research:** [octopus-control-gaps](research/2026-04-23-octopus-control-gaps.md)
+
+The "Status" column currently shows `● running` as static text. Add an animated spinner
+(`LoadingIndicator` or cycling chars) that visually confirms the process is alive. Show
+distinct indicators for queued / running / done / failed states.
+
+**Rationale:** Static text gives no confidence of liveness. A moving indicator is the
+minimum signal that something is actually happening.
+
+---
+
+### RM-048 — Wire Scheduler into app — dispatch scheduled tasks
+
+- **Priority:** 🔴 High
+- **Effort:** low
+- **Status:** proposed
+- **Added:** 2026-04-23
+- **Research:** [octopus-control-gaps](research/2026-04-23-octopus-control-gaps.md)
+
+`scheduler.py` defines a fully working `Scheduler` thread but `app.py` never instantiates
+it. The schedule panel in the UI reads `.octopus/schedule.yml` for display only — no tasks
+are ever dispatched automatically. Wire `Scheduler` into `on_mount` with `on_fire` calling
+`self.queue.enqueue(...)`.
+
+**Rationale:** Schedule-based dispatch is a core Cluster 6 feature per the RM-044 spec.
+Shipping the UI without the scheduler makes the schedule panel decorative.
+
+---
+
+### RM-049 — Task `failed` state via exit code capture
+
+- **Priority:** 🟡 Medium
+- **Effort:** low
+- **Status:** proposed
+- **Added:** 2026-04-23
+- **Research:** [octopus-control-gaps](research/2026-04-23-octopus-control-gaps.md)
+
+When `_reap_dead_agents` detects a dead process, it marks all matching running tasks as
+`done` regardless of exit code. `ProcessManager` should capture the exit code (via
+`subprocess.Popen.wait()` or `os.waitpid`) and the queue should distinguish `done` from
+`failed`.
+
+**Rationale:** Without a `failed` state it is impossible to know whether an agent
+completed its work or crashed silently.
+
+---
+
+### RM-050 — Log viewer for completed tasks
+
+- **Priority:** 🟡 Medium
+- **Effort:** low
+- **Status:** proposed
+- **Added:** 2026-04-23
+- **Research:** [octopus-control-gaps](research/2026-04-23-octopus-control-gaps.md)
+
+After an agent finishes, the log panel clears. Log files persist at
+`.octopus/logs/<role>.log` but are inaccessible from the UI. Add a handler so selecting
+a completed task in the queue list loads its log into the RichLog panel (read-only, no
+tail).
+
+**Rationale:** Post-run log inspection is essential for debugging failed or unexpected
+agent outputs.
+
+---
+
+### RM-051 — Queue cleanup — auto-dequeue done/failed tasks
+
+- **Priority:** 🟡 Medium
+- **Effort:** trivial
+- **Status:** proposed
+- **Added:** 2026-04-23
+- **Research:** [octopus-control-gaps](research/2026-04-23-octopus-control-gaps.md)
+
+`TaskQueue.dequeue()` is defined but never called. Tasks accumulate in
+`.octopus/queue/` indefinitely. Add a configurable retention policy (e.g. keep last N
+completed tasks, or delete after 24 h) and expose a `d` keybind to manually dismiss
+selected completed tasks.
+
+**Rationale:** An ever-growing queue directory is a maintenance burden and makes the
+queue panel harder to scan.
+
+---
+
+### RM-052 — Worktree isolation per agent
+
+- **Priority:** 🟢 Low
+- **Effort:** high
+- **Status:** proposed
+- **Added:** 2026-04-23
+- **Research:** [octopus-control-gaps](research/2026-04-23-octopus-control-gaps.md)
+
+`.octopus/worktrees/` is created at startup but never used — all agents run in the same
+`cwd`. For concurrent agents that edit overlapping files, git worktree isolation prevents
+conflicts. Requires `git worktree add` on launch, passing the worktree path as `cwd` to
+`subprocess.Popen`, and `git worktree remove` on agent exit.
+
+**Rationale:** Without isolation, two concurrent agents editing the same file produce
+conflicting writes. Low priority because single-agent usage (the common case) is
+unaffected.
+
 ---
 
 ## In Progress
