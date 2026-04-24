@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.29.0] - 2026-04-24
+
+Two improvements to the agent reply experience in `octopus control`. ✨
+
+**Reply visible in Output panel** — when you send a reply to an agent via `r`, your message now appears in the log before the agent's response, formatted as `── you ──` / `── agent ──` separators. Previously only the agent's output was recorded.
+
+**"Awaiting reply" status in roster** — agents that have finished and are waiting for user input now show `↩ awaiting reply` in amber instead of continuing to spin. The roster now has three distinct states: spinner for actively running agents, amber `↩ awaiting reply` for agents with an open session, and dim `○ idle` for free agents.
+
 ## [1.28.3] - 2026-04-24
 
 🐛 The Output panel now occupies half the screen height instead of a fixed 12 lines. Previously the queue took two-thirds of the right column while the log viewer was too small to be useful. Queue and schedule now split their area equally, and the Output panel grows with the terminal size.
