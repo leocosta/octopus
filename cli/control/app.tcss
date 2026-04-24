@@ -1,16 +1,21 @@
 /* ── Palette ─────────────────────────────────────── */
-$accent:   #7B2FBE;
-$ocean:    #00B4D8;
-$bg:       #1a1a2e;
-$surface:  #16213e;
-$text-dim: #6c757d;
-$green:    #06d6a0;
-$red:      #ef476f;
+$accent:      #7B2FBE;
+$accent-dim:  #3d1760;
+$ocean:       #00B4D8;
+$bg:          #080c14;
+$surface:     #0f1623;
+$surface-hi:  #16203a;
+$border-dim:  #1e2d45;
+$text:        #c8d6e5;
+$text-dim:    #3d5570;
+$green:       #00e5a0;
+$red:         #ff4d6d;
+$amber:       #ffd166;
 
 /* ── App shell ───────────────────────────────────── */
 Screen {
     background: $bg;
-    color: white;
+    color: $text;
 }
 
 Header {
@@ -24,25 +29,82 @@ Footer {
     color: $text-dim;
 }
 
-/* ── Panels ──────────────────────────────────────── */
-#agents, #queue, #schedule {
-    border: round $surface;
+/* ── Main horizontal split ───────────────────────── */
+#main {
+    height: 1fr;
+}
+
+#left {
+    width: 38;
+    min-width: 28;
+}
+
+#right {
+    width: 1fr;
+    layout: vertical;
+}
+
+/* ── Agents panel ────────────────────────────────── */
+#agents {
+    border: round $border-dim;
+    border-title-color: $text-dim;
+    border-title-align: left;
     background: $surface;
     padding: 0 1;
+    height: 1fr;
 }
 
-#agents:focus-within, #queue:focus-within,
-#output:focus-within, #schedule:focus-within {
+#agents:focus-within {
     border: heavy $accent;
+    border-title-color: $accent;
 }
 
+/* ── Queue panel ─────────────────────────────────── */
+#queue {
+    border: round $border-dim;
+    border-title-color: $text-dim;
+    border-title-align: left;
+    background: $surface;
+    padding: 0 1;
+    height: 2fr;
+}
+
+#queue:focus-within {
+    border: heavy $accent;
+    border-title-color: $accent;
+}
+
+/* ── Schedule panel ──────────────────────────────── */
+#schedule {
+    border: round $border-dim;
+    border-title-color: $text-dim;
+    border-title-align: left;
+    background: $surface;
+    padding: 0 1;
+    height: 1fr;
+}
+
+#schedule:focus-within {
+    border: heavy $accent;
+    border-title-color: $accent;
+}
+
+/* ── Output panel ────────────────────────────────── */
 #output {
-    border: round $surface;
+    border: round $border-dim;
+    border-title-color: $text-dim;
+    border-title-align: left;
     background: $bg;
     color: $text-dim;
     padding: 0 1;
-    height: 1fr;
-    scrollbar-color: $accent;
+    height: 12;
+    scrollbar-color: $accent-dim;
+    scrollbar-background: $surface;
+}
+
+#output:focus-within {
+    border: heavy $ocean;
+    border-title-color: $ocean;
 }
 
 /* ── Autocomplete suggestion ─────────────────────── */
@@ -53,19 +115,30 @@ Footer {
 /* ── Command bar ─────────────────────────────────── */
 #cmd {
     dock: bottom;
-    background: $surface;
+    background: $surface-hi;
     border: heavy $ocean;
-    color: white;
-    margin: 0 1;
+    border-title-color: $ocean;
+    border-title-align: left;
+    color: $text;
+    margin: 0 1 1 1;
 }
 
 #cmd.hidden {
     display: none;
 }
 
-/* ── Status colors ───────────────────────────────── */
-.status-running { color: $green; }
-.status-idle    { color: $text-dim; }
-.status-failed  { color: $red; }
-.status-queued  { color: $ocean; }
-.status-done    { color: $green; text-style: dim; }
+/* ── DataTable header row ────────────────────────── */
+DataTable > .datatable--header {
+    color: $text-dim;
+    text-style: dim;
+    background: $surface;
+}
+
+DataTable > .datatable--cursor {
+    background: $accent-dim;
+    color: $text;
+}
+
+DataTable > .datatable--hover {
+    background: $surface-hi;
+}
