@@ -1,6 +1,7 @@
 import asyncio
 import os
 import signal
+import time
 from pathlib import Path
 
 from textual.app import App, ComposeResult
@@ -22,7 +23,7 @@ _STATUS_LABEL = {"queued": "○", "running": "●", "done": "✓", "failed": "�
 
 
 class OctopusControl(App):
-    TITLE = "Octopus Control"
+    TITLE = "🐙 Octopus Control"
     CSS_PATH = Path(__file__).parent / "app.tcss"
     BINDINGS = [
         Binding("a", "add_task", "Add task"),
@@ -39,6 +40,7 @@ class OctopusControl(App):
         self.queue = TaskQueue(octopus_dir / "queue")
         self._matcher = SkillMatcher(skills_dir=_SKILLS_DIR)
         self._agents: dict[str, int] = {}
+        self._agent_started: dict[str, float] = {}
         self._awaiting_exit: bool = False
         self._scheduler: Scheduler | None = None
         self._cleanup_tick: int = 0
@@ -46,21 +48,29 @@ class OctopusControl(App):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        with Horizontal():
+        with Horizontal(id="main"):
             with Vertical(id="left"):
                 yield DataTable(id="agents")
             with Vertical(id="right"):
                 yield ListView(id="queue")
                 yield DataTable(id="schedule")
         yield RichLog(id="output", markup=True, highlight=False, wrap=True)
-        yield Input(placeholder="[a] /skill args  or  natural language", id="cmd", classes="hidden")
+        yield Input(placeholder="  /skill [args]  ·  natural language  ·  Tab to complete", id="cmd", classes="hidden")
         yield Footer()
 
     def on_mount(self) -> None:
         agents_table = self.query_one("#agents", DataTable)
-        agents_table.add_columns("Role", "PID", "Status")
+        agents_table.add_columns("Role", "Status")
         schedule_table = self.query_one("#schedule", DataTable)
-        schedule_table.add_columns("ID", "When", "Role", "Skill")
+        schedule_table.add_columns("When", "Role", "Skill")
+
+        # Panel titles
+        self.query_one("#agents", DataTable).border_title = "Agents"
+        self.query_one("#queue", ListView).border_title = "Queue"
+        self.query_one("#schedule", DataTable).border_title = "Schedule"
+        self.query_one("#output", RichLog).border_title = "Output"
+        self.query_one("#cmd", Input).border_title = "Command"
+
         self._agents = self.pm.adopt_orphans()
         self._refresh_roster()
         self._refresh_queue()
@@ -113,6 +123,7 @@ class OctopusControl(App):
             self.queue.update_status(task["id"], "running")
             pid = self.pm.launch(role=role, prompt=prompt, model=task["model"])
             self._agents[role] = pid
+            self._agent_started[role] = time.time()
             self.run_worker(self._stream_log(role))
             break  # one dispatch per tick
 
@@ -149,7 +160,6 @@ class OctopusControl(App):
             return
         for entry in entries:
             table.add_row(
-                entry.get("id", "–"),
                 entry.get("when", "–"),
                 entry.get("role", "–"),
                 entry.get("skill", "–"),
@@ -167,7 +177,7 @@ class OctopusControl(App):
         if not log_path.exists():
             return
         log_widget.clear()
-        log_widget.write(f"─── {role} ───")
+        log_widget.border_title = f"Output · {role} · live"
         with open(log_path) as f:
             while True:
                 line = f.readline()
@@ -175,6 +185,7 @@ class OctopusControl(App):
                     log_widget.write(line.rstrip())
                 else:
                     if role not in self._agents:
+                        log_widget.border_title = f"Output · {role} · done"
                         break
                     await asyncio.sleep(0.2)
 
@@ -185,18 +196,29 @@ class OctopusControl(App):
         table.clear()
         frame = _SPINNER[self._tick % len(_SPINNER)]
         self._tick += 1
-        for role, pid in self._agents.items():
-            table.add_row(role, str(pid), f"{frame} running", key=role)
+        for role in self._agents:
+            elapsed = int(time.time() - self._agent_started.get(role, time.time()))
+            mins, secs = divmod(elapsed, 60)
+            elapsed_str = f"{mins}m{secs:02d}s" if mins else f"{secs}s"
+            table.add_row(role, f"{frame} {elapsed_str}", key=role)
 
     def _refresh_queue(self) -> None:
         lv = self.query_one("#queue", ListView)
         lv.clear()
-        for task in self.queue.list_all():
+        tasks = self.queue.list_all()
+        running = sum(1 for t in tasks if t["status"] == "running")
+        queued = sum(1 for t in tasks if t["status"] == "queued")
+        title = "Queue"
+        if running or queued:
+            title = f"Queue  {running} running · {queued} waiting"
+        lv.border_title = title
+        for task in tasks:
             status = task["status"]
             role = task["role"]
             skill = task.get("skill") or "–"
             icon = _STATUS_LABEL.get(status, "?")
-            lv.append(ListItem(Label(f"{icon} [{status}] {role} / {skill}")))
+            skill_short = skill[:22] + "…" if len(skill) > 22 else skill
+            lv.append(ListItem(Label(f"{icon} {role}  [dim]{skill_short}[/dim]")))
 
     def _selected_role(self) -> str:
         table = self.query_one("#agents", DataTable)
@@ -216,8 +238,8 @@ class OctopusControl(App):
         log_widget.clear()
         role = task["role"]
         log_path = self.pm.logs_dir / f"{role}.log"
-        status_label = "[green]done[/green]" if task["status"] == "done" else "[red]failed[/red]"
-        log_widget.write(f"─── {role} ({status_label}) ───")
+        status_icon = "✓" if task["status"] == "done" else "✗"
+        log_widget.border_title = f"Output · {role} · {status_icon} {task['status']}"
         if log_path.exists():
             for line in log_path.read_text().splitlines():
                 log_widget.write(line)

@@ -68,20 +68,21 @@ RM-037 (`/octopus:implement --plan`).
 
 ---
 
-### Cluster 6 — Local agent orchestration (Paperclip-parity, self-contained)
+### Cluster 6 — Local agent orchestration
 
-Teams running multiple AI agents today have no coordination layer without
-depending on external SaaS platforms. Cluster 6 adds a self-contained
-TUI-driven runtime so Octopus can orchestrate, schedule, and monitor agents
-locally — no GitHub Actions, no web server, no cloud account required.
+_RM-044 complete. Cluster 6 has no open items._
+
+`octopus control` shipped in v1.23.0. All UX gaps (RM-045..052) closed in PR #92.
+
+### Cluster 7 — End-to-end pipeline runner
 
 | Item | Description |
 |---|---|
-| **RM-044** | `octopus control` — TUI dashboard (Python/textual) with agent roster, task queue, live output panel, and scheduler. Process manager launches Claude Code in git worktrees; task queue stored as `.octopus/queue/*.json`; scheduler reads `.octopus/schedule.yml` with cron-style rules. |
+| **RM-053** | Pipeline runner — enriched plan format (`pipeline:` frontmatter with `agent` + `depends_on` per task), `PipelineRunner` DAG executor in `cli/control/pipeline.py`, `octopus control --plan` routing, review gate, `octopus run` unified entry point |
 
-### Cluster 7 — Octopus Control UX & completeness
+### Cluster 8 — Octopus Control UX & completeness
 
-_RM-045..052 complete. Cluster 7 has no open items._
+_RM-045..052 complete. Cluster 8 has no open items._
 
 All 8 gaps from the first real-use analysis are resolved (PR #92):
 
@@ -299,3 +300,4 @@ _No items in progress._
 | RM-050 | Log viewer for completed tasks | completed → PR #92 | 2026-04-23 |
 | RM-051 | Queue cleanup — auto-dequeue done/failed tasks | completed → PR #92 | 2026-04-23 |
 | RM-052 | Worktree isolation per agent | completed → PR #92 | 2026-04-23 |
+| RM-044 | `octopus control` TUI dashboard — agent roster, task queue, scheduler, live logs, worktree isolation | completed → [Spec](specs/octopus-control.md) | 2026-04-23 |
