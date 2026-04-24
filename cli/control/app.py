@@ -191,6 +191,22 @@ class OctopusControl(App):
 
     # ── UI refresh ────────────────────────────────────────────────────────────
 
+    def _last_log_line(self, role: str) -> str:
+        log_path = self.pm.logs_dir / f"{role}.log"
+        if not log_path.exists():
+            return ""
+        try:
+            stat = log_path.stat()
+            if stat.st_size == 0:
+                return ""
+            with open(log_path, "rb") as f:
+                f.seek(max(0, stat.st_size - 300))
+                tail = f.read().decode("utf-8", errors="replace")
+            lines = [ln.strip() for ln in tail.splitlines() if ln.strip()]
+            return lines[-1] if lines else ""
+        except OSError:
+            return ""
+
     def _refresh_roster(self) -> None:
         table = self.query_one("#agents", DataTable)
         table.clear()
@@ -200,7 +216,13 @@ class OctopusControl(App):
             elapsed = int(time.time() - self._agent_started.get(role, time.time()))
             mins, secs = divmod(elapsed, 60)
             elapsed_str = f"{mins}m{secs:02d}s" if mins else f"{secs}s"
-            table.add_row(role, f"{frame} {elapsed_str}", key=role)
+            last_line = self._last_log_line(role)
+            if last_line:
+                truncated = last_line[:38] + "…" if len(last_line) > 38 else last_line
+                status = f"{frame} {elapsed_str}  [dim]{truncated}[/dim]"
+            else:
+                status = f"{frame} {elapsed_str}"
+            table.add_row(role, status, key=role)
 
     def _refresh_queue(self) -> None:
         lv = self.query_one("#queue", ListView)
@@ -226,6 +248,24 @@ class OctopusControl(App):
             return str(table.get_cell_at((table.cursor_row, 0)))
         return "agent"
 
+    def on_data_table_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
+        if event.data_table.id != "agents":
+            return
+        if event.row_key is None:
+            return
+        role = str(event.row_key.value)
+        log_widget = self.query_one("#output", RichLog)
+        log_path = self.pm.logs_dir / f"{role}.log"
+        log_widget.clear()
+        if role in self._agents:
+            log_widget.border_title = f"Output · {role} · live"
+        else:
+            log_widget.border_title = f"Output · {role}"
+        if log_path.exists():
+            lines = log_path.read_text().splitlines()
+            for line in lines[-50:]:
+                log_widget.write(line)
+
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         tasks = self.queue.list_all()
         idx = event.list_view.index
@@ -250,6 +290,11 @@ class OctopusControl(App):
 
     def action_add_task(self) -> None:
         cmd = self.query_one("#cmd", Input)
+        selected_role = self._selected_role()
+        # Idle agent (not currently running) → prefill @role: as delegation shortcut
+        if selected_role != "agent" and selected_role not in self._agents:
+            cmd.value = f"@{selected_role}: "
+            cmd.cursor_position = len(cmd.value)
         cmd.remove_class("hidden")
         cmd.focus()
 
@@ -276,7 +321,7 @@ class OctopusControl(App):
             cmd_widget.focus()
             return
         self.queue.enqueue(
-            role=self._selected_role(),
+            role=result.role_override or self._selected_role(),
             skill=result.skill,
             model=result.model,
             prompt=result.raw_prompt,

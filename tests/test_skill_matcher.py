@@ -64,3 +64,30 @@ def test_empty_input(tmp_path):
     m = make_matcher(tmp_path)
     r = m.resolve("", role_model="claude-sonnet-4-6")
     assert r.skill is None and r.raw_prompt == ""
+
+
+def test_at_role_prefix_extracted(tmp_path):
+    m = make_matcher(tmp_path)
+    r = m.resolve("@tech-writer: write the ADR", role_model="claude-sonnet-4-6")
+    assert r.role_override == "tech-writer"
+    assert r.raw_prompt == "write the ADR"
+
+
+def test_at_role_prefix_with_slash_skill(tmp_path):
+    m = make_matcher(tmp_path)
+    r = m.resolve("@backend-specialist: /security-scan src/auth/", role_model="claude-sonnet-4-6")
+    assert r.role_override == "backend-specialist"
+    assert r.skill == "security-scan"
+
+
+def test_no_at_role_prefix_unchanged(tmp_path):
+    m = make_matcher(tmp_path)
+    r = m.resolve("write the ADR", role_model="claude-sonnet-4-6")
+    assert r.role_override is None
+
+
+def test_at_role_with_hyphen(tmp_path):
+    m = make_matcher(tmp_path)
+    r = m.resolve("@frontend-specialist: build the login screen", role_model="claude-sonnet-4-6")
+    assert r.role_override == "frontend-specialist"
+    assert r.raw_prompt == "build the login screen"
