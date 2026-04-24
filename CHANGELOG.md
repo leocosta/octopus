@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.28.2] - 2026-04-24
+
+🐛 Fixed flag name for skipping permission prompts in agent launches — `--dangerouslySkipPermissions` (camelCase) was corrected to `--dangerously-skip-permissions` (kebab-case), which is the actual flag accepted by the Claude CLI.
+
 ## [1.28.1] - 2026-04-24
 
 🐛 Agents launched by `octopus control` and `octopus ask` no longer prompt for permission before writing files. Running non-interactively via `--print`, these dialogs had no way to be approved through the normal UI — agents would stall and output instructions asking the user to manually approve each write. The `--dangerouslySkipPermissions` flag is now passed at launch time; the destructive-guard hook remains as the safety layer for genuinely dangerous operations.
