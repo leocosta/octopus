@@ -78,7 +78,7 @@ class ProcessManager:
         cmd = [
             "claude", "--model", model,
             "--print", "--output-format", "stream-json", "--verbose",
-            "--dangerouslySkipPermissions",
+            "--dangerously-skip-permissions",
             prompt,
         ]
         return self._spawn_with_parser(role, cmd, log_path, cwd=cwd)
@@ -104,7 +104,7 @@ class ProcessManager:
         cmd = [
             "claude", "--model", model,
             "--print", "--output-format", "stream-json", "--verbose",
-            "--dangerouslySkipPermissions",
+            "--dangerously-skip-permissions",
             "--resume", session_id,
             reply,
         ]
