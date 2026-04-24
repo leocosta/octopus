@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.28.0] - 2026-04-24
+
+This release improves the `octopus control` dashboard with animated feedback and several usability fixes. ✨
+
+**Animated queue spinner** — running tasks in the queue panel now display an animated braille spinner (⠋⠙⠹…) instead of a static ●, making it immediately clear that an agent is actively working. A dedicated 0.3s timer drives the animation independently from the 2s poll that handles log reads and process checks, so the TUI stays responsive without extra I/O overhead.
+
+🐛 **Output panel stays pinned to selected agent** — clicking between agents in the roster now correctly updates the Output panel to the selected agent's log. Previously, the 0.3s roster refresh was clearing and rebuilding the DataTable, losing the cursor position and resetting the output to whichever agent landed on row 0.
+
+🐛 **Reply input no longer selects prefilled text** — pressing `r` to reply to an agent prefills the command bar with `↩ role:`, but focus processing was causing the text to appear selected, so the first keystroke would erase it. The prefill is now applied after focus completes, so you can type immediately without losing the prefix.
+
 ## [1.27.1] - 2026-04-24
 
 This patch release fixes two `octopus control` reliability issues. 🐛

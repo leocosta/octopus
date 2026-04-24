@@ -2,7 +2,7 @@
 
 ---
 
-![Version](https://img.shields.io/badge/version-v1.27.1-blue)
+![Version](https://img.shields.io/badge/version-v1.28.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Shell](https://img.shields.io/badge/shell-bash%204%2B-lightgrey)
 
@@ -30,7 +30,7 @@ irm https://github.com/leocosta/octopus/releases/latest/download/install.ps1 | i
 
 To install a specific version:
 ```bash
-curl -fsSL https://github.com/leocosta/octopus/releases/latest/download/install.sh | bash -s -- --version v1.27.1
+curl -fsSL https://github.com/leocosta/octopus/releases/latest/download/install.sh | bash -s -- --version v1.28.0
 ```
 
 After installation, verify with `octopus doctor`.
