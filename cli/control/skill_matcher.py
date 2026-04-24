@@ -16,6 +16,7 @@ class MatchResult:
     raw_prompt: str
     needs_confirm: bool = False
     ambiguous: list[str] | None = None
+    role_override: str | None = None
 
 
 class SkillMatcher:
@@ -46,6 +47,14 @@ class SkillMatcher:
 
     def resolve(self, text: str, role_model: str) -> MatchResult:
         text = text.strip()
+
+        # Pre-parse @role: prefix
+        role_override = None
+        at_match = re.match(r'^@([\w-]+):\s*', text)
+        if at_match:
+            role_override = at_match.group(1)
+            text = text[at_match.end():]
+
         if text.startswith("/"):
             parts = text[1:].split()
             skill = parts[0] if parts else None
@@ -59,6 +68,7 @@ class SkillMatcher:
                 skill=skill,
                 raw_prompt=raw,
                 model=self._resolve_model(model_flag, skill, role_model),
+                role_override=role_override,
             )
         matched = [
             s for s, meta in self._catalog.items()
@@ -71,6 +81,7 @@ class SkillMatcher:
                 raw_prompt=text,
                 needs_confirm=True,
                 model=self._resolve_model(None, skill, role_model),
+                role_override=role_override,
             )
         if len(matched) > 1:
             return MatchResult(
@@ -78,9 +89,11 @@ class SkillMatcher:
                 raw_prompt=text,
                 ambiguous=matched,
                 model=self._resolve_model(None, None, role_model),
+                role_override=role_override,
             )
         return MatchResult(
             skill=None,
             raw_prompt=text,
             model=self._resolve_model(None, None, role_model),
+            role_override=role_override,
         )
