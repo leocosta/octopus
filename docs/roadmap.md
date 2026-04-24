@@ -86,7 +86,13 @@ _RM-044 complete. Cluster 6 has no open items._
 |---|---|
 | **RM-054** | `octopus ask <role> "task"` — terminal-first delegation with live streaming; `@role:` syntax in TUI command bar; mini-feed (last log line inline) in agents roster; focus Output on cursor navigation; structured progress output from `pipeline.py` |
 
-### Cluster 9 — Octopus Control UX & completeness
+### Cluster 9 — Agent Reply (bidirectional interaction)
+
+| Item | Description |
+|---|---|
+| **RM-055** | Agent reply via `--resume` — `ProcessManager` captures `session_id` from `--output-format=stream-json`, stores in `.octopus/sessions/`; TUI `[r]eply` keybinding opens command bar pre-filled with `↩ role:`; `launch_resume()` continues session; `octopus ask` prints session path at end |
+
+### Cluster 10 — Octopus Control UX & completeness
 
 _RM-045..052 complete. Cluster 8 has no open items._
 
