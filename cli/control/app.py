@@ -50,7 +50,6 @@ class OctopusControl(App):
         self._awaiting_exit: bool = False
         self._scheduler: Scheduler | None = None
         self._cleanup_tick: int = 0
-        self._tick: int = 0
         self._spin_tick: int = 0
 
     @staticmethod
@@ -242,8 +241,7 @@ class OctopusControl(App):
     def _refresh_roster(self) -> None:
         table = self.query_one("#agents", DataTable)
         table.clear()
-        frame = _SPINNER[self._tick % len(_SPINNER)]
-        self._tick += 1
+        frame = _SPINNER[self._spin_tick % len(_SPINNER)]
         # Show all known roles; active ones show spinner + elapsed, idle ones show ○ idle
         all_roles = list(dict.fromkeys(list(self._known_roles) + list(self._agents)))
         for role in all_roles:
