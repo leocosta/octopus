@@ -240,6 +240,7 @@ class OctopusControl(App):
 
     def _refresh_roster(self) -> None:
         table = self.query_one("#agents", DataTable)
+        saved_row = table.cursor_row
         table.clear()
         frame = _SPINNER[self._spin_tick % len(_SPINNER)]
         # Show all known roles; active ones show spinner + elapsed, idle ones show ○ idle
@@ -260,6 +261,8 @@ class OctopusControl(App):
                 resumable = " [dim]↩[/dim]" if self.pm.has_session(role) else ""
                 status = f"[dim]○ idle{resumable}[/dim]"
             table.add_row(role, status, key=role)
+        if saved_row is not None and saved_row < table.row_count:
+            table.move_cursor(row=saved_row)
 
     def _refresh_queue(self) -> None:
         lv = self.query_one("#queue", ListView)
@@ -332,12 +335,13 @@ class OctopusControl(App):
     def action_add_task(self) -> None:
         cmd = self.query_one("#cmd", Input)
         selected_role = self._selected_role()
-        # Idle agent (not currently running) → prefill @role: as delegation shortcut
-        if selected_role != "agent" and selected_role not in self._agents:
-            cmd.value = f"@{selected_role}: "
-            cmd.cursor_position = len(cmd.value)
         cmd.remove_class("hidden")
         cmd.focus()
+        # Idle agent (not currently running) → prefill @role: as delegation shortcut
+        if selected_role != "agent" and selected_role not in self._agents:
+            prefill = f"@{selected_role}: "
+            self.call_after_refresh(setattr, cmd, "value", prefill)
+            self.call_after_refresh(setattr, cmd, "cursor_position", len(prefill))
 
     def action_reply_agent(self) -> None:
         role = self._selected_role()
@@ -345,10 +349,11 @@ class OctopusControl(App):
             self.notify(f"No resumable session for {role}", severity="warning", timeout=3)
             return
         cmd = self.query_one("#cmd", Input)
-        cmd.value = f"↩ {role}: "
-        cmd.cursor_position = len(cmd.value)
         cmd.remove_class("hidden")
         cmd.focus()
+        prefill = f"↩ {role}: "
+        self.call_after_refresh(setattr, cmd, "value", prefill)
+        self.call_after_refresh(setattr, cmd, "cursor_position", len(prefill))
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         text = event.value.strip()
