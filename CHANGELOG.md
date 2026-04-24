@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.28.1] - 2026-04-24
+
+🐛 Agents launched by `octopus control` and `octopus ask` no longer prompt for permission before writing files. Running non-interactively via `--print`, these dialogs had no way to be approved through the normal UI — agents would stall and output instructions asking the user to manually approve each write. The `--dangerouslySkipPermissions` flag is now passed at launch time; the destructive-guard hook remains as the safety layer for genuinely dangerous operations.
+
 ## [1.28.0] - 2026-04-24
 
 This release improves the `octopus control` dashboard with animated feedback and several usability fixes. ✨
