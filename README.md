@@ -141,6 +141,7 @@ language:
 | **Workflow** | PR and branch automation | [workflow.md](docs/features/workflow.md) |
 | **Control** | TUI dashboard for local multi-agent orchestration | [below](#octopus-control) |
 | **Run** | End-to-end pipeline from requirement to PR | [below](#octopus-run) |
+| **Ask** | Terminal-first agent delegation with live streaming | [below](#octopus-ask) |
 
 See also: [Capability Matrix](docs/capability-matrix.md) · [Agent Manifests](docs/agent-manifests.md) · [Project Structure](docs/project-structure.md)
 
@@ -160,27 +161,43 @@ octopus control --install-deps                           # install Python deps (
 
 ```
 ┌─ 🐙 Octopus Control ──────────────────────────────────────────┐
-│  ┌─ Agents ──────────────────┐  ┌─ Queue ───────────────────┐ │
-│  │ ● backend-specialist      │  │ ▶ security-scan    2m ago  │ │
-│  │ ● tech-writer             │  │ ○ doc-design       queued  │ │
-│  │ ○ frontend-specialist     │  │ ✓ release-announce done 8m │ │
-│  └───────────────────────────┘  └───────────────────────────┘ │
-│  ┌─ Output ── backend-specialist ───────────────────────────┐  │
-│  │ 10:42:01  Reading src/auth/middleware.ts...              │  │
-│  │ 10:42:07  ✓ 4 tests passed                              │  │
-│  └──────────────────────────────────────────────────────────┘  │
-│  ┌─ Schedule ────────────────────────────────────────────────┐ │
-│  │ ◷ daily 09:00   security-scan   backend-specialist        │ │
+│  ┌─ Agents ──────────────────────────────────────────────────┐ │
+│  │ ⠙ backend-specialist  1m42s  Reading src/auth/middlewar…  │ │
+│  │ ⠋ tech-writer         0m08s  Writing ADR decision…        │ │
+│  │ ○ frontend-specialist idle                                 │ │
+│  └───────────────────────────────────────────────────────────┘ │
+│  ┌─ Queue  2 running · 1 waiting ────┐  ┌─ Schedule ─────────┐ │
+│  │ ● backend-specialist  security-s… │  │ daily 09:00 sec-sc  │ │
+│  │ ● tech-writer         doc-adr     │  └────────────────────┘ │
+│  │ ○ frontend-specialist –           │                          │
+│  └────────────────────────────────────                          │
+│  ┌─ Output · tech-writer · live ─────────────────────────────┐ │
+│  │ 10:02:07  Writing ADR decision rationale▋                  │ │
 │  └───────────────────────────────────────────────────────────┘ │
 │  [a]dd  [k]ill  [ctrl+d] clean queue  [tab] focus  [q]uit      │
 └────────────────────────────────────────────────────────────────┘
 ```
 
+The agents roster shows **elapsed time + last log line** (mini-feed) for each running agent, so you can monitor all parallel agents at a glance. Navigating with `↑↓` updates the Output panel to that agent's full log in real time.
+
+### Delegating to a specific agent
+
+**From the TUI** — select an idle agent with `↑↓`, press `a` or `Enter`. The command bar opens pre-filled with `@<role>: `:
+
+```
+@tech-writer: write the ADR for JWT authentication
+```
+
+You can also type `@role:` directly without navigating first — it routes to the correct agent regardless of cursor position.
+
+**From the terminal** — use [`octopus ask`](#octopus-ask) without opening the TUI.
+
 ### Keybindings
 
 | Key | Action |
 |---|---|
-| `a` | Add task (opens command bar with skill autocomplete) |
+| `↑↓` | Navigate agents (updates Output panel to that agent's log) |
+| `a` or `Enter` | Delegate to selected agent — opens `@role:` pre-filled command bar |
 | `k` | Kill selected agent |
 | `Ctrl+D` | Clean up completed tasks from queue |
 | `Tab` | Cycle panel focus |
@@ -299,6 +316,45 @@ t=240s  t3 ✓ → t4 dispatched
 t=310s  t4 ✓ → review gate
 t=400s  review ✓ → PR #42 opened
 ```
+
+---
+
+## Octopus Ask
+
+`octopus ask` dispatches a task to a specific agent and streams its output live in the terminal — no TUI required.
+
+```bash
+octopus ask tech-writer "write ADR for JWT authentication"
+octopus ask backend-specialist "run security audit on src/auth/"
+octopus ask tech-writer "write the ADR" --skill octopus:doc-adr
+octopus ask tech-writer "write the ADR" --dry-run
+```
+
+### Live output
+
+```
+◆ tech-writer · write ADR for JWT authentication
+──────────────────────────────────────────────────
+10:02:01  Reading docs/specs/user-auth.md...
+10:02:04  Checking existing ADRs in docs/adr/...
+10:02:07  Creating docs/adr/0012-jwt-authentication.md
+10:02:21  Writing consequences...
+⠙ running  0m22s
+
+──────────────────────────────────────────────────
+✓ done  0m31s
+  log: .octopus/logs/tech-writer.log
+```
+
+`Ctrl+C` during streaming prompts `[k]ill  [d]etach  [c]ancel`. Choosing detach keeps the agent running in the background — open `octopus control` to monitor it.
+
+### Options
+
+| Option | Description |
+|---|---|
+| `--skill <skill>` | Invoke a specific Octopus skill (e.g. `octopus:doc-adr`) |
+| `--model <model>` | Override model (`opus`, `sonnet`, `haiku`) |
+| `--dry-run` | Print the resolved prompt without launching the agent |
 
 ## Updating
 
