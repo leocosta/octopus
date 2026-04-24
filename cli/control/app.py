@@ -273,11 +273,15 @@ class OctopusControl(App):
         if running or queued:
             title = f"Queue  {running} running · {queued} waiting"
         lv.border_title = title
+        frame = _SPINNER[self._spin_tick % len(_SPINNER)]
         for task in tasks:
             status = task["status"]
             role = task["role"]
             skill = task.get("skill") or "–"
-            icon = _STATUS_LABEL.get(status, "?")
+            if status == "running":
+                icon = frame
+            else:
+                icon = _STATUS_LABEL.get(status, "?")
             skill_short = skill[:22] + "…" if len(skill) > 22 else skill
             lv.append(ListItem(Label(f"{icon} {role}  [dim]{skill_short}[/dim]")))
 

@@ -190,3 +190,8 @@ echo "Test: app.py registers 0.3s interval"
 grep -q "set_interval(0.3" "$REPO_DIR/cli/control/app.py" \
   || { echo "FAIL: 0.3s interval not registered in app.py"; exit 1; }
 echo "PASS"
+
+echo "Test: _refresh_queue uses _spin_tick for running tasks"
+grep -A 15 "def _refresh_queue" "$REPO_DIR/cli/control/app.py" | grep -q "_spin_tick\|_SPINNER" \
+  || { echo "FAIL: _refresh_queue does not use _spin_tick/_SPINNER for running tasks"; exit 1; }
+echo "PASS"
