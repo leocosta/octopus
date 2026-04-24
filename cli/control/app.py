@@ -248,9 +248,11 @@ class OctopusControl(App):
         saved_row = table.cursor_row
         table.clear()
         frame = _SPINNER[self._spin_tick % len(_SPINNER)]
-        # Show all known roles; active ones show spinner + elapsed, idle ones show ○ idle
+        tasks = self.queue.list_all()
         all_roles = list(dict.fromkeys(list(self._known_roles) + list(self._agents)))
         for role in all_roles:
+            pending = sum(1 for t in tasks if t["role"] == role and t["status"] == "queued")
+            badge = f"  [dim]+{pending} queued[/dim]" if pending else ""
             if role in self._agents:
                 elapsed = int(time.time() - self._agent_started.get(role, time.time()))
                 mins, secs = divmod(elapsed, 60)
@@ -258,13 +260,13 @@ class OctopusControl(App):
                 last_line = self._last_log_line(role)
                 if last_line:
                     truncated = last_line[:36] + "…" if len(last_line) > 36 else last_line
-                    status = f"{frame} {elapsed_str}  [dim]{truncated}[/dim]"
+                    status = f"{frame} {elapsed_str}  [dim]{truncated}[/dim]{badge}"
                 else:
-                    status = f"{frame} {elapsed_str}"
+                    status = f"{frame} {elapsed_str}{badge}"
             elif self.pm.has_session(role):
-                status = f"[#ffd166]↩ awaiting reply[/#ffd166]"
+                status = f"[#ffd166]↩ awaiting reply[/#ffd166]{badge}"
             else:
-                status = f"[dim]○ idle[/dim]"
+                status = f"[dim]○ idle{badge}[/dim]"
             table.add_row(role, status, key=role)
         if saved_row is not None and saved_row < table.row_count:
             table.move_cursor(row=saved_row)
