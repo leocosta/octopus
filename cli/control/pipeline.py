@@ -104,6 +104,8 @@ class PipelineRunner:
     def run(self) -> bool:
         """Drive the pipeline to completion. Returns True if all tasks succeeded."""
         model = self._meta.get("model", "claude-sonnet-4-6")
+        pipeline_start = time.time()
+        task_started: dict[str, float] = {}
 
         while True:
             busy_agents = self._running_agents()
@@ -114,15 +116,21 @@ class PipelineRunner:
                 prompt = self._build_prompt(task)
                 self.pm.launch(role=task.agent, prompt=prompt, model=model, isolate=True)
                 task.status = "running"
+                task_started[task.id] = time.time()
                 busy_agents.add(task.agent)
+                print(f"  → {task.id}  {task.agent}  {task.body[:60]}", flush=True)
 
             for task in [t for t in self._tasks if t.status == "running"]:
                 code = self.pm.exit_code(task.agent)
                 if code is None:
                     continue
+                elapsed = int(time.time() - task_started.get(task.id, time.time()))
                 task.status = "done" if code == 0 else "failed"
                 if task.status == "done":
                     self._update_checkbox(task.id)
+                    print(f"  ✓ {task.id}  {task.agent}  {elapsed}s", flush=True)
+                else:
+                    print(f"  ✗ {task.id}  {task.agent}  {elapsed}s", flush=True)
 
             all_terminal = all(
                 t.status in ("done", "skipped", "failed") for t in self._tasks
@@ -133,12 +141,19 @@ class PipelineRunner:
             still_running = any(t.status == "running" for t in self._tasks)
             has_ready = bool(self._ready_tasks())
             if not still_running and not has_ready:
-                # Deadlock: remaining tasks blocked by failed deps
                 break
 
             time.sleep(_POLL_INTERVAL)
 
         pipeline_ok = all(t.status in ("done", "skipped") for t in self._tasks)
+        total_elapsed = int(time.time() - pipeline_start)
+
+        if pipeline_ok:
+            print(f"\n✓ pipeline done  {total_elapsed}s", flush=True)
+        else:
+            failed_ids = [t.id for t in self._tasks if t.status == "failed"]
+            print(f"\n✗ pipeline failed  {total_elapsed}s  ({', '.join(failed_ids)} failed)", flush=True)
+
         if not pipeline_ok:
             return False
 
