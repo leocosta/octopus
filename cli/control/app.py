@@ -248,6 +248,24 @@ class OctopusControl(App):
             return str(table.get_cell_at((table.cursor_row, 0)))
         return "agent"
 
+    def on_data_table_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
+        if event.data_table.id != "agents":
+            return
+        if event.row_key is None:
+            return
+        role = str(event.row_key.value)
+        log_widget = self.query_one("#output", RichLog)
+        log_path = self.pm.logs_dir / f"{role}.log"
+        log_widget.clear()
+        if role in self._agents:
+            log_widget.border_title = f"Output · {role} · live"
+        else:
+            log_widget.border_title = f"Output · {role}"
+        if log_path.exists():
+            lines = log_path.read_text().splitlines()
+            for line in lines[-50:]:
+                log_widget.write(line)
+
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         tasks = self.queue.list_all()
         idx = event.list_view.index
