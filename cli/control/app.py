@@ -1,5 +1,6 @@
 import asyncio
 import os
+import re as _re
 import signal
 import time
 from pathlib import Path
@@ -28,6 +29,7 @@ class OctopusControl(App):
     BINDINGS = [
         Binding("a", "add_task", "Add task"),
         Binding("k", "kill_agent", "Kill"),
+        Binding("r", "reply_agent", "Reply"),
         Binding("ctrl+d", "cleanup_queue", "Clean queue"),
         Binding("tab", "focus_next", "Focus", show=False),
         Binding("q", "request_quit", "Quit"),
@@ -217,11 +219,12 @@ class OctopusControl(App):
             mins, secs = divmod(elapsed, 60)
             elapsed_str = f"{mins}m{secs:02d}s" if mins else f"{secs}s"
             last_line = self._last_log_line(role)
+            resumable = " [dim]↩[/dim]" if self.pm.has_session(role) else ""
             if last_line:
-                truncated = last_line[:38] + "…" if len(last_line) > 38 else last_line
-                status = f"{frame} {elapsed_str}  [dim]{truncated}[/dim]"
+                truncated = last_line[:36] + "…" if len(last_line) > 36 else last_line
+                status = f"{frame} {elapsed_str}{resumable}  [dim]{truncated}[/dim]"
             else:
-                status = f"{frame} {elapsed_str}"
+                status = f"{frame} {elapsed_str}{resumable}"
             table.add_row(role, status, key=role)
 
     def _refresh_queue(self) -> None:
@@ -298,6 +301,17 @@ class OctopusControl(App):
         cmd.remove_class("hidden")
         cmd.focus()
 
+    def action_reply_agent(self) -> None:
+        role = self._selected_role()
+        if role == "agent" or not self.pm.has_session(role):
+            self.notify(f"No resumable session for {role}", severity="warning", timeout=3)
+            return
+        cmd = self.query_one("#cmd", Input)
+        cmd.value = f"↩ {role}: "
+        cmd.cursor_position = len(cmd.value)
+        cmd.remove_class("hidden")
+        cmd.focus()
+
     def on_input_submitted(self, event: Input.Submitted) -> None:
         text = event.value.strip()
         cmd_widget = self.query_one("#cmd", Input)
@@ -305,6 +319,31 @@ class OctopusControl(App):
         cmd_widget.add_class("hidden")
         if not text:
             return
+
+        # Pre-parse ↩ role: prefix (resume/reply flow)
+        reply_match = _re.match(r'^↩\s*([\w-]+):\s*(.*)', text, _re.DOTALL)
+        if reply_match:
+            role = reply_match.group(1)
+            reply_text = reply_match.group(2).strip()
+            session_id = self.pm.session_id(role)
+            if not session_id:
+                self.notify(f"No session found for {role}", severity="warning", timeout=3)
+                return
+            if not reply_text:
+                self.notify("Reply text cannot be empty", severity="warning", timeout=3)
+                return
+            pid = self.pm.launch_resume(
+                role=role,
+                session_id=session_id,
+                reply=reply_text,
+                model="claude-sonnet-4-6",
+            )
+            self._agents[role] = pid
+            self._agent_started[role] = time.time()
+            self.run_worker(self._stream_log(role))
+            self._refresh_roster()
+            return
+
         result = self._matcher.resolve(text, role_model="claude-sonnet-4-6")
         if result.ambiguous:
             options = ", ".join(f"/{s}" for s in result.ambiguous)

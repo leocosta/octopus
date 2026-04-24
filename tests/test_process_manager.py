@@ -94,3 +94,61 @@ def test_launch_with_isolation_uses_worktree_cwd(tmp_path, monkeypatch):
     monkeypatch.setattr(pm, "create_worktree", fake_create_worktree)
     pm.launch("backend-specialist", "hello", "claude-sonnet-4-6", isolate=True)
     assert used_cwd[0] == tmp_path / "worktrees" / "backend-specialist"
+
+
+import json
+import io
+
+
+def test_sessions_dir_created(tmp_path):
+    pm = ProcessManager(octopus_dir=tmp_path)
+    assert (tmp_path / "sessions").is_dir()
+
+
+def test_parse_jsonl_extracts_session_id(tmp_path):
+    pm = ProcessManager(octopus_dir=tmp_path)
+    events = [
+        json.dumps({"type": "system", "subtype": "init", "session_id": "abc-123"}),
+        json.dumps({"type": "result", "result": "Hello"}),
+    ]
+    log = io.StringIO()
+    pm._parse_jsonl("tech-writer", iter(events), log)
+    assert (tmp_path / "sessions" / "tech-writer.session").read_text() == "abc-123"
+
+
+def test_parse_jsonl_extracts_text(tmp_path):
+    pm = ProcessManager(octopus_dir=tmp_path)
+    events = [
+        json.dumps({"type": "assistant", "message": {"content": [
+            {"type": "text", "text": "Hello world"}
+        ]}}),
+    ]
+    log = io.StringIO()
+    pm._parse_jsonl("tech-writer", iter(events), log)
+    assert "Hello world" in log.getvalue()
+
+
+def test_parse_jsonl_non_json_written_verbatim(tmp_path):
+    pm = ProcessManager(octopus_dir=tmp_path)
+    log = io.StringIO()
+    pm._parse_jsonl("tech-writer", iter(["not json at all\n"]), log)
+    assert "not json at all" in log.getvalue()
+
+
+def test_parse_jsonl_append_writes_separator(tmp_path):
+    pm = ProcessManager(octopus_dir=tmp_path)
+    log = io.StringIO()
+    pm._parse_jsonl("tech-writer", iter([]), log, append=True)
+    assert "── reply ──" in log.getvalue()
+
+
+def test_has_session_false_when_no_file(tmp_path):
+    pm = ProcessManager(octopus_dir=tmp_path)
+    assert pm.has_session("tech-writer") is False
+
+
+def test_has_session_true_when_file_exists(tmp_path):
+    pm = ProcessManager(octopus_dir=tmp_path)
+    (tmp_path / "sessions").mkdir(exist_ok=True)
+    (tmp_path / "sessions" / "tech-writer.session").write_text("abc-123")
+    assert pm.has_session("tech-writer") is True
