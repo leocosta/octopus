@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.27.1] - 2026-04-24
+
+This patch release fixes two `octopus control` reliability issues. 🐛
+
+**Stuck "running" tasks** — tasks whose processes had died were left indefinitely in the queue with a "running" status, making `Ctrl+D` cleanup ineffective. The TUI now reconciles process state against the queue on startup and before every cleanup sweep, so stale entries are correctly transitioned to "done" or "failed".
+
+**Empty agents roster** — opening `octopus control` showed no agents unless at least one was already running. The roster now loads all roles configured in `.claude/agents/` at startup and displays them as idle, giving you the full picture from the moment the dashboard opens.
+
 ## [1.27.0] - 2026-04-24
 
 ✨ **Agent reply — bidirectional interaction via session resume**
