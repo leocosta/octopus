@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.30.0] - 2026-04-24
+
+You can now dispatch multiple tasks to the same agent. ✨
+
+**Multi-task queue per agent** — pressing `a` on any agent (busy or idle) now prefills `@role:` in the command bar, making it frictionless to queue additional tasks while one is already running. The dispatch engine already executed tasks sequentially; only the UX was missing.
+
+**`+N queued` badge in roster** — agents with pending tasks show a dim badge (e.g. `+2 queued`) next to their status in the roster, so you can see the backlog at a glance without opening the queue panel.
+
 ## [1.29.1] - 2026-04-24
 
 🐛 Fixed spinner continuing to run after an agent finishes. Completed `claude` processes were becoming zombies — `os.kill(pid, 0)` on a zombie succeeds, so the TUI incorrectly treated them as still running. The reap check now calls `proc.poll()` first, which triggers `waitpid()` and properly reaps the zombie, returning the exit code. `os.kill` is only used as a fallback for adopted orphan processes.
