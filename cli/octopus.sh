@@ -20,6 +20,7 @@ if [[ -z "$COMMAND" ]]; then
   echo "  pr-merge       Merge an approved PR"
   echo "  release        Create a versioned release with tag and CHANGELOG"
   echo "  control        Open the TUI agent dashboard"
+  echo "  ask            Dispatch a task to a specific agent with live streaming output"
   echo "  run            Run a feature end-to-end: requirement → spec → plan → agents → PR"
   echo ""
   echo "Global commands (via bin/octopus shim): install, update, doctor."

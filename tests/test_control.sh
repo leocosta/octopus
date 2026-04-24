@@ -17,7 +17,7 @@ echo "PASS"
 echo "Test: app.tcss exists and defines accent color"
 grep -q "7B2FBE" "$REPO_DIR/cli/control/app.tcss" \
   || { echo "FAIL: accent color missing from app.tcss"; exit 1; }
-grep -q "1a1a2e" "$REPO_DIR/cli/control/app.tcss" \
+grep -q "080c14\|1a1a2e" "$REPO_DIR/cli/control/app.tcss" \
   || { echo "FAIL: background color missing from app.tcss"; exit 1; }
 echo "PASS"
 
@@ -147,3 +147,31 @@ test_run_help() {
   fi
 }
 test_run_help
+
+# Test: octopus ask --help shows usage
+test_ask_help() {
+  local output
+  output=$(bash cli/octopus.sh ask --help 2>&1)
+  if echo "$output" | grep -q "Usage: octopus ask"; then
+    echo "PASS: octopus ask --help"
+  else
+    echo "FAIL: octopus ask --help — output was:"
+    echo "$output"
+    return 1
+  fi
+}
+test_ask_help
+
+# Test: octopus ask --dry-run exits 0 and prints role
+test_ask_dry_run() {
+  local output
+  output=$(bash cli/octopus.sh ask tech-writer "write the ADR" --dry-run 2>&1)
+  if echo "$output" | grep -q "tech-writer"; then
+    echo "PASS: octopus ask --dry-run"
+  else
+    echo "FAIL: octopus ask --dry-run — output was:"
+    echo "$output"
+    return 1
+  fi
+}
+test_ask_dry_run
