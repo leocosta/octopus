@@ -191,6 +191,22 @@ class OctopusControl(App):
 
     # ── UI refresh ────────────────────────────────────────────────────────────
 
+    def _last_log_line(self, role: str) -> str:
+        log_path = self.pm.logs_dir / f"{role}.log"
+        if not log_path.exists():
+            return ""
+        try:
+            stat = log_path.stat()
+            if stat.st_size == 0:
+                return ""
+            with open(log_path, "rb") as f:
+                f.seek(max(0, stat.st_size - 300))
+                tail = f.read().decode("utf-8", errors="replace")
+            lines = [ln.strip() for ln in tail.splitlines() if ln.strip()]
+            return lines[-1] if lines else ""
+        except OSError:
+            return ""
+
     def _refresh_roster(self) -> None:
         table = self.query_one("#agents", DataTable)
         table.clear()
@@ -200,7 +216,13 @@ class OctopusControl(App):
             elapsed = int(time.time() - self._agent_started.get(role, time.time()))
             mins, secs = divmod(elapsed, 60)
             elapsed_str = f"{mins}m{secs:02d}s" if mins else f"{secs}s"
-            table.add_row(role, f"{frame} {elapsed_str}", key=role)
+            last_line = self._last_log_line(role)
+            if last_line:
+                truncated = last_line[:38] + "…" if len(last_line) > 38 else last_line
+                status = f"{frame} {elapsed_str}  [dim]{truncated}[/dim]"
+            else:
+                status = f"{frame} {elapsed_str}"
+            table.add_row(role, status, key=role)
 
     def _refresh_queue(self) -> None:
         lv = self.query_one("#queue", ListView)
