@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.28.3] - 2026-04-24
+
+🐛 The Output panel now occupies half the screen height instead of a fixed 12 lines. Previously the queue took two-thirds of the right column while the log viewer was too small to be useful. Queue and schedule now split their area equally, and the Output panel grows with the terminal size.
+
 ## [1.28.2] - 2026-04-24
 
 🐛 Fixed flag name for skipping permission prompts in agent launches — `--dangerouslySkipPermissions` (camelCase) was corrected to `--dangerously-skip-permissions` (kebab-case), which is the actual flag accepted by the Claude CLI.
