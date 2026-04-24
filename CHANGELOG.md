@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.26.0] - 2026-04-24
+
+✨ **Control & Run UX overhaul — `octopus ask`, `@role:` delegation, mini-feed, pipeline progress**
+
+The `octopus control` and `octopus run` experience is now significantly more usable with six targeted UX improvements.
+
+A new `octopus ask <role> "task"` command provides terminal-first delegation: it launches a specific agent and streams its log to stdout in real time, printing timestamps on each output line and a `✓ done` / `✗ failed` summary with elapsed time at the end. `Ctrl+C` during streaming prompts `[k]ill  [d]etach  [c]ancel` so agents can be detached to run in the background and later picked up by `octopus control`.
+
+The TUI command bar now understands `@role:` prefix syntax — typing `@tech-writer: write the ADR` routes the task to the correct agent regardless of cursor position. Selecting an idle agent in the roster and pressing `a` (or Enter) pre-fills `@<role>: ` in the command bar so delegation is a single gesture. The agents roster now shows the last line of each agent's log inline, dimmed, so users can monitor all parallel agents at a glance without switching the output panel. Navigating the agents table with arrow keys now updates the Output panel to that agent's full log in real time.
+
+✨ `pipeline.py` now emits structured progress lines throughout execution — `→ id  agent  body` on task start, `✓/✗ id  agent  Ns` on completion, and a final `✓/✗ pipeline done  Ns` summary — so `octopus run` gives live per-task feedback instead of silence.
+
+🔧 A named constant `_LOG_WAIT_POLL` was extracted and a missing-log guard was added to `ask.py` to handle the case where an agent fails to start.
+
 ## [1.25.0] - 2026-04-23
 
 ✨ **Pipeline runner — `octopus run`, DAG executor, and control UI overhaul**
