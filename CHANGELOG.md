@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.27.0] - 2026-04-24
+
+✨ **Agent reply — bidirectional interaction via session resume**
+
+Agents launched by `octopus control` and `octopus ask` can now be replied to, enabling multi-turn conversations without restarting a task.
+
+Under the hood, agents now run with `--output-format=stream-json --verbose`. A background parser thread reads the JSONL output, extracts the `session_id` from the first event, and writes it to `.octopus/sessions/<role>.session`. Plain text is still written to the log as before, so streaming and the Output panel are unaffected.
+
+A new `[r]eply` keybinding in the TUI opens the command bar pre-filled with `↩ <role>: ` when the selected agent has a resumable session. Submitting the reply calls `launch_resume()`, which runs `claude --resume <session_id> --print "<reply>"` and appends the new turn to the existing log with a `── reply ──` separator. The Output panel streams the resumed session live. Multiple back-and-forth turns are supported — each turn captures a new `session_id`. Agents with a resumable session show a subtle `↩` indicator in the roster.
+
+`octopus ask` prints the session file path at the end of every run so users know a TUI reply is available without opening the dashboard.
+
 ## [1.26.0] - 2026-04-24
 
 ✨ **Control & Run UX overhaul — `octopus ask`, `@role:` delegation, mini-feed, pipeline progress**
