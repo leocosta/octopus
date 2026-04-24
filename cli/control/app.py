@@ -129,6 +129,11 @@ class OctopusControl(App):
     def _reap_dead_agents(self) -> None:
         dead = []
         for role, pid in list(self._agents.items()):
+            # poll() reaps zombies; fall back to kill(0) for adopted orphans
+            code = self.pm.exit_code(role)
+            if code is not None:
+                dead.append(role)
+                continue
             try:
                 os.kill(pid, 0)
             except ProcessLookupError:
