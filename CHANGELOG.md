@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.25.0] - 2026-04-23
+
+✨ **Pipeline runner — `octopus run`, DAG executor, and control UI overhaul**
+
+The centerpiece of this release is the end-to-end pipeline runner: starting from a requirement in any form (free text, GitHub issue, or existing spec), Octopus now orchestrates multiple agents in parallel all the way to an automatically opened PR. The new `octopus run` command serves as a unified entry point, chaining `doc-research → doc-plan → execution → review gate → PR` without manual intervention between steps.
+
+The execution core lives in `cli/control/pipeline.py`, which reads the new enriched plan format — a `pipeline:` YAML frontmatter block with per-task `agent` and `depends_on` fields — and builds a dependency graph (DAG). Tasks with no shared dependencies run in parallel in isolated git worktrees; dependent tasks wait for their predecessors to finish. Plan checkboxes are ticked in real time as tasks complete, and a reviewer agent is dispatched automatically when `review_skill` is configured. The `octopus control --plan <file>` flag exposes the runner non-interactively with `--dry-run` support.
+
+`/octopus:doc-plan` gained a Step 3b that auto-generates the pipeline frontmatter, inferring the responsible agent from task keywords (migration/endpoint/API → `backend-specialist`, component/UI/form → `frontend-specialist`, doc/README/ADR → `tech-writer`, review/audit → `reviewer`) and the dependency chain between tasks. The `plan-skeleton.md` template was updated to include the `pipeline:` block by default.
+
+🎨 The `octopus control` TUI received a full visual overhaul: the PID column was replaced by elapsed time with a spinner (e.g. `⠙ 2m34s`); all panel borders now show dynamic titles (`Agents`, `Queue  2 running · 1 waiting`, `Output · backend-specialist · live`); layout proportions were corrected (queue `2fr`, schedule `1fr`); background darkened to `#080c14` with visible but subtle borders; the 🐙 emoji was added to the window title. 🐛 The redundant ID column was removed from the Schedule panel.
+
+🔧 `.worktrees/` was added to `.gitignore` to support the worktree isolation system.
+
 ## [1.24.0] - 2026-04-23
 
 ✨ This release completes the `octopus control` TUI dashboard with the UX and correctness gaps identified during first real use (RM-045 to RM-052).
