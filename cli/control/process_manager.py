@@ -101,6 +101,8 @@ class ProcessManager:
     def launch_resume(self, role: str, session_id: str, reply: str, model: str) -> int:
         """Resume a previous Claude session with a new reply. Appends to existing log."""
         log_path = self.logs_dir / f"{role}.log"
+        with open(log_path, "a") as f:
+            f.write(f"\n── you ──\n{reply}\n── agent ──\n")
         cmd = [
             "claude", "--model", model,
             "--print", "--output-format", "stream-json", "--verbose",
