@@ -80,7 +80,13 @@ _RM-044 complete. Cluster 6 has no open items._
 |---|---|
 | **RM-053** | Pipeline runner — enriched plan format (`pipeline:` frontmatter with `agent` + `depends_on` per task), `PipelineRunner` DAG executor in `cli/control/pipeline.py`, `octopus control --plan` routing, review gate, `octopus run` unified entry point |
 
-### Cluster 8 — Octopus Control UX & completeness
+### Cluster 8 — Control & Run UX Overhaul
+
+| Item | Description |
+|---|---|
+| **RM-054** | `octopus ask <role> "task"` — terminal-first delegation with live streaming; `@role:` syntax in TUI command bar; mini-feed (last log line inline) in agents roster; focus Output on cursor navigation; structured progress output from `pipeline.py` |
+
+### Cluster 9 — Octopus Control UX & completeness
 
 _RM-045..052 complete. Cluster 8 has no open items._
 
@@ -301,3 +307,4 @@ _No items in progress._
 | RM-051 | Queue cleanup — auto-dequeue done/failed tasks | completed → PR #92 | 2026-04-23 |
 | RM-052 | Worktree isolation per agent | completed → PR #92 | 2026-04-23 |
 | RM-044 | `octopus control` TUI dashboard — agent roster, task queue, scheduler, live logs, worktree isolation | completed → [Spec](specs/octopus-control.md) | 2026-04-23 |
+| RM-054 | Control & Run UX Overhaul — `octopus ask <role> "task"`, terminal delegation, live streaming | proposed | 2026-04-23 |
