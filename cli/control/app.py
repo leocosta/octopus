@@ -290,6 +290,11 @@ class OctopusControl(App):
 
     def action_add_task(self) -> None:
         cmd = self.query_one("#cmd", Input)
+        selected_role = self._selected_role()
+        # Idle agent (not currently running) → prefill @role: as delegation shortcut
+        if selected_role != "agent" and selected_role not in self._agents:
+            cmd.value = f"@{selected_role}: "
+            cmd.cursor_position = len(cmd.value)
         cmd.remove_class("hidden")
         cmd.focus()
 
@@ -316,7 +321,7 @@ class OctopusControl(App):
             cmd_widget.focus()
             return
         self.queue.enqueue(
-            role=self._selected_role(),
+            role=result.role_override or self._selected_role(),
             skill=result.skill,
             model=result.model,
             prompt=result.raw_prompt,
