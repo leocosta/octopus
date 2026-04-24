@@ -103,6 +103,9 @@ def ask(
         escaped = task.replace('"', '\\"')
         print(f'  → octopus ask {role} "{escaped}" --retry')
     print(f"  log: {log_path}")
+    session_file = octopus_dir / "sessions" / f"{role}.session"
+    if session_file.exists() and session_file.read_text().strip():
+        print(f"  session: {session_file}  (reply via TUI [r])")
     return code
 
 

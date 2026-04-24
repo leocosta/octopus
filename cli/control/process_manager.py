@@ -1,8 +1,10 @@
+import json as _json
 import os
 import signal
 import subprocess
+import threading
 from pathlib import Path
-from typing import AsyncGenerator
+from typing import IO, AsyncGenerator
 
 
 class ProcessManager:
@@ -11,29 +13,120 @@ class ProcessManager:
         self.pids_dir = octopus_dir / "pids"
         self.logs_dir = octopus_dir / "logs"
         self.worktrees_dir = octopus_dir / "worktrees"
-        for d in (self.pids_dir, self.logs_dir, self.worktrees_dir):
+        self.sessions_dir = octopus_dir / "sessions"
+        for d in (self.pids_dir, self.logs_dir, self.worktrees_dir, self.sessions_dir):
             d.mkdir(parents=True, exist_ok=True)
         self._procs: dict[str, subprocess.Popen] = {}
+
+    # ── JSONL parsing ──────────────────────────────────────────────────────────
+
+    def _parse_jsonl(
+        self,
+        role: str,
+        lines,
+        log_file: IO[str],
+        append: bool = False,
+    ) -> None:
+        """Read JSONL lines, write session_id to sessions dir, write text to log_file."""
+        if append:
+            log_file.write("\n── reply ──\n")
+            log_file.flush()
+        for raw in lines:
+            try:
+                obj = _json.loads(raw)
+                sid = obj.get("session_id")
+                if sid:
+                    (self.sessions_dir / f"{role}.session").write_text(sid)
+                if obj.get("type") == "assistant":
+                    for block in obj.get("message", {}).get("content", []):
+                        if block.get("type") == "text":
+                            log_file.write(block["text"])
+                            log_file.flush()
+            except _json.JSONDecodeError:
+                log_file.write(raw)
+                log_file.flush()
+
+    def _spawn_with_parser(
+        self,
+        role: str,
+        cmd: list[str],
+        log_path: Path,
+        cwd: Path | None = None,
+        append: bool = False,
+    ) -> subprocess.Popen:
+        """Launch cmd, parse JSONL stdout in background thread, write text to log_path."""
+        proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            cwd=cwd or Path.cwd(),
+            text=True,
+        )
+
+        def _run():
+            with open(log_path, "a" if append else "w") as f:
+                self._parse_jsonl(role, proc.stdout, f, append=append)
+
+        threading.Thread(target=_run, daemon=True).start()
+        return proc
+
+    # ── Launch ─────────────────────────────────────────────────────────────────
 
     def _run_claude(
         self, role: str, prompt: str, model: str, log_path: Path, cwd: Path | None = None
     ) -> subprocess.Popen:
-        cmd = ["claude", "--model", model, "--print", prompt]
-        with open(log_path, "w") as f:
-            return subprocess.Popen(
-                cmd,
-                stdout=f,
-                stderr=subprocess.STDOUT,
-                cwd=cwd or Path.cwd(),
-            )
+        cmd = [
+            "claude", "--model", model,
+            "--print", "--output-format", "stream-json", "--verbose",
+            prompt,
+        ]
+        return self._spawn_with_parser(role, cmd, log_path, cwd=cwd)
 
-    def launch(self, role: str, prompt: str, model: str, cwd: Path | None = None, isolate: bool = False) -> int:
+    def launch(
+        self,
+        role: str,
+        prompt: str,
+        model: str,
+        cwd: Path | None = None,
+        isolate: bool = False,
+    ) -> int:
         log_path = self.logs_dir / f"{role}.log"
         effective_cwd = self.create_worktree(role) if isolate else (cwd or Path.cwd())
         proc = self._run_claude(role, prompt, model, log_path, cwd=effective_cwd)
         self._procs[role] = proc
         (self.pids_dir / f"{role}.pid").write_text(str(proc.pid))
         return proc.pid
+
+    def launch_resume(self, role: str, session_id: str, reply: str, model: str) -> int:
+        """Resume a previous Claude session with a new reply. Appends to existing log."""
+        log_path = self.logs_dir / f"{role}.log"
+        cmd = [
+            "claude", "--model", model,
+            "--print", "--output-format", "stream-json", "--verbose",
+            "--resume", session_id,
+            reply,
+        ]
+        proc = self._spawn_with_parser(role, cmd, log_path, append=True)
+        self._procs[role] = proc
+        (self.pids_dir / f"{role}.pid").write_text(str(proc.pid))
+        return proc.pid
+
+    # ── Session helpers ────────────────────────────────────────────────────────
+
+    def has_session(self, role: str) -> bool:
+        """Return True if a resumable session file exists for this role."""
+        f = self.sessions_dir / f"{role}.session"
+        return f.exists() and bool(f.read_text().strip())
+
+    def session_id(self, role: str) -> str | None:
+        """Return the last captured session ID for this role, or None."""
+        f = self.sessions_dir / f"{role}.session"
+        if not f.exists():
+            return None
+        sid = f.read_text().strip()
+        return sid or None
+
+    # ── Exit code + kill ───────────────────────────────────────────────────────
 
     def exit_code(self, role: str) -> int | None:
         proc = self._procs.get(role)
@@ -56,6 +149,8 @@ class ProcessManager:
                 pass
             pid_file.unlink(missing_ok=True)
 
+    # ── Orphan adoption ────────────────────────────────────────────────────────
+
     def adopt_orphans(self) -> dict[str, int]:
         adopted = {}
         for pid_file in self.pids_dir.glob("*.pid"):
@@ -67,6 +162,8 @@ class ProcessManager:
             except (ProcessLookupError, ValueError):
                 pid_file.unlink(missing_ok=True)
         return adopted
+
+    # ── Worktree ───────────────────────────────────────────────────────────────
 
     def create_worktree(self, role: str) -> Path:
         wt_path = self.worktrees_dir / role
