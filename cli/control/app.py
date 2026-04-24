@@ -51,6 +51,7 @@ class OctopusControl(App):
         self._scheduler: Scheduler | None = None
         self._cleanup_tick: int = 0
         self._tick: int = 0
+        self._spin_tick: int = 0
 
     @staticmethod
     def _load_known_roles() -> list[str]:
@@ -102,6 +103,7 @@ class OctopusControl(App):
         self._refresh_schedule()
         # Poll: refresh agent states + dispatch queued tasks
         self.set_interval(2, self._poll)
+        self.set_interval(0.3, self._spin_poll)
 
     # ── Polling ──────────────────────────────────────────────────────────────
 
@@ -114,6 +116,16 @@ class OctopusControl(App):
         if self._cleanup_tick % 30 == 0:
             self.queue.cleanup(keep_last=50)
             self._refresh_queue()
+
+    def _spin_poll(self) -> None:
+        """Fast timer (0.3s) — advances spinner and redraws queue + roster if agents are active."""
+        if not self._agents and not any(
+            t["status"] == "running" for t in self.queue.list_all()
+        ):
+            return
+        self._spin_tick += 1
+        self._refresh_queue()
+        self._refresh_roster()
 
     def _reap_dead_agents(self) -> None:
         dead = []

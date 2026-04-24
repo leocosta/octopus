@@ -175,3 +175,18 @@ test_ask_dry_run() {
   fi
 }
 test_ask_dry_run
+
+echo "Test: app.py defines _spin_tick attribute"
+grep -q "_spin_tick" "$REPO_DIR/cli/control/app.py" \
+  || { echo "FAIL: _spin_tick not found in app.py"; exit 1; }
+echo "PASS"
+
+echo "Test: app.py defines _spin_poll method"
+grep -q "def _spin_poll" "$REPO_DIR/cli/control/app.py" \
+  || { echo "FAIL: _spin_poll method not found in app.py"; exit 1; }
+echo "PASS"
+
+echo "Test: app.py registers 0.3s interval"
+grep -q "set_interval(0.3" "$REPO_DIR/cli/control/app.py" \
+  || { echo "FAIL: 0.3s interval not registered in app.py"; exit 1; }
+echo "PASS"
