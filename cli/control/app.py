@@ -251,15 +251,15 @@ class OctopusControl(App):
                 mins, secs = divmod(elapsed, 60)
                 elapsed_str = f"{mins}m{secs:02d}s" if mins else f"{secs}s"
                 last_line = self._last_log_line(role)
-                resumable = " [dim]↩[/dim]" if self.pm.has_session(role) else ""
                 if last_line:
                     truncated = last_line[:36] + "…" if len(last_line) > 36 else last_line
-                    status = f"{frame} {elapsed_str}{resumable}  [dim]{truncated}[/dim]"
+                    status = f"{frame} {elapsed_str}  [dim]{truncated}[/dim]"
                 else:
-                    status = f"{frame} {elapsed_str}{resumable}"
+                    status = f"{frame} {elapsed_str}"
+            elif self.pm.has_session(role):
+                status = f"[#ffd166]↩ awaiting reply[/#ffd166]"
             else:
-                resumable = " [dim]↩[/dim]" if self.pm.has_session(role) else ""
-                status = f"[dim]○ idle{resumable}[/dim]"
+                status = f"[dim]○ idle[/dim]"
             table.add_row(role, status, key=role)
         if saved_row is not None and saved_row < table.row_count:
             table.move_cursor(row=saved_row)
