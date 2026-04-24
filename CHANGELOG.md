@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.29.1] - 2026-04-24
+
+🐛 Fixed spinner continuing to run after an agent finishes. Completed `claude` processes were becoming zombies — `os.kill(pid, 0)` on a zombie succeeds, so the TUI incorrectly treated them as still running. The reap check now calls `proc.poll()` first, which triggers `waitpid()` and properly reaps the zombie, returning the exit code. `os.kill` is only used as a fallback for adopted orphan processes.
+
 ## [1.29.0] - 2026-04-24
 
 Two improvements to the agent reply experience in `octopus control`. ✨
