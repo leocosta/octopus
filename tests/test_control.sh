@@ -200,3 +200,8 @@ echo "Test: app.py does not define stale _tick attribute"
 grep -q "self._tick: int" "$REPO_DIR/cli/control/app.py" \
   && { echo "FAIL: stale self._tick attribute still present in app.py"; exit 1; }
 echo "PASS"
+
+echo "Test: action_add_task prefills @role: regardless of agent state"
+grep -A 10 "def action_add_task" "$REPO_DIR/cli/control/app.py" | grep -q "selected_role not in self._agents" \
+  && { echo "FAIL: idle-only guard still present in action_add_task"; exit 1; }
+echo "PASS"

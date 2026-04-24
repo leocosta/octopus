@@ -342,8 +342,7 @@ class OctopusControl(App):
         selected_role = self._selected_role()
         cmd.remove_class("hidden")
         cmd.focus()
-        # Idle agent (not currently running) → prefill @role: as delegation shortcut
-        if selected_role != "agent" and selected_role not in self._agents:
+        if selected_role != "agent":
             prefill = f"@{selected_role}: "
             self.call_after_refresh(setattr, cmd, "value", prefill)
             self.call_after_refresh(setattr, cmd, "cursor_position", len(prefill))
