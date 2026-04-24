@@ -47,3 +47,14 @@ def test_cleanup_failed_tasks(tmp_path):
     removed = q.cleanup(keep_last=0)
     assert removed == 1
     assert len(q.list_all()) == 0
+
+
+def test_cleanup_includes_stuck_running_tasks(tmp_path):
+    """Tasks stuck in 'running' with no active process should be cleanable."""
+    q = TaskQueue(tmp_path / "queue")
+    tid = q.enqueue("worker", None, "claude-sonnet-4-6", "stuck task")
+    q.update_status(tid, "running")
+    # cleanup with statuses=["running"] should remove it
+    removed = q.cleanup(statuses=["running", "done", "failed"], keep_last=0)
+    assert removed == 1
+    assert len(q.list_all()) == 0

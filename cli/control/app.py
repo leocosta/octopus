@@ -74,6 +74,10 @@ class OctopusControl(App):
         self.query_one("#cmd", Input).border_title = "Command"
 
         self._agents = self.pm.adopt_orphans()
+        # Reconcile: mark tasks stuck in "running" as "failed" if their process is gone
+        for task in self.queue.list_all():
+            if task["status"] == "running" and task["role"] not in self._agents:
+                self.queue.update_status(task["id"], "failed")
         self._refresh_roster()
         self._refresh_queue()
         skill_names = [f"/{s}" for s in self._matcher._catalog]
@@ -368,6 +372,10 @@ class OctopusControl(App):
         self._refresh_queue()
 
     def action_cleanup_queue(self) -> None:
+        # Also clean "running" tasks whose process is no longer active
+        for task in self.queue.list_all():
+            if task["status"] == "running" and task["role"] not in self._agents:
+                self.queue.update_status(task["id"], "failed")
         removed = self.queue.cleanup(keep_last=0)
         self.notify(f"Removed {removed} completed task(s)")
         self._refresh_queue()
