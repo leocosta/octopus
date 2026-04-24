@@ -16,8 +16,11 @@ from .queue import TaskQueue
 from .scheduler import Scheduler
 from .skill_matcher import SkillMatcher
 
-# Skills live in .claude/skills/ relative to the project root, not .octopus/
+# Skills and agents live in .claude/ relative to the project root
 _SKILLS_DIR = Path(".claude") / "skills"
+_AGENTS_DIR = Path(".claude") / "agents"
+# Agents excluded from the roster (internal/automation agents)
+_EXCLUDED_AGENTS = {"dream"}
 
 _SPINNER = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 _STATUS_LABEL = {"queued": "○", "running": "●", "done": "✓", "failed": "✗"}
@@ -43,10 +46,21 @@ class OctopusControl(App):
         self._matcher = SkillMatcher(skills_dir=_SKILLS_DIR)
         self._agents: dict[str, int] = {}
         self._agent_started: dict[str, float] = {}
+        self._known_roles: list[str] = self._load_known_roles()
         self._awaiting_exit: bool = False
         self._scheduler: Scheduler | None = None
         self._cleanup_tick: int = 0
         self._tick: int = 0
+
+    @staticmethod
+    def _load_known_roles() -> list[str]:
+        """Return sorted list of agent role names from .claude/agents/, excluding internal agents."""
+        if not _AGENTS_DIR.exists():
+            return []
+        return sorted(
+            f.stem for f in _AGENTS_DIR.glob("*.md")
+            if f.stem not in _EXCLUDED_AGENTS
+        )
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -218,17 +232,23 @@ class OctopusControl(App):
         table.clear()
         frame = _SPINNER[self._tick % len(_SPINNER)]
         self._tick += 1
-        for role in self._agents:
-            elapsed = int(time.time() - self._agent_started.get(role, time.time()))
-            mins, secs = divmod(elapsed, 60)
-            elapsed_str = f"{mins}m{secs:02d}s" if mins else f"{secs}s"
-            last_line = self._last_log_line(role)
-            resumable = " [dim]↩[/dim]" if self.pm.has_session(role) else ""
-            if last_line:
-                truncated = last_line[:36] + "…" if len(last_line) > 36 else last_line
-                status = f"{frame} {elapsed_str}{resumable}  [dim]{truncated}[/dim]"
+        # Show all known roles; active ones show spinner + elapsed, idle ones show ○ idle
+        all_roles = list(dict.fromkeys(list(self._known_roles) + list(self._agents)))
+        for role in all_roles:
+            if role in self._agents:
+                elapsed = int(time.time() - self._agent_started.get(role, time.time()))
+                mins, secs = divmod(elapsed, 60)
+                elapsed_str = f"{mins}m{secs:02d}s" if mins else f"{secs}s"
+                last_line = self._last_log_line(role)
+                resumable = " [dim]↩[/dim]" if self.pm.has_session(role) else ""
+                if last_line:
+                    truncated = last_line[:36] + "…" if len(last_line) > 36 else last_line
+                    status = f"{frame} {elapsed_str}{resumable}  [dim]{truncated}[/dim]"
+                else:
+                    status = f"{frame} {elapsed_str}{resumable}"
             else:
-                status = f"{frame} {elapsed_str}{resumable}"
+                resumable = " [dim]↩[/dim]" if self.pm.has_session(role) else ""
+                status = f"[dim]○ idle{resumable}[/dim]"
             table.add_row(role, status, key=role)
 
     def _refresh_queue(self) -> None:
