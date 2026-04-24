@@ -10,6 +10,7 @@ from .process_manager import ProcessManager
 _SPINNER = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 _TAIL_POLL = 0.15
 _LOG_WAIT_POLLS = 50
+_LOG_WAIT_POLL = 0.1  # seconds between log-file existence checks
 
 
 def build_full_prompt(task: str, skill: str | None) -> str:
@@ -58,7 +59,12 @@ def ask(
     for _ in range(_LOG_WAIT_POLLS):
         if log_path.exists():
             break
-        time.sleep(0.1)
+        time.sleep(_LOG_WAIT_POLL)
+
+    if not log_path.exists():
+        print(f"✗ agent did not start — no log at {log_path}", file=sys.stderr)
+        pm.kill(role)
+        return 1
 
     tick = 0
     try:
