@@ -12,6 +12,7 @@ from textual.containers import Horizontal, Vertical
 from textual.suggester import SuggestFromList
 from textual.widgets import DataTable, Footer, Header, Input, Label, ListItem, ListView, RichLog
 
+from .pipeline_builder import PipelineBuilder, PipelineBuilderModel
 from .process_manager import ProcessManager
 from .queue import TaskQueue
 from .scheduler import Scheduler
@@ -48,6 +49,7 @@ class OctopusControl(App):
     CSS_PATH = Path(__file__).parent / "app.tcss"
     BINDINGS = [
         Binding("a", "add_task", "Add task"),
+        Binding("p", "open_pipeline_builder", "Pipeline"),
         Binding("k", "kill_agent", "Kill"),
         Binding("r", "reply_agent", "Reply"),
         Binding("e", "retry_task", "Retry"),
@@ -90,7 +92,7 @@ class OctopusControl(App):
                 yield ListView(id="queue")
                 yield DataTable(id="schedule")
         yield RichLog(id="output", markup=True, highlight=False, wrap=True)
-        yield Input(placeholder="  /skill [args]  ·  natural language  ·  Tab to complete", id="cmd", classes="hidden")
+        yield Input(placeholder="  /skill [args]  ·  natural language  ·  @mention pipeline  ·  Tab to complete", id="cmd", classes="hidden")
         yield Footer()
 
     def on_mount(self) -> None:
@@ -387,6 +389,64 @@ class OctopusControl(App):
             self.call_after_refresh(setattr, cmd, "value", prefill)
             self.call_after_refresh(setattr, cmd, "cursor_position", len(prefill))
 
+    def action_open_pipeline_builder(self) -> None:
+        cmd = self.query_one("#cmd", Input)
+        prefill_text = cmd.value.strip()
+        cmd.add_class("hidden")
+        cmd.value = ""
+
+        model = PipelineBuilderModel.from_nl_pipeline(prefill_text) if prefill_text else PipelineBuilderModel()
+        output = self.query_one("#output", RichLog)
+        output.border_title = "Pipeline Builder  [dim](p confirm · Esc cancel)[/dim]"
+        output.clear()
+
+        builder = PipelineBuilder(model=model, id="pipeline-builder")
+        self.mount(builder)
+        builder.focus()
+
+    def on_pipeline_builder_confirmed(self, event: PipelineBuilder.Confirmed) -> None:
+        builder = self.query_one("#pipeline-builder", PipelineBuilder)
+        builder.remove()
+        output = self.query_one("#output", RichLog)
+        output.border_title = "Output"
+
+        pipeline_yaml = event.model.to_yaml()
+        import time as _time
+        ts = _time.strftime("%Y%m%d-%H%M%S")
+        pipelines_dir = self.octopus_dir / "pipelines"
+        pipelines_dir.mkdir(exist_ok=True)
+        pipeline_path = pipelines_dir / f"{ts}-pipeline.yml"
+        pipeline_path.write_text(pipeline_yaml)
+
+        # Enqueue each first-tier step immediately; PipelineRunner handles the rest
+        import yaml as _yaml
+        from .pipeline import run_system_action, _SYSTEM_AGENT
+        tasks = _yaml.safe_load(pipeline_yaml).get("tasks", [])
+        for task in tasks:
+            if task.get("depends_on"):
+                continue
+            if task.get("agent") == _SYSTEM_AGENT:
+                output.write(f"[dim]Pipeline saved: {pipeline_path}[/dim]")
+                output.write("[yellow]Note: @system steps run when pipeline is executed via `octopus run`[/yellow]")
+                continue
+            self.queue.enqueue(
+                role=task["agent"],
+                skill=None,
+                model=_DEFAULT_MODEL,
+                prompt=task.get("prompt", ""),
+            )
+        self.notify(f"Pipeline queued ({len(tasks)} steps) — saved to {pipeline_path.name}")
+        self._refresh_queue()
+
+    def on_pipeline_builder_cancelled(self, event: PipelineBuilder.Cancelled) -> None:
+        try:
+            builder = self.query_one("#pipeline-builder", PipelineBuilder)
+            builder.remove()
+        except Exception:
+            pass
+        output = self.query_one("#output", RichLog)
+        output.border_title = "Output"
+
     def action_reply_agent(self) -> None:
         role = self._selected_role()
         if role == "agent" or not self.pm.has_session(role):
@@ -398,6 +458,13 @@ class OctopusControl(App):
         prefill = f"↩ {role}: "
         self.call_after_refresh(setattr, cmd, "value", prefill)
         self.call_after_refresh(setattr, cmd, "cursor_position", len(prefill))
+
+    def on_input_changed(self, event) -> None:
+        if not hasattr(event, "value"):
+            return
+        val = event.value
+        if val.startswith("@") and val.count("@") == 1 and len(val) > 1:
+            self.notify("Pipeline mode: press [p] to open builder", timeout=3)
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         text = event.value.strip()
