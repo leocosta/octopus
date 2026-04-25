@@ -76,25 +76,25 @@ _RM-044 complete. Cluster 6 has no open items._
 
 ### Cluster 7 — End-to-end pipeline runner
 
-| Item | Description |
-|---|---|
-| **RM-053** | Pipeline runner — enriched plan format (`pipeline:` frontmatter with `agent` + `depends_on` per task), `PipelineRunner` DAG executor in `cli/control/pipeline.py`, `octopus control --plan` routing, review gate, `octopus run` unified entry point |
+_RM-053 complete. Cluster 7 has no open items._
+
+`octopus run` shipped in v1.25.0. DAG-based parallel execution via enriched plan format; `PipelineRunner` in `cli/control/pipeline.py`; `octopus control --plan` routing.
 
 ### Cluster 8 — Control & Run UX Overhaul
 
-| Item | Description |
-|---|---|
-| **RM-054** | `octopus ask <role> "task"` — terminal-first delegation with live streaming; `@role:` syntax in TUI command bar; mini-feed (last log line inline) in agents roster; focus Output on cursor navigation; structured progress output from `pipeline.py` |
+_RM-054 complete. Cluster 8 has no open items._
+
+`octopus ask` shipped in v1.26.0 with live streaming, `@role:` prefill in TUI, mini-feed in roster, and cursor-focus output.
 
 ### Cluster 9 — Agent Reply (bidirectional interaction)
 
-| Item | Description |
-|---|---|
-| **RM-055** | Agent reply via `--resume` — `ProcessManager` captures `session_id` from `--output-format=stream-json`, stores in `.octopus/sessions/`; TUI `[r]eply` keybinding opens command bar pre-filled with `↩ role:`; `launch_resume()` continues session; `octopus ask` prints session path at end |
+_RM-055 complete. Cluster 9 has no open items._
+
+Agent reply via `--resume` shipped in v1.27.0. `ProcessManager` captures `session_id`, `[r]` keybinding, `launch_resume()`, reply visible in log.
 
 ### Cluster 10 — Octopus Control UX & completeness
 
-_RM-045..052 complete. Cluster 8 has no open items._
+_RM-045..052 complete. Cluster 10 has no open items._
 
 All 8 gaps from the first real-use analysis are resolved (PR #92):
 
@@ -253,7 +253,7 @@ unaffected.
 
 ## In Progress
 
-_No items in progress._
+_No items in progress. All clusters complete through RM-056._
 
 ---
 
@@ -313,4 +313,7 @@ _No items in progress._
 | RM-051 | Queue cleanup — auto-dequeue done/failed tasks | completed → PR #92 | 2026-04-23 |
 | RM-052 | Worktree isolation per agent | completed → PR #92 | 2026-04-23 |
 | RM-044 | `octopus control` TUI dashboard — agent roster, task queue, scheduler, live logs, worktree isolation | completed → [Spec](specs/octopus-control.md) | 2026-04-23 |
-| RM-054 | Control & Run UX Overhaul — `octopus ask <role> "task"`, terminal delegation, live streaming | proposed | 2026-04-23 |
+| RM-053 | Pipeline runner — enriched plan format, `PipelineRunner` DAG executor, `octopus run` entry point | completed → v1.25.0 | 2026-04-24 |
+| RM-054 | Control & Run UX Overhaul — `octopus ask`, `@role:` prefill, mini-feed roster, cursor-focus output | completed → v1.26.0 | 2026-04-24 |
+| RM-055 | Agent reply via `--resume` — session capture, `[r]` keybinding, `launch_resume()`, reply in log | completed → v1.27.0 | 2026-04-24 |
+| RM-056 | Control polish (v1.28–v1.30) — animated queue spinner, output panel expanded, `--dangerously-skip-permissions`, zombie process fix, awaiting-reply roster state, multi-task queue per agent with `+N queued` badge | completed → v1.28.0–v1.30.0 | 2026-04-25 |
