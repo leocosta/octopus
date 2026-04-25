@@ -341,6 +341,19 @@ class OctopusControl(App):
             return str(table.get_cell_at((table.cursor_row, 0)))
         return "agent"
 
+    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
+        if event.data_table.id != "agents":
+            return
+        if event.row_key is None:
+            return
+        role = str(event.row_key.value)
+        cmd = self.query_one("#cmd", Input)
+        cmd.remove_class("hidden")
+        cmd.focus()
+        prefill = f"@{role}: "
+        self.call_after_refresh(setattr, cmd, "value", prefill)
+        self.call_after_refresh(setattr, cmd, "cursor_position", len(prefill))
+
     def on_data_table_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
         if event.data_table.id != "agents":
             return
