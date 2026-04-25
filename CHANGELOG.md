@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.33.3] - 2026-04-25
+
+🐛 Fixed double-click on agent — definitive fix after three failed attempts.
+
+**Root cause (two layers):** (1) Textual's `DataTable._on_click` calls `event.stop()`, so `Click` events never reach the App-level `on_click` handler — all three previous attempts were targeting an event that simply never arrived. (2) `_refresh_roster()` calls `table.clear()` every 0.3s, resetting DataTable's internal state so `RowSelected` never fires via mouse (only via Enter key).
+
+**Fix:** Double-click is now detected by timing two consecutive `RowHighlighted` events for the same role within 400ms. A `_refreshing_roster` flag prevents the programmatic cursor restore inside `_refresh_roster()` from triggering false positives. Extracted `_open_command_for_role()` helper is shared between the double-click handler and `action_add_task`.
+
 ## [1.33.2] - 2026-04-25
 
 🐛 Fixed crash on double-click in the agents roster. Textual uses `event.chain` (not `event.count`) for click repetition count — the v1.33.1 fix crashed on the first click. Now reads `chain` with a fallback to `count` for forward compatibility.
