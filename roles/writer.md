@@ -1,5 +1,5 @@
 ---
-name: tech-writer
+name: writer
 description: "Documentation specialist for specs, ADRs, knowledge capture, release notes, and implementation-aligned technical docs"
 model: sonnet
 color: "#008000"

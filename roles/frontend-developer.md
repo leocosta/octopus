@@ -1,5 +1,5 @@
 ---
-name: frontend-specialist
+name: frontend-developer
 description: "manual start"
 model: sonnet
 color: "#008000"

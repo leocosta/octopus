@@ -1,5 +1,5 @@
 ---
-name: social-media
+name: marketer
 description: "Social media strategist and copywriter for channel-specific posts, campaigns, and approval-gated publishing workflows"
 model: sonnet
 color: "#C05621"

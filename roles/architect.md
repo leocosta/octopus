@@ -1,5 +1,5 @@
 ---
-name: staff-engineer
+name: architect
 description: "Architect and senior code reviewer — validates technical quality, architectural integrity, and ADR compliance before merge"
 model: opus
 color: "#dc2626"

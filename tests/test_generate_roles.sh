@@ -72,11 +72,11 @@ echo "PASS: OpenCode role generation"
 # --- Test 4: Claude preserves tools: field ---
 echo "Test 4: Claude preserves tools: in frontmatter"
 
-OCTOPUS_ROLES=(social-media)
+OCTOPUS_ROLES=(marketer)
 load_manifest "claude"
 deliver_roles "claude"
 
-grep -q "^tools:" "$TMPDIR/.claude/agents/social-media.md" || { echo "FAIL: tools: field missing from Claude agent file"; exit 1; }
+grep -q "^tools:" "$TMPDIR/.claude/agents/marketer.md" || { echo "FAIL: tools: field missing from Claude agent file"; exit 1; }
 
 echo "PASS: Claude preserves tools: in frontmatter"
 
@@ -86,8 +86,8 @@ echo "Test 5: OpenCode strips tools: from frontmatter"
 load_manifest "opencode"
 deliver_roles "opencode"
 
-! grep -q "^tools:" "$TMPDIR/.opencode/agents/social-media.md" || { echo "FAIL: tools: field leaked into OpenCode agent file"; exit 1; }
-grep -q "^name: social-media" "$TMPDIR/.opencode/agents/social-media.md" || { echo "FAIL: name field missing from OpenCode agent file"; exit 1; }
+! grep -q "^tools:" "$TMPDIR/.opencode/agents/marketer.md" || { echo "FAIL: tools: field leaked into OpenCode agent file"; exit 1; }
+grep -q "^name: marketer" "$TMPDIR/.opencode/agents/marketer.md" || { echo "FAIL: name field missing from OpenCode agent file"; exit 1; }
 
 echo "PASS: OpenCode strips tools: from frontmatter"
 
@@ -100,9 +100,23 @@ generate_main_output "copilot"
 deliver_roles "copilot"
 
 ! grep -q "^tools:" "$TMPDIR/.github/copilot-instructions.md" || { echo "FAIL: tools: field leaked into Copilot output"; exit 1; }
-grep -q "# Role: Social-media" "$TMPDIR/.github/copilot-instructions.md" || { echo "FAIL: role section header missing from copilot output"; exit 1; }
+grep -q "# Role: Marketer" "$TMPDIR/.github/copilot-instructions.md" || { echo "FAIL: role section header missing from copilot output"; exit 1; }
 
 echo "PASS: Copilot inline delivery has no tools:"
 
 rm -rf "$TMPDIR"
 echo "PASS: all role generation tests passed"
+
+echo "Test: role files use new names"
+for role in backend-developer frontend-developer writer marketer architect product-manager; do
+  [[ -f "roles/${role}.md" ]] \
+    || { echo "FAIL: roles/${role}.md not found"; exit 1; }
+done
+echo "PASS"
+
+echo "Test: old role files removed"
+for role in backend-specialist frontend-specialist tech-writer social-media staff-engineer; do
+  [[ ! -f "roles/${role}.md" ]] \
+    || { echo "FAIL: old roles/${role}.md still present"; exit 1; }
+done
+echo "PASS"
