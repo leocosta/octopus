@@ -1,5 +1,5 @@
 ---
-name: feature-to-market
+name: launch-feature
 description: Generate a multi-channel launch kit from a completed feature (RM/spec/PR).
 ---
 

@@ -10,7 +10,7 @@ from cli.control.pipeline_builder import BuilderStep, PipelineBuilderModel
 # ── BuilderStep ───────────────────────────────────────────────────────────────
 
 def test_builder_step_defaults():
-    s = BuilderStep(agent="tech-writer", prompt="create spec")
+    s = BuilderStep(agent="writer", prompt="create spec")
     assert s.tier == 1
     assert s.wait is False
     assert s.ambiguous is False
@@ -34,13 +34,13 @@ def test_model_starts_empty():
 
 def test_add_step_appends():
     m = PipelineBuilderModel()
-    m.add_step(BuilderStep(agent="tech-writer", prompt="create spec"))
+    m.add_step(BuilderStep(agent="writer", prompt="create spec"))
     assert len(m.steps) == 1
 
 
 def test_remove_step_by_index():
     m = PipelineBuilderModel()
-    m.add_step(BuilderStep(agent="tech-writer", prompt="a"))
+    m.add_step(BuilderStep(agent="writer", prompt="a"))
     m.add_step(BuilderStep(agent="product-manager", prompt="b"))
     m.remove_step(0)
     assert len(m.steps) == 1
@@ -49,7 +49,7 @@ def test_remove_step_by_index():
 
 def test_remove_step_out_of_bounds_is_noop():
     m = PipelineBuilderModel()
-    m.add_step(BuilderStep(agent="tech-writer", prompt="a"))
+    m.add_step(BuilderStep(agent="writer", prompt="a"))
     m.remove_step(99)
     assert len(m.steps) == 1
 
@@ -91,7 +91,7 @@ def test_toggle_wait():
 
 def test_to_yaml_basic_structure():
     m = PipelineBuilderModel()
-    m.add_step(BuilderStep(agent="tech-writer", prompt="create spec", tier=1))
+    m.add_step(BuilderStep(agent="writer", prompt="create spec", tier=1))
     m.add_step(BuilderStep(agent="product-manager", prompt="review spec", tier=2, wait=True))
     doc = yaml.safe_load(m.to_yaml())
     assert "tasks" in doc
@@ -100,7 +100,7 @@ def test_to_yaml_basic_structure():
 
 def test_to_yaml_sequential_depends_on():
     m = PipelineBuilderModel()
-    m.add_step(BuilderStep(agent="tech-writer", prompt="write", tier=1))
+    m.add_step(BuilderStep(agent="writer", prompt="write", tier=1))
     m.add_step(BuilderStep(agent="product-manager", prompt="review", tier=2))
     doc = yaml.safe_load(m.to_yaml())
     t1 = doc["tasks"][0]
@@ -111,7 +111,7 @@ def test_to_yaml_sequential_depends_on():
 
 def test_to_yaml_parallel_steps_same_depends_on():
     m = PipelineBuilderModel()
-    m.add_step(BuilderStep(agent="tech-writer", prompt="write", tier=1))
+    m.add_step(BuilderStep(agent="writer", prompt="write", tier=1))
     m.add_step(BuilderStep(agent="frontend-spec", prompt="fe", tier=2))
     m.add_step(BuilderStep(agent="backend-spec", prompt="be", tier=2))
     doc = yaml.safe_load(m.to_yaml())
@@ -137,10 +137,10 @@ def test_to_yaml_system_agent():
 def test_from_nl_pipeline_populates_steps():
     from cli.control.nl_parser import parse_nl_pipeline
     m = PipelineBuilderModel.from_nl_pipeline(
-        "@tech-writer create spec. @product-manager review it."
+        "@writer create spec. @product-manager review it."
     )
     assert len(m.steps) == 2
-    assert m.steps[0].agent == "tech-writer"
+    assert m.steps[0].agent == "writer"
     assert m.steps[1].agent == "product-manager"
 
 

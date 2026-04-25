@@ -4,9 +4,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 echo "Test 1: SKILL.md exists with valid frontmatter"
-SKILL_FILE="$SCRIPT_DIR/skills/release-announce/SKILL.md"
+SKILL_FILE="$SCRIPT_DIR/skills/launch-release/SKILL.md"
 [[ -f "$SKILL_FILE" ]] || { echo "FAIL: $SKILL_FILE not found"; exit 1; }
-head -n 5 "$SKILL_FILE" | grep -q "^name: release-announce$" \
+head -n 5 "$SKILL_FILE" | grep -q "^name: launch-release$" \
   || { echo "FAIL: frontmatter 'name' missing"; exit 1; }
 head -n 10 "$SKILL_FILE" | grep -q "^description:" \
   || { echo "FAIL: frontmatter 'description' missing"; exit 1; }
@@ -15,7 +15,7 @@ echo "PASS: frontmatter valid"
 echo "Test 2: SKILL.md documents invocation"
 grep -q "^## Invocation$" "$SKILL_FILE" \
   || { echo "FAIL: '## Invocation' missing"; exit 1; }
-grep -q "octopus:release-announce" "$SKILL_FILE" \
+grep -q "octopus:launch-release" "$SKILL_FILE" \
   || { echo "FAIL: invocation syntax missing"; exit 1; }
 for flag in "--theme" "--since" "--audience" "--channels" "--design-from" "--dry-run"; do
   grep -q -- "$flag" "$SKILL_FILE" || { echo "FAIL: flag $flag missing"; exit 1; }
@@ -27,7 +27,7 @@ grep -q "^## Input Resolution$" "$SKILL_FILE" \
   || { echo "FAIL: '## Input Resolution' missing"; exit 1; }
 grep -q "^## Theme Resolution$" "$SKILL_FILE" \
   || { echo "FAIL: '## Theme Resolution' missing"; exit 1; }
-grep -q "docs/release-announce/themes/" "$SKILL_FILE" \
+grep -q "docs/launch-release/themes/" "$SKILL_FILE" \
   || { echo "FAIL: repo override path missing"; exit 1; }
 grep -q "frontend-design" "$SKILL_FILE" \
   || { echo "FAIL: frontend-design integration missing"; exit 1; }
@@ -54,7 +54,7 @@ grep -q "^## Composition$" "$SKILL_FILE" \
 echo "PASS: errors + composition documented"
 
 echo "Test 6: first five preset themes exist with required fields"
-THEMES="$SCRIPT_DIR/skills/release-announce/templates/themes"
+THEMES="$SCRIPT_DIR/skills/launch-release/templates/themes"
 for name in classic jade dark bold newsletter; do
   f="$THEMES/${name}.yml"
   [[ -f "$f" ]] || { echo "FAIL: theme $name.yml missing"; exit 1; }
@@ -81,7 +81,7 @@ done
 echo "PASS: last four themes present"
 
 echo "Test 8: canonical HTML templates exist"
-HTML_DIR="$SCRIPT_DIR/skills/release-announce/templates/html"
+HTML_DIR="$SCRIPT_DIR/skills/launch-release/templates/html"
 for f in index.html.tmpl email.html.tmpl; do
   [[ -f "$HTML_DIR/$f" ]] || { echo "FAIL: $f missing"; exit 1; }
   grep -q "{{THEME_BACKGROUND}}" "$HTML_DIR/$f" \
@@ -109,7 +109,7 @@ grep -q '{{SLIDES_HTML}}' "$SLIDES" \
 echo "PASS: slides template within JS budget"
 
 echo "Test 10: first four channel templates exist"
-CH_DIR="$SCRIPT_DIR/skills/release-announce/templates/channels"
+CH_DIR="$SCRIPT_DIR/skills/launch-release/templates/channels"
 for f in slack.md.tmpl discord.md.tmpl in-app-banner.md.tmpl status-page.md.tmpl; do
   [[ -f "$CH_DIR/$f" ]] || { echo "FAIL: channel template $f missing"; exit 1; }
   head -n 1 "$CH_DIR/$f" | grep -q "^---$" \
@@ -121,31 +121,31 @@ echo "Test 11: remaining channel + canonical templates exist"
 for f in x-announcement.md.tmpl whatsapp.md.tmpl; do
   [[ -f "$CH_DIR/$f" ]] || { echo "FAIL: channel template $f missing"; exit 1; }
 done
-TPL="$SCRIPT_DIR/skills/release-announce/templates"
+TPL="$SCRIPT_DIR/skills/launch-release/templates"
 for f in notes.md.tmpl readme.md.tmpl; do
   [[ -f "$TPL/$f" ]] || { echo "FAIL: canonical template $f missing"; exit 1; }
 done
 echo "PASS: remaining templates present"
 
 echo "Test 12: slash command + wizard + bundle + README + skills.md"
-CMD="$SCRIPT_DIR/commands/release-announce.md"
+CMD="$SCRIPT_DIR/commands/launch-release.md"
 [[ -f "$CMD" ]] || { echo "FAIL: command file missing"; exit 1; }
-head -n 5 "$CMD" | grep -q "^name: release-announce$" \
+head -n 5 "$CMD" | grep -q "^name: launch-release$" \
   || { echo "FAIL: command frontmatter missing"; exit 1; }
 
 WIZARD="$SCRIPT_DIR/cli/lib/setup-wizard.sh"
-grep -E "^[[:space:]]*local items=\(.*release-announce.*\)" "$WIZARD" >/dev/null \
-  || { echo "FAIL: release-announce not in wizard items"; exit 1; }
+grep -E "^[[:space:]]*local items=\(.*launch-release.*\)" "$WIZARD" >/dev/null \
+  || { echo "FAIL: launch-release not in wizard items"; exit 1; }
 
 BUNDLE="$SCRIPT_DIR/bundles/growth.yml"
-grep -q -- "- release-announce" "$BUNDLE" \
-  || { echo "FAIL: growth bundle missing release-announce"; exit 1; }
+grep -q -- "- launch-release" "$BUNDLE" \
+  || { echo "FAIL: growth bundle missing launch-release"; exit 1; }
 
-grep -q "release-announce" "$SCRIPT_DIR/README.md" \
-  || { echo "FAIL: README missing release-announce"; exit 1; }
+grep -q "launch-release" "$SCRIPT_DIR/README.md" \
+  || { echo "FAIL: README missing launch-release"; exit 1; }
 
-grep -q "release-announce" "$SCRIPT_DIR/docs/features/skills.md" \
-  || { echo "FAIL: skills.md missing release-announce row"; exit 1; }
+grep -q "launch-release" "$SCRIPT_DIR/docs/features/skills.md" \
+  || { echo "FAIL: skills.md missing launch-release row"; exit 1; }
 
 echo "PASS: command + wizard + bundle + docs wired"
 
@@ -192,7 +192,7 @@ for token in "headline:" "proof:" "cta:" "narrative.yml"; do
   grep -q "$token" "$SKILL_FILE" \
     || { echo "FAIL: narrative token '$token' missing"; exit 1; }
 done
-NAR_TPL="$SCRIPT_DIR/skills/release-announce/templates/narrative.yml.tmpl"
+NAR_TPL="$SCRIPT_DIR/skills/launch-release/templates/narrative.yml.tmpl"
 [[ -f "$NAR_TPL" ]] || { echo "FAIL: narrative.yml.tmpl missing"; exit 1; }
 for token in "{{RELEASE_HEADLINE}}" "{{RELEASE_PROOF}}" "{{CTA_TEXT}}" "{{CTA_HREF}}"; do
   grep -q "$token" "$NAR_TPL" \

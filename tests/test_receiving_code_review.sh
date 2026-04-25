@@ -4,9 +4,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 echo "Test 1: SKILL.md exists with valid frontmatter"
-SKILL_FILE="$SCRIPT_DIR/skills/receiving-code-review/SKILL.md"
+SKILL_FILE="$SCRIPT_DIR/skills/review-pr/SKILL.md"
 [[ -f "$SKILL_FILE" ]] || { echo "FAIL: $SKILL_FILE not found"; exit 1; }
-head -n 5 "$SKILL_FILE" | grep -q "^name: receiving-code-review$" \
+head -n 5 "$SKILL_FILE" | grep -q "^name: review-pr$" \
   || { echo "FAIL: frontmatter 'name' missing"; exit 1; }
 head -n 10 "$SKILL_FILE" | grep -q "^description:" \
   || { echo "FAIL: frontmatter 'description' missing"; exit 1; }
@@ -46,29 +46,29 @@ done
 echo "PASS: routing + integration + anti-patterns documented"
 
 echo "Test 7: slash command + wizard registration"
-CMD="$SCRIPT_DIR/commands/receiving-code-review.md"
+CMD="$SCRIPT_DIR/commands/review-pr.md"
 [[ -f "$CMD" ]] || { echo "FAIL: command file missing"; exit 1; }
-head -n 5 "$CMD" | grep -q "^name: receiving-code-review$" \
+head -n 5 "$CMD" | grep -q "^name: review-pr$" \
   || { echo "FAIL: command frontmatter 'name' missing"; exit 1; }
 
 WIZARD="$SCRIPT_DIR/cli/lib/setup-wizard.sh"
-grep -E "^[[:space:]]*local items=\(.*receiving-code-review.*\)" "$WIZARD" >/dev/null \
-  || { echo "FAIL: receiving-code-review not in wizard items array"; exit 1; }
-grep -q "receiving-code-review|" "$WIZARD" \
-  || { echo "FAIL: receiving-code-review not in wizard hints"; exit 1; }
+grep -E "^[[:space:]]*local items=\(.*review-pr.*\)" "$WIZARD" >/dev/null \
+  || { echo "FAIL: review-pr not in wizard items array"; exit 1; }
+grep -q "review-pr|" "$WIZARD" \
+  || { echo "FAIL: review-pr not in wizard hints"; exit 1; }
 echo "PASS: command + wizard wired"
 
-echo "Test 8: starter bundle includes receiving-code-review"
+echo "Test 8: starter bundle includes review-pr"
 BUNDLE="$SCRIPT_DIR/bundles/starter.yml"
-grep -q -- "- receiving-code-review" "$BUNDLE" \
-  || { echo "FAIL: receiving-code-review missing from starter bundle"; exit 1; }
-echo "PASS: starter bundle lists receiving-code-review"
+grep -q -- "- review-pr" "$BUNDLE" \
+  || { echo "FAIL: review-pr missing from starter bundle"; exit 1; }
+echo "PASS: starter bundle lists review-pr"
 
-echo "Test 9: README + skills.md list receiving-code-review + tutorial exists"
-grep -q "receiving-code-review" "$SCRIPT_DIR/README.md" \
-  || { echo "FAIL: README missing 'receiving-code-review'"; exit 1; }
-grep -q "| \`receiving-code-review\` |" "$SCRIPT_DIR/docs/features/skills.md" \
-  || { echo "FAIL: skills.md missing receiving-code-review row"; exit 1; }
-TUTORIAL="$SCRIPT_DIR/docs/features/receiving-code-review.md"
+echo "Test 9: README + skills.md list review-pr + tutorial exists"
+grep -q "review-pr" "$SCRIPT_DIR/README.md" \
+  || { echo "FAIL: README missing 'review-pr'"; exit 1; }
+grep -q "| \`review-pr\` |" "$SCRIPT_DIR/docs/features/skills.md" \
+  || { echo "FAIL: skills.md missing review-pr row"; exit 1; }
+TUTORIAL="$SCRIPT_DIR/docs/features/review-pr.md"
 [[ -f "$TUTORIAL" ]] || { echo "FAIL: tutorial $TUTORIAL missing"; exit 1; }
 echo "PASS: README + skills.md + tutorial wired"

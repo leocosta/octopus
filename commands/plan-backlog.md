@@ -1,5 +1,5 @@
 ---
-name: plan-backlog-hygiene
+name: plan-backlog
 description: Scan planning directories + roadmap for orphan plans, concluded-but-not-archived, duplicates, broken links, roadmap orphans, and stale plans.
 ---
 

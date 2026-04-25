@@ -6,7 +6,7 @@ from pathlib import Path
 
 def test_enqueue_dequeue(tmp_path):
     q = TaskQueue(tmp_path / "queue")
-    tid = q.enqueue(role="backend-specialist", skill="security-scan",
+    tid = q.enqueue(role="backend-developer", skill="audit-security",
                     model="claude-sonnet-4-6", prompt="scan auth/")
     tasks = q.list_all()
     assert len(tasks) == 1 and tasks[0]["id"] == tid
@@ -16,7 +16,7 @@ def test_enqueue_dequeue(tmp_path):
 
 def test_concurrent_enqueue(tmp_path):
     q = TaskQueue(tmp_path / "queue")
-    ids = {q.enqueue("tech-writer", None, "claude-sonnet-4-6", f"t{i}") for i in range(5)}
+    ids = {q.enqueue("writer", None, "claude-sonnet-4-6", f"t{i}") for i in range(5)}
     assert len(ids) == 5
 
 
@@ -62,14 +62,14 @@ def test_cleanup_includes_stuck_running_tasks(tmp_path):
 
 def test_cancel_removes_queued_task(tmp_path):
     q = TaskQueue(tmp_path / "queue")
-    tid = q.enqueue("tech-writer", None, "claude-sonnet-4-6", "write docs")
+    tid = q.enqueue("writer", None, "claude-sonnet-4-6", "write docs")
     assert q.cancel(tid) is True
     assert len(q.list_all()) == 0
 
 
 def test_cancel_rejects_running_task(tmp_path):
     q = TaskQueue(tmp_path / "queue")
-    tid = q.enqueue("tech-writer", None, "claude-sonnet-4-6", "write docs")
+    tid = q.enqueue("writer", None, "claude-sonnet-4-6", "write docs")
     q.update_status(tid, "running")
     assert q.cancel(tid) is False
     assert len(q.list_all()) == 1
@@ -77,7 +77,7 @@ def test_cancel_rejects_running_task(tmp_path):
 
 def test_requeue_failed_task(tmp_path):
     q = TaskQueue(tmp_path / "queue")
-    tid = q.enqueue("backend-specialist", None, "claude-sonnet-4-6", "scan")
+    tid = q.enqueue("backend-developer", None, "claude-sonnet-4-6", "scan")
     q.update_status(tid, "failed")
     assert q.requeue(tid) is True
     assert q.list_all()[0]["status"] == "queued"
@@ -85,7 +85,7 @@ def test_requeue_failed_task(tmp_path):
 
 def test_requeue_rejects_running_task(tmp_path):
     q = TaskQueue(tmp_path / "queue")
-    tid = q.enqueue("backend-specialist", None, "claude-sonnet-4-6", "scan")
+    tid = q.enqueue("backend-developer", None, "claude-sonnet-4-6", "scan")
     q.update_status(tid, "running")
     assert q.requeue(tid) is False
     assert q.list_all()[0]["status"] == "running"

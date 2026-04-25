@@ -63,10 +63,10 @@ head -n 5 "$CMD_FILE" | grep -q "^name: compress-skill$" \
   || { echo "FAIL: command frontmatter missing"; exit 1; }
 echo "PASS: slash command present"
 
-echo "Test 8: bundle docs-discipline includes compress-skill"
-BUNDLE="$SCRIPT_DIR/bundles/docs-discipline.yml"
+echo "Test 8: bundle documentation includes compress-skill"
+BUNDLE="$SCRIPT_DIR/bundles/documentation.yml"
 grep -qE "^\s*-\s*compress-skill\s*$" "$BUNDLE" \
-  || { echo "FAIL: compress-skill not listed in docs-discipline bundle"; exit 1; }
+  || { echo "FAIL: compress-skill not listed in documentation bundle"; exit 1; }
 echo "PASS: bundle registration present"
 
 echo "Test 9: wizard includes compress-skill"

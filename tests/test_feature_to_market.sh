@@ -5,12 +5,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 echo "Test 1: SKILL.md exists with valid frontmatter"
 
-SKILL_FILE="$SCRIPT_DIR/skills/feature-to-market/SKILL.md"
+SKILL_FILE="$SCRIPT_DIR/skills/launch-feature/SKILL.md"
 [[ -f "$SKILL_FILE" ]] || { echo "FAIL: $SKILL_FILE not found"; exit 1; }
 
 # Frontmatter must have name and description
-head -n 5 "$SKILL_FILE" | grep -q "^name: feature-to-market$" \
-  || { echo "FAIL: frontmatter 'name: feature-to-market' missing"; exit 1; }
+head -n 5 "$SKILL_FILE" | grep -q "^name: launch-feature$" \
+  || { echo "FAIL: frontmatter 'name: launch-feature' missing"; exit 1; }
 head -n 10 "$SKILL_FILE" | grep -q "^description:" \
   || { echo "FAIL: frontmatter 'description:' missing"; exit 1; }
 
@@ -20,7 +20,7 @@ echo "Test 2: SKILL.md documents invocation"
 
 grep -q "^## Invocation$" "$SKILL_FILE" \
   || { echo "FAIL: '## Invocation' section missing"; exit 1; }
-grep -q "octopus:feature-to-market <ref>" "$SKILL_FILE" \
+grep -q "octopus:launch-feature <ref>" "$SKILL_FILE" \
   || { echo "FAIL: invocation syntax missing"; exit 1; }
 for flag in "--channels" "--dry-run" "--no-images" "--images-only" "--angle" "--force"; do
   grep -q -- "$flag" "$SKILL_FILE" \
@@ -37,7 +37,7 @@ grep -q "^## Override Cascade$" "$SKILL_FILE" \
   || { echo "FAIL: '## Override Cascade' missing"; exit 1; }
 grep -q "docs/marketing/" "$SKILL_FILE" \
   || { echo "FAIL: canonical override path missing"; exit 1; }
-for name in brand voice audience hashtags social-media-guide social-media-hooks caption-templates viral-content-ideas; do
+for name in brand voice audience hashtags marketer-guide marketer-hooks caption-templates viral-content-ideas; do
   grep -q "$name" "$SKILL_FILE" \
     || { echo "FAIL: override name '$name' missing"; exit 1; }
 done
@@ -46,7 +46,7 @@ echo "PASS: input resolution + cascade documented"
 
 echo "Test 4: default brand and voice templates exist"
 
-TEMPLATES="$SCRIPT_DIR/skills/feature-to-market/templates"
+TEMPLATES="$SCRIPT_DIR/skills/launch-feature/templates"
 for f in brand.md voice.md; do
   [[ -f "$TEMPLATES/$f" ]] || { echo "FAIL: template $f missing"; exit 1; }
   grep -q "^# " "$TEMPLATES/$f" || { echo "FAIL: $f has no H1"; exit 1; }
@@ -64,7 +64,7 @@ echo "PASS: audience + hashtags defaults present"
 
 echo "Test 6: default strategy templates exist"
 
-for f in social-media-guide.md social-media-hooks.md caption-templates.md viral-content-ideas.md video-roteiro.md; do
+for f in marketer-guide.md marketer-hooks.md caption-templates.md viral-content-ideas.md video-roteiro.md; do
   [[ -f "$TEMPLATES/$f" ]] || { echo "FAIL: template $f missing"; exit 1; }
 done
 
@@ -114,29 +114,29 @@ echo "Test 11: SKILL.md documents errors and composition"
 
 grep -q "^## Errors$" "$SKILL_FILE" \
   || { echo "FAIL: '## Errors' missing"; exit 1; }
-grep -q "^## Composition with social-media role$" "$SKILL_FILE" \
-  || { echo "FAIL: '## Composition with social-media role' missing"; exit 1; }
+grep -q "^## Composition with marketer role$" "$SKILL_FILE" \
+  || { echo "FAIL: '## Composition with marketer role' missing"; exit 1; }
 
 echo "PASS: errors and composition documented"
 
 echo "Test 12: slash command file exists"
 
-CMD_FILE="$SCRIPT_DIR/commands/feature-to-market.md"
+CMD_FILE="$SCRIPT_DIR/commands/launch-feature.md"
 [[ -f "$CMD_FILE" ]] || { echo "FAIL: $CMD_FILE missing"; exit 1; }
-head -n 5 "$CMD_FILE" | grep -q "^name: feature-to-market$" \
+head -n 5 "$CMD_FILE" | grep -q "^name: launch-feature$" \
   || { echo "FAIL: command frontmatter 'name' missing"; exit 1; }
-grep -q "feature-to-market" "$CMD_FILE" \
+grep -q "launch-feature" "$CMD_FILE" \
   || { echo "FAIL: command body does not reference the skill"; exit 1; }
 
 echo "PASS: slash command present"
 
-echo "Test 13: wizard includes feature-to-market"
+echo "Test 13: wizard includes launch-feature"
 
 WIZARD="$SCRIPT_DIR/cli/lib/setup-wizard.sh"
-grep -q "feature-to-market" "$WIZARD" \
-  || { echo "FAIL: feature-to-market not listed in setup-wizard.sh"; exit 1; }
+grep -q "launch-feature" "$WIZARD" \
+  || { echo "FAIL: launch-feature not listed in setup-wizard.sh"; exit 1; }
 # Must appear in the items array (not only a comment)
-grep -E "^[[:space:]]*local items=\(.*feature-to-market.*\)" "$WIZARD" >/dev/null \
-  || { echo "FAIL: feature-to-market not in items array"; exit 1; }
+grep -E "^[[:space:]]*local items=\(.*launch-feature.*\)" "$WIZARD" >/dev/null \
+  || { echo "FAIL: launch-feature not in items array"; exit 1; }
 
 echo "PASS: wizard registration present"

@@ -103,26 +103,26 @@ DIFF
 }
 
 # ---------------------------------------------------------------------------
-# T1: billing diff → money-review matches
+# T1: billing diff → audit-money matches
 billing_file="$TMPDIR_TESTS/billing.diff"
 billing_diff "$billing_file"
-check "billing diff matches money-review" audit_map_match "money-review" "$billing_file"
+check "billing diff matches audit-money" audit_map_match "audit-money" "$billing_file"
 
-# T2: billing diff → security-scan does not match
-check_not "billing diff does not match security-scan" audit_map_match "security-scan" "$billing_file"
+# T2: billing diff → audit-security does not match
+check_not "billing diff does not match audit-security" audit_map_match "audit-security" "$billing_file"
 
-# T3: secret diff → security-scan matches
+# T3: secret diff → audit-security matches
 secret_file="$TMPDIR_TESTS/secret.diff"
 secret_diff "$secret_file"
-check "secret diff matches security-scan" audit_map_match "security-scan" "$secret_file"
+check "secret diff matches audit-security" audit_map_match "audit-security" "$secret_file"
 
-# T4: tenant diff → tenant-scope-audit matches (via path token)
+# T4: tenant diff → audit-tenant matches (via path token)
 tenant_file="$TMPDIR_TESTS/tenant.diff"
 tenant_diff "$tenant_file"
-check "tenant diff matches tenant-scope-audit (path token)" audit_map_match "tenant-scope-audit" "$tenant_file"
+check "tenant diff matches audit-tenant (path token)" audit_map_match "audit-tenant" "$tenant_file"
 
-# T5: tenant diff (IgnoreQueryFilters) → tenant-scope-audit matches (via content regex)
-check "tenant diff matches tenant-scope-audit (content regex)" bash -c '
+# T5: tenant diff (IgnoreQueryFilters) → audit-tenant matches (via content regex)
+check "tenant diff matches audit-tenant (content regex)" bash -c '
   source "$1/cli/lib/audit-map.sh"
   grep -q "IgnoreQueryFilters" "$2"
 ' _ "$OCTOPUS_DIR" "$tenant_file"
@@ -130,13 +130,13 @@ check "tenant diff matches tenant-scope-audit (content regex)" bash -c '
 # T6: README diff → no audit matches
 readme_file="$TMPDIR_TESTS/readme.diff"
 readme_diff "$readme_file"
-check_not "readme diff does not match money-review" audit_map_match "money-review" "$readme_file"
-check_not "readme diff does not match security-scan" audit_map_match "security-scan" "$readme_file"
-check_not "readme diff does not match tenant-scope-audit" audit_map_match "tenant-scope-audit" "$readme_file"
+check_not "readme diff does not match audit-money" audit_map_match "audit-money" "$readme_file"
+check_not "readme diff does not match audit-security" audit_map_match "audit-security" "$readme_file"
+check_not "readme diff does not match audit-tenant" audit_map_match "audit-tenant" "$readme_file"
 
-# T7: audit_map_all on billing diff emits money-review
-check "audit_map_all emits money-review for billing diff" bash -c \
-  'source "$1/cli/lib/audit-map.sh" && audit_map_all "$2" | grep -q "money-review"' \
+# T7: audit_map_all on billing diff emits audit-money
+check "audit_map_all emits audit-money for billing diff" bash -c \
+  'source "$1/cli/lib/audit-map.sh" && audit_map_all "$2" | grep -q "audit-money"' \
   _ "$OCTOPUS_DIR" "$billing_file"
 
 # T8: audit_map_all on README diff emits nothing
@@ -175,14 +175,14 @@ check "malformed patterns.md → skips audit (no crash)" bash -c '
 # T14: _audit_map_path_tokens extracts tokens correctly
 check "_audit_map_path_tokens extracts tokens" bash -c \
   'source "$1/cli/lib/audit-map.sh"
-   tokens=$(_audit_map_path_tokens "$1/skills/money-review/templates/patterns.md")
+   tokens=$(_audit_map_path_tokens "$1/skills/audit-money/templates/patterns.md")
    echo "$tokens" | grep -q "billing"' \
   _ "$OCTOPUS_DIR"
 
 # T15: _audit_map_content_regexes extracts regexes
 check "_audit_map_content_regexes extracts regexes" bash -c \
   'source "$1/cli/lib/audit-map.sh"
-   regexes=$(_audit_map_content_regexes "$1/skills/security-scan/templates/patterns.md")
+   regexes=$(_audit_map_content_regexes "$1/skills/audit-security/templates/patterns.md")
    echo "$regexes" | grep -q "sk-"' \
   _ "$OCTOPUS_DIR"
 

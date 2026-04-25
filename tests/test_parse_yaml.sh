@@ -243,7 +243,7 @@ knowledge:
     - pricing
     - retention
   roles:
-    backend-specialist:
+    backend-developer:
       - domain
       - auth
     product-manager:
@@ -258,7 +258,7 @@ parse_octopus_yml "$TMPDIR4/.octopus-c.yml"
 [[ "${OCTOPUS_KNOWLEDGE_LIST[1]}" == "auth" ]] || { echo "FAIL: Format C: list[1] expected auth"; exit 1; }
 [[ "${OCTOPUS_KNOWLEDGE_LIST[2]}" == "pricing" ]] || { echo "FAIL: Format C: list[2] expected pricing"; exit 1; }
 [[ "${OCTOPUS_KNOWLEDGE_LIST[3]}" == "retention" ]] || { echo "FAIL: Format C: list[3] expected retention"; exit 1; }
-[[ "${OCTOPUS_KNOWLEDGE_ROLES[backend-specialist]}" == "domain,auth" ]] || { echo "FAIL: Format C: backend-specialist role expected 'domain,auth', got '${OCTOPUS_KNOWLEDGE_ROLES[backend-specialist]}'"; exit 1; }
+[[ "${OCTOPUS_KNOWLEDGE_ROLES[backend-developer]}" == "domain,auth" ]] || { echo "FAIL: Format C: backend-developer role expected 'domain,auth', got '${OCTOPUS_KNOWLEDGE_ROLES[backend-developer]}'"; exit 1; }
 [[ "${OCTOPUS_KNOWLEDGE_ROLES[product-manager]}" == "domain,pricing,retention" ]] || { echo "FAIL: Format C: product-manager role expected 'domain,pricing,retention', got '${OCTOPUS_KNOWLEDGE_ROLES[product-manager]}'"; exit 1; }
 
 rm -rf "$TMPDIR4"

@@ -1,5 +1,5 @@
 ---
-name: receiving-code-review
+name: review-pr
 description: Walk the Octopus PR-feedback discipline — verify, ask for evidence, separate reasoned vs preference, never performative, clarify ambiguity.
 ---
 

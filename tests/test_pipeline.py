@@ -14,13 +14,13 @@ PLAN = textwrap.dedent("""\
       pr_on_success: false
     tasks:
       - id: t1
-        agent: backend-specialist
+        agent: backend-developer
         depends_on: []
       - id: t2
-        agent: frontend-specialist
+        agent: frontend-developer
         depends_on: [t1]
       - id: t3
-        agent: tech-writer
+        agent: writer
         depends_on: [t1]
     ---
 
@@ -78,7 +78,7 @@ def test_build_prompt_with_skill(tmp_path):
 
 def test_build_prompt_without_skill(tmp_path):
     runner, _ = make_runner(tmp_path)
-    task = PipelineTask(id="tx", agent="backend-specialist", depends_on=[],
+    task = PipelineTask(id="tx", agent="backend-developer", depends_on=[],
                         skill=None, body="Implement login endpoint")
     assert runner._build_prompt(task) == "Implement login endpoint"
 
@@ -93,13 +93,13 @@ def test_build_prompt_bare_skill_gets_namespace(tmp_path):
 def test_all_tasks_succeed_returns_true(tmp_path, monkeypatch):
     runner, _ = make_runner(tmp_path)
     launched = []
-    codes = {"backend-specialist": 0, "frontend-specialist": 0, "tech-writer": 0, "reviewer": 0}
+    codes = {"backend-developer": 0, "frontend-developer": 0, "writer": 0, "reviewer": 0}
     monkeypatch.setattr(runner.pm, "launch",
                         lambda role, prompt, model, isolate=False: launched.append(role) or 1)
     monkeypatch.setattr(runner.pm, "exit_code", lambda role: codes.get(role))
     result = runner.run()
     assert result is True
-    assert {"backend-specialist", "frontend-specialist", "tech-writer"}.issubset(set(launched))
+    assert {"backend-developer", "frontend-developer", "writer"}.issubset(set(launched))
 
 
 def test_failed_task_returns_false(tmp_path, monkeypatch):
@@ -107,7 +107,7 @@ def test_failed_task_returns_false(tmp_path, monkeypatch):
     monkeypatch.setattr(runner.pm, "launch",
                         lambda role, prompt, model, isolate=False: 1)
     monkeypatch.setattr(runner.pm, "exit_code",
-                        lambda role: 1 if role == "backend-specialist" else None)
+                        lambda role: 1 if role == "backend-developer" else None)
     result = runner.run()
     assert result is False
 
@@ -139,7 +139,7 @@ def test_review_gate_skipped_when_no_review_skill(tmp_path, monkeypatch):
           pr_on_success: false
         tasks:
           - id: t1
-            agent: backend-specialist
+            agent: backend-developer
             depends_on: []
         ---
 

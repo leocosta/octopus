@@ -4,9 +4,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 echo "Test 1: SKILL.md exists with valid frontmatter"
-SKILL_FILE="$SCRIPT_DIR/skills/debugging/SKILL.md"
+SKILL_FILE="$SCRIPT_DIR/skills/debug/SKILL.md"
 [[ -f "$SKILL_FILE" ]] || { echo "FAIL: $SKILL_FILE not found"; exit 1; }
-head -n 5 "$SKILL_FILE" | grep -q "^name: debugging$" \
+head -n 5 "$SKILL_FILE" | grep -q "^name: debug$" \
   || { echo "FAIL: frontmatter 'name' missing"; exit 1; }
 head -n 10 "$SKILL_FILE" | grep -q "^description:" \
   || { echo "FAIL: frontmatter 'description' missing"; exit 1; }
@@ -46,29 +46,29 @@ done
 echo "PASS: routing + integration + anti-patterns documented"
 
 echo "Test 7: slash command + wizard registration"
-CMD="$SCRIPT_DIR/commands/debugging.md"
+CMD="$SCRIPT_DIR/commands/debug.md"
 [[ -f "$CMD" ]] || { echo "FAIL: command file missing"; exit 1; }
-head -n 5 "$CMD" | grep -q "^name: debugging$" \
+head -n 5 "$CMD" | grep -q "^name: debug$" \
   || { echo "FAIL: command frontmatter 'name' missing"; exit 1; }
 
 WIZARD="$SCRIPT_DIR/cli/lib/setup-wizard.sh"
-grep -E "^[[:space:]]*local items=\(.*debugging.*\)" "$WIZARD" >/dev/null \
-  || { echo "FAIL: debugging not in wizard items array"; exit 1; }
-grep -q "debugging|" "$WIZARD" \
-  || { echo "FAIL: debugging not in wizard hints"; exit 1; }
+grep -E "^[[:space:]]*local items=\(.*debug.*\)" "$WIZARD" >/dev/null \
+  || { echo "FAIL: debug not in wizard items array"; exit 1; }
+grep -q '"debug|' "$WIZARD" \
+  || { echo "FAIL: debug not in wizard hints"; exit 1; }
 echo "PASS: command + wizard wired"
 
-echo "Test 8: starter bundle includes debugging"
+echo "Test 8: starter bundle includes debug"
 BUNDLE="$SCRIPT_DIR/bundles/starter.yml"
-grep -q -- "- debugging" "$BUNDLE" \
-  || { echo "FAIL: debugging missing from starter bundle"; exit 1; }
-echo "PASS: starter bundle lists debugging"
+grep -q -- "- debug" "$BUNDLE" \
+  || { echo "FAIL: debug missing from starter bundle"; exit 1; }
+echo "PASS: starter bundle lists debug"
 
-echo "Test 9: README + skills.md list debugging + tutorial exists"
-grep -q "debugging" "$SCRIPT_DIR/README.md" \
-  || { echo "FAIL: README missing 'debugging'"; exit 1; }
-grep -q "| \`debugging\` |" "$SCRIPT_DIR/docs/features/skills.md" \
-  || { echo "FAIL: skills.md missing debugging row"; exit 1; }
-TUTORIAL="$SCRIPT_DIR/docs/features/debugging.md"
+echo "Test 9: README + skills.md list debug + tutorial exists"
+grep -q "debug" "$SCRIPT_DIR/README.md" \
+  || { echo "FAIL: README missing 'debug'"; exit 1; }
+grep -q "| \`debug\` |" "$SCRIPT_DIR/docs/features/skills.md" \
+  || { echo "FAIL: skills.md missing debug row"; exit 1; }
+TUTORIAL="$SCRIPT_DIR/docs/features/debug.md"
 [[ -f "$TUTORIAL" ]] || { echo "FAIL: tutorial $TUTORIAL missing"; exit 1; }
 echo "PASS: README + skills.md + tutorial wired"

@@ -29,8 +29,8 @@ canonical_body="$(extract_block "$CANONICAL")"
 [[ -n "$canonical_body" ]] || { echo "FAIL: canonical body is empty"; exit 1; }
 for f in \
   "$SCRIPT_DIR/skills/implement/SKILL.md" \
-  "$SCRIPT_DIR/skills/debugging/SKILL.md" \
-  "$SCRIPT_DIR/skills/receiving-code-review/SKILL.md"
+  "$SCRIPT_DIR/skills/debug/SKILL.md" \
+  "$SCRIPT_DIR/skills/review-pr/SKILL.md"
 do
   skill_body="$(extract_block "$f")"
   if [[ "$skill_body" != "$canonical_body" ]]; then
@@ -44,8 +44,8 @@ echo "PASS: three skills synced with canonical"
 echo "Test 4: the RM-034 placeholder string is gone from all three skills"
 for f in \
   "$SCRIPT_DIR/skills/implement/SKILL.md" \
-  "$SCRIPT_DIR/skills/debugging/SKILL.md" \
-  "$SCRIPT_DIR/skills/receiving-code-review/SKILL.md"
+  "$SCRIPT_DIR/skills/debug/SKILL.md" \
+  "$SCRIPT_DIR/skills/review-pr/SKILL.md"
 do
   if grep -q "RM-034 will replace this paragraph" "$f"; then
     echo "FAIL: $f still contains the v1 RM-034 stub"

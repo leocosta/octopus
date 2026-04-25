@@ -126,10 +126,10 @@ echo "Pricing fact" > "$TMPDIR/knowledge/pricing/knowledge.md"
 make_module retention
 echo "Retention fact" > "$TMPDIR/knowledge/retention/knowledge.md"
 KNOWLEDGE_MODULES=(domain auth pricing retention)
-OCTOPUS_KNOWLEDGE_ROLES[backend-specialist]="domain,auth"
+OCTOPUS_KNOWLEDGE_ROLES[backend-developer]="domain,auth"
 OCTOPUS_KNOWLEDGE_ROLES[product-manager]="domain,pricing,retention"
 
-backend_content=$(assemble_knowledge "backend-specialist")
+backend_content=$(assemble_knowledge "backend-developer")
 pm_content=$(assemble_knowledge "product-manager")
 
 echo "$backend_content" | grep -q "Domain fact" || { echo "FAIL: backend missing domain"; exit 1; }

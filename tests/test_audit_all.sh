@@ -53,17 +53,17 @@ grep -q "^## Graceful Degradation$" "$SKILL_FILE" \
   || { echo "FAIL: '## Graceful Degradation' missing"; exit 1; }
 echo "PASS: errors + degradation documented"
 
-echo "Test 6: quality-gates bundle lists audit-all + includes deps via resolver"
-BUNDLE="$SCRIPT_DIR/bundles/quality-gates.yml"
+echo "Test 6: saas-quality bundle lists audit-all + includes deps via resolver"
+BUNDLE="$SCRIPT_DIR/bundles/saas-quality.yml"
 grep -q -- "- audit-all" "$BUNDLE" \
-  || { echo "FAIL: quality-gates missing audit-all"; exit 1; }
-for dep in security-scan money-review tenant-scope-audit; do
+  || { echo "FAIL: saas-quality missing audit-all"; exit 1; }
+for dep in audit-security audit-money audit-tenant; do
   if grep -q -- "- $dep" "$BUNDLE"; then
-    echo "FAIL: $dep should not be listed explicitly in quality-gates (arrives via depends_on)"
+    echo "FAIL: $dep should not be listed explicitly in saas-quality (arrives via depends_on)"
     exit 1
   fi
 done
-echo "PASS: quality-gates bundle minimized to audit-all"
+echo "PASS: saas-quality bundle minimized to audit-all"
 
 echo "Test 7: slash command + wizard"
 CMD="$SCRIPT_DIR/commands/audit-all.md"

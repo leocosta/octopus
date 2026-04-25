@@ -25,7 +25,7 @@ grep -q ".claude/rules/typescript/" "$TMPDIR/.claude/CLAUDE.md" || { echo "FAIL:
 ! grep -q "{{RULES}}" "$TMPDIR/.claude/CLAUDE.md" || { echo "FAIL: {{RULES}} placeholder not replaced"; exit 1; }
 
 # Verify {{SKILLS}} was replaced
-grep -q ".claude/skills/adr/" "$TMPDIR/.claude/CLAUDE.md" || { echo "FAIL: adr skill not in CLAUDE.md"; exit 1; }
+grep -q ".claude/skills/doc-adr/" "$TMPDIR/.claude/CLAUDE.md" || { echo "FAIL: adr skill not in CLAUDE.md"; exit 1; }
 ! grep -q "{{SKILLS}}" "$TMPDIR/.claude/CLAUDE.md" || { echo "FAIL: {{SKILLS}} placeholder not replaced"; exit 1; }
 
 # Verify settings.json was copied

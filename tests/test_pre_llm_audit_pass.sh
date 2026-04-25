@@ -34,28 +34,28 @@ check "fragment contains 'CANDIDATE_FILES'" \
   grep -q "CANDIDATE_FILES" "$OCTOPUS_DIR/skills/_shared/audit-pre-pass.md"
 
 # T4: each skill has pre_pass: in frontmatter
-check "money-review has pre_pass:" \
-  grep -q "^pre_pass:" "$OCTOPUS_DIR/skills/money-review/SKILL.md"
-check "security-scan has pre_pass:" \
-  grep -q "^pre_pass:" "$OCTOPUS_DIR/skills/security-scan/SKILL.md"
-check "cross-stack-contract has pre_pass:" \
-  grep -q "^pre_pass:" "$OCTOPUS_DIR/skills/cross-stack-contract/SKILL.md"
-check "tenant-scope-audit has pre_pass:" \
-  grep -q "^pre_pass:" "$OCTOPUS_DIR/skills/tenant-scope-audit/SKILL.md"
+check "audit-money has pre_pass:" \
+  grep -q "^pre_pass:" "$OCTOPUS_DIR/skills/audit-money/SKILL.md"
+check "audit-security has pre_pass:" \
+  grep -q "^pre_pass:" "$OCTOPUS_DIR/skills/audit-security/SKILL.md"
+check "review-contracts has pre_pass:" \
+  grep -q "^pre_pass:" "$OCTOPUS_DIR/skills/review-contracts/SKILL.md"
+check "audit-tenant has pre_pass:" \
+  grep -q "^pre_pass:" "$OCTOPUS_DIR/skills/audit-tenant/SKILL.md"
 
-# T5: security-scan file_patterns contains .env
-check "security-scan file_patterns contains .env" \
-  grep -A2 "file_patterns:" "$OCTOPUS_DIR/skills/security-scan/SKILL.md" | grep -q "env"
+# T5: audit-security file_patterns contains .env
+check "audit-security file_patterns contains .env" \
+  grep -A2 "file_patterns:" "$OCTOPUS_DIR/skills/audit-security/SKILL.md" | grep -q "env"
 
 # T6: each skill references audit-pre-pass.md in its discovery section
-check "money-review references audit-pre-pass.md" \
-  grep -q "audit-pre-pass.md" "$OCTOPUS_DIR/skills/money-review/SKILL.md"
-check "security-scan references audit-pre-pass.md" \
-  grep -q "audit-pre-pass.md" "$OCTOPUS_DIR/skills/security-scan/SKILL.md"
-check "cross-stack-contract references audit-pre-pass.md" \
-  grep -q "audit-pre-pass.md" "$OCTOPUS_DIR/skills/cross-stack-contract/SKILL.md"
-check "tenant-scope-audit references audit-pre-pass.md" \
-  grep -q "audit-pre-pass.md" "$OCTOPUS_DIR/skills/tenant-scope-audit/SKILL.md"
+check "audit-money references audit-pre-pass.md" \
+  grep -q "audit-pre-pass.md" "$OCTOPUS_DIR/skills/audit-money/SKILL.md"
+check "audit-security references audit-pre-pass.md" \
+  grep -q "audit-pre-pass.md" "$OCTOPUS_DIR/skills/audit-security/SKILL.md"
+check "review-contracts references audit-pre-pass.md" \
+  grep -q "audit-pre-pass.md" "$OCTOPUS_DIR/skills/review-contracts/SKILL.md"
+check "audit-tenant references audit-pre-pass.md" \
+  grep -q "audit-pre-pass.md" "$OCTOPUS_DIR/skills/audit-tenant/SKILL.md"
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

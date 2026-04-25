@@ -1,5 +1,5 @@
 ---
-name: debugging
+name: debug
 description: Walk the Octopus bug-fix protocol — reproduce, isolate, regression test, document non-obvious cause.
 ---
 

@@ -10,11 +10,11 @@ from cli.control.process_manager import ProcessManager
 def test_adopt_orphans(tmp_path):
     pm = ProcessManager(octopus_dir=tmp_path)
     proc = subprocess.Popen(["sleep", "60"])
-    pid_file = tmp_path / "pids" / "backend-specialist.pid"
+    pid_file = tmp_path / "pids" / "backend-developer.pid"
     pid_file.parent.mkdir(parents=True, exist_ok=True)
     pid_file.write_text(str(proc.pid))
     adopted = pm.adopt_orphans()
-    assert "backend-specialist" in adopted
+    assert "backend-developer" in adopted
     proc.terminate()
 
 
@@ -24,8 +24,8 @@ def test_launch_creates_pid(tmp_path, monkeypatch):
         pid = 99999
         def poll(self): return None
     monkeypatch.setattr(pm, "_run_claude", lambda *a, **kw: FakeProc())
-    pm.launch("tech-writer", prompt="hello", model="claude-sonnet-4-6")
-    assert (tmp_path / "pids" / "tech-writer.pid").exists()
+    pm.launch("writer", prompt="hello", model="claude-sonnet-4-6")
+    assert (tmp_path / "pids" / "writer.pid").exists()
 
 
 def test_exit_code_success(tmp_path):
@@ -61,13 +61,13 @@ def test_create_worktree_calls_git(tmp_path, monkeypatch):
             returncode = 0
         return R()
     monkeypatch.setattr(sp, "run", fake_run)
-    pm.create_worktree("backend-specialist")
+    pm.create_worktree("backend-developer")
     assert any("worktree" in " ".join(c) for c in calls)
 
 
 def test_remove_worktree_calls_git(tmp_path, monkeypatch):
     pm = ProcessManager(octopus_dir=tmp_path)
-    (tmp_path / "worktrees" / "backend-specialist").mkdir(parents=True)
+    (tmp_path / "worktrees" / "backend-developer").mkdir(parents=True)
     calls = []
     def fake_run(cmd, **kwargs):
         calls.append(cmd)
@@ -75,7 +75,7 @@ def test_remove_worktree_calls_git(tmp_path, monkeypatch):
             returncode = 0
         return R()
     monkeypatch.setattr(sp, "run", fake_run)
-    pm.remove_worktree("backend-specialist")
+    pm.remove_worktree("backend-developer")
     assert any("worktree" in " ".join(c) for c in calls)
 
 
@@ -92,8 +92,8 @@ def test_launch_with_isolation_uses_worktree_cwd(tmp_path, monkeypatch):
         return tmp_path / "worktrees" / role
     monkeypatch.setattr(pm, "_run_claude", fake_run_claude)
     monkeypatch.setattr(pm, "create_worktree", fake_create_worktree)
-    pm.launch("backend-specialist", "hello", "claude-sonnet-4-6", isolate=True)
-    assert used_cwd[0] == tmp_path / "worktrees" / "backend-specialist"
+    pm.launch("backend-developer", "hello", "claude-sonnet-4-6", isolate=True)
+    assert used_cwd[0] == tmp_path / "worktrees" / "backend-developer"
 
 
 import json
@@ -112,8 +112,8 @@ def test_parse_jsonl_extracts_session_id(tmp_path):
         json.dumps({"type": "result", "result": "Hello"}),
     ]
     log = io.StringIO()
-    pm._parse_jsonl("tech-writer", iter(events), log)
-    assert (tmp_path / "sessions" / "tech-writer.session").read_text() == "abc-123"
+    pm._parse_jsonl("writer", iter(events), log)
+    assert (tmp_path / "sessions" / "writer.session").read_text() == "abc-123"
 
 
 def test_parse_jsonl_extracts_text(tmp_path):
@@ -124,31 +124,31 @@ def test_parse_jsonl_extracts_text(tmp_path):
         ]}}),
     ]
     log = io.StringIO()
-    pm._parse_jsonl("tech-writer", iter(events), log)
+    pm._parse_jsonl("writer", iter(events), log)
     assert "Hello world" in log.getvalue()
 
 
 def test_parse_jsonl_non_json_written_verbatim(tmp_path):
     pm = ProcessManager(octopus_dir=tmp_path)
     log = io.StringIO()
-    pm._parse_jsonl("tech-writer", iter(["not json at all\n"]), log)
+    pm._parse_jsonl("writer", iter(["not json at all\n"]), log)
     assert "not json at all" in log.getvalue()
 
 
 def test_parse_jsonl_append_writes_separator(tmp_path):
     pm = ProcessManager(octopus_dir=tmp_path)
     log = io.StringIO()
-    pm._parse_jsonl("tech-writer", iter([]), log, append=True)
+    pm._parse_jsonl("writer", iter([]), log, append=True)
     assert "── reply ──" in log.getvalue()
 
 
 def test_has_session_false_when_no_file(tmp_path):
     pm = ProcessManager(octopus_dir=tmp_path)
-    assert pm.has_session("tech-writer") is False
+    assert pm.has_session("writer") is False
 
 
 def test_has_session_true_when_file_exists(tmp_path):
     pm = ProcessManager(octopus_dir=tmp_path)
     (tmp_path / "sessions").mkdir(exist_ok=True)
-    (tmp_path / "sessions" / "tech-writer.session").write_text("abc-123")
-    assert pm.has_session("tech-writer") is True
+    (tmp_path / "sessions" / "writer.session").write_text("abc-123")
+    assert pm.has_session("writer") is True

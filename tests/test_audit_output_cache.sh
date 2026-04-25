@@ -34,14 +34,14 @@ check "fragment contains 'created_at'" \
   grep -q "created_at" "$OCTOPUS_DIR/skills/_shared/audit-cache.md"
 
 # T3: each skill references audit-cache.md
-check "money-review references audit-cache.md" \
-  grep -q "audit-cache.md" "$OCTOPUS_DIR/skills/money-review/SKILL.md"
-check "security-scan references audit-cache.md" \
-  grep -q "audit-cache.md" "$OCTOPUS_DIR/skills/security-scan/SKILL.md"
-check "cross-stack-contract references audit-cache.md" \
-  grep -q "audit-cache.md" "$OCTOPUS_DIR/skills/cross-stack-contract/SKILL.md"
-check "tenant-scope-audit references audit-cache.md" \
-  grep -q "audit-cache.md" "$OCTOPUS_DIR/skills/tenant-scope-audit/SKILL.md"
+check "audit-money references audit-cache.md" \
+  grep -q "audit-cache.md" "$OCTOPUS_DIR/skills/audit-money/SKILL.md"
+check "audit-security references audit-cache.md" \
+  grep -q "audit-cache.md" "$OCTOPUS_DIR/skills/audit-security/SKILL.md"
+check "review-contracts references audit-cache.md" \
+  grep -q "audit-cache.md" "$OCTOPUS_DIR/skills/review-contracts/SKILL.md"
+check "audit-tenant references audit-cache.md" \
+  grep -q "audit-cache.md" "$OCTOPUS_DIR/skills/audit-tenant/SKILL.md"
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

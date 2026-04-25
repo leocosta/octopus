@@ -1,5 +1,5 @@
 ---
-name: cross-stack-contract
+name: review-contracts
 description: Detect API-vs-frontend contract drift in multi-stack monorepos — endpoints, DTOs, enums, status codes, auth rules, params.
 ---
 

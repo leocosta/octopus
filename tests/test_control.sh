@@ -60,7 +60,7 @@ import sys
 sys.path.insert(0, ".")
 from cli.control.skill_matcher import SkillMatcher
 
-MOCK = {"security-scan": {"keywords": ["auth", "jwt"], "model": None}}
+MOCK = {"audit-security": {"keywords": ["auth", "jwt"], "model": None}}
 m = SkillMatcher(skills_dir=None, _mock=MOCK)
 r = m.resolve("check jwt tokens", role_model="claude-sonnet-4-6")
 assert r.needs_confirm is True, f"expected needs_confirm=True, got {r}"
@@ -77,7 +77,7 @@ from cli.control.process_manager import ProcessManager
 tmp = Path("/tmp/octopus-test-log-viewer")
 tmp.mkdir(exist_ok=True)
 pm = ProcessManager(tmp)
-log = pm.logs_dir / "backend-specialist.log"
+log = pm.logs_dir / "backend-developer.log"
 log.parent.mkdir(parents=True, exist_ok=True)
 log.write_text("line1\nline2\n")
 assert log.read_text() == "line1\nline2\n"
@@ -97,11 +97,11 @@ tmp.mkdir(exist_ok=True)
 pm = ProcessManager(tmp)
 proc = subprocess.Popen(["sleep", "60"])
 (tmp / "pids").mkdir(exist_ok=True)
-(tmp / "pids" / "backend-specialist.pid").write_text(str(proc.pid))
+(tmp / "pids" / "backend-developer.pid").write_text(str(proc.pid))
 adopted = pm.adopt_orphans()
-assert "backend-specialist" in adopted, f"not adopted: {adopted}"
+assert "backend-developer" in adopted, f"not adopted: {adopted}"
 proc.terminate()
-(tmp / "pids" / "backend-specialist.pid").unlink(missing_ok=True)
+(tmp / "pids" / "backend-developer.pid").unlink(missing_ok=True)
 print("PASS: adopt_orphans")
 PYEOF
 
@@ -116,7 +116,7 @@ pipeline:
   pr_on_success: false
 tasks:
   - id: t1
-    agent: backend-specialist
+    agent: backend-developer
     depends_on: []
 ---
 
@@ -165,8 +165,8 @@ test_ask_help
 # Test: octopus ask --dry-run exits 0 and prints role
 test_ask_dry_run() {
   local output
-  output=$(bash cli/octopus.sh ask tech-writer "write the ADR" --dry-run 2>&1)
-  if echo "$output" | grep -q "tech-writer"; then
+  output=$(bash cli/octopus.sh ask writer "write the ADR" --dry-run 2>&1)
+  if echo "$output" | grep -q "writer"; then
     echo "PASS: octopus ask --dry-run"
   else
     echo "FAIL: octopus ask --dry-run — output was:"

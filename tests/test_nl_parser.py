@@ -9,17 +9,17 @@ from cli.control.nl_parser import PipelineStep, parse_nl_pipeline
 # ── @mention detection ────────────────────────────────────────────────────────
 
 def test_single_mention_produces_one_step():
-    steps = parse_nl_pipeline("@tech-writer, create a spec for lesson plans")
+    steps = parse_nl_pipeline("@writer, create a spec for lesson plans")
     assert len(steps) == 1
-    assert steps[0].agent == "tech-writer"
+    assert steps[0].agent == "writer"
 
 
 def test_multiple_mentions_produce_multiple_steps():
     steps = parse_nl_pipeline(
-        "@tech-writer, create a spec. @product-manager, review it."
+        "@writer, create a spec. @product-manager, review it."
     )
     assert len(steps) == 2
-    assert steps[0].agent == "tech-writer"
+    assert steps[0].agent == "writer"
     assert steps[1].agent == "product-manager"
 
 
@@ -35,25 +35,25 @@ def test_no_mentions_returns_empty():
 # ── Prompt extraction ─────────────────────────────────────────────────────────
 
 def test_prompt_is_text_after_mention():
-    steps = parse_nl_pipeline("@tech-writer create a spec for lesson plans")
+    steps = parse_nl_pipeline("@writer create a spec for lesson plans")
     assert "create a spec for lesson plans" in steps[0].prompt
 
 
 def test_prompt_strips_comma_after_mention():
-    steps = parse_nl_pipeline("@tech-writer, create a spec")
+    steps = parse_nl_pipeline("@writer, create a spec")
     assert steps[0].prompt.startswith("create")
 
 
 def test_each_step_prompt_excludes_next_mention():
-    steps = parse_nl_pipeline("@tech-writer create spec. @product-manager review it.")
+    steps = parse_nl_pipeline("@writer create spec. @product-manager review it.")
     assert "product-manager" not in steps[0].prompt
-    assert "tech-writer" not in steps[1].prompt
+    assert "writer" not in steps[1].prompt
 
 
 # ── Step numbering (sequential by default) ───────────────────────────────────
 
 def test_sequential_steps_get_increasing_tier():
-    steps = parse_nl_pipeline("@tech-writer write. @product-manager review.")
+    steps = parse_nl_pipeline("@writer write. @product-manager review.")
     assert steps[0].tier == 1
     assert steps[1].tier == 2
 
@@ -67,7 +67,7 @@ def test_wait_inferred_for_review_verbs(verb):
 
 
 def test_wait_false_for_non_review_verbs():
-    steps = parse_nl_pipeline("@tech-writer create a spec")
+    steps = parse_nl_pipeline("@writer create a spec")
     assert steps[0].wait is False
 
 
@@ -81,7 +81,7 @@ def test_wait_false_for_execution_verb_implement():
 @pytest.mark.parametrize("connector", ["e", "and", "em paralelo", "in parallel", "simultaneamente"])
 def test_parallel_connector_assigns_same_tier(connector):
     steps = parse_nl_pipeline(
-        f"@tech-writer write spec. @frontend-spec {connector} @backend-spec implement."
+        f"@writer write spec. @frontend-spec {connector} @backend-spec implement."
     )
     frontend = next(s for s in steps if s.agent == "frontend-spec")
     backend = next(s for s in steps if s.agent == "backend-spec")
@@ -89,7 +89,7 @@ def test_parallel_connector_assigns_same_tier(connector):
 
 
 def test_non_parallel_mentions_have_different_tiers():
-    steps = parse_nl_pipeline("@tech-writer write. @product-manager review.")
+    steps = parse_nl_pipeline("@writer write. @product-manager review.")
     assert steps[0].tier != steps[1].tier
 
 
@@ -117,7 +117,7 @@ def test_explicit_wait_modifier_removed_from_prompt():
 # ── Step dataclass ────────────────────────────────────────────────────────────
 
 def test_step_has_expected_fields():
-    steps = parse_nl_pipeline("@tech-writer create spec")
+    steps = parse_nl_pipeline("@writer create spec")
     s = steps[0]
     assert hasattr(s, "agent")
     assert hasattr(s, "prompt")

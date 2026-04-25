@@ -14,12 +14,12 @@ def test_build_full_prompt_with_namespaced_skill():
 
 
 def test_build_full_prompt_with_bare_skill():
-    assert build_full_prompt("scan auth/", "security-scan") == "/octopus:security-scan scan auth/"
+    assert build_full_prompt("scan auth/", "audit-security") == "/octopus:audit-security scan auth/"
 
 
 def test_dry_run_exits_zero():
     result = subprocess.run(
-        [sys.executable, "-m", "cli.control.ask", "tech-writer", "write ADR", "--dry-run"],
+        [sys.executable, "-m", "cli.control.ask", "writer", "write ADR", "--dry-run"],
         capture_output=True, text=True
     )
     assert result.returncode == 0
@@ -28,8 +28,8 @@ def test_dry_run_exits_zero():
 
 def test_dry_run_prints_role_and_task():
     result = subprocess.run(
-        [sys.executable, "-m", "cli.control.ask", "backend-specialist", "scan auth/", "--dry-run"],
+        [sys.executable, "-m", "cli.control.ask", "backend-developer", "scan auth/", "--dry-run"],
         capture_output=True, text=True
     )
-    assert "backend-specialist" in result.stdout
+    assert "backend-developer" in result.stdout
     assert "scan auth/" in result.stdout

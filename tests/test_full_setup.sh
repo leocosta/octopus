@@ -84,8 +84,8 @@ readlink ".claude/rules/common/coding-style.md" | grep -q "rules/common/coding-s
 
 # Verify skills symlinks
 [[ -L ".claude/skills/adr" ]] || { echo "FAIL: .claude/skills/adr symlink missing"; exit 1; }
-[[ -L ".claude/skills/e2e-testing" ]] || { echo "FAIL: .claude/skills/e2e-testing symlink missing"; exit 1; }
-[[ -f ".claude/skills/adr/SKILL.md" ]] || { echo "FAIL: adr SKILL.md not accessible via symlink"; exit 1; }
+[[ -L ".claude/skills/test-e2e" ]] || { echo "FAIL: .claude/skills/test-e2e symlink missing"; exit 1; }
+[[ -f ".claude/skills/doc-adr/SKILL.md" ]] || { echo "FAIL: adr SKILL.md not accessible via symlink"; exit 1; }
 
 # Verify hooks injected into settings.json
 python3 -c "
@@ -117,7 +117,7 @@ print('PASS: MCP injection verified')
 
 # Verify CLAUDE.md has rules and skills
 grep -q ".claude/rules/csharp/" ".claude/CLAUDE.md" || { echo "FAIL: csharp rules not in CLAUDE.md"; exit 1; }
-grep -q ".claude/skills/adr/" ".claude/CLAUDE.md" || { echo "FAIL: adr skill not in CLAUDE.md"; exit 1; }
+grep -q ".claude/skills/doc-adr/" ".claude/CLAUDE.md" || { echo "FAIL: adr skill not in CLAUDE.md"; exit 1; }
 
 # Verify copilot has rules content (concatenated, not symlinked)
 grep -q "Coding Style" ".github/copilot-instructions.md" || { echo "FAIL: rules not in copilot"; exit 1; }

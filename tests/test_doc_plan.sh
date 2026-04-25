@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CMD_FILE="$SCRIPT_DIR/commands/doc-plan.md"
 DESIGN_CMD_FILE="$SCRIPT_DIR/commands/doc-design.md"
 FIXTURE="$SCRIPT_DIR/skills/doc-plan/templates/plan-skeleton.md"
-BUNDLE_FILE="$SCRIPT_DIR/bundles/docs-discipline.yml"
+BUNDLE_FILE="$SCRIPT_DIR/bundles/documentation.yml"
 WIZARD="$SCRIPT_DIR/cli/lib/setup-wizard.sh"
 
 echo "Test 1: commands/doc-plan.md exists with valid frontmatter"
@@ -59,9 +59,9 @@ grep -q "Never commit the plan directly onto" "$CMD_FILE" \
   || { echo "FAIL: forbid-direct-commit-to-main statement missing"; exit 1; }
 echo "PASS: docs-only branch flow documented"
 
-echo "Test 8: bundle docs-discipline includes doc-plan"
+echo "Test 8: bundle documentation includes doc-plan"
 grep -qE "^\s*-\s*doc-plan\s*$" "$BUNDLE_FILE" \
-  || { echo "FAIL: doc-plan not listed in docs-discipline bundle"; exit 1; }
+  || { echo "FAIL: doc-plan not listed in documentation bundle"; exit 1; }
 echo "PASS: bundle registration present"
 
 echo "Test 9: wizard includes doc-plan"

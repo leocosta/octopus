@@ -5,15 +5,15 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 echo "Test 1: SKILL.md exists with valid frontmatter"
 
-SKILL_FILE="$SCRIPT_DIR/skills/money-review/SKILL.md"
+SKILL_FILE="$SCRIPT_DIR/skills/audit-money/SKILL.md"
 SHARED_FILE="$SCRIPT_DIR/skills/_shared/audit-output-format.md"
 [[ -f "$SHARED_FILE" ]] || { echo "FAIL: shared audit-output-format.md missing"; exit 1; }
 
 # Check across SKILL.md + shared conventions file.
 grep_docs() { cat "$SKILL_FILE" "$SHARED_FILE" | grep -q "$@"; }
 [[ -f "$SKILL_FILE" ]] || { echo "FAIL: $SKILL_FILE not found"; exit 1; }
-head -n 5 "$SKILL_FILE" | grep -q "^name: money-review$" \
-  || { echo "FAIL: frontmatter 'name: money-review' missing"; exit 1; }
+head -n 5 "$SKILL_FILE" | grep -q "^name: audit-money$" \
+  || { echo "FAIL: frontmatter 'name: audit-money' missing"; exit 1; }
 head -n 10 "$SKILL_FILE" | grep -q "^description:" \
   || { echo "FAIL: frontmatter 'description:' missing"; exit 1; }
 echo "PASS: frontmatter valid"
@@ -21,7 +21,7 @@ echo "PASS: frontmatter valid"
 echo "Test 2: SKILL.md documents invocation"
 grep -q "^## Invocation$" "$SKILL_FILE" \
   || { echo "FAIL: '## Invocation' missing"; exit 1; }
-grep -q "octopus:money-review" "$SKILL_FILE" \
+grep -q "octopus:audit-money" "$SKILL_FILE" \
   || { echo "FAIL: invocation syntax missing"; exit 1; }
 for flag in "--base" "--write-report" "--only"; do
   grep -q -- "$flag" "$SKILL_FILE" || { echo "FAIL: flag $flag not documented"; exit 1; }
@@ -31,12 +31,12 @@ echo "PASS: invocation documented"
 echo "Test 3: SKILL.md documents file discovery and overrides"
 grep -q "^## File Discovery$" "$SKILL_FILE" \
   || { echo "FAIL: '## File Discovery' missing"; exit 1; }
-grep_docs "docs/money-review/patterns.md\|docs/<skill-name>/patterns.md" \
+grep_docs "docs/audit-money/patterns.md\|docs/<skill-name>/patterns.md" \
   || { echo "FAIL: override path missing"; exit 1; }
 echo "PASS: file discovery documented"
 
 echo "Test 4: template defaults exist"
-TEMPLATES="$SCRIPT_DIR/skills/money-review/templates"
+TEMPLATES="$SCRIPT_DIR/skills/audit-money/templates"
 for f in patterns.md providers.md; do
   [[ -f "$TEMPLATES/$f" ]] || { echo "FAIL: $f missing"; exit 1; }
 done
@@ -68,14 +68,14 @@ done
 echo "PASS: output + errors documented"
 
 echo "Test 7: slash command exists"
-CMD_FILE="$SCRIPT_DIR/commands/money-review.md"
+CMD_FILE="$SCRIPT_DIR/commands/audit-money.md"
 [[ -f "$CMD_FILE" ]] || { echo "FAIL: $CMD_FILE missing"; exit 1; }
-head -n 5 "$CMD_FILE" | grep -q "^name: money-review$" \
+head -n 5 "$CMD_FILE" | grep -q "^name: audit-money$" \
   || { echo "FAIL: command frontmatter missing"; exit 1; }
 echo "PASS: slash command present"
 
-echo "Test 8: wizard includes money-review"
+echo "Test 8: wizard includes audit-money"
 WIZARD="$SCRIPT_DIR/cli/lib/setup-wizard.sh"
-grep -E "^[[:space:]]*local items=\(.*money-review.*\)" "$WIZARD" >/dev/null \
-  || { echo "FAIL: money-review not in items array"; exit 1; }
+grep -E "^[[:space:]]*local items=\(.*audit-money.*\)" "$WIZARD" >/dev/null \
+  || { echo "FAIL: audit-money not in items array"; exit 1; }
 echo "PASS: wizard registration present"

@@ -1,5 +1,5 @@
 ---
-name: tenant-scope-audit
+name: audit-tenant
 description: Pre-merge audit of multi-tenant data-scope enforcement — query filters, new entity configs, raw SQL, controller ownership, admin endpoints.
 ---
 

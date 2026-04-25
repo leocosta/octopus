@@ -4,9 +4,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 echo "Test 1: SKILL.md exists with valid frontmatter"
-SKILL_FILE="$SCRIPT_DIR/skills/plan-backlog-hygiene/SKILL.md"
+SKILL_FILE="$SCRIPT_DIR/skills/plan-backlog/SKILL.md"
 [[ -f "$SKILL_FILE" ]] || { echo "FAIL: $SKILL_FILE not found"; exit 1; }
-head -n 5 "$SKILL_FILE" | grep -q "^name: plan-backlog-hygiene$" \
+head -n 5 "$SKILL_FILE" | grep -q "^name: plan-backlog$" \
   || { echo "FAIL: frontmatter 'name' missing"; exit 1; }
 head -n 10 "$SKILL_FILE" | grep -q "^description:" \
   || { echo "FAIL: frontmatter 'description' missing"; exit 1; }
@@ -15,7 +15,7 @@ echo "PASS: frontmatter valid"
 echo "Test 2: SKILL.md documents invocation"
 grep -q "^## Invocation$" "$SKILL_FILE" \
   || { echo "FAIL: '## Invocation' missing"; exit 1; }
-grep -q "octopus:plan-backlog-hygiene" "$SKILL_FILE" \
+grep -q "octopus:plan-backlog" "$SKILL_FILE" \
   || { echo "FAIL: invocation syntax missing"; exit 1; }
 for flag in "--fix" "--write-report" "--plans-dir" "--stale-days" "--only"; do
   grep -q -- "$flag" "$SKILL_FILE" || { echo "FAIL: flag $flag missing"; exit 1; }
@@ -30,7 +30,7 @@ grep -q "plansDir:" "$SKILL_FILE" \
 echo "PASS: discovery documented"
 
 echo "Test 4: patterns template exists"
-TEMPLATES="$SCRIPT_DIR/skills/plan-backlog-hygiene/templates"
+TEMPLATES="$SCRIPT_DIR/skills/plan-backlog/templates"
 [[ -f "$TEMPLATES/patterns.md" ]] || { echo "FAIL: patterns.md missing"; exit 1; }
 echo "PASS: patterns template present"
 
@@ -62,14 +62,14 @@ done
 echo "PASS: output + fix + errors documented"
 
 echo "Test 7: slash command exists"
-CMD_FILE="$SCRIPT_DIR/commands/plan-backlog-hygiene.md"
+CMD_FILE="$SCRIPT_DIR/commands/plan-backlog.md"
 [[ -f "$CMD_FILE" ]] || { echo "FAIL: $CMD_FILE missing"; exit 1; }
-head -n 5 "$CMD_FILE" | grep -q "^name: plan-backlog-hygiene$" \
+head -n 5 "$CMD_FILE" | grep -q "^name: plan-backlog$" \
   || { echo "FAIL: command frontmatter missing"; exit 1; }
 echo "PASS: slash command present"
 
-echo "Test 8: wizard includes plan-backlog-hygiene"
+echo "Test 8: wizard includes plan-backlog"
 WIZARD="$SCRIPT_DIR/cli/lib/setup-wizard.sh"
-grep -E "^[[:space:]]*local items=\(.*plan-backlog-hygiene.*\)" "$WIZARD" >/dev/null \
-  || { echo "FAIL: plan-backlog-hygiene not in items array"; exit 1; }
+grep -E "^[[:space:]]*local items=\(.*plan-backlog.*\)" "$WIZARD" >/dev/null \
+  || { echo "FAIL: plan-backlog not in items array"; exit 1; }
 echo "PASS: wizard registration present"

@@ -68,7 +68,7 @@ agents:
   - claude
 workflow: true
 skills:
-  - money-review
+  - audit-money
 YML
 
   # Run only deliver_git_hooks in isolation (source setup.sh up to function def).
@@ -78,7 +78,7 @@ YML
     cd "$2"
     OCTOPUS_WORKFLOW="true"
     OCTOPUS_POST_MERGE_AUDIT_HOOK="true"
-    OCTOPUS_SKILLS=( money-review )
+    OCTOPUS_SKILLS=( audit-money )
 
     deliver_git_hooks() {
       source "$OCTOPUS_DIR/setup.sh" --dry-run 2>/dev/null || true
