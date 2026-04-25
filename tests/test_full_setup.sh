@@ -40,8 +40,8 @@ rules:
   - typescript
 
 skills:
-  - adr
-  - e2e-testing
+  - doc-adr
+  - test-e2e
 
 hooks: true
 
@@ -83,9 +83,9 @@ readlink ".claude/rules/common/coding-style.md" | grep -q "rules/common/coding-s
 [[ -f ".claude/rules/csharp/naming-style.md" ]] || { echo "FAIL: csharp naming-style.md not accessible"; exit 1; }
 
 # Verify skills symlinks
-[[ -L ".claude/skills/adr" ]] || { echo "FAIL: .claude/skills/adr symlink missing"; exit 1; }
+[[ -L ".claude/skills/doc-adr" ]] || { echo "FAIL: .claude/skills/doc-adr symlink missing"; exit 1; }
 [[ -L ".claude/skills/test-e2e" ]] || { echo "FAIL: .claude/skills/test-e2e symlink missing"; exit 1; }
-[[ -f ".claude/skills/doc-adr/SKILL.md" ]] || { echo "FAIL: adr SKILL.md not accessible via symlink"; exit 1; }
+[[ -f ".claude/skills/doc-adr/SKILL.md" ]] || { echo "FAIL: doc-adr SKILL.md not accessible via symlink"; exit 1; }
 
 # Verify hooks injected into settings.json
 python3 -c "

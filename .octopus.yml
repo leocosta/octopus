@@ -5,4 +5,5 @@ agents:
 workflow: true
 
 roles:
-  - social-media
+  - marketer
+  - architect

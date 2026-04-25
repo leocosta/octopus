@@ -29,7 +29,7 @@ check "_skill_impact_table computes tokens" \
 
 # T4: _wizard_sub_skills calls _skill_impact_table
 check "_wizard_sub_skills calls _skill_impact_table" \
-  bash -c 'grep -A40 "_wizard_sub_skills\(\)" "$1" | grep -q "_skill_impact_table"' _ "$WIZARD"
+  bash -c 'grep -A70 "_wizard_sub_skills\(\)" "$1" | grep -q "_skill_impact_table"' _ "$WIZARD"
 
 # T5: table header contains Lines column
 check "table header contains Lines" \

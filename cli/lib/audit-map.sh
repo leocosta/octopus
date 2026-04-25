@@ -10,7 +10,7 @@
 AUDIT_MAP_OCTOPUS_DIR="${AUDIT_MAP_OCTOPUS_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 
 # Ordered output list (criticality order per spec).
-readonly _AUDIT_ORDER=( security-scan money-review tenant-scope-audit cross-stack-contract )
+readonly _AUDIT_ORDER=( audit-security audit-money audit-tenant review-contracts )
 
 # ---------------------------------------------------------------------------
 # _audit_map_resolve_patterns <audit-name>
@@ -153,7 +153,7 @@ audit_map_match() {
   local name="$1"
   local diff_file="$2"
 
-  if [[ "$name" == "cross-stack-contract" ]]; then
+  if [[ "$name" == "review-contracts" ]]; then
     _audit_map_match_cross_stack "$diff_file"
   else
     _audit_map_match_patterns "$name" "$diff_file"
