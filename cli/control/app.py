@@ -12,6 +12,8 @@ from textual.containers import Horizontal, Vertical
 from textual.suggester import SuggestFromList
 from textual.widgets import DataTable, Footer, Header, Input, Label, ListItem, ListView, RichLog
 
+import yaml as _yaml
+from .pipeline import _SYSTEM_AGENT
 from .pipeline_builder import PipelineBuilder, PipelineBuilderModel
 from .process_manager import ProcessManager
 from .queue import TaskQueue
@@ -411,16 +413,12 @@ class OctopusControl(App):
         output.border_title = "Output"
 
         pipeline_yaml = event.model.to_yaml()
-        import time as _time
-        ts = _time.strftime("%Y%m%d-%H%M%S")
+        ts = time.strftime("%Y%m%d-%H%M%S")
         pipelines_dir = self.octopus_dir / "pipelines"
         pipelines_dir.mkdir(exist_ok=True)
         pipeline_path = pipelines_dir / f"{ts}-pipeline.yml"
         pipeline_path.write_text(pipeline_yaml)
 
-        # Enqueue each first-tier step immediately; PipelineRunner handles the rest
-        import yaml as _yaml
-        from .pipeline import run_system_action, _SYSTEM_AGENT
         tasks = _yaml.safe_load(pipeline_yaml).get("tasks", [])
         for task in tasks:
             if task.get("depends_on"):
