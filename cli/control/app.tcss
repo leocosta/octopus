@@ -35,8 +35,8 @@ Footer {
 }
 
 #left {
-    width: 38;
-    min-width: 28;
+    width: 52;
+    min-width: 38;
 }
 
 #right {
