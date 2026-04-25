@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import subprocess
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -11,6 +12,44 @@ from .process_manager import ProcessManager
 from .queue import TaskQueue
 
 _POLL_INTERVAL = 2  # seconds between agent status checks
+
+_SYSTEM_AGENT = "system"
+
+_BUILTIN_ACTIONS: dict[str, str] = {
+    "merge_to_develop": (
+        "git checkout develop && git merge --no-ff {branch} && git push origin develop"
+    ),
+}
+
+
+def resolve_system_action(action: str, octopus_dir: Path) -> str | None:
+    """Return the shell script for a system action name, or None if not found.
+
+    Checks .octopus/system_actions.yml first, then falls back to built-ins.
+    """
+    actions_file = octopus_dir / "system_actions.yml"
+    if actions_file.exists():
+        data = yaml.safe_load(actions_file.read_text()) or {}
+        if action in data:
+            return str(data[action])
+    return _BUILTIN_ACTIONS.get(action)
+
+
+def run_system_action(action: str, octopus_dir: Path, branch: str) -> int:
+    """Execute a system action script. Returns the exit code.
+
+    Raises ValueError if the action is not defined.
+    """
+    script_template = resolve_system_action(action, octopus_dir)
+    if script_template is None:
+        raise ValueError(
+            f"System action '{action}' is not defined. "
+            "Add it to .octopus/system_actions.yml or use a built-in action "
+            f"({', '.join(_BUILTIN_ACTIONS)})."
+        )
+    script = script_template.replace("{branch}", branch)
+    result = subprocess.run(script, shell=True)
+    return result.returncode
 
 
 @dataclass
@@ -65,6 +104,7 @@ class PipelineRunner:
     def __init__(self, plan_path: Path, octopus_dir: Path):
         self.plan_path = plan_path
         self.pm = ProcessManager(octopus_dir)
+        self._octopus_dir = octopus_dir
         self._meta, self._tasks = parse_pipeline_frontmatter(plan_path)
 
     # ── DAG helpers ────────────────────────────────────────────────────────
@@ -79,6 +119,17 @@ class PipelineRunner:
 
     def _running_agents(self) -> set[str]:
         return {t.agent for t in self._tasks if t.status == "running"}
+
+    @staticmethod
+    def _current_branch() -> str:
+        try:
+            result = subprocess.run(
+                ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                capture_output=True, text=True, timeout=5,
+            )
+            return result.stdout.strip() or "HEAD"
+        except Exception:
+            return "HEAD"
 
     # ── Plan file mutation ─────────────────────────────────────────────────
 
@@ -113,12 +164,29 @@ class PipelineRunner:
             for task in self._ready_tasks():
                 if task.agent in busy_agents:
                     continue
+                print(f"  → {task.id}  {task.agent}  {task.body[:60]}", flush=True)
+                if task.agent == _SYSTEM_AGENT:
+                    # Synchronous execution — no subprocess to poll
+                    t_start = time.time()
+                    branch = self._current_branch()
+                    try:
+                        code = run_system_action(task.body, self._octopus_dir, branch)
+                    except ValueError as exc:
+                        print(f"  ✗ {task.id}  system  {exc}", flush=True)
+                        task.status = "failed"
+                        continue
+                    elapsed = int(time.time() - t_start)
+                    task.status = "done" if code == 0 else "failed"
+                    icon = "✓" if task.status == "done" else "✗"
+                    print(f"  {icon} {task.id}  system  {elapsed}s", flush=True)
+                    if task.status == "done":
+                        self._update_checkbox(task.id)
+                    continue
                 prompt = self._build_prompt(task)
                 self.pm.launch(role=task.agent, prompt=prompt, model=model, isolate=True)
                 task.status = "running"
                 task_started[task.id] = time.time()
                 busy_agents.add(task.agent)
-                print(f"  → {task.id}  {task.agent}  {task.body[:60]}", flush=True)
 
             for task in [t for t in self._tasks if t.status == "running"]:
                 code = self.pm.exit_code(task.agent)
