@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.34.0] - 2026-04-25
+
+♻️ This release delivers a complete rebranding of all roles, skills, and bundles to eliminate naming inconsistencies and clarify the boundaries between who an agent is (roles) and what it does (skills).
+
+**Roles** now use short job titles: `backend-specialist` → `backend-developer`, `frontend-specialist` → `frontend-developer`, `tech-writer` → `writer`, `social-media` → `marketer`, `staff-engineer` → `architect`. A new `architect` role covers system design review and quality gates.
+
+**Skills** were reorganized under category prefixes: the `audit-*` group covers pre-merge quality checks (`audit-money`, `audit-security`, `audit-tenant`); `doc-*` groups documentation skills (`doc-adr`, `doc-lifecycle`, `doc-design`, `doc-plan`); `review-*` covers code review processes (`review-pr`, `review-contracts`); and `launch-*` covers go-to-market publishing (`launch-feature`, `launch-release`). Several skills also received shorter names: `debugging` → `debug`, `plan-backlog-hygiene` → `plan-backlog`, `e2e-testing` → `test-e2e`.
+
+**Bundles** were renamed to plain-English team situations: `quality-gates` → `saas-quality`, `docs-discipline` → `documentation`, `cross-stack` → `fullstack`. A new `quality-leadership` bundle was added for the `architect` role. All bundle YAML files, the setup wizard, README, and `.octopus.example.yml` were updated accordingly. 📝
+
+This release also includes 🐛 two control panel fixes: the known roles list now reloads on every poll cycle (fixing the missing agent issue), and double-click in the agent roster now opens the command bar pre-filled with the selected role.
+
 ## [1.33.3] - 2026-04-25
 
 🐛 Fixed double-click on agent — definitive fix after three failed attempts.
