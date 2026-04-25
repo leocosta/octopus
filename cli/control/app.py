@@ -134,6 +134,7 @@ class OctopusControl(App):
     def _poll(self) -> None:
         self._reap_dead_agents()
         self._dispatch_next()
+        self._known_roles = self._load_known_roles()
         self._refresh_roster()
         self._refresh_queue()
         self._cleanup_tick += 1
