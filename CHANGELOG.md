@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.33.0] - 2026-04-25
+
+Three polish improvements across the installer and `octopus control`.
+
+✨ **Double-click to delegate** — double-clicking (or pressing Enter) on any agent in the roster now opens the command bar pre-filled with `@role: `, ready to type a task. This mirrors the `a` keybind but is more discoverable for mouse users.
+
+🎨 **Installer banner removed** — the large ASCII art octopus at the start of `install.sh` has been replaced with a clean `🐙 OCTOPUS CLI Installer` one-liner. Faster to read, friendlier in narrow terminals and CI logs.
+
+🐛 **Agents panel wider** — the roster column grew from 38 to 52 characters wide (minimum 38), eliminating the horizontal scrollbar that appeared when agent status lines were long.
+
 ## [1.32.0] - 2026-04-25
 
 ✨ **Natural language pipeline builder** — the biggest addition this release. Press `[p]` in `octopus control` to open an interactive pipeline builder directly in the TUI. Define multi-agent workflows visually: each step shows the agent, a wait toggle, and the task prompt. Navigate with `j/k`, add steps with `a`, delete with `d`, toggle approval gates with `w`, and confirm the pipeline with `p`.
