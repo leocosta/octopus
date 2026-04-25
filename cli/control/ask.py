@@ -109,12 +109,90 @@ def ask(
     return code
 
 
+def ask_reply(
+    role: str,
+    reply_text: str,
+    model: str,
+    octopus_dir: Path,
+) -> int:
+    """Resume a session with a reply and stream the response. Returns exit code."""
+    pm = ProcessManager(octopus_dir)
+    session_id = pm.session_id(role)
+    if not session_id:
+        print(f"✗ no resumable session for {role}", file=sys.stderr)
+        return 1
+
+    log_path = pm.logs_dir / f"{role}.log"
+    print(f"↩ {role} · {reply_text[:80]}")
+    print("─" * 50)
+
+    started = time.time()
+    pm.launch_resume(role=role, session_id=session_id, reply=reply_text, model=model)
+
+    # Seek to end of existing log so we only tail new output
+    seek_pos = log_path.stat().st_size if log_path.exists() else 0
+
+    tick = 0
+    original_sigint = signal.getsignal(signal.SIGINT)
+    detached = [False]
+
+    def _handle_sigint(sig, frame):
+        sys.stdout.write("\n[k]ill  [d]etach  [c]ancel: ")
+        sys.stdout.flush()
+        choice = sys.stdin.readline().strip().lower()
+        if choice == "k":
+            pm.kill(role)
+            signal.signal(signal.SIGINT, original_sigint)
+            sys.exit(1)
+        elif choice == "d":
+            detached[0] = True
+
+    signal.signal(signal.SIGINT, _handle_sigint)
+    try:
+        with open(log_path) as f:
+            f.seek(seek_pos)
+            while True:
+                if detached[0]:
+                    print(f"\n[detached]  log: {log_path}")
+                    return 0
+                line = f.readline()
+                if line:
+                    ts = time.strftime("%H:%M:%S")
+                    sys.stdout.write(f"\r{' ' * 30}\r")
+                    print(f"{ts}  {line.rstrip()}")
+                else:
+                    code = pm.exit_code(role)
+                    if code is not None:
+                        break
+                    frame = _SPINNER[tick % len(_SPINNER)]
+                    elapsed = int(time.time() - started)
+                    sys.stdout.write(f"\r{frame} running  {elapsed}s")
+                    sys.stdout.flush()
+                    tick += 1
+                    time.sleep(_TAIL_POLL)
+    finally:
+        signal.signal(signal.SIGINT, original_sigint)
+
+    elapsed = int(time.time() - started)
+    code = pm.exit_code(role) or 0
+    sys.stdout.write(f"\r{' ' * 30}\r")
+    print("─" * 50)
+    if code == 0:
+        print(f"✓ done  {elapsed}s")
+    else:
+        print(f"✗ failed  {elapsed}s  ·  exit code {code}")
+    print(f"  log: {log_path}")
+    return code
+
+
 def main() -> None:
     import argparse
 
     p = argparse.ArgumentParser(prog="octopus-ask")
     p.add_argument("role", help="Agent role (e.g. tech-writer)")
-    p.add_argument("task", help="Task description")
+    p.add_argument("task", nargs="?", default=None, help="Task description")
+    p.add_argument("--reply", default=None, metavar="TEXT",
+                   help="Reply to an existing session instead of starting a new task")
     p.add_argument("--skill", default=None, help="Octopus skill to invoke")
     p.add_argument("--model", default="claude-sonnet-4-6")
     p.add_argument("--dry-run", action="store_true")
@@ -122,6 +200,17 @@ def main() -> None:
 
     octopus_dir = Path(".octopus")
     octopus_dir.mkdir(exist_ok=True)
+
+    if args.reply:
+        sys.exit(ask_reply(
+            role=args.role,
+            reply_text=args.reply,
+            model=args.model,
+            octopus_dir=octopus_dir,
+        ))
+
+    if not args.task:
+        p.error("task is required unless --reply is used")
 
     if args.dry_run:
         prompt = build_full_prompt(args.task, args.skill)
