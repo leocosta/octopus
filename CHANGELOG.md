@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.32.0] - 2026-04-25
+
+✨ **Natural language pipeline builder** — the biggest addition this release. Press `[p]` in `octopus control` to open an interactive pipeline builder directly in the TUI. Define multi-agent workflows visually: each step shows the agent, a wait toggle, and the task prompt. Navigate with `j/k`, add steps with `a`, delete with `d`, toggle approval gates with `w`, and confirm the pipeline with `p`.
+
+✨ **NL pre-fill from `@mentions`** — type a description with `@role-name` mentions in the command bar before pressing `[p]` and the builder opens pre-populated. The parser detects review verbs (`review`, `valide`, `approve`, `aprova`…) and automatically sets `wait=true` on those steps, infers parallel tiers from connectors like `e`, `and`, `em paralelo`, and flags ambiguous steps in yellow for manual correction.
+
+✨ **`@system` steps** — pipelines can now include `@system` steps that execute shell scripts instead of launching a Claude Code agent. The built-in `merge_to_develop` action is available out of the box; custom actions can be defined in `.octopus/system_actions.yml`. Undefined actions raise an error before execution; failed system steps pause the pipeline with a clear message.
+
+✨ **`staff-engineer` role** — new role for architecture review and senior code review. Uses the `opus` model by default. Classifies findings as `BLOCKING`, `ADVISORY`, or `QUESTION`, validates against ADRs, and only approves when correctness, security, architecture, and test coverage all pass.
+
+📝 The spec for the natural language pipeline builder is documented in `docs/specs/nl-pipeline-builder.md`. ♻️ Minor cleanup: inline imports in `app.py` moved to module level.
+
 ## [1.31.0] - 2026-04-25
 
 This release closes the seven items in Cluster 11 — Control reliability & ergonomics. ✨
