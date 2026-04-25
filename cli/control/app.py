@@ -195,7 +195,7 @@ class OctopusControl(App):
                 continue  # role already busy
             prompt = self._build_prompt(task)
             self.queue.update_status(task["id"], "running")
-            pid = self.pm.launch(role=role, prompt=prompt, model=task["model"])
+            pid = self.pm.launch(role=role, prompt=prompt, model=task["model"], task_id=task["id"])
             self._agents[role] = pid
             self._agent_started[role] = time.time()
             self.run_worker(self._stream_log(role))

@@ -90,8 +90,16 @@ class ProcessManager:
         model: str,
         cwd: Path | None = None,
         isolate: bool = False,
+        task_id: str | None = None,
     ) -> int:
-        log_path = self.logs_dir / f"{role}.log"
+        if task_id:
+            task_log = self.logs_dir / f"{role}-{task_id}.log"
+            symlink = self.logs_dir / f"{role}.log"
+            symlink.unlink(missing_ok=True)
+            symlink.symlink_to(task_log.name)
+            log_path = task_log
+        else:
+            log_path = self.logs_dir / f"{role}.log"
         effective_cwd = self.create_worktree(role) if isolate else (cwd or Path.cwd())
         proc = self._run_claude(role, prompt, model, log_path, cwd=effective_cwd)
         self._procs[role] = proc
