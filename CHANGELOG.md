@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.31.0] - 2026-04-25
+
+This release closes the seven items in Cluster 11 — Control reliability & ergonomics. ✨
+
+**Cancel and retry tasks directly in the TUI** — two new keybindings make queue management frictionless: `x` cancels a selected `queued` task before it runs, and `e` re-enqueues a `failed` or `done` task without leaving the dashboard.
+
+**Terminal bell + desktop notification on agent completion** — when an agent finishes or fails, `octopus control` now emits a terminal bell (`\a`) and attempts a desktop notification via `notify-send` (Linux) or `osascript` (macOS), so you can step away while tasks run.
+
+**`--model` flag in the TUI command bar** — any inline command now accepts `--model opus|sonnet|haiku` (or a full model ID). The flag is stripped before routing to the skill matcher and applies to both new tasks and session replies (`↩ role:`).
+
+**`octopus ask --reply`** — continue an existing agent session from the CLI without opening the TUI: `octopus ask tech-writer --reply "yes, proceed"`. Streams the response live, identical to a fresh `octopus ask`.
+
+✨ **Per-task log files** — agent logs are now named `<role>-<task-id>.log` with a `<role>.log` symlink pointing to the latest, so historical task output is no longer overwritten when a role is reused.
+
+**Daemon mode** — `octopus control --daemon start` runs the dispatch loop headlessly (no Textual UI), enabling CI pipelines and long overnight runs. `--daemon stop` sends SIGTERM via `.octopus/daemon.pid`; `--daemon status` checks liveness.
+
 ## [1.30.0] - 2026-04-24
 
 You can now dispatch multiple tasks to the same agent. ✨
