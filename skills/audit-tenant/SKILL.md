@@ -1,5 +1,5 @@
 ---
-name: tenant-scope-audit
+name: audit-tenant
 description: >
   Pre-merge audit of multi-tenant data-scope enforcement. Given a branch
   or PR, detects queries that bypass tenant filters, DbContexts missing

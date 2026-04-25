@@ -2,14 +2,14 @@
 name: audit-all
 description: >
   Run the four quality-audit skills in parallel against one ref —
-  security-scan, money-review, tenant-scope-audit, cross-stack-contract.
+  audit-security, audit-money, audit-tenant, review-contracts.
   Shared file discovery + parallel execution + consolidated report
   with a cross-audit hotspots table.
 depends_on:
-  - security-scan
-  - money-review
-  - tenant-scope-audit
-  - cross-stack-contract
+  - audit-security
+  - audit-money
+  - audit-tenant
+  - review-contracts
 triggers:
   paths: ["openapi/**", "contracts/**", "**/openapi.yaml", "**/openapi.json"]
   keywords: ["auth", "jwt", "payment", "invoice", "stripe", "tenant", "org", "workspace"]
@@ -54,8 +54,8 @@ Run once at the start, before any audit:
 1. `git diff --name-only <base>...<ref>` → list of touched files.
 2. For each file, apply the domain-tag heuristics already published
    in the underlying audit skills' pattern templates (e.g.
-   `skills/money-review/templates/patterns.md`,
-   `skills/tenant-scope-audit/templates/patterns.md`). Do not copy
+   `skills/audit-money/templates/patterns.md`,
+   `skills/audit-tenant/templates/patterns.md`). Do not copy
    the patterns here; reference them directly.
 3. Produce a `file → [domains]` map. Domains in v1:
    `money`, `tenant`, `webhook`, `auth`, `api-contract`,
@@ -70,9 +70,9 @@ Dispatch four subagents via `superpowers:dispatching-parallel-agents`,
 one per installed audit, each with:
 
 - The subset of files tagged with at least one of the audit's
-  domains (money-review gets files tagged `money`; tenant-scope-audit
-  gets files tagged `tenant`; security-scan gets files tagged
-  `secrets` or `auth`; cross-stack-contract gets files tagged
+  domains (audit-money gets files tagged `money`; audit-tenant
+  gets files tagged `tenant`; audit-security gets files tagged
+  `secrets` or `auth`; review-contracts gets files tagged
   `api-contract` or `frontend-consumer`).
 - The same `<ref>` and `--base`.
 - Instruction to produce output in the audit's existing format,
@@ -109,21 +109,21 @@ Files flagged by more than one audit — prioritize these first.
 
 {{HOTSPOTS_TABLE}}
 
-## 🔒 security-scan
-<security-scan's own output>
+## 🔒 audit-security
+<audit-security's own output>
 
-## 💰 money-review
-<money-review's own output>
+## 💰 audit-money
+<audit-money's own output>
 
-## 🏢 tenant-scope-audit
-<tenant-scope-audit's own output>
+## 🏢 audit-tenant
+<audit-tenant's own output>
 
-## 🔁 cross-stack-contract
-<cross-stack-contract's own output>
+## 🔁 review-contracts
+<review-contracts's own output>
 ```
 
 Every sub-report keeps its own summary footer (e.g.
-`money-review: 1 block, 2 warn, 0 info (...)`), so reviewers can
+`audit-money: 1 block, 2 warn, 0 info (...)`), so reviewers can
 paste a single audit's block into a PR thread for focused
 comments.
 

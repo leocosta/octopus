@@ -1,5 +1,5 @@
 ---
-name: feature-lifecycle
+name: doc-lifecycle
 description: >
   Guides the complete documentation lifecycle of a feature —
   from RFC through spec, implementation, ADR capture, and

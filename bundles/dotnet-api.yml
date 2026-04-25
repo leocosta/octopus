@@ -6,7 +6,7 @@ persona_default: false
 skills:
   - dotnet
   - backend-patterns
-  - e2e-testing
+  - test-e2e
 roles: []
 rules:
   - csharp

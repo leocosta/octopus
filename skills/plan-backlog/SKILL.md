@@ -1,5 +1,5 @@
 ---
-name: plan-backlog-hygiene
+name: plan-backlog
 description: >
   Scan the repo's planning directories and roadmap for hygiene issues —
   orphan plans, plans for already-completed RMs still sitting outside

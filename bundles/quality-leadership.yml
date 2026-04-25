@@ -1,0 +1,13 @@
+name: quality-leadership
+description: Architecture oversight and quality gates for staff-level engineers reviewing system design and cross-cutting concerns.
+category: intent
+persona_question: "Does your team have a staff engineer or architect reviewing system design?"
+persona_default: false
+skills:
+  - audit-all
+  - review-contracts
+roles:
+  - architect
+rules: []
+mcp: []
+hooks: null

@@ -1,5 +1,5 @@
 ---
-name: cross-stack-contract
+name: review-contracts
 description: >
   Detect API-vs-frontend contract drift in multi-stack monorepos
   (.NET/Node API + React/Vue/Astro frontends). Given a branch or PR,

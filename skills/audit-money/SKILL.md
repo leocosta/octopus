@@ -1,5 +1,5 @@
 ---
-name: money-review
+name: audit-money
 description: >
   Pre-merge audit of money-touching code. Given a branch or PR, inspects
   numeric types, rounding, tests for non-round cents, env-var consistency,

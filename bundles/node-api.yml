@@ -5,7 +5,7 @@ persona_question: "Primary backend language is Node / TypeScript?"
 persona_default: false
 skills:
   - backend-patterns
-  - e2e-testing
+  - test-e2e
 roles: []
 rules:
   - typescript

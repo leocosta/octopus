@@ -1,5 +1,5 @@
 ---
-name: e2e-testing
+name: test-e2e
 description: End-to-end testing patterns with Playwright for reliable, maintainable browser tests
 triggers:
   paths: ["**/*.spec.ts", "**/*.spec.js", "**/*.test.ts", "cypress/**", "playwright/**"]

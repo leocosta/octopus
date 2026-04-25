@@ -1,5 +1,5 @@
 ---
-name: release-announce
+name: launch-release
 description: >
   Generate a themed release announcement for existing users from one
   or more refs (tags, tag ranges, RM IDs). Produces canonical

@@ -1,5 +1,5 @@
 ---
-name: adr
+name: doc-adr
 description: Create and manage Architecture Decision Records (ADRs) to document significant technical decisions
 ---
 

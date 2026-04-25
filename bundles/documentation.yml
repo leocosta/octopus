@@ -1,16 +1,16 @@
-name: docs-discipline
+name: documentation
 description: Teams that document with RFCs, specs, ADRs, and a living roadmap.
 category: intent
 persona_question: "Do you document with RFCs, specs, and ADRs?"
 persona_default: false
 skills:
-  - plan-backlog-hygiene
+  - plan-backlog
   - continuous-learning
   - compress-skill
   - doc-design
   - doc-plan
 roles:
-  - tech-writer
+  - writer
 rules: []
 mcp: []
 hooks: null

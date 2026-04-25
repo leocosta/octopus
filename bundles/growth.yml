@@ -4,10 +4,10 @@ category: intent
 persona_question: "Does your team produce marketing content alongside code?"
 persona_default: false
 skills:
-  - feature-to-market
-  - release-announce
+  - launch-feature
+  - launch-release
 roles:
-  - social-media
+  - marketer
 rules: []
 mcp: []
 hooks: null

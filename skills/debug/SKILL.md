@@ -1,5 +1,5 @@
 ---
-name: debugging
+name: debug
 description: >
   The Octopus bug-fix workflow — reproduce deterministically,
   isolate, fix with a regression test first, document non-obvious

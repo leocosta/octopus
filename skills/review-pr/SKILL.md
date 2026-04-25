@@ -1,5 +1,5 @@
 ---
-name: receiving-code-review
+name: review-pr
 description: >
   The Octopus PR-feedback discipline — verify the critique, ask
   for evidence on generic comments, separate reasoned feedback

@@ -1,4 +1,4 @@
-name: quality-gates
+name: saas-quality
 description: SaaS quality audits — secrets, money-logic, tenant-scope, provider integrations.
 category: intent
 persona_question: "Is this a SaaS product for external customers (billing, multi-tenant)?"
@@ -6,7 +6,7 @@ persona_default: false
 skills:
   - audit-all
 roles:
-  - backend-specialist
+  - backend-developer
 rules: []
 mcp: []
 hooks: null

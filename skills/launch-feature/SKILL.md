@@ -1,5 +1,5 @@
 ---
-name: feature-to-market
+name: launch-feature
 description: >
   Turn a completed feature (RM-NNN, spec path, research path, or PR)
   into a versioned multi-channel launch kit under
