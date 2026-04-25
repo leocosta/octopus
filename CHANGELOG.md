@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.33.1] - 2026-04-25
+
+🐛 Two fixes in this patch.
+
+**Double-click on agent now works** — the previous implementation used `DataTable.RowSelected`, which only fires on Enter, not on mouse double-click. Replaced with `on_click` + `event.count >= 2` for proper double-click detection.
+
+**`octopus update` always fetches the latest installer** — the update shim was reusing the cached version's `install.sh` (which could have the old banner or other outdated behavior). It now fetches `install.sh` fresh from GitHub `main` before each update, falling back to the cached copy only if the network request fails.
+
 ## [1.33.0] - 2026-04-25
 
 Three polish improvements across the installer and `octopus control`.
