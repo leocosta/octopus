@@ -253,119 +253,15 @@ unaffected.
 
 ### Cluster 11 — Control reliability & ergonomics
 
-| Item | Description |
-|---|---|
-| **RM-057** | Per-task log files — name logs by task ID instead of role to prevent overwrite |
-| **RM-058** | Cancel queued task from TUI — keybind to remove a `queued` task before it runs |
-| **RM-059** | Retry failed task from TUI — keybind to re-enqueue a `failed` task without leaving the TUI |
-| **RM-060** | Notification on agent completion — terminal bell + optional desktop notify on done/failed |
-| **RM-061** | `octopus ask --reply` — CLI subcommand to continue a session without opening the TUI |
-| **RM-062** | Model override in TUI command bar — `--model <name>` flag parsed from inline command text |
-| **RM-063** | Daemon mode (`octopus control --daemon`) — headless queue dispatch for CI and background use |
+_RM-057..063 complete. Cluster 11 has no open items._
 
----
-
-### RM-057 — Per-task log files
-
-- **Priority:** 🔴 High
-- **Effort:** low
-- **Status:** proposed
-- **Added:** 2026-04-25
-- **Research:** [octopus-gaps-2026-04](research/2026-04-25-octopus-gaps-2026-04.md)
-
-Logs live at `.octopus/logs/<role>.log` and are overwritten on every `launch()` call. Running three tasks for `tech-writer` means only the last task's log is accessible. Name log files by task ID (e.g. `<role>-<task-id>.log`) and symlink `<role>.log → latest` so existing log-reading code still works.
-
-**Rationale:** Silent data loss — completed task history is gone as soon as the agent is reused. Debugging failed tasks becomes impossible if the log has been overwritten.
-
----
-
-### RM-058 — Cancel queued task from TUI
-
-- **Priority:** 🔴 High
-- **Effort:** low
-- **Status:** proposed
-- **Added:** 2026-04-25
-- **Research:** [octopus-gaps-2026-04](research/2026-04-25-octopus-gaps-2026-04.md)
-
-No way to remove a `queued` task from within `octopus control`. `Ctrl+D` only cleans `done` and `failed`. Add a `x` or `Del` keybind that removes the selected queued task from the queue without running it.
-
-**Rationale:** Enqueuing the wrong task has no recovery path inside the TUI. Users must manually delete JSON files from `.octopus/queue/`.
-
----
-
-### RM-059 — Retry failed task from TUI
-
-- **Priority:** 🔴 High
-- **Effort:** low
-- **Status:** proposed
-- **Added:** 2026-04-25
-- **Research:** [octopus-gaps-2026-04](research/2026-04-25-octopus-gaps-2026-04.md)
-
-When a task fails (`✗`), there is no TUI action to re-run it. The output suggests `octopus ask … --retry` in the terminal, forcing the user to leave the TUI. Add a keybind (e.g. `e` for re-enqueue) on a selected `failed` task that re-adds it to the queue with the original prompt.
-
-**Rationale:** Failed tasks are a normal occurrence (network issues, model errors, transient failures). Retrying should be one keypress, not a context switch to the terminal.
-
----
-
-### RM-060 — Notification on agent completion
-
-- **Priority:** 🟡 Medium
-- **Effort:** low
-- **Status:** proposed
-- **Added:** 2026-04-25
-- **Research:** [octopus-gaps-2026-04](research/2026-04-25-octopus-gaps-2026-04.md)
-
-No external signal when an agent finishes or fails. For "dispatch and do something else" workflows the user must keep `octopus control` visible. Emit a terminal bell (`\a`) on task done/failed. Optionally try `notify-send` (Linux) or `osascript` (macOS) for a desktop notification with the role and status.
-
-**Rationale:** Agent tasks take minutes. A passive notification lets the user work on other things without polling the TUI.
-
----
-
-### RM-061 — `octopus ask --reply`
-
-- **Priority:** 🟡 Medium
-- **Effort:** low
-- **Status:** proposed
-- **Added:** 2026-04-25
-- **Research:** [octopus-gaps-2026-04](research/2026-04-25-octopus-gaps-2026-04.md)
-
-`octopus ask` prints the session path at the end but there is no `octopus ask --reply <role> "text"` subcommand. Replying without the TUI requires calling `claude --resume <session_id> --print "text"` directly, breaking the `octopus ask` abstraction for scripts and iterative CLI use.
-
-**Rationale:** Closes the bidirectional interaction loop for terminal-first users who never open the TUI.
-
----
-
-### RM-062 — Model override in TUI command bar
-
-- **Priority:** 🟡 Medium
-- **Effort:** low
-- **Status:** proposed
-- **Added:** 2026-04-25
-- **Research:** [octopus-gaps-2026-04](research/2026-04-25-octopus-gaps-2026-04.md)
-
-The model is hardcoded to `claude-sonnet-4-6` for all TUI-dispatched tasks. Add `--model <name>` parsing in `on_input_submitted` before routing to the skill matcher, so `@tech-writer: write the spec --model opus` dispatches with Opus.
-
-**Rationale:** Different tasks have different cost/quality tradeoffs. Heavy research tasks benefit from Opus; quick edits can use Haiku. Per-task model selection without editing the manifest is a common need.
-
----
-
-### RM-063 — Daemon mode (`octopus control --daemon`)
-
-- **Priority:** 🟢 Low
-- **Effort:** medium
-- **Status:** proposed
-- **Added:** 2026-04-25
-- **Research:** [octopus-gaps-2026-04](research/2026-04-25-octopus-gaps-2026-04.md)
-
-`octopus control` must stay open for the queue to process. Closing the TUI stops new tasks from being dispatched and sessions from being tracked. A `--daemon` flag runs the dispatch loop and session tracker as a background process (no Textual UI), with `octopus control status` to check state and `octopus control stop` to shut it down.
-
-**Rationale:** Enables CI use cases and long overnight pipelines where keeping a TUI open is impractical.
+All seven ergonomics gaps shipped in v1.31.0: per-task logs, cancel/retry keybindings, completion notifications, `--model` flag in command bar, `octopus ask --reply`, and daemon mode.
 
 ---
 
 ## In Progress
 
-_No items in progress._
+_No items in progress. All clusters complete through RM-063._
 
 ---
 
@@ -429,3 +325,10 @@ _No items in progress._
 | RM-054 | Control & Run UX Overhaul — `octopus ask`, `@role:` prefill, mini-feed roster, cursor-focus output | completed → v1.26.0 | 2026-04-24 |
 | RM-055 | Agent reply via `--resume` — session capture, `[r]` keybinding, `launch_resume()`, reply in log | completed → v1.27.0 | 2026-04-24 |
 | RM-056 | Control polish (v1.28–v1.30) — animated queue spinner, output panel expanded, `--dangerously-skip-permissions`, zombie process fix, awaiting-reply roster state, multi-task queue per agent with `+N queued` badge | completed → v1.28.0–v1.30.0 | 2026-04-25 |
+| RM-057 | Per-task log files — `<role>-<task-id>.log` with `<role>.log` symlink | completed → v1.31.0 | 2026-04-25 |
+| RM-058 | Cancel queued task from TUI — `x` keybind | completed → v1.31.0 | 2026-04-25 |
+| RM-059 | Retry failed task from TUI — `e` keybind | completed → v1.31.0 | 2026-04-25 |
+| RM-060 | Notification on agent completion — terminal bell + notify-send/osascript | completed → v1.31.0 | 2026-04-25 |
+| RM-061 | `octopus ask --reply` — CLI session continuation | completed → v1.31.0 | 2026-04-25 |
+| RM-062 | Model override in TUI command bar — `--model opus\|sonnet\|haiku` | completed → v1.31.0 | 2026-04-25 |
+| RM-063 | Daemon mode — `octopus control --daemon start/stop/status` | completed → v1.31.0 | 2026-04-25 |
