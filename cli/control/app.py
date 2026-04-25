@@ -348,12 +348,12 @@ class OctopusControl(App):
         return "agent"
 
     def _open_command_for_role(self, role: str) -> None:
+        prefill = f"@{role}: "
         cmd = self.query_one("#cmd", Input)
+        cmd.value = prefill
+        cmd.cursor_position = len(prefill)
         cmd.remove_class("hidden")
         cmd.focus()
-        prefill = f"@{role}: "
-        self.call_after_refresh(setattr, cmd, "value", prefill)
-        self.call_after_refresh(setattr, cmd, "cursor_position", len(prefill))
 
     def on_data_table_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
         if event.data_table.id != "agents":
@@ -372,16 +372,23 @@ class OctopusControl(App):
             lines = log_path.read_text().splitlines()
             for line in lines[-50:]:
                 log_widget.write(line)
-        # Double-click detection: two highlights of the same role within 400ms
-        # Skip during programmatic refresh to avoid false positives
+        # Track first click on this role (for RowSelected double-click guard)
         if not self._refreshing_roster:
-            now = time.time()
-            last_role, last_time = self._last_agent_click
-            if role == last_role and (now - last_time) < 0.4:
-                self._last_agent_click = ("", 0.0)
-                self._open_command_for_role(role)
-            else:
-                self._last_agent_click = (role, now)
+            self._last_agent_click = (role, time.time())
+
+    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
+        """Fires when user clicks an already-highlighted row — i.e. double-click."""
+        if event.data_table.id != "agents":
+            return
+        if event.row_key is None:
+            return
+        role = str(event.row_key.value)
+        # Guard: only open if we recently tracked a first click on this role.
+        # Prevents spurious opens when cursor defaults to row 0.
+        last_role, last_time = self._last_agent_click
+        if role != last_role or (time.time() - last_time) > 1.5:
+            return
+        self._open_command_for_role(role)
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         tasks = self.queue.list_all()
