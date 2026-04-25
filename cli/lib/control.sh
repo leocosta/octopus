@@ -11,9 +11,15 @@ _check_python_deps() {
 }
 
 if [[ "${1:-}" == "--help" ]]; then
-  echo "Usage: octopus control [--install-deps] [--plan <plan.md>]"
-  echo "  --plan <file>   Run pipeline runner against an enriched plan file."
-  echo "  (no flag)       Open the interactive TUI agent dashboard."
+  cat <<EOF
+Usage: octopus control [--install-deps] [--plan <plan.md>] [--daemon <cmd>]
+
+  (no flag)              Open the interactive TUI agent dashboard.
+  --plan <file>          Run pipeline runner against an enriched plan file.
+  --daemon start         Start headless queue dispatch loop in the foreground.
+  --daemon stop          Stop a running daemon.
+  --daemon status        Show daemon status.
+EOF
   exit 0
 fi
 
@@ -24,6 +30,12 @@ if [[ "${1:-}" == "--plan" ]]; then
     exit 1
   fi
   PYTHONPATH="$(dirname "$CLI_DIR")" python3 -m cli.control.pipeline "$PLAN_FILE" "${@:3}"
+  exit $?
+fi
+
+if [[ "${1:-}" == "--daemon" ]]; then
+  CMD="${2:-start}"
+  PYTHONPATH="$(dirname "$CLI_DIR")" python3 -m cli.control.daemon "$CMD"
   exit $?
 fi
 
