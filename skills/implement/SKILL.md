@@ -4,7 +4,7 @@ description: >
   The Octopus implementation workflow — TDD, plan-before-code,
   verification-before-completion, simplify pass, commit cadence.
   Active by default on every code task; pairs with rules/common/*
-  (static rules) and feature-lifecycle (docs).
+  (static rules) and doc-lifecycle (docs).
 ---
 
 # Implement Protocol
@@ -18,7 +18,7 @@ It is active by default on every code-editing task so the five
 practices below apply without opt-in.
 
 The skill is stack-neutral. It does not replace language-specific
-skills (`backend-patterns`, `dotnet`, `e2e-testing`, …) — it
+skills (`backend-patterns`, `dotnet`, `test-e2e`, …) — it
 composes with them. It does not replace the `superpowers:*` skill
 family when the user installs those; see `## Integration with
 Other Skills` for the composition rules.
@@ -31,7 +31,7 @@ config, writing tests. Do not engage for:
 
 - Read-only analysis (explain this function, find the caller of X)
 - Documentation-only changes with no code attached (those go
-  through `feature-lifecycle`)
+  through `doc-lifecycle`)
 - Research / brainstorming (pair with `superpowers:brainstorming`
   or the Octopus `/doc-research` command instead)
 
@@ -80,7 +80,7 @@ For non-trivial tasks — any one of:
 …present a short plan and wait for the user's approval before
 editing code. The plan covers: what files change, the approach,
 trade-offs considered, and an acceptance check. For larger work,
-escalate to `/octopus:doc-spec` and let `feature-lifecycle` drive.
+escalate to `/octopus:doc-spec` and let `doc-lifecycle` drive.
 
 For genuinely trivial changes (single-file fix, single-line
 config), proceed without a plan but still declare the intent in
@@ -148,19 +148,19 @@ checklist, not a switch statement.
 
 | Signal | Consult |
 |---|---|
-| Paths under `api/**/*.cs`, `*.sln`, `*.csproj`; stack traces with `System.*` | `dotnet`, `backend-specialist` role |
-| Paths under `app/**/*.tsx`, `*.jsx`, `*.vue`; UI-layer bugs; reviewer comments about rendering / accessibility | `frontend-specialist` role |
-| Node/TypeScript backend (`apps/api/**/*.ts`, `package.json` with `express`/`fastify`/`hono`/`nestjs`) | `backend-patterns`, `backend-specialist` role |
-| Astro / Next.js landing page (`lp/`, `apps/lp/`, `src/pages/`) | `frontend-specialist` role |
+| Paths under `api/**/*.cs`, `*.sln`, `*.csproj`; stack traces with `System.*` | `dotnet`, `backend-developer` role |
+| Paths under `app/**/*.tsx`, `*.jsx`, `*.vue`; UI-layer bugs; reviewer comments about rendering / accessibility | `frontend-developer` role |
+| Node/TypeScript backend (`apps/api/**/*.ts`, `package.json` with `express`/`fastify`/`hono`/`nestjs`) | `backend-patterns`, `backend-developer` role |
+| Astro / Next.js landing page (`lp/`, `apps/lp/`, `src/pages/`) | `frontend-developer` role |
 
 **Domain-audit signals**
 
 | Signal | Consult |
 |---|---|
-| Keywords `payment`, `billing`, `split`, `fee`, `invoice`, `subscription`; paths `billing/`, `payment/` | `money-review` |
-| New `DbSet<X>`, multi-tenant queries, `[Authorize]` changes, `IgnoreQueryFilters()` | `tenant-scope-audit` |
-| Change touches both `api/` and `app/` (or `lp/`) in the same diff; DTO/endpoint changes | `cross-stack-contract` |
-| Secrets, env vars, `detect-secrets` warnings, authentication paths | `security-scan` |
+| Keywords `payment`, `billing`, `split`, `fee`, `invoice`, `subscription`; paths `billing/`, `payment/` | `audit-money` |
+| New `DbSet<X>`, multi-tenant queries, `[Authorize]` changes, `IgnoreQueryFilters()` | `audit-tenant` |
+| Change touches both `api/` and `app/` (or `lp/`) in the same diff; DTO/endpoint changes | `review-contracts` |
+| Secrets, env vars, `detect-secrets` warnings, authentication paths | `audit-security` |
 | Pre-merge on a non-trivial PR that touches billing or multi-tenant data | `audit-all` (composer — runs all four audits in parallel) |
 
 **Cross-workflow signals**
@@ -168,17 +168,17 @@ checklist, not a switch statement.
 | Signal | Consult |
 |---|---|
 | Trigger is a **new feature** or **refactor** (not a reported bug or review comment) | Stay in `implement` |
-| Trigger is a **bug report**, **failing test**, **stack trace**, or **regression** | Hand off to `debugging` (Phase 3 uses `implement`'s TDD loop for the fix) |
-| Trigger is a **PR review comment** | Hand off to `receiving-code-review` (Rule 1 verifies, then handoff back to `implement` or `debugging` per the comment's intent) |
-| Task involves both docs and code | Compose with `feature-lifecycle` for docs (RFC / Spec / ADR), use the appropriate workflow skill for the code |
+| Trigger is a **bug report**, **failing test**, **stack trace**, or **regression** | Hand off to `debug` (Phase 3 uses `implement`'s TDD loop for the fix) |
+| Trigger is a **PR review comment** | Hand off to `review-pr` (Rule 1 verifies, then handoff back to `implement` or `debug` per the comment's intent) |
+| Task involves both docs and code | Compose with `doc-lifecycle` for docs (RFC / Spec / ADR), use the appropriate workflow skill for the code |
 
 **Risk-profile signals**
 
 | Signal | Consult |
 |---|---|
 | Large-scale / cross-module change (touches ≥ 3 modules) | Escalate `implement`'s plan-before-code gate to a spec via `/octopus:doc-spec`; add an ADR via `/octopus:doc-adr` if the change encodes a decision |
-| Data migration, schema change, irreversible operation | Keep `debugging`'s Phase 3 regression test; consider an ADR; consider tagging the change for the destructive-action guard hook |
-| Release-triggering change | Pair with `release-announce` (retention) or `feature-to-market` (acquisition) for the user-facing announcement after merge |
+| Data migration, schema change, irreversible operation | Keep `debug`'s Phase 3 regression test; consider an ADR; consider tagging the change for the destructive-action guard hook |
+| Release-triggering change | Pair with `launch-release` (retention) or `launch-feature` (acquisition) for the user-facing announcement after merge |
 
 **Graceful degradation**
 
@@ -197,23 +197,23 @@ would have provided — point at the gap and move on.
 - **`rules/common/*`** — always-on static rules ("what the code
   should be"). This skill supplies the dynamic side ("how to get
   there"). Never re-state rule content here; reference only.
-- **`feature-lifecycle`** — governs documentation (RFC → Spec →
+- **`doc-lifecycle`** — governs documentation (RFC → Spec →
   ADR → Knowledge). `implement` governs code. A task with both
   a docs ask and a code ask triggers both skills; they compose
   without conflict.
-- **`debugging` (RM-031, future)** — when a task starts from a
-  bug report or a failing test, delegate to `debugging` for the
+- **`debug` (RM-031, future)** — when a task starts from a
+  bug report or a failing test, delegate to `debug` for the
   reproduce → isolate → fix → regression flow. The TDD loop in
   this skill still applies to the fix itself.
-- **`receiving-code-review` (RM-032, future)** — PR feedback
+- **`review-pr` (RM-032, future)** — PR feedback
   loops go through that skill; `implement` resumes for each
   implementation step the reviewer asks for.
-- **Audit skills** (`security-scan`, `money-review`,
-  `tenant-scope-audit`, `cross-stack-contract`, `audit-all`) —
+- **Audit skills** (`audit-security`, `audit-money`,
+  `audit-tenant`, `review-contracts`, `audit-all`) —
   pre-merge review. `implement` is pre-audit.
 - **`superpowers:*` skills** — when the user has the
   superpowers plugin installed, its skills (TDD, systematic
-  debugging, verification-before-completion, …) cover the same
+  debug, verification-before-completion, …) cover the same
   ground as some practices here. Composition rule: the more
   specific skill wins per practice. If
   `superpowers:test-driven-development` is active, it drives
@@ -233,7 +233,7 @@ This skill forbids, by name:
 - Declaring success ("it works", "tests pass", "done") without
   attaching verification evidence.
 - Editing code in response to critique without understanding the
-  critique. Defer to `receiving-code-review` (RM-032) when it
+  critique. Defer to `review-pr` (RM-032) when it
   ships.
 - Premature abstraction — interfaces, options bags, or factory
   functions without a second caller.

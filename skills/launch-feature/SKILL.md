@@ -20,7 +20,7 @@ resolves the feature reference, collects context (spec, research, commits),
 applies a brand/voice override cascade, renders per-channel templates, and
 optionally generates images using free providers.
 
-The skill composes with the existing `social-media` role for copywriting
+The skill composes with the existing `marketer` role for copywriting
 judgment (hook choice, channel adaptation) — it does not duplicate that role.
 This skill owns orchestration: ref resolution, override cascade, file writing,
 and image generation.
@@ -28,7 +28,7 @@ and image generation.
 ## Invocation
 
 ```
-/octopus:feature-to-market <ref> [options]
+/octopus:launch-feature <ref> [options]
 ```
 
 **Arguments:**
@@ -77,14 +77,14 @@ words).
 ## Override Cascade
 
 For each of the override names — `brand`, `voice`, `audience`, `hashtags`,
-`social-media-guide`, `social-media-hooks`, `caption-templates`,
+`marketer-guide`, `marketer-hooks`, `caption-templates`,
 `viral-content-ideas`, `video-roteiro` — resolve the first path that exists:
 
 1. `docs/marketing/<name>.md` (canonical Octopus location)
 2. `docs/<NAME_UPPER>.md` where `NAME_UPPER` is the name uppercased with
    underscores (e.g. `SOCIAL_MEDIA_GUIDE.md`). This keeps compatibility with
    repos like Tatame that already have these files at the root of `docs/`.
-3. Embedded default at `skills/feature-to-market/templates/<name>.md` inside
+3. Embedded default at `skills/launch-feature/templates/<name>.md` inside
    the Octopus installation.
 
 Record which source was used per override in the launch-kit `README.md`
@@ -108,7 +108,7 @@ If the directory already exists:
   `--images-only` is passed.
 
 For each selected channel, read the matching template under
-`skills/feature-to-market/templates/channels/<name>.md`, fill every `{{PLACEHOLDER}}`
+`skills/launch-feature/templates/channels/<name>.md`, fill every `{{PLACEHOLDER}}`
 with content grounded in the resolved feature context, and write it to the
 launch directory.
 
@@ -117,7 +117,7 @@ launch directory.
 - Never leave a placeholder literal in the output.
 - If a placeholder has no grounded answer, remove the whole line or block and
   add a `<!-- TODO: <what's missing> -->` comment nearby.
-- `{{ANGLE}}` must come from `social-media-hooks` (override or default); pick
+- `{{ANGLE}}` must come from `marketer-hooks` (override or default); pick
   one angle and reuse it across all channels for coherence.
 - `{{LANGUAGE}}` is the detected language (e.g. `pt-BR`, `en`).
 
@@ -207,9 +207,9 @@ Fail fast and print an actionable message. Common cases:
 - **`jq` or `curl` missing** → skip image generation gracefully, warn the
   user, continue with text artifacts.
 
-## Composition with social-media role
+## Composition with marketer role
 
-The `social-media` role (see `roles/social-media.md`) owns copywriting
+The `marketer` role (see `roles/marketer.md`) owns copywriting
 judgment. When this skill needs to choose a hook, adapt a message for a
 specific channel, or resolve an ambiguous brief, invoke the role's guidance:
 

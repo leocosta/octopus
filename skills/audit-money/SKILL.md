@@ -23,14 +23,14 @@ the target ref, isolates the diff against a base branch, identifies
 money-touched files via keyword heuristics, and runs seven inspection
 families. Findings are grouped by severity.
 
-The skill composes with `security-scan`: that one finds secrets and
+The skill composes with `audit-security`: that one finds secrets and
 generic vulnerabilities; this one finds money-logic correctness. Run both
 on any billing PR.
 
 ## Invocation
 
 ```
-/octopus:money-review [ref] [--base=main] [--write-report] [--only=<families>]
+/octopus:audit-money [ref] [--base=main] [--write-report] [--only=<families>]
 ```
 
 Flags `ref`, `--base`, `--only`, `--write-report` follow the shared
@@ -174,7 +174,7 @@ the shared format — see
 Skill-specific notes:
 
 - Finding ID prefix: `T1`–`T7`.
-- Trailer: `money-review: N block, N warn, N info`.
+- Trailer: `audit-money: N block, N warn, N info`.
 - Report path: `docs/reviews/YYYY-MM-DD-money-<slug>.md`.
 
 ## Errors
@@ -187,6 +187,6 @@ shared convention. Skill-specific wording:
 
 ## Composition
 
-Run `security-scan` first (secrets/injection), then `money-review`
+Run `audit-security` first (secrets/injection), then `audit-money`
 (money-logic). Both form the pre-merge safety net; output is plain
 markdown designed to paste into a PR comment as-is.

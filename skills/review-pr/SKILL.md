@@ -6,7 +6,7 @@ description: >
   from preference, never make performative changes, ask for
   clarification on ambiguity. Active by default on every PR
   feedback loop; pairs with /octopus:pr-comments (mechanics) and
-  resumes implement/debugging for the actual code changes.
+  resumes implement/debug for the actual code changes.
 ---
 
 # Receiving-Code-Review Protocol
@@ -18,18 +18,18 @@ feedback. `/octopus:pr-comments` owns the mechanics (walking the
 thread, iterating comments); this skill owns the protocol for
 what an agent does with each comment before acting on it.
 
-`implement` covers writing new code; `debugging` covers fixing
-broken code; `receiving-code-review` covers responding to
+`implement` covers writing new code; `debug` covers fixing
+broken code; `review-pr` covers responding to
 feedback on code that exists. The three form the `starter`
 bundle's workflow trio — one skill per common working state.
 
 The skill is stack-neutral. It describes a five-rule protocol,
 not a specific tool or review platform. It never duplicates
 `rules/common/*`. When the `superpowers:*` plugin is installed,
-its `receiving-code-review` skill wins per rule on the practices
+its `review-pr` skill wins per rule on the practices
 it already covers; this skill still owns Octopus-native
 integration with `pr-comments` and the hand-offs to `implement`
-and `debugging`.
+and `debug`.
 
 ## When to Engage
 
@@ -43,13 +43,13 @@ response. Do not engage for:
 - Feature work or refactor that does not originate from a review
   comment (that is `implement`)
 - Bug triage that does not originate from a review comment (that
-  is `debugging`)
+  is `debug`)
 - Documentation-only changes with no code review attached
 
 Engagement is implicit — Claude Code discovers this skill from
 `.claude/skills/` and applies it automatically when the
 description matches the task. Users who want explicit control
-can invoke `/octopus:receiving-code-review <ref>` for a
+can invoke `/octopus:review-pr <ref>` for a
 single-comment walk.
 
 ## The Five Rules
@@ -149,19 +149,19 @@ checklist, not a switch statement.
 
 | Signal | Consult |
 |---|---|
-| Paths under `api/**/*.cs`, `*.sln`, `*.csproj`; stack traces with `System.*` | `dotnet`, `backend-specialist` role |
-| Paths under `app/**/*.tsx`, `*.jsx`, `*.vue`; UI-layer bugs; reviewer comments about rendering / accessibility | `frontend-specialist` role |
-| Node/TypeScript backend (`apps/api/**/*.ts`, `package.json` with `express`/`fastify`/`hono`/`nestjs`) | `backend-patterns`, `backend-specialist` role |
-| Astro / Next.js landing page (`lp/`, `apps/lp/`, `src/pages/`) | `frontend-specialist` role |
+| Paths under `api/**/*.cs`, `*.sln`, `*.csproj`; stack traces with `System.*` | `dotnet`, `backend-developer` role |
+| Paths under `app/**/*.tsx`, `*.jsx`, `*.vue`; UI-layer bugs; reviewer comments about rendering / accessibility | `frontend-developer` role |
+| Node/TypeScript backend (`apps/api/**/*.ts`, `package.json` with `express`/`fastify`/`hono`/`nestjs`) | `backend-patterns`, `backend-developer` role |
+| Astro / Next.js landing page (`lp/`, `apps/lp/`, `src/pages/`) | `frontend-developer` role |
 
 **Domain-audit signals**
 
 | Signal | Consult |
 |---|---|
-| Keywords `payment`, `billing`, `split`, `fee`, `invoice`, `subscription`; paths `billing/`, `payment/` | `money-review` |
-| New `DbSet<X>`, multi-tenant queries, `[Authorize]` changes, `IgnoreQueryFilters()` | `tenant-scope-audit` |
-| Change touches both `api/` and `app/` (or `lp/`) in the same diff; DTO/endpoint changes | `cross-stack-contract` |
-| Secrets, env vars, `detect-secrets` warnings, authentication paths | `security-scan` |
+| Keywords `payment`, `billing`, `split`, `fee`, `invoice`, `subscription`; paths `billing/`, `payment/` | `audit-money` |
+| New `DbSet<X>`, multi-tenant queries, `[Authorize]` changes, `IgnoreQueryFilters()` | `audit-tenant` |
+| Change touches both `api/` and `app/` (or `lp/`) in the same diff; DTO/endpoint changes | `review-contracts` |
+| Secrets, env vars, `detect-secrets` warnings, authentication paths | `audit-security` |
 | Pre-merge on a non-trivial PR that touches billing or multi-tenant data | `audit-all` (composer — runs all four audits in parallel) |
 
 **Cross-workflow signals**
@@ -169,17 +169,17 @@ checklist, not a switch statement.
 | Signal | Consult |
 |---|---|
 | Trigger is a **new feature** or **refactor** (not a reported bug or review comment) | Stay in `implement` |
-| Trigger is a **bug report**, **failing test**, **stack trace**, or **regression** | Hand off to `debugging` (Phase 3 uses `implement`'s TDD loop for the fix) |
-| Trigger is a **PR review comment** | Hand off to `receiving-code-review` (Rule 1 verifies, then handoff back to `implement` or `debugging` per the comment's intent) |
-| Task involves both docs and code | Compose with `feature-lifecycle` for docs (RFC / Spec / ADR), use the appropriate workflow skill for the code |
+| Trigger is a **bug report**, **failing test**, **stack trace**, or **regression** | Hand off to `debug` (Phase 3 uses `implement`'s TDD loop for the fix) |
+| Trigger is a **PR review comment** | Hand off to `review-pr` (Rule 1 verifies, then handoff back to `implement` or `debug` per the comment's intent) |
+| Task involves both docs and code | Compose with `doc-lifecycle` for docs (RFC / Spec / ADR), use the appropriate workflow skill for the code |
 
 **Risk-profile signals**
 
 | Signal | Consult |
 |---|---|
 | Large-scale / cross-module change (touches ≥ 3 modules) | Escalate `implement`'s plan-before-code gate to a spec via `/octopus:doc-spec`; add an ADR via `/octopus:doc-adr` if the change encodes a decision |
-| Data migration, schema change, irreversible operation | Keep `debugging`'s Phase 3 regression test; consider an ADR; consider tagging the change for the destructive-action guard hook |
-| Release-triggering change | Pair with `release-announce` (retention) or `feature-to-market` (acquisition) for the user-facing announcement after merge |
+| Data migration, schema change, irreversible operation | Keep `debug`'s Phase 3 regression test; consider an ADR; consider tagging the change for the destructive-action guard hook |
+| Release-triggering change | Pair with `launch-release` (retention) or `launch-feature` (acquisition) for the user-facing announcement after merge |
 
 **Graceful degradation**
 
@@ -208,17 +208,17 @@ would have provided — point at the gap and move on.
   (feature, refactor, new test), `implement`'s five practices
   drive the edit itself. This skill ensures the change is the
   right change before `implement` runs.
-- **`debugging`** — when a comment flags a bug the reviewer
-  spotted, hand off to `debugging` (reproduce → isolate → fix
+- **`debug`** — when a comment flags a bug the reviewer
+  spotted, hand off to `debug` (reproduce → isolate → fix
   with regression test → document). This skill still owns
   Rule 1 (verify the critique) before the handoff.
 - **`rules/common/*`** — always-on static rules. This skill
   never re-states rule content; reference only.
-- **`superpowers:receiving-code-review`** — when the
+- **`superpowers:review-pr`** — when the
   superpowers plugin is installed, that skill wins per rule on
   the practices it covers. This skill still owns Octopus-native
   integration with `pr-comments` and the handoffs to
-  `implement` / `debugging`.
+  `implement` / `debug`.
 
 ## Anti-Patterns
 

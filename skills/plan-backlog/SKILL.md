@@ -21,7 +21,7 @@ accumulate plans, RFCs, specs, and research docs faster than teams
 archive them. `plans/` grows to 50+ files and new contributors can't
 tell which plan is alive. This skill walks the planning directories and
 the roadmap, cross-references the two, and emits findings in the same
-severity format used by `money-review` and `cross-stack-contract`.
+severity format used by `audit-money` and `review-contracts`.
 
 It does not edit plan content. The only write action is moving
 concluded plans into `plans/archive/YYYY-MM/` when invoked with `--fix`.
@@ -29,7 +29,7 @@ concluded plans into `plans/archive/YYYY-MM/` when invoked with `--fix`.
 ## Invocation
 
 ```
-/octopus:plan-backlog-hygiene [--fix] [--write-report] [--plans-dir=<path>] [--stale-days=<n>] [--only=<checks>]
+/octopus:plan-backlog [--fix] [--write-report] [--plans-dir=<path>] [--stale-days=<n>] [--only=<checks>]
 ```
 
 **Options:**
@@ -62,9 +62,9 @@ checks continue.
 
 Reference-pattern overrides live at:
 
-- `docs/plan-backlog-hygiene/patterns.md` (canonical)
+- `docs/plan-backlog/patterns.md` (canonical)
 - `docs/PLAN_BACKLOG_HYGIENE_PATTERNS.md` (uppercase compat)
-- `skills/plan-backlog-hygiene/templates/patterns.md` (embedded default)
+- `skills/plan-backlog/templates/patterns.md` (embedded default)
 
 Overrides append to the defaults.
 
@@ -136,8 +136,8 @@ Severity: ℹ Info.
 
 ## Output
 
-Same three-heading severity format used by `money-review` and
-`cross-stack-contract`. v1 does not emit any 🚫 Block findings, so the
+Same three-heading severity format used by `audit-money` and
+`review-contracts`. v1 does not emit any 🚫 Block findings, so the
 block heading is always empty — it is kept for format compatibility.
 
 ```markdown
@@ -156,7 +156,7 @@ block heading is always empty — it is kept for format compatibility.
 - H5 **roadmap-orphan**: RM-014 (in progress) has no plan file.
 - H6 **stale**: `plans/controle-de-acesso.md` unchanged for 180 days.
 
-plan-backlog-hygiene: 0 block, 2 warn, 3 info (scanned 54 plan files)
+plan-backlog: 0 block, 2 warn, 3 info (scanned 54 plan files)
 ```
 
 With `--write-report`: content is persisted to
@@ -166,7 +166,7 @@ With `--write-report`: content is persisted to
 ---
 plans_dir: plans/
 roadmap: docs/roadmap.md
-generated_by: octopus:plan-backlog-hygiene
+generated_by: octopus:plan-backlog
 generated_at: 2026-04-19
 summary: "0 block, 2 warn, 3 info"
 scanned_files: 54
@@ -207,6 +207,6 @@ human judgment.
 ## Composition
 
 This skill scans repo state (not a diff) and runs independently of
-`money-review` and `cross-stack-contract`. The output format matches so
+`audit-money` and `review-contracts`. The output format matches so
 a monthly "hygiene digest" PR can concatenate all three reports in a
 single comment.

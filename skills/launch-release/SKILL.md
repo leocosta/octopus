@@ -18,7 +18,7 @@ triggers:
 ## Overview
 
 This skill announces what changed in a release to existing users.
-Distinct from `feature-to-market`, which handles acquisition / external
+Distinct from `launch-feature`, which handles acquisition / external
 audiences. Inputs are versions or RMs; outputs are a themed landing
 page + channel-specific paste-ready messages.
 
@@ -30,7 +30,7 @@ continues with the deterministic render.
 ## Invocation
 
 ```
-/octopus:release-announce [<ref>...] [--theme=<name>] [--since=<tag>]
+/octopus:launch-release [<ref>...] [--theme=<name>] [--since=<tag>]
                            [--audience=<level>] [--channels=<list>]
                            [--design-from="<prompt>"] [--dry-run]
 ```
@@ -136,9 +136,9 @@ Resolve the theme in this cascade (first match wins):
 
 For a given theme name `N`, load the YAML from:
 
-1. `docs/release-announce/themes/N.yml` (repo override, including any
+1. `docs/launch-release/themes/N.yml` (repo override, including any
    `--design-from` result)
-2. `skills/release-announce/templates/themes/N.yml` (embedded preset)
+2. `skills/launch-release/templates/themes/N.yml` (embedded preset)
 
 Fail fast with a list of available theme names when `N` cannot be
 resolved.
@@ -148,7 +148,7 @@ resolved.
 and emit a warning pointing to the offending file: `intent: retaining`,
 `brand.cta_style: informative`, `brand.hero_pattern: product-led`,
 `brand.signature: ""`. Do not fail. Third-party themes under
-`docs/release-announce/themes/` written before this version continue to
+`docs/launch-release/themes/` written before this version continue to
 work; consumer repos are nudged to add the fields on next run.
 
 ### `--design-from` contract with frontend-design
@@ -159,7 +159,7 @@ When `--design-from="<prompt>"` is passed:
    environment. If not, abort with the message:
    "frontend-design skill not available — add it to .octopus.yml or
    pick a preset theme via --theme=<name>".
-2. Invoke `frontend-design` with: "Generate a release-announce theme
+2. Invoke `frontend-design` with: "Generate a launch-release theme
    YAML matching the schema below. Inspired by: `<prompt>`.
    Return only valid YAML with the required fields." Attach the
    theme schema from `## Theme Schema` below.
@@ -174,7 +174,7 @@ When `--design-from="<prompt>"` is passed:
    `{imperative,invitational,informative}`, `brand.hero_pattern` in
    `{product-led,customer-led,team-led}`, and `brand.signature` is a
    non-empty string.
-4. Persist to `docs/release-announce/themes/<slug>.yml` where
+4. Persist to `docs/launch-release/themes/<slug>.yml` where
    `<slug>` is the lowercase-kebab form of the prompt (max 40 chars).
 5. Continue with that theme. Subsequent runs can reuse it via
    `--theme=<slug>`.
@@ -394,11 +394,11 @@ Fail fast with actionable messages:
 
 Pairs with:
 
-- `feature-to-market` — `release-announce` does retention;
-  `feature-to-market` does acquisition. A release often needs both:
+- `launch-feature` — `launch-release` does retention;
+  `launch-feature` does acquisition. A release often needs both:
   one post announcing to the market, one email announcing to
   existing users.
-- `/octopus:release` — use `release-announce` right after the
+- `/octopus:release` — use `launch-release` right after the
   versioned release lands (PR merged, tag pushed) to generate the
   user-facing package.
 - `frontend-design` — the only cross-skill call path in this skill,

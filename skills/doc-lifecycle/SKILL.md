@@ -139,7 +139,7 @@ If someone might ask "why did we do it this way?" in 6 months, write an ADR.
 **Location**: `docs/adrs/NNN-<decision-slug>.md`
 **Create with**: `/octopus:doc-adr <slug>`
 
-ADRs are lightweight — context, decision, consequences. See the `adr` skill
+ADRs are lightweight — context, decision, consequences. See the `doc-adr` skill
 for full format and guidelines.
 
 ### Implementation Log
@@ -198,7 +198,7 @@ When implementation is complete, move the item to **Concluído** in the roadmap.
 
 ## Integration with Other Skills
 
-- **`adr` skill**: Provides the detailed ADR format and writing guidelines
+- **`doc-adr` skill**: Provides the detailed ADR format and writing guidelines
 - **`continuous-learning` skill**: Provides the knowledge capture protocol
 - **`context-budget` skill**: Helps audit if documentation is adding too much
   to the agent's context window

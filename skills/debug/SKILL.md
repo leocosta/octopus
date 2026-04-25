@@ -17,7 +17,7 @@ This skill codifies the bug-fix side of coding inside Octopus.
 covers bugs ("how to find why something broke"). The two are a
 pair — both live in the `starter` bundle and engage
 automatically, `implement` on code-authoring tasks and
-`debugging` on bug-triage ones.
+`debug` on bug-triage ones.
 
 The skill is stack-neutral. It describes a four-phase protocol,
 not specific debuggers or languages. It never duplicates
@@ -41,7 +41,7 @@ unexpected behavior a user flagged. Do not engage for:
 Engagement is implicit — Claude Code discovers this skill from
 `.claude/skills/` and applies it automatically when the description
 matches the task. Users who want explicit control can invoke
-`/octopus:debugging <bug>` for a single-task walk.
+`/octopus:debug <bug>` for a single-task walk.
 
 ## The Four Phases
 
@@ -135,19 +135,19 @@ checklist, not a switch statement.
 
 | Signal | Consult |
 |---|---|
-| Paths under `api/**/*.cs`, `*.sln`, `*.csproj`; stack traces with `System.*` | `dotnet`, `backend-specialist` role |
-| Paths under `app/**/*.tsx`, `*.jsx`, `*.vue`; UI-layer bugs; reviewer comments about rendering / accessibility | `frontend-specialist` role |
-| Node/TypeScript backend (`apps/api/**/*.ts`, `package.json` with `express`/`fastify`/`hono`/`nestjs`) | `backend-patterns`, `backend-specialist` role |
-| Astro / Next.js landing page (`lp/`, `apps/lp/`, `src/pages/`) | `frontend-specialist` role |
+| Paths under `api/**/*.cs`, `*.sln`, `*.csproj`; stack traces with `System.*` | `dotnet`, `backend-developer` role |
+| Paths under `app/**/*.tsx`, `*.jsx`, `*.vue`; UI-layer bugs; reviewer comments about rendering / accessibility | `frontend-developer` role |
+| Node/TypeScript backend (`apps/api/**/*.ts`, `package.json` with `express`/`fastify`/`hono`/`nestjs`) | `backend-patterns`, `backend-developer` role |
+| Astro / Next.js landing page (`lp/`, `apps/lp/`, `src/pages/`) | `frontend-developer` role |
 
 **Domain-audit signals**
 
 | Signal | Consult |
 |---|---|
-| Keywords `payment`, `billing`, `split`, `fee`, `invoice`, `subscription`; paths `billing/`, `payment/` | `money-review` |
-| New `DbSet<X>`, multi-tenant queries, `[Authorize]` changes, `IgnoreQueryFilters()` | `tenant-scope-audit` |
-| Change touches both `api/` and `app/` (or `lp/`) in the same diff; DTO/endpoint changes | `cross-stack-contract` |
-| Secrets, env vars, `detect-secrets` warnings, authentication paths | `security-scan` |
+| Keywords `payment`, `billing`, `split`, `fee`, `invoice`, `subscription`; paths `billing/`, `payment/` | `audit-money` |
+| New `DbSet<X>`, multi-tenant queries, `[Authorize]` changes, `IgnoreQueryFilters()` | `audit-tenant` |
+| Change touches both `api/` and `app/` (or `lp/`) in the same diff; DTO/endpoint changes | `review-contracts` |
+| Secrets, env vars, `detect-secrets` warnings, authentication paths | `audit-security` |
 | Pre-merge on a non-trivial PR that touches billing or multi-tenant data | `audit-all` (composer — runs all four audits in parallel) |
 
 **Cross-workflow signals**
@@ -155,17 +155,17 @@ checklist, not a switch statement.
 | Signal | Consult |
 |---|---|
 | Trigger is a **new feature** or **refactor** (not a reported bug or review comment) | Stay in `implement` |
-| Trigger is a **bug report**, **failing test**, **stack trace**, or **regression** | Hand off to `debugging` (Phase 3 uses `implement`'s TDD loop for the fix) |
-| Trigger is a **PR review comment** | Hand off to `receiving-code-review` (Rule 1 verifies, then handoff back to `implement` or `debugging` per the comment's intent) |
-| Task involves both docs and code | Compose with `feature-lifecycle` for docs (RFC / Spec / ADR), use the appropriate workflow skill for the code |
+| Trigger is a **bug report**, **failing test**, **stack trace**, or **regression** | Hand off to `debug` (Phase 3 uses `implement`'s TDD loop for the fix) |
+| Trigger is a **PR review comment** | Hand off to `review-pr` (Rule 1 verifies, then handoff back to `implement` or `debug` per the comment's intent) |
+| Task involves both docs and code | Compose with `doc-lifecycle` for docs (RFC / Spec / ADR), use the appropriate workflow skill for the code |
 
 **Risk-profile signals**
 
 | Signal | Consult |
 |---|---|
 | Large-scale / cross-module change (touches ≥ 3 modules) | Escalate `implement`'s plan-before-code gate to a spec via `/octopus:doc-spec`; add an ADR via `/octopus:doc-adr` if the change encodes a decision |
-| Data migration, schema change, irreversible operation | Keep `debugging`'s Phase 3 regression test; consider an ADR; consider tagging the change for the destructive-action guard hook |
-| Release-triggering change | Pair with `release-announce` (retention) or `feature-to-market` (acquisition) for the user-facing announcement after merge |
+| Data migration, schema change, irreversible operation | Keep `debug`'s Phase 3 regression test; consider an ADR; consider tagging the change for the destructive-action guard hook |
+| Release-triggering change | Pair with `launch-release` (retention) or `launch-feature` (acquisition) for the user-facing announcement after merge |
 
 **Graceful degradation**
 
@@ -181,7 +181,7 @@ would have provided — point at the gap and move on.
 
 ## Integration with Other Skills
 
-- **`implement`** — features workflow. `debugging` handles bug
+- **`implement`** — features workflow. `debug` handles bug
   triage up through the fix; the TDD loop inside `implement` is
   reused in Phase 3. They are paired members of the `starter`
   bundle.
@@ -191,13 +191,13 @@ would have provided — point at the gap and move on.
 - **`continuous-learning`** — when a Phase 4 finding is a
   recurring pattern, capture it there so future agents avoid the
   same class of bug.
-- **`rules/common/*`** — always-on static rules. `debugging`
+- **`rules/common/*`** — always-on static rules. `debug`
   never re-states rule content; reference only.
-- **`feature-lifecycle`** — if the bug has architectural
+- **`doc-lifecycle`** — if the bug has architectural
   implications, escalate to an ADR via `/octopus:doc-adr`.
 - **`superpowers:systematic-debugging`** — when the superpowers
   plugin is installed, that skill wins per phase on the
-  practices it covers. `debugging` still owns Phase 4 (Octopus-
+  practices it covers. `debug` still owns Phase 4 (Octopus-
   native integration with `continuous-learning` / ADR).
 
 ## Anti-Patterns

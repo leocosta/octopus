@@ -28,14 +28,14 @@ break: `IgnoreQueryFilters()`, `FromSqlRaw`, a new entity added to the
 DbContext without configuration, a controller that finds by `id`
 without verifying ownership.
 
-The skill composes with `security-scan`, `money-review`, and
-`cross-stack-contract`. All four emit the same severity format so
+The skill composes with `audit-security`, `audit-money`, and
+`review-contracts`. All four emit the same severity format so
 their reports concatenate into a single PR comment.
 
 ## Invocation
 
 ```
-/octopus:tenant-scope-audit [ref] [--base=main] [--only=<checks>] [--write-report]
+/octopus:audit-tenant [ref] [--base=main] [--only=<checks>] [--write-report]
 ```
 
 Flags `ref`, `--base`, `--only`, `--write-report` follow the shared
@@ -171,7 +171,7 @@ Skill-specific notes:
 
 - Finding ID prefix: `T1`–`T6`.
 - Trailer appends the effective config:
-  `tenant-scope-audit: N block, N warn, N info (config: <field> via <filter> / <context>)`.
+  `audit-tenant: N block, N warn, N info (config: <field> via <filter> / <context>)`.
 - Report path: `docs/reviews/YYYY-MM-DD-tenant-<slug>.md`.
 - Frontmatter adds a `config:` block mirroring the active
   `field` / `filter` / `context`.
@@ -189,7 +189,7 @@ shared convention. Skill-specific wording:
 
 ## Composition
 
-Composes with `security-scan`, `money-review`, and
-`cross-stack-contract`. In multi-tenant code, reviewers should treat
+Composes with `audit-security`, `audit-money`, and
+`review-contracts`. In multi-tenant code, reviewers should treat
 🚫 Block findings as merge blockers — each one is a potential
 data-leak path.
