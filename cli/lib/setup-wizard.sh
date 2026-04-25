@@ -471,11 +471,12 @@ WIZARD_RULES=()
 WIZARD_SKILLS=()
 WIZARD_ROLES=()
 declare -A ROLE_SKILL_MAP=(
-  ["backend-specialist"]="backend-patterns tenant-scope-audit money-review security-scan debugging"
-  ["frontend-specialist"]="e2e-testing cross-stack-contract debugging"
-  ["product-manager"]="adr plan-backlog-hygiene feature-lifecycle doc-design doc-plan"
-  ["tech-writer"]="adr doc-design doc-plan continuous-learning"
-  ["social-media"]="feature-to-market release-announce"
+  ["backend-developer"]="backend-patterns audit-tenant audit-money audit-security debug"
+  ["frontend-developer"]="test-e2e review-contracts debug"
+  ["product-manager"]="doc-adr plan-backlog doc-lifecycle doc-design doc-plan"
+  ["writer"]="doc-adr doc-design doc-plan continuous-learning"
+  ["marketer"]="launch-feature launch-release"
+  ["architect"]="audit-all review-contracts"
 )
 WIZARD_MCP=()
 WIZARD_BUNDLES=()
@@ -711,7 +712,7 @@ _skill_impact_table() {
 }
 
 _wizard_sub_skills() {
-  local items=(adr audit-all backend-patterns compress-skill context-budget continuous-learning debugging doc-design doc-plan cross-stack-contract dotnet e2e-testing feature-lifecycle feature-to-market implement money-review plan-backlog-hygiene receiving-code-review release-announce security-scan tenant-scope-audit)
+  local items=(audit-all audit-money audit-security audit-tenant backend-patterns compress-skill context-budget continuous-learning debug doc-adr doc-design doc-lifecycle doc-plan dotnet implement launch-feature launch-release plan-backlog review-contracts review-pr test-e2e)
   local defaults=("${WIZARD_SKILLS[@]}")
 
   local -A recommended=()
@@ -725,27 +726,27 @@ _wizard_sub_skills() {
   _wizard_subheader "Skills" "Reusable AI capabilities exposed as slash commands."
 
   local raw_hints=(
-    "adr|record Architecture Decision Records"
     "audit-all|run all quality audits in parallel with consolidated report"
+    "audit-money|audit money-logic changes for split/tax/rounding bugs"
+    "audit-security|scan diffs for secrets and vulnerabilities"
+    "audit-tenant|audit multi-tenant data-scope enforcement (query filters, raw SQL, ownership)"
     "backend-patterns|apply repo/service/DI patterns"
     "compress-skill|shrink a SKILL.md by ~25% with diff review and invariants"
     "context-budget|monitor and trim the conversation context"
     "continuous-learning|capture lessons learned per session"
-    "debugging|apply the Octopus bug-fix protocol — reproduce, isolate, regression test, document"
+    "debug|apply the Octopus bug-fix protocol — reproduce, isolate, regression test, document"
+    "doc-adr|record Architecture Decision Records"
     "doc-design|drive an interactive spec-design session filling Design, Testing, and adaptive sections"
+    "doc-lifecycle|spec → PR → release helpers"
     "doc-plan|turn a completed spec into a bite-sized, TDD-style implementation plan under docs/plans/<slug>.md"
-    "cross-stack-contract|detect API-vs-frontend drift in monorepos"
     "dotnet|.NET-specific build/test/format helpers"
-    "e2e-testing|scaffold end-to-end test suites"
-    "feature-lifecycle|spec → PR → release helpers"
-    "feature-to-market|turn a shipped feature into a launch kit"
     "implement|apply the Octopus workflow — TDD, plan gate, verification, simplify, commit cadence"
-    "money-review|audit money-logic changes for split/tax/rounding bugs"
-    "plan-backlog-hygiene|audit plans/ and roadmap for stale, orphan, or duplicate items"
-    "receiving-code-review|apply the Octopus PR-feedback discipline — verify, ask, clarify, never performative"
-    "release-announce|themed release kit for existing users (HTML + channels + slides)"
-    "security-scan|scan diffs for secrets and vulnerabilities"
-    "tenant-scope-audit|audit multi-tenant data-scope enforcement (query filters, raw SQL, ownership)"
+    "launch-feature|turn a shipped feature into a launch kit"
+    "launch-release|themed release kit for existing users (HTML + channels + slides)"
+    "plan-backlog|audit plans/ and roadmap for stale, orphan, or duplicate items"
+    "review-contracts|detect API-vs-frontend drift in monorepos"
+    "review-pr|apply the Octopus PR-feedback discipline — verify, ask, clarify, never performative"
+    "test-e2e|scaffold end-to-end test suites"
   )
 
   local annotated_hints=()
@@ -770,7 +771,7 @@ _wizard_sub_skills() {
 
   _multiselect \
     "Select skills" \
-    "adr · audit-all · backend-patterns · compress-skill · context-budget · continuous-learning · debugging · doc-design · doc-plan · cross-stack-contract · dotnet · e2e-testing · feature-lifecycle · feature-to-market · implement · money-review · plan-backlog-hygiene · receiving-code-review · release-announce · security-scan · tenant-scope-audit" \
+    "audit-all · audit-money · audit-security · audit-tenant · backend-patterns · compress-skill · context-budget · continuous-learning · debug · doc-adr · doc-design · doc-lifecycle · doc-plan · dotnet · implement · launch-feature · launch-release · plan-backlog · review-contracts · review-pr · test-e2e" \
     items defaults
 
   _skill_impact_table "${WIZARD_SELECTED[@]}"
@@ -779,20 +780,21 @@ _wizard_sub_skills() {
 }
 
 _wizard_sub_roles() {
-  local items=(backend-specialist frontend-specialist product-manager tech-writer social-media)
+  local items=(architect backend-developer frontend-developer marketer product-manager writer)
   local defaults=("${WIZARD_ROLES[@]}")
 
   _wizard_subheader "Roles" "Specialized sub-agent personas; each carries its own instructions."
   _wizard_hints \
-    "backend-specialist|APIs, data modeling, server-side logic" \
-    "frontend-specialist|UI/UX, components, accessibility" \
+    "architect|system design review, cross-cutting concerns, quality gates" \
+    "backend-developer|APIs, data modeling, server-side logic" \
+    "frontend-developer|UI/UX, components, accessibility" \
+    "marketer|platform-native posts and campaigns" \
     "product-manager|specs, roadmap, prioritization" \
-    "tech-writer|docs, READMEs, release notes" \
-    "social-media|platform-native posts and campaigns"
+    "writer|docs, READMEs, release notes"
 
   _multiselect \
     "Select roles" \
-    "backend-specialist · frontend-specialist · product-manager · tech-writer · social-media" \
+    "architect · backend-developer · frontend-developer · marketer · product-manager · writer" \
     items defaults
 
   WIZARD_ROLES=("${WIZARD_SELECTED[@]}")
