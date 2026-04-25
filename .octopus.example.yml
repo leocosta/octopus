@@ -30,13 +30,15 @@ rules:
 #   ui: pt-br      # user-facing messages, UI text, app copy
 
 # Skills (symlinked to .claude/skills/)
-# Available: adr, backend-patterns, context-budget, continuous-learning,
-#            dotnet, e2e-testing, feature-lifecycle, security-scan
+# Available: audit-all, audit-money, audit-security, audit-tenant, backend-patterns,
+#            context-budget, continuous-learning, debug, doc-adr, doc-design, doc-lifecycle,
+#            doc-plan, dotnet, implement, launch-feature, launch-release, plan-backlog,
+#            review-contracts, review-pr, test-e2e
 # skills:
-#   - adr
+#   - doc-adr
 #   - dotnet
-#   - e2e-testing
-#   - feature-lifecycle
+#   - test-e2e
+#   - doc-lifecycle
 
 # Hooks (injected into .claude/settings.json)
 # Options: true (enable all), false (disable), or profile name
@@ -77,11 +79,11 @@ mcp: []
 #   - github-username-2
 
 # Roles/personas (templates from octopus/roles/)
-# Available: product-manager, backend-specialist, frontend-specialist, tech-writer
+# Available: architect, backend-developer, frontend-developer, marketer, product-manager, writer
 # Context is provided via knowledge modules (see knowledge: config below)
 # roles:
 #   - product-manager
-#   - backend-specialist
+#   - backend-developer
 
 # Knowledge modules — modular domain context for AI agents
 # Format A: auto-discover all folders in knowledge/ (not prefixed with _)
@@ -101,7 +103,7 @@ mcp: []
 #     - retention
 #     - analytics
 #   roles:
-#     backend-specialist:
+#     backend-developer:
 #       - domain
 #       - architecture
 #     product-manager:

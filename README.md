@@ -12,7 +12,7 @@ Centralized AI agent configuration for multi-repo teams. One source of truth for
 
 Configure once via `.octopus.yml`, run `octopus setup`, and Octopus generates the right configuration for every AI assistant your team uses — Claude Code, GitHub Copilot, OpenAI Codex, Gemini, and OpenCode. Each assistant has different capabilities; Octopus handles these differences automatically through a manifest-driven architecture.
 
-New repos start from **bundles** — curated packages of skills + roles + rules by intent (`starter`, `quality-gates`, `growth`, `cross-stack`, `dotnet-api`, …). The Quick-mode wizard picks the right bundles for you via a few yes/no questions, so you never need to memorize the skill catalog to get a sensible config. Power users keep full control via Full mode or explicit lists in the manifest.
+New repos start from **bundles** — curated packages of skills + roles + rules by intent (`starter`, `saas-quality`, `growth`, `fullstack`, `dotnet-api`, …). The Quick-mode wizard picks the right bundles for you via a few yes/no questions, so you never need to memorize the skill catalog to get a sensible config. Power users keep full control via Full mode or explicit lists in the manifest.
 
 ## Installation
 
@@ -41,7 +41,7 @@ After installation, verify with `octopus doctor`.
 # 1. Install the CLI (see Installation above)
 
 # 2. Run setup — Quick mode asks 4–6 yes/no questions and maps your
-#    answers to the right bundles (starter + quality-gates + cross-stack + ...)
+#    answers to the right bundles (starter + saas-quality + fullstack + ...)
 octopus setup
 
 # 3. Fill in your .env.octopus with tokens (for MCP servers you selected)
@@ -67,12 +67,12 @@ agents:
   - copilot
 
 # Bundles — curated packages of skills + roles + rules by intent.
-# Available: starter, quality-gates, growth, docs-discipline, cross-stack, dotnet-api, node-api
+# Available: starter, saas-quality, growth, documentation, fullstack, dotnet-api, node-api
 # Prefer bundles over picking individual skills — run `octopus setup` to let the
 # Quick-mode wizard pick bundles for you via a few yes/no persona questions.
 bundles:
   - starter
-  - quality-gates
+  - saas-quality
   - dotnet-api
 
 # Language rules — coding standards applied to all agents
@@ -81,7 +81,7 @@ bundles:
 rules: []
 
 # Skills — optional extras on top of what bundles provide.
-# Available: adr, audit-all, backend-patterns, context-budget, continuous-learning, debugging, cross-stack-contract, dotnet, e2e-testing, feature-lifecycle, feature-to-market, implement, money-review, plan-backlog-hygiene, receiving-code-review, release-announce, security-scan, tenant-scope-audit
+# Available: audit-all, audit-money, audit-security, audit-tenant, backend-patterns, context-budget, continuous-learning, debug, doc-adr, doc-design, doc-lifecycle, doc-plan, dotnet, implement, launch-feature, launch-release, plan-backlog, review-contracts, review-pr, test-e2e
 skills: []
 
 # Hooks — lifecycle automation (Claude Code only)
@@ -108,10 +108,10 @@ reviewers:
   - github-username
 
 # Roles — agent personas with project context
-# Available: product-manager, backend-specialist, frontend-specialist, tech-writer, social-media
+# Available: architect, backend-developer, frontend-developer, marketer, product-manager, writer
 roles:
   - product-manager
-  - backend-specialist
+  - backend-developer
 
 # Custom project commands — become slash commands with octopus: prefix
 commands:
@@ -136,7 +136,7 @@ language:
 | **Roles** | Agent personas with project context | [roles.md](docs/features/roles.md) |
 | **Knowledge** | Modular domain knowledge | [knowledge.md](docs/features/knowledge.md) |
 | **Commands** | Custom slash commands | [commands.md](docs/features/commands.md) |
-| **Feature Lifecycle** | RFC/Spec/ADR documentation system | [feature-lifecycle.md](docs/features/feature-lifecycle.md) |
+| **Feature Lifecycle** | RFC/Spec/ADR documentation system | [doc-lifecycle.md](docs/features/doc-lifecycle.md) |
 | **MCP Servers** | External tool integrations | [mcp.md](docs/features/mcp.md) |
 | **Workflow** | PR and branch automation | [workflow.md](docs/features/workflow.md) |
 | **Control** | TUI dashboard for local multi-agent orchestration | [below](#octopus-control) |
@@ -162,16 +162,16 @@ octopus control --install-deps                           # install Python deps (
 ```
 ┌─ 🐙 Octopus Control ──────────────────────────────────────────┐
 │  ┌─ Agents ──────────────────────────────────────────────────┐ │
-│  │ ⠙ backend-specialist  1m42s  Reading src/auth/middlewar…  │ │
-│  │ ⠋ tech-writer         0m08s  Writing ADR decision…        │ │
-│  │ ○ frontend-specialist idle                                 │ │
+│  │ ⠙ backend-developer  1m42s  Reading src/auth/middlewar…  │ │
+│  │ ⠋ writer         0m08s  Writing ADR decision…        │ │
+│  │ ○ frontend-developer idle                                 │ │
 │  └───────────────────────────────────────────────────────────┘ │
 │  ┌─ Queue  2 running · 1 waiting ────┐  ┌─ Schedule ─────────┐ │
-│  │ ● backend-specialist  security-s… │  │ daily 09:00 sec-sc  │ │
-│  │ ● tech-writer         doc-adr     │  └────────────────────┘ │
-│  │ ○ frontend-specialist –           │                          │
+│  │ ● backend-developer  security-s… │  │ daily 09:00 sec-sc  │ │
+│  │ ● writer         doc-adr     │  └────────────────────┘ │
+│  │ ○ frontend-developer –           │                          │
 │  └────────────────────────────────────                          │
-│  ┌─ Output · tech-writer · live ─────────────────────────────┐ │
+│  ┌─ Output · writer · live ─────────────────────────────┐ │
 │  │ 10:02:07  Writing ADR decision rationale▋                  │ │
 │  └───────────────────────────────────────────────────────────┘ │
 │  [a]dd  [k]ill  [ctrl+d] clean queue  [tab] focus  [q]uit      │
@@ -185,7 +185,7 @@ The agents roster shows **elapsed time + last log line** (mini-feed) for each ru
 **From the TUI** — select an idle agent with `↑↓`, press `a` or `Enter`. The command bar opens pre-filled with `@<role>: `:
 
 ```
-@tech-writer: write the ADR for JWT authentication
+@writer: write the ADR for JWT authentication
 ```
 
 You can also type `@role:` directly without navigating first — it routes to the correct agent regardless of cursor position.
@@ -210,14 +210,14 @@ Create `.octopus/schedule.yml` to trigger tasks automatically:
 ```yaml
 - id: daily-security
   when: "daily 09:00"
-  role: backend-specialist
-  skill: security-scan
+  role: backend-developer
+  skill: audit-security
   enabled: true
 
 - id: weekly-docs
   when: "Mon 08:00"
-  role: tech-writer
-  skill: release-announce
+  role: writer
+  skill: launch-release
   enabled: true
 ```
 
@@ -255,9 +255,9 @@ flowchart TD
     C --> D[doc-plan]
     D --> E[(enriched plan)]
 
-    E --> F[t1 · backend-specialist]
-    F --> G[t2 · backend-specialist]
-    F --> H[t3 · frontend-specialist]
+    E --> F[t1 · backend-developer]
+    F --> G[t2 · backend-developer]
+    F --> H[t3 · frontend-developer]
     G --> I{{review gate}}
     H --> I
     I --> J([PR opened])
@@ -283,16 +283,16 @@ pipeline:
   pr_on_success: true
 tasks:
   - id: t1
-    agent: backend-specialist
+    agent: backend-developer
     depends_on: []
   - id: t2
-    agent: backend-specialist   # runs after t1
+    agent: backend-developer   # runs after t1
     depends_on: [t1]
   - id: t3
-    agent: frontend-specialist  # runs in parallel with t2
+    agent: frontend-developer  # runs in parallel with t2
     depends_on: [t1]
   - id: t4
-    agent: tech-writer          # runs after t2 and t3 both finish
+    agent: writer          # runs after t2 and t3 both finish
     depends_on: [t2, t3]
 ---
 
@@ -307,10 +307,10 @@ Checkboxes are ticked in the plan file as tasks complete. If a task fails, the r
 ### Execution timeline example
 
 ```
-t=0s    t1 dispatched  (backend-specialist)
+t=0s    t1 dispatched  (backend-developer)
 t=90s   t1 ✓ → t2 and t3 dispatched in parallel
-t=90s   t2 running (backend-specialist)
-t=90s   t3 running (frontend-specialist)
+t=90s   t2 running (backend-developer)
+t=90s   t3 running (frontend-developer)
 t=210s  t2 ✓
 t=240s  t3 ✓ → t4 dispatched
 t=310s  t4 ✓ → review gate
@@ -324,16 +324,16 @@ t=400s  review ✓ → PR #42 opened
 `octopus ask` dispatches a task to a specific agent and streams its output live in the terminal — no TUI required.
 
 ```bash
-octopus ask tech-writer "write ADR for JWT authentication"
-octopus ask backend-specialist "run security audit on src/auth/"
-octopus ask tech-writer "write the ADR" --skill octopus:doc-adr
-octopus ask tech-writer "write the ADR" --dry-run
+octopus ask writer "write ADR for JWT authentication"
+octopus ask backend-developer "run security audit on src/auth/"
+octopus ask writer "write the ADR" --skill octopus:doc-adr
+octopus ask writer "write the ADR" --dry-run
 ```
 
 ### Live output
 
 ```
-◆ tech-writer · write ADR for JWT authentication
+◆ writer · write ADR for JWT authentication
 ──────────────────────────────────────────────────
 10:02:01  Reading docs/specs/user-auth.md...
 10:02:04  Checking existing ADRs in docs/adr/...
@@ -343,7 +343,7 @@ octopus ask tech-writer "write the ADR" --dry-run
 
 ──────────────────────────────────────────────────
 ✓ done  0m31s
-  log: .octopus/logs/tech-writer.log
+  log: .octopus/logs/writer.log
 ```
 
 `Ctrl+C` during streaming prompts `[k]ill  [d]etach  [c]ancel`. Choosing detach keeps the agent running in the background — open `octopus control` to monitor it.

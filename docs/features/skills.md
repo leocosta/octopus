@@ -8,33 +8,33 @@ them natively, other assistants get them inlined into their output file.
 
 | Skill | What it does | Bundle | Tutorial |
 |---|---|---|---|
-| `adr` | Create and manage Architecture Decision Records (ADRs) to document significant technical decisions. | `starter` | — |
-| `audit-all` | Composer skill — runs `security-scan`, `money-review`, `tenant-scope-audit`, and `cross-stack-contract` in parallel with shared file discovery and a consolidated report with cross-audit hotspots. | `quality-gates` | [audit-all.md](audit-all.md) |
+| `doc-adr` | Create and manage Architecture Decision Records (ADRs) to document significant technical decisions. | `starter` | — |
+| `audit-all` | Composer skill — runs ``audit-security`, `audit-money`, `audit-tenant`, and `review-contracts` in parallel with shared file discovery and a consolidated report with cross-audit hotspots. | `saas-quality` | [audit-all.md](audit-all.md) |
 | `backend-patterns` | Backend architecture decision patterns for multi-stack projects (Node.js, .NET, Python). | `dotnet-api` / `node-api` | — |
 | `context-budget` | Audit and optimize AI-agent context-window usage to reduce token overhead and improve response quality. | `starter` | — |
-| `continuous-learning` | Captures insights, tests hypotheses, and promotes confirmed patterns to rules — a learning loop that makes the agent sharper over time. | `docs-discipline` | — |
-| `debugging` | Active-by-default bug-fix workflow — reproduce deterministically, isolate, fix with a regression test first, document non-obvious cause. Pair for `implement` in the `starter` bundle. | `starter` | [debugging.md](debugging.md) |
-| `cross-stack-contract` | Detect API-vs-frontend contract drift in multi-stack monorepos (endpoints, DTOs, enums, status codes, auth rules, params). Produces a severity-tiered report with confidence labels. | `cross-stack` | [cross-stack-contract.md](cross-stack-contract.md) |
+| `continuous-learning` | Captures insights, tests hypotheses, and promotes confirmed patterns to rules — a learning loop that makes the agent sharper over time. | `documentation` | — |
+| `debug` | Active-by-default bug-fix workflow — reproduce deterministically, isolate, fix with a regression test first, document non-obvious cause. Pair for `implement` in the `starter` bundle. | `starter` | [debug.md](debug.md) |
+| `review-contracts` | Detect API-vs-frontend contract drift in multi-stack monorepos (endpoints, DTOs, enums, status codes, auth rules, params). Produces a severity-tiered report with confidence labels. | `fullstack` | [review-contracts.md](review-contracts.md) |
 | `dotnet` | .NET backend architecture patterns, conventions, and decision trees for ASP.NET Core projects. | `dotnet-api` | — |
-| `e2e-testing` | End-to-end testing patterns with Playwright for reliable, maintainable browser tests. | `dotnet-api` / `node-api` | — |
-| `feature-lifecycle` | Guides the complete documentation lifecycle of a feature — from RFC through spec, implementation, ADR capture, and knowledge extraction. | `starter` | [feature-lifecycle.md](feature-lifecycle.md) |
-| `feature-to-market` | Turn a completed feature (RM / spec / PR) into a versioned multi-channel launch kit under `docs/marketing/launches/` — posts, email, LP copy, commercial changelog, video script, and optional images. | `growth` | [feature-to-market.md](feature-to-market.md) |
-| `implement` | Active-by-default workflow skill — TDD, plan-before-code gate, verification-before-completion, simplify pass, commit cadence. Pairs with `rules/common/*` (static rules) and `feature-lifecycle` (docs). | `starter` | [implement.md](implement.md) |
-| `money-review` | Pre-merge audit of money-touching code: numeric types, rounding, cents tests, env-var drift, payment idempotency, webhook signatures, fee-disclosure coupling. | `quality-gates` | [money-review.md](money-review.md) |
-| `plan-backlog-hygiene` | Scan `plans/` + `docs/roadmap.md` for orphans, concluded-but-not-archived plans, duplicates, broken links, roadmap orphans, and stale items. `--fix` archives safely. | `docs-discipline` | [plan-backlog-hygiene.md](plan-backlog-hygiene.md) |
-| `receiving-code-review` | Active-by-default PR-feedback discipline — verify the critique, ask for evidence on generic comments, separate reasoned vs preference, never performative changes, clarify ambiguity. Third workflow skill in `starter` alongside `implement` and `debugging`. | `starter` | [receiving-code-review.md](receiving-code-review.md) |
-| `release-announce` | Themed release announcement kit for existing users — landing HTML, channel messages, slide deck, 9 preset themes. | `growth` | [release-announce.md](release-announce.md) |
-| `security-scan` | Security audit checklist for AI-agent configurations, environment variables, and project dependencies. | `quality-gates` | — |
-| `tenant-scope-audit` | Pre-merge audit of multi-tenant data-scope enforcement: query filters, new DbContext entities, raw SQL, controller ownership, admin endpoints. Blocks likely data-leak paths. | `quality-gates` | [tenant-scope-audit.md](tenant-scope-audit.md) |
+| `test-e2e` | End-to-end testing patterns with Playwright for reliable, maintainable browser tests. | `dotnet-api` / `node-api` | — |
+| `doc-lifecycle` | Guides the complete documentation lifecycle of a feature — from RFC through spec, implementation, ADR capture, and knowledge extraction. | `starter` | [doc-lifecycle.md](doc-lifecycle.md) |
+| `launch-feature` | Turn a completed feature (RM / spec / PR) into a versioned multi-channel launch kit under `docs/marketing/launches/` — posts, email, LP copy, commercial changelog, video script, and optional images. | `growth` | [launch-feature.md](launch-feature.md) |
+| `implement` | Active-by-default workflow skill — TDD, plan-before-code gate, verification-before-completion, simplify pass, commit cadence. Pairs with `rules/common/*` (static rules) and `doc-lifecycle` (docs). | `starter` | [implement.md](implement.md) |
+| `audit-money` | Pre-merge audit of money-touching code: numeric types, rounding, cents tests, env-var drift, payment idempotency, webhook signatures, fee-disclosure coupling. | `saas-quality` | [audit-money.md](audit-money.md) |
+| `plan-backlog` | Scan `plans/` + `docs/roadmap.md` for orphans, concluded-but-not-archived plans, duplicates, broken links, roadmap orphans, and stale items. `--fix` archives safely. | `documentation` | [plan-backlog.md](plan-backlog.md) |
+| `review-pr` | Active-by-default PR-feedback discipline — verify the critique, ask for evidence on generic comments, separate reasoned vs preference, never performative changes, clarify ambiguity. Third workflow skill in `starter` alongside `implement` and `debug`. | `starter` | [review-pr.md](review-pr.md) |
+| `launch-release` | Themed release announcement kit for existing users — landing HTML, channel messages, slide deck, 9 preset themes. | `growth` | [launch-release.md](launch-release.md) |
+| `audit-security` | Security audit checklist for AI-agent configurations, environment variables, and project dependencies. | `saas-quality` | — |
+| `audit-tenant` | Pre-merge audit of multi-tenant data-scope enforcement: query filters, new DbContext entities, raw SQL, controller ownership, admin endpoints. Blocks likely data-leak paths. | `saas-quality` | [audit-tenant.md](audit-tenant.md) |
 
 Pair-ups:
 
-- `security-scan` + `money-review` + `cross-stack-contract` + `tenant-scope-audit`
+- `audit-security` + `audit-money` + `review-contracts` + `audit-tenant`
   share the same `🚫 Block / ⚠ Warn / ℹ Info` output format with confidence
   labels — concatenate them into one PR comment without extra formatting work.
-- `feature-lifecycle` + `feature-to-market` cover the path from *plan* to
+- `doc-lifecycle` + `launch-feature` cover the path from *plan* to
   *announce*.
-- `plan-backlog-hygiene` pairs with the `schedule` skill for a monthly
+- `plan-backlog` pairs with the `schedule` skill for a monthly
   cron run.
 
 ## How it works
@@ -42,9 +42,9 @@ Pair-ups:
 1. Add skills to `.octopus.yml`:
    ```yaml
    skills:
-     - adr
-     - e2e-testing
-     - money-review
+     - doc-adr
+     - test-e2e
+     - audit-money
    ```
 2. Run `octopus setup`.
 3. **Claude Code**: skills are symlinked to `.claude/skills/<name>/` with a
