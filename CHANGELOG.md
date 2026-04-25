@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.33.2] - 2026-04-25
+
+🐛 Fixed crash on double-click in the agents roster. Textual uses `event.chain` (not `event.count`) for click repetition count — the v1.33.1 fix crashed on the first click. Now reads `chain` with a fallback to `count` for forward compatibility.
+
 ## [1.33.1] - 2026-04-25
 
 🐛 Two fixes in this patch.
