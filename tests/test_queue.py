@@ -58,3 +58,34 @@ def test_cleanup_includes_stuck_running_tasks(tmp_path):
     removed = q.cleanup(statuses=["running", "done", "failed"], keep_last=0)
     assert removed == 1
     assert len(q.list_all()) == 0
+
+
+def test_cancel_removes_queued_task(tmp_path):
+    q = TaskQueue(tmp_path / "queue")
+    tid = q.enqueue("tech-writer", None, "claude-sonnet-4-6", "write docs")
+    assert q.cancel(tid) is True
+    assert len(q.list_all()) == 0
+
+
+def test_cancel_rejects_running_task(tmp_path):
+    q = TaskQueue(tmp_path / "queue")
+    tid = q.enqueue("tech-writer", None, "claude-sonnet-4-6", "write docs")
+    q.update_status(tid, "running")
+    assert q.cancel(tid) is False
+    assert len(q.list_all()) == 1
+
+
+def test_requeue_failed_task(tmp_path):
+    q = TaskQueue(tmp_path / "queue")
+    tid = q.enqueue("backend-specialist", None, "claude-sonnet-4-6", "scan")
+    q.update_status(tid, "failed")
+    assert q.requeue(tid) is True
+    assert q.list_all()[0]["status"] == "queued"
+
+
+def test_requeue_rejects_running_task(tmp_path):
+    q = TaskQueue(tmp_path / "queue")
+    tid = q.enqueue("backend-specialist", None, "claude-sonnet-4-6", "scan")
+    q.update_status(tid, "running")
+    assert q.requeue(tid) is False
+    assert q.list_all()[0]["status"] == "running"

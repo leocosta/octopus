@@ -38,6 +38,27 @@ class TaskQueue:
             f.unlink()
             return
 
+    def cancel(self, tid: str) -> bool:
+        """Remove a queued task. Returns True if cancelled, False if not found or not queued."""
+        for f in self.dir.glob(f"{tid}-*.json"):
+            data = json.loads(f.read_text())
+            if data["status"] != "queued":
+                return False
+            f.unlink()
+            return True
+        return False
+
+    def requeue(self, tid: str) -> bool:
+        """Reset a failed/done task back to queued. Returns True if requeued."""
+        for f in self.dir.glob(f"{tid}-*.json"):
+            data = json.loads(f.read_text())
+            if data["status"] not in ("failed", "done"):
+                return False
+            data["status"] = "queued"
+            f.write_text(json.dumps(data, indent=2))
+            return True
+        return False
+
     def cleanup(self, statuses: list[str] | None = None, keep_last: int = 50) -> int:
         if statuses is None:
             statuses = ["done", "failed"]

@@ -33,6 +33,8 @@ class OctopusControl(App):
         Binding("a", "add_task", "Add task"),
         Binding("k", "kill_agent", "Kill"),
         Binding("r", "reply_agent", "Reply"),
+        Binding("e", "retry_task", "Retry"),
+        Binding("x", "cancel_task", "Cancel"),
         Binding("ctrl+d", "cleanup_queue", "Clean queue"),
         Binding("tab", "focus_next", "Focus", show=False),
         Binding("q", "request_quit", "Quit"),
@@ -424,6 +426,38 @@ class OctopusControl(App):
         removed = self.queue.cleanup(keep_last=0)
         self.notify(f"Removed {removed} completed task(s)")
         self._refresh_queue()
+
+    # ── Cancel / Retry queued tasks ───────────────────────────────────────────
+
+    def _selected_queue_task(self) -> dict | None:
+        lv = self.query_one("#queue", ListView)
+        idx = lv.index
+        if idx is None:
+            return None
+        tasks = self.queue.list_all()
+        if idx >= len(tasks):
+            return None
+        return tasks[idx]
+
+    def action_cancel_task(self) -> None:
+        task = self._selected_queue_task()
+        if task is None:
+            return
+        if self.queue.cancel(task["id"]):
+            self.notify(f"Cancelled: {task['role']} — {task.get('skill') or task.get('prompt','')[:30]}")
+            self._refresh_queue()
+        else:
+            self.notify("Only queued tasks can be cancelled", severity="warning", timeout=3)
+
+    def action_retry_task(self) -> None:
+        task = self._selected_queue_task()
+        if task is None:
+            return
+        if self.queue.requeue(task["id"]):
+            self.notify(f"Re-queued: {task['role']}")
+            self._refresh_queue()
+        else:
+            self.notify("Only failed or done tasks can be retried", severity="warning", timeout=3)
 
     # ── Kill ──────────────────────────────────────────────────────────────────
 
