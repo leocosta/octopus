@@ -389,20 +389,7 @@ check_path() {
 main() {
   printf '%b\n' \
     "" \
-    "${BANNER_BODY}                MMMMMMMMMMMMMMMMMM                ${NC}" \
-    "${BANNER_BODY}            MMMMMMMMMMMMMMMMMMMMMMMMMM            ${NC}" \
-    "${BANNER_BODY}          MMMMMMMMMMMMMMMMMMMMMMMMMMMMMM          ${NC}" \
-    "${BANNER_BODY}         MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM         ${NC}" \
-    "${BANNER_BODY}         MMMMMM   MMMMMMMMMMMMMM   MMMMMM         ${NC}" \
-    "${BANNER_BODY}         MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM         ${NC}" \
-    "${BANNER_BODY}         MMMMMMMMMM|___|__|___|MMMMMMMMMM         ${NC}" \
-    "${BANNER_BODY}   MM    MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM    MM   ${NC}" \
-    "${BANNER_BODY} MMMM  MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM  MMMM ${NC}" \
-    "${BANNER_BODY} MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM ${NC}" \
-    "${BANNER_BODY}  MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM    ${NC}" \
-    "${BANNER_BODY}     MMMM  MMMM  MMMM  MMMM  MMMM  MMMM  MMMM     ${NC}" \
-    "" \
-    "  ${BANNER_TITLE}OCTOPUS${NC}  CLI Installer" \
+    "  🐙  ${BANNER_TITLE}OCTOPUS${NC}  CLI Installer" \
     ""
 
   check_prerequisites
