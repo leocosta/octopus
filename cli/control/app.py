@@ -2,6 +2,7 @@ import asyncio
 import os
 import re as _re
 import signal
+import sys
 import time
 from pathlib import Path
 
@@ -149,6 +150,25 @@ class OctopusControl(App):
             for task in self.queue.list_all():
                 if task["role"] == role and task["status"] == "running":
                     self.queue.update_status(task["id"], final_status)
+            self._notify_completion(role, final_status)
+
+    @staticmethod
+    def _notify_completion(role: str, status: str) -> None:
+        icon = "✓" if status == "done" else "✗"
+        msg = f"octopus: {icon} {role} {status}"
+        sys.stdout.write("\a")
+        sys.stdout.flush()
+        import subprocess as _sp
+        # Desktop notification — try notify-send (Linux) then osascript (macOS)
+        for cmd in (
+            ["notify-send", "--urgency=low", "Octopus Control", msg],
+            ["osascript", "-e", f'display notification "{msg}" with title "Octopus"'],
+        ):
+            try:
+                _sp.run(cmd, capture_output=True, timeout=3)
+                break
+            except (FileNotFoundError, _sp.TimeoutExpired):
+                continue
 
     def _dispatch_next(self) -> None:
         for task in self.queue.list_all():
