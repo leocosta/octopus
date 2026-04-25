@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.35.0] - 2026-04-25
+
+✨ `octopus update` now automatically re-runs `octopus setup` after installing a new release, so agent configs (commands, skills, rules) are always regenerated to reflect the new version. If setup fails — for example when downgrading to an older release that predates the setup command — a warning is printed and the update still succeeds. If no `.octopus.yml` is found in the project tree, setup is skipped with a clear message. A new `commands/update.md` template was added so the `/octopus:update` slash command is properly delivered by setup going forward.
+
 ## [1.34.0] - 2026-04-25
 
 ♻️ This release delivers a complete rebranding of all roles, skills, and bundles to eliminate naming inconsistencies and clarify the boundaries between who an agent is (roles) and what it does (skills).
