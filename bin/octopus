@@ -117,17 +117,20 @@ _download_release_via_installer() {
   local version="$1"
   local installer
   local installer_tmp=""
-  if [[ -x "$RELEASE_ROOT/install.sh" ]]; then
+  # Always prefer a fresh copy from the target release's install.sh so
+  # updates pick up installer improvements (e.g. banner removal) immediately.
+  installer_tmp="$(mktemp)"
+  local url="https://raw.githubusercontent.com/$RELEASE_OWNER/$RELEASE_REPO/main/install.sh"
+  if curl -fsSL "$url" -o "$installer_tmp" 2>/dev/null; then
+    installer="$installer_tmp"
+  elif [[ -x "$RELEASE_ROOT/install.sh" ]]; then
+    rm -f "$installer_tmp"
+    installer_tmp=""
     installer="$RELEASE_ROOT/install.sh"
   else
-    installer_tmp="$(mktemp)"
-    local url="https://raw.githubusercontent.com/$RELEASE_OWNER/$RELEASE_REPO/main/install.sh"
-    if ! curl -fsSL "$url" -o "$installer_tmp"; then
-      rm -f "$installer_tmp"
-      echo "Error: failed to fetch installer from $url" >&2
-      return 1
-    fi
-    installer="$installer_tmp"
+    rm -f "$installer_tmp"
+    echo "Error: failed to fetch installer from $url" >&2
+    return 1
   fi
   OCTOPUS_CACHE_DIR="$CACHE_ROOT" bash "$installer" \
     --version "$version" --no-shim-setup --force

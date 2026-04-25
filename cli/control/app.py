@@ -9,6 +9,7 @@ from pathlib import Path
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
+from textual import events
 from textual.suggester import SuggestFromList
 from textual.widgets import DataTable, Footer, Header, Input, Label, ListItem, ListView, RichLog
 
@@ -341,12 +342,15 @@ class OctopusControl(App):
             return str(table.get_cell_at((table.cursor_row, 0)))
         return "agent"
 
-    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
-        if event.data_table.id != "agents":
+    def on_click(self, event: events.Click) -> None:
+        if event.count < 2:
             return
-        if event.row_key is None:
+        table = self.query_one("#agents", DataTable)
+        if not table.has_focus:
             return
-        role = str(event.row_key.value)
+        role = self._selected_role()
+        if role == "agent":
+            return
         cmd = self.query_one("#cmd", Input)
         cmd.remove_class("hidden")
         cmd.focus()
