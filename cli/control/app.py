@@ -9,7 +9,6 @@ from pathlib import Path
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
-from textual import events
 from textual.suggester import SuggestFromList
 from textual.widgets import DataTable, Footer, Header, Input, Label, ListItem, ListView, RichLog
 
@@ -75,6 +74,8 @@ class OctopusControl(App):
         self._scheduler: Scheduler | None = None
         self._cleanup_tick: int = 0
         self._spin_tick: int = 0
+        self._last_agent_click: tuple[str, float] = ("", 0.0)
+        self._refreshing_roster: bool = False
 
     @staticmethod
     def _load_known_roles() -> list[str]:
@@ -287,32 +288,36 @@ class OctopusControl(App):
             return ""
 
     def _refresh_roster(self) -> None:
-        table = self.query_one("#agents", DataTable)
-        saved_row = table.cursor_row
-        table.clear()
-        frame = _SPINNER[self._spin_tick % len(_SPINNER)]
-        tasks = self.queue.list_all()
-        all_roles = list(dict.fromkeys(list(self._known_roles) + list(self._agents)))
-        for role in all_roles:
-            pending = sum(1 for t in tasks if t["role"] == role and t["status"] == "queued")
-            badge = f"  [dim]+{pending} queued[/dim]" if pending else ""
-            if role in self._agents:
-                elapsed = int(time.time() - self._agent_started.get(role, time.time()))
-                mins, secs = divmod(elapsed, 60)
-                elapsed_str = f"{mins}m{secs:02d}s" if mins else f"{secs}s"
-                last_line = self._last_log_line(role)
-                if last_line:
-                    truncated = last_line[:36] + "…" if len(last_line) > 36 else last_line
-                    status = f"{frame} {elapsed_str}  [dim]{truncated}[/dim]{badge}"
+        self._refreshing_roster = True
+        try:
+            table = self.query_one("#agents", DataTable)
+            saved_row = table.cursor_row
+            table.clear()
+            frame = _SPINNER[self._spin_tick % len(_SPINNER)]
+            tasks = self.queue.list_all()
+            all_roles = list(dict.fromkeys(list(self._known_roles) + list(self._agents)))
+            for role in all_roles:
+                pending = sum(1 for t in tasks if t["role"] == role and t["status"] == "queued")
+                badge = f"  [dim]+{pending} queued[/dim]" if pending else ""
+                if role in self._agents:
+                    elapsed = int(time.time() - self._agent_started.get(role, time.time()))
+                    mins, secs = divmod(elapsed, 60)
+                    elapsed_str = f"{mins}m{secs:02d}s" if mins else f"{secs}s"
+                    last_line = self._last_log_line(role)
+                    if last_line:
+                        truncated = last_line[:36] + "…" if len(last_line) > 36 else last_line
+                        status = f"{frame} {elapsed_str}  [dim]{truncated}[/dim]{badge}"
+                    else:
+                        status = f"{frame} {elapsed_str}{badge}"
+                elif self.pm.has_session(role):
+                    status = f"[#ffd166]↩ awaiting reply[/#ffd166]{badge}"
                 else:
-                    status = f"{frame} {elapsed_str}{badge}"
-            elif self.pm.has_session(role):
-                status = f"[#ffd166]↩ awaiting reply[/#ffd166]{badge}"
-            else:
-                status = f"[dim]○ idle{badge}[/dim]"
-            table.add_row(role, status, key=role)
-        if saved_row is not None and saved_row < table.row_count:
-            table.move_cursor(row=saved_row)
+                    status = f"[dim]○ idle{badge}[/dim]"
+                table.add_row(role, status, key=role)
+            if saved_row is not None and saved_row < table.row_count:
+                table.move_cursor(row=saved_row)
+        finally:
+            self._refreshing_roster = False
 
     def _refresh_queue(self) -> None:
         lv = self.query_one("#queue", ListView)
@@ -342,15 +347,7 @@ class OctopusControl(App):
             return str(table.get_cell_at((table.cursor_row, 0)))
         return "agent"
 
-    def on_click(self, event: events.Click) -> None:
-        if getattr(event, "chain", getattr(event, "count", 1)) < 2:
-            return
-        table = self.query_one("#agents", DataTable)
-        if not table.has_focus:
-            return
-        role = self._selected_role()
-        if role == "agent":
-            return
+    def _open_command_for_role(self, role: str) -> None:
         cmd = self.query_one("#cmd", Input)
         cmd.remove_class("hidden")
         cmd.focus()
@@ -375,6 +372,16 @@ class OctopusControl(App):
             lines = log_path.read_text().splitlines()
             for line in lines[-50:]:
                 log_widget.write(line)
+        # Double-click detection: two highlights of the same role within 400ms
+        # Skip during programmatic refresh to avoid false positives
+        if not self._refreshing_roster:
+            now = time.time()
+            last_role, last_time = self._last_agent_click
+            if role == last_role and (now - last_time) < 0.4:
+                self._last_agent_click = ("", 0.0)
+                self._open_command_for_role(role)
+            else:
+                self._last_agent_click = (role, now)
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         tasks = self.queue.list_all()
@@ -399,14 +406,13 @@ class OctopusControl(App):
     # ── Command bar ───────────────────────────────────────────────────────────
 
     def action_add_task(self) -> None:
-        cmd = self.query_one("#cmd", Input)
         selected_role = self._selected_role()
+        if selected_role != "agent":
+            self._open_command_for_role(selected_role)
+            return
+        cmd = self.query_one("#cmd", Input)
         cmd.remove_class("hidden")
         cmd.focus()
-        if selected_role != "agent":
-            prefill = f"@{selected_role}: "
-            self.call_after_refresh(setattr, cmd, "value", prefill)
-            self.call_after_refresh(setattr, cmd, "cursor_position", len(prefill))
 
     def action_open_pipeline_builder(self) -> None:
         cmd = self.query_one("#cmd", Input)
