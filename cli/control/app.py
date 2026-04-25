@@ -25,6 +25,22 @@ _EXCLUDED_AGENTS = {"dream"}
 
 _SPINNER = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 _STATUS_LABEL = {"queued": "○", "running": "●", "done": "✓", "failed": "✗"}
+_DEFAULT_MODEL = "claude-sonnet-4-6"
+_MODEL_ALIASES = {
+    "opus": "claude-opus-4-7",
+    "sonnet": "claude-sonnet-4-6",
+    "haiku": "claude-haiku-4-5-20251001",
+}
+
+
+def _extract_model(text: str) -> tuple[str, str]:
+    """Strip --model <name> from text. Returns (cleaned_text, model_id)."""
+    m = _re.search(r'\s*--model\s+(\S+)', text)
+    if not m:
+        return text, _DEFAULT_MODEL
+    raw = m.group(1)
+    model = _MODEL_ALIASES.get(raw, raw)
+    return text[:m.start()] + text[m.end():], model
 
 
 class OctopusControl(App):
@@ -391,6 +407,9 @@ class OctopusControl(App):
         if not text:
             return
 
+        text, model = _extract_model(text)
+        text = text.strip()
+
         # Pre-parse ↩ role: prefix (resume/reply flow)
         reply_match = _re.match(r'^↩\s*([\w-]+):\s*(.*)', text, _re.DOTALL)
         if reply_match:
@@ -407,7 +426,7 @@ class OctopusControl(App):
                 role=role,
                 session_id=session_id,
                 reply=reply_text,
-                model="claude-sonnet-4-6",
+                model=model,
             )
             self._agents[role] = pid
             self._agent_started[role] = time.time()
@@ -415,7 +434,7 @@ class OctopusControl(App):
             self._refresh_roster()
             return
 
-        result = self._matcher.resolve(text, role_model="claude-sonnet-4-6")
+        result = self._matcher.resolve(text, role_model=model)
         if result.ambiguous:
             options = ", ".join(f"/{s}" for s in result.ambiguous)
             self.notify(f"Ambiguous match: {options}", severity="warning", timeout=5)
