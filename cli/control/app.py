@@ -343,7 +343,7 @@ class OctopusControl(App):
         return "agent"
 
     def on_click(self, event: events.Click) -> None:
-        if event.count < 2:
+        if getattr(event, "chain", getattr(event, "count", 1)) < 2:
             return
         table = self.query_one("#agents", DataTable)
         if not table.has_focus:
