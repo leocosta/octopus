@@ -349,6 +349,18 @@ command_update() {
   if [[ "$pin" == true ]]; then
     pin_lockfile "$version" "$checksum"
   fi
+  local project_root
+  project_root="$(find_project_root)"
+  if [[ -f "$project_root/.octopus.yml" ]]; then
+    echo "Re-running setup..."
+    if run_subcommand setup --scope=repo; then
+      echo "Setup complete — agent configs regenerated."
+    else
+      echo "Setup failed — run 'octopus setup' manually to regenerate agent configs."
+    fi
+  else
+    echo "No .octopus.yml found — skipping setup. Run 'octopus setup' manually."
+  fi
 }
 
 command_setup() {

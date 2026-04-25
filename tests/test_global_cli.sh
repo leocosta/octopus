@@ -68,4 +68,12 @@ EOF
   echo "PASS: update without flags prefers latest"
 fi
 
+echo "Test 6: update skips setup when no .octopus.yml is found"
+TMP_NOPROJ="$(mktemp -d)"
+out="$(cd "$TMP_NOPROJ" && $CLI update --version v1.34.0 2>&1)"
+echo "$out" | grep -q "skipping setup" \
+  || { echo "FAIL: expected 'skipping setup' in output, got: $out"; exit 1; }
+rm -rf "$TMP_NOPROJ"
+echo "PASS: update skips setup outside a project"
+
 echo "PASS: global CLI sanity checks"
