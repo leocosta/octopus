@@ -74,7 +74,6 @@ class OctopusControl(App):
         self._scheduler: Scheduler | None = None
         self._cleanup_tick: int = 0
         self._spin_tick: int = 0
-        self._last_agent_click: tuple[str, float] = ("", 0.0)
         self._refreshing_roster: bool = False
 
     @staticmethod
@@ -348,14 +347,6 @@ class OctopusControl(App):
             return str(table.get_cell_at((table.cursor_row, 0)))
         return "agent"
 
-    def _open_command_for_role(self, role: str) -> None:
-        prefill = f"@{role}: "
-        cmd = self.query_one("#cmd", Input)
-        cmd.value = prefill
-        cmd.cursor_position = len(prefill)
-        cmd.remove_class("hidden")
-        cmd.focus()
-
     def on_data_table_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
         if event.data_table.id != "agents":
             return
@@ -373,23 +364,6 @@ class OctopusControl(App):
             lines = log_path.read_text().splitlines()
             for line in lines[-50:]:
                 log_widget.write(line)
-        # Track first click on this role (for RowSelected double-click guard)
-        if not self._refreshing_roster:
-            self._last_agent_click = (role, time.time())
-
-    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
-        """Fires when user clicks an already-highlighted row — i.e. double-click."""
-        if event.data_table.id != "agents":
-            return
-        if event.row_key is None:
-            return
-        role = str(event.row_key.value)
-        # Guard: only open if we recently tracked a first click on this role.
-        # Prevents spurious opens when cursor defaults to row 0.
-        last_role, last_time = self._last_agent_click
-        if role != last_role or (time.time() - last_time) > 1.5:
-            return
-        self._open_command_for_role(role)
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         tasks = self.queue.list_all()
@@ -414,11 +388,12 @@ class OctopusControl(App):
     # ── Command bar ───────────────────────────────────────────────────────────
 
     def action_add_task(self) -> None:
+        cmd = self.query_one("#cmd", Input)
         selected_role = self._selected_role()
         if selected_role != "agent":
-            self._open_command_for_role(selected_role)
-            return
-        cmd = self.query_one("#cmd", Input)
+            prefill = f"@{selected_role}: "
+            cmd.value = prefill
+            cmd.cursor_position = len(prefill)
         cmd.remove_class("hidden")
         cmd.focus()
 
@@ -487,13 +462,6 @@ class OctopusControl(App):
         prefill = f"↩ {role}: "
         self.call_after_refresh(setattr, cmd, "value", prefill)
         self.call_after_refresh(setattr, cmd, "cursor_position", len(prefill))
-
-    def on_input_changed(self, event) -> None:
-        if not hasattr(event, "value"):
-            return
-        val = event.value
-        if val.startswith("@") and val.count("@") == 1 and len(val) > 1:
-            self.notify("Pipeline mode: press [p] to open builder", timeout=3)
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         text = event.value.strip()
