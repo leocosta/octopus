@@ -109,13 +109,14 @@ The commit author field is sufficient.
 
 ### Trailers by Assistant
 
-| Assistant   | Trailer                                                      |
-|-------------|--------------------------------------------------------------|
-| OpenCode    | `Co-authored-by: opencode <opencode@opencode.ai>`           |
-| Claude      | `Co-authored-by: claude <claude@anthropic.com>`             |
-| Copilot     | `Co-authored-by: copilot <copilot@github.com>`              |
-| Codex       | `Co-authored-by: codex <codex@openai.com>`                  |
-| Gemini | `Co-authored-by: gemini <gemini@gemini.ai>`  |
+| Assistant   | Trailer                                                                          |
+|-------------|----------------------------------------------------------------------------------|
+| Octopus (tool) | `Co-authored-by: octopus[bot] <octopus[bot]@users.noreply.github.com>`     |
+| OpenCode    | `Co-authored-by: opencode <opencode@opencode.ai>`                               |
+| Claude      | `Co-authored-by: claude <claude@anthropic.com>`                                 |
+| Copilot     | `Co-authored-by: copilot <copilot@github.com>`                                  |
+| Codex       | `Co-authored-by: codex <codex@openai.com>`                                      |
+| Gemini      | `Co-authored-by: gemini <gemini@gemini.ai>`                                     |
 
 ### Example
 
@@ -126,7 +127,8 @@ Implement authorization code flow with PKCE for public clients.
 Token exchange happens server-side; refresh tokens are stored
 in httpOnly cookies.
 
-Co-authored-by: opencode <opencode@opencode.ai>
+Co-authored-by: octopus[bot] <octopus[bot]@users.noreply.github.com>
+Co-authored-by: claude <claude@anthropic.com>
 ```
 
 ### Rules
@@ -134,3 +136,7 @@ Co-authored-by: opencode <opencode@opencode.ai>
 - The **human** is always the commit author; the assistant is a co-author
 - Only add the trailer if the assistant **generated or substantially modified** the code
 - Do not add trailers for commits where the assistant only provided suggestions
+- The `octopus[bot]` trailer is added automatically by Octopus slash commands
+  that generate commit messages (e.g. `/octopus:commit`). It marks tool
+  participation in authoring the message — not that the AI wrote the code.
+  The AI assistant trailer is separate and follows the rule above.
