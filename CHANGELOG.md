@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.36.0] - 2026-04-25
+
+✨ A new `/octopus:commit` slash command is now available, providing a lightweight way to commit changes without following the full development workflow. The command reads the staged diff, resolves language configuration the same way `pr-open` does, detects tracker references (RM-NNN, Jira IDs, GitHub issues) and includes them in the commit footer, and warns when the diff spans multiple unrelated logical contexts. Every generated commit automatically includes a `Co-authored-by: octopus[bot]` trailer to mark tool participation. The commit conventions documentation was updated to document this new trailer and clarify its distinction from AI assistant trailers.
+
 ## [1.35.0] - 2026-04-25
 
 ✨ `octopus update` now automatically re-runs `octopus setup` after installing a new release, so agent configs (commands, skills, rules) are always regenerated to reflect the new version. If setup fails — for example when downgrading to an older release that predates the setup command — a warning is printed and the update still succeeds. If no `.octopus.yml` is found in the project tree, setup is skipped with a clear message. A new `commands/update.md` template was added so the `/octopus:update` slash command is properly delivered by setup going forward.
