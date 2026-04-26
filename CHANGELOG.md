@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.36.1] - 2026-04-26
+
+🐛 Fixed the Octopus Control dispatch UX. The fragile double-click detection (timing guard via Textual's `RowHighlighted` + `RowSelected` events) that never worked reliably has been removed. Pressing `[a]` now pre-fills the command bar with `@<role>: ` when an agent row is highlighted — delivering the intended UX without mouse event complexity. The `on_input_changed` toaster that interrupted typing by showing "Pipeline mode: press [p]" whenever the user typed `@` has also been removed.
+
 ## [1.36.0] - 2026-04-25
 
 ✨ A new `/octopus:commit` slash command is now available, providing a lightweight way to commit changes without following the full development workflow. The command reads the staged diff, resolves language configuration the same way `pr-open` does, detects tracker references (RM-NNN, Jira IDs, GitHub issues) and includes them in the commit footer, and warns when the diff spans multiple unrelated logical contexts. Every generated commit automatically includes a `Co-authored-by: octopus[bot]` trailer to mark tool participation. The commit conventions documentation was updated to document this new trailer and clarify its distinction from AI assistant trailers.
