@@ -6,6 +6,7 @@ persona_default: false
 skills:
   - launch-feature
   - launch-release
+  - content-images
 roles:
   - marketer
 rules: []

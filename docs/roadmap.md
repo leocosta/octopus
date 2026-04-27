@@ -261,7 +261,7 @@ All seven ergonomics gaps shipped in v1.31.0: per-task logs, cancel/retry keybin
 
 ## In Progress
 
-_No items in progress. All clusters complete through RM-063._
+_No items in progress. All clusters complete through RM-064._
 
 ---
 
@@ -332,3 +332,4 @@ _No items in progress. All clusters complete through RM-063._
 | RM-061 | `octopus ask --reply` — CLI session continuation | completed → v1.31.0 | 2026-04-25 |
 | RM-062 | Model override in TUI command bar — `--model opus\|sonnet\|haiku` | completed → v1.31.0 | 2026-04-25 |
 | RM-063 | Daemon mode — `octopus control --daemon start/stop/status` | completed → v1.31.0 | 2026-04-25 |
+| RM-064 | `content-images` skill — AI image generation for blog covers, Instagram posts, and carousels with social-media agent integration | completed → [Spec](specs/2026-04-27-content-images-skill-design.md) | 2026-04-27 |
