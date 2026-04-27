@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.37.0] - 2026-04-27
+
+✨ A new `content-images` skill generalizes the image generation pattern into a reusable Octopus capability. The skill generates brand-consistent images for blog covers (OG 1200×630), Instagram feed posts (1080×1080), and carousels using Google Gemini Imagen — with Pollinations.ai as a free fallback when no API key is available. Brand context is read from a per-project `.octopus/content-images.json` preset; the `GEMINI_API_KEY` is resolved from `.env.octopus`. Generation is cached by output file path and respects a `--force` flag for regeneration. The `social-media` agent gains a Phase 4.5 (Image Asset Protocol) that prompts the user to generate visual assets at the end of every content session. The skill is added to the `growth` bundle alongside `launch-feature` and `launch-release`.
+
 ## [1.36.1] - 2026-04-26
 
 🐛 Fixed the Octopus Control dispatch UX. The fragile double-click detection (timing guard via Textual's `RowHighlighted` + `RowSelected` events) that never worked reliably has been removed. Pressing `[a]` now pre-fills the command bar with `@<role>: ` when an agent row is highlighted — delivering the intended UX without mouse event complexity. The `on_input_changed` toaster that interrupted typing by showing "Pipeline mode: press [p]" whenever the user typed `@` has also been removed.
