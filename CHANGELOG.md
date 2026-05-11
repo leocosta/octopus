@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.38.0] - 2026-05-10
+
+✨ Esta versão introduz o **delegate skill** — um novo mecanismo para delegar tarefas diretamente a roles do Octopus sem sair da sessão ativa do harness. Ao digitar `@backend-developer: adicione o endpoint X` em qualquer conversa, o agente principal despacha a tarefa para o role correspondente e retorna o resultado inline com atribuição (`» <role> respondeu:`). O mesmo fluxo está disponível como slash command via `/octopus:delegate @<role> <task>`.
+
+🐛 A implementação passou por dois ciclos de refinamento: o trigger inicial baseado em `@` foi removido do frontmatter por ser excessivamente amplo (disparava em e-mails, handles e decorators), e a detecção de harness foi reescrita para usar disponibilidade do `Agent` tool em vez de nome do harness — tornando o skill verdadeiramente agnóstico. O command file também teve sua seção de Instructions corrigida para seguir o padrão "The skill owns the full workflow — do not reinterpret it here", eliminando duplicação de lógica de parsing.
+
+🔧 O skill `delegate` foi adicionado ao bundle `starter`, garantindo que projetos novos e existentes o recebam automaticamente ao rodar `setup.sh`.
+
 ## [1.37.0] - 2026-04-27
 
 ✨ A new `content-images` skill generalizes the image generation pattern into a reusable Octopus capability. The skill generates brand-consistent images for blog covers (OG 1200×630), Instagram feed posts (1080×1080), and carousels using Google Gemini Imagen — with Pollinations.ai as a free fallback when no API key is available. Brand context is read from a per-project `.octopus/content-images.json` preset; the `GEMINI_API_KEY` is resolved from `.env.octopus`. Generation is cached by output file path and respects a `--force` flag for regeneration. The `social-media` agent gains a Phase 4.5 (Image Asset Protocol) that prompts the user to generate visual assets at the end of every content session. The skill is added to the `growth` bundle alongside `launch-feature` and `launch-release`.
