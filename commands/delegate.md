@@ -32,7 +32,3 @@ harness session.
 ## Instructions
 
 Invoke the `delegate` skill (`skills/delegate/SKILL.md`). The skill owns the full workflow — do not reinterpret it here.
-
-Parse the arguments before invoking:
-- `role` = the identifier following `@` (everything up to the first space after `@`)
-- `task` = everything after the role identifier, trimmed
