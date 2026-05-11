@@ -4,11 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [1.38.0] - 2026-05-10
 
-✨ Esta versão introduz o **delegate skill** — um novo mecanismo para delegar tarefas diretamente a roles do Octopus sem sair da sessão ativa do harness. Ao digitar `@backend-developer: adicione o endpoint X` em qualquer conversa, o agente principal despacha a tarefa para o role correspondente e retorna o resultado inline com atribuição (`» <role> respondeu:`). O mesmo fluxo está disponível como slash command via `/octopus:delegate @<role> <task>`.
+✨ This release introduces the **delegate skill** — a new way to dispatch tasks to Octopus roles without leaving the active harness session. Typing `@backend-developer: add endpoint X` in any conversation causes the orchestrating agent to forward the task to that role and return the result inline with attribution (`» <role> respondeu:`). The same flow is available as a slash command via `/octopus:delegate @<role> <task>`.
 
-🐛 A implementação passou por dois ciclos de refinamento: o trigger inicial baseado em `@` foi removido do frontmatter por ser excessivamente amplo (disparava em e-mails, handles e decorators), e a detecção de harness foi reescrita para usar disponibilidade do `Agent` tool em vez de nome do harness — tornando o skill verdadeiramente agnóstico. O command file também teve sua seção de Instructions corrigida para seguir o padrão "The skill owns the full workflow — do not reinterpret it here", eliminando duplicação de lógica de parsing.
+🐛 Two refinement passes followed the initial implementation: an overly broad `@`-keyword trigger that fired on emails, GitHub handles, and decorators was removed from the skill's frontmatter, and harness detection was rewritten to check `Agent` tool availability rather than harness name — making the skill genuinely harness-agnostic. The command file's Instructions section was also corrected to follow the "The skill owns the full workflow — do not reinterpret it here" pattern used by peer commands, eliminating duplicated parsing logic.
 
-🔧 O skill `delegate` foi adicionado ao bundle `starter`, garantindo que projetos novos e existentes o recebam automaticamente ao rodar `setup.sh`.
+🔧 The `delegate` skill has been added to the `starter` bundle so new and existing projects receive it automatically on the next `setup.sh` run.
 
 ## [1.37.0] - 2026-04-27
 
