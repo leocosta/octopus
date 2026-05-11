@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.38.1] - 2026-05-10
+
+🐛 Fixed the `SessionStart` hook (`load-context.sh`) silently exiting with a non-zero code on every session start. The script used `set -euo pipefail`, causing `grep` to abort the script when `.octopus.yml` had no `knowledge_dir:` key or the knowledge `INDEX.md` had no active modules — both common conditions. The `-e` flag has been removed and `|| true` added to the affected pipelines. A secondary bug in dotnet detection (`[[ -f "*.sln" ]]` never matches globs) was also fixed.
+
 ## [1.38.0] - 2026-05-10
 
 ✨ This release introduces the **delegate skill** — a new way to dispatch tasks to Octopus roles without leaving the active harness session. Typing `@backend-developer: add endpoint X` in any conversation causes the orchestrating agent to forward the task to that role and return the result inline with attribution (`» <role> respondeu:`). The same flow is available as a slash command via `/octopus:delegate @<role> <task>`.
