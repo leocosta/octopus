@@ -10,6 +10,12 @@ agent: code
 
 # /octopus:delegate
 
+## Purpose
+
+This command dispatches a task to a named Octopus role and returns
+the result inline with attribution, without leaving the current
+harness session.
+
 ## Usage
 
 ```
@@ -25,12 +31,8 @@ agent: code
 
 ## Instructions
 
-Invoke the `delegate` skill (`skills/delegate/SKILL.md`) with:
+Invoke the `delegate` skill (`skills/delegate/SKILL.md`). The skill owns the full workflow — do not reinterpret it here.
 
+Parse the arguments before invoking:
 - `role` = the identifier following `@` (everything up to the first space after `@`)
 - `task` = everything after the role identifier, trimmed
-
-The skill handles:
-- Role validation (lists available roles if not found)
-- Dispatch mode detection (native Agent tool vs inline persona)
-- Output formatting with `» <role> respondeu:` attribution
