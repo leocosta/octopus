@@ -4,8 +4,6 @@ description: >
   Delegate a task to an Octopus role and return the result inline with
   attribution. Triggers on @<role>: pattern in user messages or via
   /octopus:delegate @<role> <task>.
-triggers:
-  keywords: ["@"]
 ---
 
 # Delegate — Inline Task Delegation to Roles
@@ -41,6 +39,7 @@ Check whether the role is available:
   `.opencode/agents/<role>.md`).
 - **Inline harnesses:** the role content is already present in context
   via inline delivery — any named role in context is valid.
+  If no named role is found in context, use the same "Role not found" response.
 
 **If role not found:** list the available roles by scanning the agents
 directory, then respond:
@@ -65,17 +64,17 @@ Example: @<role>: <your task here>
 
 Detect the active harness capability:
 
-**Native agents** (Agent tool available — Claude Code, OpenCode):
+**Native agents** (if the `Agent` tool appears in your available tools):
 
 ```
 Agent(
-  subagent_type = "<role>",
+  subagent_type = "<role>",        — filename stem, e.g. "backend-developer"
   description   = "Delegated task: <first 60 chars of task>",
   prompt        = "<full task>"
 )
 ```
 
-**Inline harnesses** (Agent tool NOT available — Copilot, Codex, Gemini):
+**Inline harnesses** (if the `Agent` tool is NOT in your available tools):
 
 The role's persona is already injected in context via inline delivery.
 Switch to that persona and respond as that role for this turn only.
