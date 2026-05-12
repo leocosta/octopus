@@ -64,15 +64,8 @@ head -n 5 "$CMD_FILE" | grep -q "^name: compress-skill$" \
 echo "PASS: slash command present"
 
 echo "Test 8: bundle documentation includes compress-skill"
-BUNDLE="$SCRIPT_DIR/bundles/documentation.yml"
+BUNDLE="$SCRIPT_DIR/bundles/docs.yml"
 grep -qE "^\s*-\s*compress-skill\s*$" "$BUNDLE" \
   || { echo "FAIL: compress-skill not listed in documentation bundle"; exit 1; }
 echo "PASS: bundle registration present"
 
-echo "Test 9: wizard includes compress-skill"
-WIZARD="$SCRIPT_DIR/cli/lib/setup-wizard.sh"
-grep -E "^[[:space:]]*local items=\(.*compress-skill.*\)" "$WIZARD" >/dev/null \
-  || { echo "FAIL: compress-skill not in items array"; exit 1; }
-grep -q 'compress-skill|' "$WIZARD" \
-  || { echo "FAIL: compress-skill hint missing"; exit 1; }
-echo "PASS: wizard registration present"

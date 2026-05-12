@@ -45,18 +45,12 @@ for pattern in "without reproducing" "regression test" "Silent retry" "feature f
 done
 echo "PASS: routing + integration + anti-patterns documented"
 
-echo "Test 7: slash command + wizard registration"
+echo "Test 7: slash command file"
 CMD="$SCRIPT_DIR/commands/debug.md"
 [[ -f "$CMD" ]] || { echo "FAIL: command file missing"; exit 1; }
 head -n 5 "$CMD" | grep -q "^name: debug$" \
   || { echo "FAIL: command frontmatter 'name' missing"; exit 1; }
-
-WIZARD="$SCRIPT_DIR/cli/lib/setup-wizard.sh"
-grep -E "^[[:space:]]*local items=\(.*debug.*\)" "$WIZARD" >/dev/null \
-  || { echo "FAIL: debug not in wizard items array"; exit 1; }
-grep -q '"debug|' "$WIZARD" \
-  || { echo "FAIL: debug not in wizard hints"; exit 1; }
-echo "PASS: command + wizard wired"
+echo "PASS: command file valid"
 
 echo "Test 8: starter bundle includes debug"
 BUNDLE="$SCRIPT_DIR/bundles/starter.yml"

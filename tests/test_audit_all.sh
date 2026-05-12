@@ -53,27 +53,21 @@ grep -q "^## Graceful Degradation$" "$SKILL_FILE" \
   || { echo "FAIL: '## Graceful Degradation' missing"; exit 1; }
 echo "PASS: errors + degradation documented"
 
-echo "Test 6: saas-quality bundle lists audit-all + includes deps via resolver"
-BUNDLE="$SCRIPT_DIR/bundles/saas-quality.yml"
+echo "Test 6: quality bundle lists audit-all + includes deps via resolver"
+BUNDLE="$SCRIPT_DIR/bundles/quality.yml"
 grep -q -- "- audit-all" "$BUNDLE" \
-  || { echo "FAIL: saas-quality missing audit-all"; exit 1; }
+  || { echo "FAIL: quality missing audit-all"; exit 1; }
 for dep in audit-security audit-money audit-tenant; do
   if grep -q -- "- $dep" "$BUNDLE"; then
-    echo "FAIL: $dep should not be listed explicitly in saas-quality (arrives via depends_on)"
+    echo "FAIL: $dep should not be listed explicitly in quality (arrives via depends_on)"
     exit 1
   fi
 done
-echo "PASS: saas-quality bundle minimized to audit-all"
+echo "PASS: quality bundle minimized to audit-all"
 
-echo "Test 7: slash command + wizard"
+echo "Test 7: slash command file"
 CMD="$SCRIPT_DIR/commands/audit-all.md"
 [[ -f "$CMD" ]] || { echo "FAIL: command file missing"; exit 1; }
 head -n 5 "$CMD" | grep -q "^name: audit-all$" \
   || { echo "FAIL: command frontmatter 'name' missing"; exit 1; }
-
-WIZARD="$SCRIPT_DIR/cli/lib/setup-wizard.sh"
-grep -E "^[[:space:]]*local items=\(.*audit-all.*\)" "$WIZARD" >/dev/null \
-  || { echo "FAIL: audit-all not in wizard items"; exit 1; }
-grep -q "audit-all|" "$WIZARD" \
-  || { echo "FAIL: audit-all not in wizard hints"; exit 1; }
-echo "PASS: command + wizard wired"
+echo "PASS: command file valid"

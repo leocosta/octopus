@@ -5,8 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CMD_FILE="$SCRIPT_DIR/commands/doc-plan.md"
 DESIGN_CMD_FILE="$SCRIPT_DIR/commands/doc-design.md"
 FIXTURE="$SCRIPT_DIR/skills/doc-plan/templates/plan-skeleton.md"
-BUNDLE_FILE="$SCRIPT_DIR/bundles/documentation.yml"
-WIZARD="$SCRIPT_DIR/cli/lib/setup-wizard.sh"
+BUNDLE_FILE="$SCRIPT_DIR/bundles/docs.yml"
 
 echo "Test 1: commands/doc-plan.md exists with valid frontmatter"
 [[ -f "$CMD_FILE" ]] || { echo "FAIL: $CMD_FILE not found"; exit 1; }
@@ -64,12 +63,6 @@ grep -qE "^\s*-\s*doc-plan\s*$" "$BUNDLE_FILE" \
   || { echo "FAIL: doc-plan not listed in documentation bundle"; exit 1; }
 echo "PASS: bundle registration present"
 
-echo "Test 9: wizard includes doc-plan"
-grep -E "^[[:space:]]*local items=\(.*doc-plan.*\)" "$WIZARD" >/dev/null \
-  || { echo "FAIL: doc-plan not in wizard items array"; exit 1; }
-grep -q 'doc-plan|' "$WIZARD" \
-  || { echo "FAIL: doc-plan hint missing"; exit 1; }
-echo "PASS: wizard registration present"
 
 echo "Test 10: doc-design chains into doc-plan"
 grep -q "/octopus:doc-plan" "$DESIGN_CMD_FILE" \

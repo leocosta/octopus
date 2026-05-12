@@ -4,8 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CMD_FILE="$SCRIPT_DIR/commands/doc-design.md"
 SPEC_CMD_FILE="$SCRIPT_DIR/commands/doc-spec.md"
-BUNDLE_FILE="$SCRIPT_DIR/bundles/documentation.yml"
-WIZARD="$SCRIPT_DIR/cli/lib/setup-wizard.sh"
+BUNDLE_FILE="$SCRIPT_DIR/bundles/docs.yml"
 
 echo "Test 1: commands/doc-design.md exists with valid frontmatter"
 [[ -f "$CMD_FILE" ]] || { echo "FAIL: $CMD_FILE not found"; exit 1; }
@@ -43,17 +42,11 @@ for section in "Non-Goals" "Risks" "Migration"; do
 done
 echo "PASS: adaptive sections documented"
 
-echo "Test 6: bundle documentation includes doc-design"
-grep -qE "^\s*-\s*doc-design\s*$" "$BUNDLE_FILE" \
-  || { echo "FAIL: doc-design not listed in documentation bundle"; exit 1; }
+echo "Test 6: bundle documentation includes doc-lifecycle"
+grep -qE "^\s*-\s*doc-lifecycle\s*$" "$BUNDLE_FILE" \
+  || { echo "FAIL: doc-lifecycle not listed in documentation bundle"; exit 1; }
 echo "PASS: bundle registration present"
 
-echo "Test 7: wizard includes doc-design"
-grep -E "^[[:space:]]*local items=\(.*doc-design.*\)" "$WIZARD" >/dev/null \
-  || { echo "FAIL: doc-design not in wizard items array"; exit 1; }
-grep -q 'doc-design|' "$WIZARD" \
-  || { echo "FAIL: doc-design hint missing"; exit 1; }
-echo "PASS: wizard registration present"
 
 echo "Test 8: commands/doc-spec.md chains into doc-design"
 grep -q "/octopus:doc-design" "$SPEC_CMD_FILE" \

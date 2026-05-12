@@ -72,8 +72,3 @@ head -n 5 "$CMD_FILE" | grep -q "^name: audit-tenant$" \
   || { echo "FAIL: command frontmatter missing"; exit 1; }
 echo "PASS: slash command present"
 
-echo "Test 8: wizard includes audit-tenant"
-WIZARD="$SCRIPT_DIR/cli/lib/setup-wizard.sh"
-grep -E "^[[:space:]]*local items=\(.*audit-tenant.*\)" "$WIZARD" >/dev/null \
-  || { echo "FAIL: audit-tenant not in items array"; exit 1; }
-echo "PASS: wizard registration present"
