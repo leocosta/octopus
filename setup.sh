@@ -2268,9 +2268,6 @@ if [[ ! -f "$CONFIG_FILE" ]]; then
   exit 1
 fi
 
-ui_banner "Octopus Setup"
-ui_kv "Scope" "$OCTOPUS_SCOPE"
-ui_kv "Root"  "$(_install_root)"
 
 # 1. Parse config
 parse_octopus_yml "$CONFIG_FILE"
@@ -2311,18 +2308,6 @@ if _is_user_scope; then
   fi
 fi
 
-ui_kv "Rules"     "${OCTOPUS_RULES[*]:-none}"
-ui_kv "Skills"    "${OCTOPUS_SKILLS[*]:-none}"
-ui_kv "Hooks"     "$OCTOPUS_HOOKS"
-ui_kv "Agents"    "${OCTOPUS_AGENTS[*]:-none}"
-ui_kv "MCP"       "${OCTOPUS_MCP[*]:-none}"
-ui_kv "Commands"  "${OCTOPUS_CMD_NAMES[*]:-none}"
-ui_kv "Workflow"  "$OCTOPUS_WORKFLOW"
-ui_kv "Roles"     "${OCTOPUS_ROLES[*]:-none}"
-ui_kv "Reviewers" "${OCTOPUS_REVIEWERS[*]:-none}"
-ui_kv "Knowledge" "${KNOWLEDGE_MODULES[*]:-none}"
-ui_kv "Language"  "docs=${OCTOPUS_LANGUAGE_DOCS:-auto} code=${OCTOPUS_LANGUAGE_CODE:-auto} ui=${OCTOPUS_LANGUAGE_UI:-auto}"
-echo ""
 
 # 2. Validate CLI dependencies
 validate_cli_deps
@@ -2373,8 +2358,16 @@ if [[ "$OCTOPUS_DESTRUCTIVE_GUARD" == "false" ]]; then
   export OCTOPUS_DISABLED_HOOKS
 fi
 
+_setup_print_summary() {
+  local config_rel="${CONFIG_FILE#"$PROJECT_ROOT/"}"
+  [[ "$config_rel" == "$CONFIG_FILE" ]] && config_rel="$CONFIG_FILE"
+  ui_success "manifest ready      ($config_rel)"
+  [[ ${#OCTOPUS_SKILLS[@]} -gt 0 ]] && ui_success "skills installed    (${OCTOPUS_SKILLS[*]})"
+  [[ "$OCTOPUS_HOOKS" == "true" ]]  && ui_success "hooks configured    (destructive-guard, session-start)"
+  ui_success "permissions written (.claude/settings.json)"
+}
+
 for agent in "${OCTOPUS_AGENTS[@]}"; do
-  ui_step "Configuring $agent"
   if (( OCTOPUS_VERBOSE )); then
     _run_agent_pipeline "$agent" 2>&1 | sed 's/^/   /'
   else
@@ -2389,7 +2382,6 @@ for agent in "${OCTOPUS_AGENTS[@]}"; do
       exit "$_rc"
     fi
   fi
-  ui_done
 done
 
 # 3b. Generate knowledge index
@@ -2404,7 +2396,7 @@ manage_env
 # 5. Update .gitignore
 update_gitignore
 
-ui_banner "Setup complete"
+_setup_print_summary
 
 # User scope touches ~/.claude/settings.json which active Claude Code sessions
 # have already loaded. Nudge the user to restart.
