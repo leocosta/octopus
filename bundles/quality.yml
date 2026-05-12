@@ -1,6 +1,8 @@
 name: quality
 description: Quality gates — security, money-logic, tenant-scope, and cross-stack contract audits.
 category: intent
+persona_question: "Does your team run security, money, or multi-tenant scope audits?"
+persona_default: false
 skills:
   - audit-all
   - review-contracts

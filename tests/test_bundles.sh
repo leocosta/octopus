@@ -5,11 +5,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUNDLES_DIR="$SCRIPT_DIR/bundles"
 
 echo "Test 1: all expected bundle files exist"
-for name in starter saas-quality growth documentation fullstack dotnet-api node-api quality-leadership; do
+for name in starter docs quality growth backend; do
   [[ -f "$BUNDLES_DIR/$name.yml" ]] \
     || { echo "FAIL: bundle $name.yml missing"; exit 1; }
 done
-echo "PASS: all eight bundles present"
+echo "PASS: all five bundles present"
 
 echo "Test 2: every bundle has name/description/category"
 for f in "$BUNDLES_DIR"/*.yml; do
@@ -40,7 +40,7 @@ TMPDIR=$(mktemp -d)
 cat > "$TMPDIR/test.yml" <<'EOF'
 bundles:
   - starter
-  - saas-quality
+  - quality
 EOF
 
 parse_octopus_yml "$TMPDIR/test.yml"
@@ -49,7 +49,7 @@ parse_octopus_yml "$TMPDIR/test.yml"
   || { echo "FAIL: expected 2 bundles, got ${#OCTOPUS_BUNDLES[@]}"; exit 1; }
 [[ "${OCTOPUS_BUNDLES[0]}" == "starter" ]] \
   || { echo "FAIL: first bundle wrong"; exit 1; }
-[[ "${OCTOPUS_BUNDLES[1]}" == "saas-quality" ]] \
+[[ "${OCTOPUS_BUNDLES[1]}" == "quality" ]] \
   || { echo "FAIL: second bundle wrong"; exit 1; }
 
 rm -rf "$TMPDIR"
@@ -65,9 +65,9 @@ OCTOPUS_MCP=()
 
 _load_bundle "starter"
 
-# starter contributes doc-adr, doc-lifecycle, context-budget, implement, debug, review-pr
+# starter contributes doc-adr, doc-lifecycle, context-budget, implement, debug, review-pr, delegate
 printf '%s\n' "${OCTOPUS_SKILLS[@]}" | sort > /tmp/got_skills.$$
-printf '%s\n' doc-adr doc-lifecycle context-budget implement debug review-pr | sort > /tmp/exp_skills.$$
+printf '%s\n' doc-adr doc-lifecycle context-budget implement debug review-pr delegate | sort > /tmp/exp_skills.$$
 diff -q /tmp/got_skills.$$ /tmp/exp_skills.$$ >/dev/null \
   || { echo "FAIL: starter did not populate skills correctly"; exit 1; }
 rm -f /tmp/got_skills.$$ /tmp/exp_skills.$$
@@ -91,21 +91,21 @@ OCTOPUS_SKILLS=()
 OCTOPUS_ROLES=()
 OCTOPUS_RULES=()
 OCTOPUS_MCP=()
-OCTOPUS_BUNDLES=("starter" "saas-quality")
+OCTOPUS_BUNDLES=("starter" "quality")
 
 expand_bundles
 
-expected_skills=(doc-adr doc-lifecycle context-budget implement debug review-pr audit-all audit-security audit-money audit-tenant review-contracts)
+expected_skills=(doc-adr doc-lifecycle context-budget implement debug review-pr delegate audit-all audit-security audit-money audit-tenant review-contracts)
 printf '%s\n' "${OCTOPUS_SKILLS[@]}" | sort -u > /tmp/got.$$
 printf '%s\n' "${expected_skills[@]}" | sort -u > /tmp/exp.$$
 diff -q /tmp/got.$$ /tmp/exp.$$ >/dev/null \
   || { echo "FAIL: expand_bundles produced wrong skills"; cat /tmp/got.$$; rm -f /tmp/got.$$ /tmp/exp.$$; exit 1; }
 rm -f /tmp/got.$$ /tmp/exp.$$
 
-printf '%s\n' "${OCTOPUS_ROLES[@]}" | grep -q "^backend-developer$" \
-  || { echo "FAIL: backend-developer role missing"; exit 1; }
+printf '%s\n' "${OCTOPUS_ROLES[@]}" | grep -q "^architect$" \
+  || { echo "FAIL: architect role missing"; exit 1; }
 
-echo "PASS: expand_bundles unions starter + saas-quality"
+echo "PASS: expand_bundles unions starter + quality"
 
 echo "Test 8: expand_bundles de-duplicates across bundles"
 
@@ -113,7 +113,7 @@ OCTOPUS_SKILLS=(existing-skill)
 OCTOPUS_ROLES=()
 OCTOPUS_RULES=()
 OCTOPUS_MCP=()
-OCTOPUS_BUNDLES=("saas-quality" "fullstack")
+OCTOPUS_BUNDLES=("backend" "quality")
 
 expand_bundles
 
@@ -135,7 +135,7 @@ agents:
 
 bundles:
   - starter
-  - saas-quality
+  - quality
 
 hooks: true
 EOF
@@ -150,12 +150,12 @@ OCTOPUS_RULES=()
 parse_octopus_yml "$TMPDIR/.octopus.yml"
 expand_bundles
 
-# starter (6 skills) + saas-quality (audit-all + 4 deps = 5 skills) = 11 distinct skills
-[[ ${#OCTOPUS_SKILLS[@]} -eq 11 ]] \
-  || { echo "FAIL: expected 11 skills after bundle expansion, got ${#OCTOPUS_SKILLS[@]}"; exit 1; }
+# starter (7 skills) + quality (audit-all + 4 deps + review-contracts = 5 unique skills) = 12 distinct skills
+[[ ${#OCTOPUS_SKILLS[@]} -eq 12 ]] \
+  || { echo "FAIL: expected 12 skills after bundle expansion, got ${#OCTOPUS_SKILLS[@]}"; exit 1; }
 
-printf '%s\n' "${OCTOPUS_ROLES[@]}" | grep -q "^backend-developer$" \
-  || { echo "FAIL: backend-developer role missing after expansion"; exit 1; }
+printf '%s\n' "${OCTOPUS_ROLES[@]}" | grep -q "^architect$" \
+  || { echo "FAIL: architect role missing after expansion"; exit 1; }
 
 rm -rf "$TMPDIR"
 echo "PASS: bundles-only manifest expands to full component lists"
