@@ -13,6 +13,23 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v6.0.2
 
+      - name: Download fzf binaries
+        shell: bash
+        run: |
+          FZF_VERSION="v0.72.0"
+          BASE="https://github.com/junegunn/fzf/releases/download/${FZF_VERSION}"
+
+          mkdir -p bin/fzf/linux-amd64 bin/fzf/linux-arm64 bin/fzf/darwin-amd64 bin/fzf/darwin-arm64 bin/fzf/windows-amd64
+
+          curl -fsSL "${BASE}/fzf-${FZF_VERSION}-linux_amd64.tar.gz" | tar -xz -C bin/fzf/linux-amd64 fzf
+          curl -fsSL "${BASE}/fzf-${FZF_VERSION}-linux_arm64.tar.gz" | tar -xz -C bin/fzf/linux-arm64 fzf
+          curl -fsSL "${BASE}/fzf-${FZF_VERSION}-darwin_amd64.zip" -o /tmp/fzf-darwin-amd64.zip && unzip -q /tmp/fzf-darwin-amd64.zip -d bin/fzf/darwin-amd64
+          curl -fsSL "${BASE}/fzf-${FZF_VERSION}-darwin_arm64.zip" -o /tmp/fzf-darwin-arm64.zip && unzip -q /tmp/fzf-darwin-arm64.zip -d bin/fzf/darwin-arm64
+          curl -fsSL "${BASE}/fzf-${FZF_VERSION}-windows_amd64.zip" -o /tmp/fzf-windows-amd64.zip && unzip -q /tmp/fzf-windows-amd64.zip -d bin/fzf/windows-amd64
+
+          chmod +x bin/fzf/linux-amd64/fzf bin/fzf/linux-arm64/fzf || true
+          echo "fzf binaries ready for packaging"
+
       - name: Create release archive
         shell: bash
         run: |
