@@ -1,0 +1,14 @@
+name: docs
+description: Teams that document with specs, ADRs, plans, and a living roadmap.
+category: intent
+skills:
+  - doc-lifecycle
+  - doc-plan
+  - plan-backlog
+  - continuous-learning
+  - compress-skill
+roles:
+  - writer
+rules: []
+mcp: []
+hooks: null

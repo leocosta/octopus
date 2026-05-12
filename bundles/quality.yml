@@ -1,0 +1,11 @@
+name: quality
+description: Quality gates — security, money-logic, tenant-scope, and cross-stack contract audits.
+category: intent
+skills:
+  - audit-all
+  - review-contracts
+roles:
+  - architect
+rules: []
+mcp: []
+hooks: null

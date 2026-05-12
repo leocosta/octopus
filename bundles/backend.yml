@@ -1,0 +1,11 @@
+name: backend
+description: Backend API development — patterns, helpers, and end-to-end tests.
+category: intent
+skills:
+  - backend-patterns
+  - test-e2e
+roles:
+  - backend-developer
+rules: []
+mcp: []
+hooks: null
