@@ -1,10 +1,8 @@
 # cli/lib/setup.sh — Configure Octopus in the current repository or at user scope.
-# Delegates to the root setup.sh bundled with the release.
+# Sourced by bin/octopus. Variable $CLI_DIR must be set by caller.
 
-# 1. Derive paths from CLI_DIR (set by cli/octopus.sh before sourcing this file)
 RELEASE_DIR="$(cd "$CLI_DIR/.." && pwd)"
 SETUP_SCRIPT="$RELEASE_DIR/setup.sh"
-EXAMPLE_YML="$RELEASE_DIR/.octopus.example.yml"
 EXAMPLE_ENV="$RELEASE_DIR/.env.octopus.example"
 
 # shellcheck source=./ui.sh
@@ -15,45 +13,59 @@ if [[ ! -f "$SETUP_SCRIPT" ]]; then
   exit 1
 fi
 
-# 2. Parse CLI flags. We accept --scope=<value> and --reconfigure here;
-# everything else flows through to setup.sh unchanged.
-CLI_SCOPE=""
-RECONFIGURE_FLAG=""
-_remaining_args=()
-for _arg in "$@"; do
-  case "$_arg" in
-    --scope=*)    CLI_SCOPE="${_arg#--scope=}" ;;
-    --reconfigure) RECONFIGURE_FLAG="--reconfigure" ;;
-    --dry-run)    export OCTOPUS_DRY_RUN="true" ;;
-    *)             _remaining_args+=("$_arg") ;;
-  esac
-done
+# ---------------------------------------------------------------------------
+# Parse flags
+# ---------------------------------------------------------------------------
+SETUP_BUNDLE=""
+SETUP_SCOPE=""
+SETUP_STACK=""
+SETUP_REVIEWERS=""
+SETUP_HOOKS="true"
+SETUP_WORKFLOW="true"
+SETUP_DRY_RUN="false"
+_setup_remaining_args=()
+_setup_prev_arg=""
 
-# 3. Resolve effective scope. Precedence: --scope CLI flag > OCTOPUS_SCOPE env
-# var > (wizard prompt asks) > repo default applied inside setup.sh.
-# OCTOPUS_SCOPE_PINNED=1 tells the wizard to skip the scope prompt because
-# we already have an explicit user decision.
-OCTOPUS_SCOPE_PINNED=""
-if [[ -n "$CLI_SCOPE" ]]; then
-  export OCTOPUS_SCOPE="$CLI_SCOPE"
-  OCTOPUS_SCOPE_PINNED=1
-elif [[ -n "${OCTOPUS_SCOPE:-}" ]]; then
-  OCTOPUS_SCOPE_PINNED=1
+for _setup_arg in "$@"; do
+  case "$_setup_arg" in
+    --bundle=*)    SETUP_BUNDLE="${_setup_arg#--bundle=}" ;;
+    --scope=*)     SETUP_SCOPE="${_setup_arg#--scope=}" ;;
+    --stack=*)     SETUP_STACK="${_setup_arg#--stack=}" ;;
+    --reviewers=*) SETUP_REVIEWERS="${_setup_arg#--reviewers=}" ;;
+    --no-hooks)    SETUP_HOOKS="false" ;;
+    --no-workflow) SETUP_WORKFLOW="false" ;;
+    --dry-run)     SETUP_DRY_RUN="true"; export OCTOPUS_DRY_RUN="true" ;;
+    --reconfigure) _setup_remaining_args+=("$_setup_arg") ;;
+    --bundle|--scope|--stack|--reviewers) ;;  # value comes next iteration
+    *)             _setup_remaining_args+=("$_setup_arg") ;;
+  esac
+  # Handle space-separated: --bundle starter
+  case "$_setup_prev_arg" in
+    --bundle)    SETUP_BUNDLE="$_setup_arg" ;;
+    --scope)     SETUP_SCOPE="$_setup_arg" ;;
+    --stack)     SETUP_STACK="$_setup_arg" ;;
+    --reviewers) SETUP_REVIEWERS="$_setup_arg" ;;
+  esac
+  _setup_prev_arg="$_setup_arg"
+done
+unset _setup_arg _setup_prev_arg
+
+# ---------------------------------------------------------------------------
+# Resolve scope
+# ---------------------------------------------------------------------------
+if [[ -n "$SETUP_SCOPE" ]]; then
+  export OCTOPUS_SCOPE="$SETUP_SCOPE"
+  export OCTOPUS_SCOPE_PINNED=1
 fi
 OCTOPUS_SCOPE="${OCTOPUS_SCOPE:-repo}"
-export OCTOPUS_SCOPE OCTOPUS_SCOPE_PINNED
+export OCTOPUS_SCOPE
 
 case "$OCTOPUS_SCOPE" in
   repo|user) ;;
   *) ui_error "Invalid --scope '$OCTOPUS_SCOPE' — use 'repo' or 'user'."; exit 1 ;;
 esac
 
-# 4. Fix PROJECT_ROOT + MANIFEST_PATH based on scope.
-# Repo scope: manifest lives next to the codebase (PWD set by bin/octopus).
-# User scope: manifest lives in XDG config; PROJECT_ROOT still tracks the repo
-# because some downstream paths (OCTOPUS_DIR fallbacks in setup.sh) need a
-# sensible working directory.
-export PROJECT_ROOT="$PWD"
+export PROJECT_ROOT="${PROJECT_ROOT:-$PWD}"
 USER_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/octopus"
 
 if [[ "$OCTOPUS_SCOPE" == "user" ]]; then
@@ -62,78 +74,98 @@ else
   MANIFEST_DIR="$PROJECT_ROOT"
 fi
 MANIFEST_PATH="$MANIFEST_DIR/.octopus.yml"
-ENV_PATH="$MANIFEST_DIR/.env.octopus"
+export MANIFEST_PATH
 
-# 5. Prompt helper — default yes, safe for non-interactive (piped) execution
-_ask_yes() {
-  local prompt="$1"
-  if [[ ! -t 0 ]]; then return 0; fi  # non-interactive: default yes silently
-  local reply
-  read -r -p "$prompt [Y/n] " reply
-  case "${reply,,}" in
-    n|no) return 1 ;;
-    *)    return 0 ;;
-  esac
+# ---------------------------------------------------------------------------
+# Manifest generation
+# ---------------------------------------------------------------------------
+_setup_generate_manifest() {
+  local bundle="$1" hooks="$2" workflow="$3" reviewers="$4" stack="$5"
+
+  mkdir -p "$(dirname "$MANIFEST_PATH")"
+
+  {
+    printf '# Edit and re-run '"'"'octopus setup'"'"' to apply changes.\n'
+    printf 'agents:\n  - claude\n'
+    printf 'bundles:\n  - %s\n' "$bundle"
+
+    if [[ -n "$stack" ]]; then
+      case "$stack" in
+        dotnet)
+          printf 'skills:\n  - dotnet\n'
+          printf 'rules:\n  - csharp\n'
+          ;;
+        node)
+          printf 'rules:\n  - typescript\n'
+          ;;
+      esac
+    fi
+
+    [[ "$hooks" == "true" ]]    && printf 'hooks: true\n'
+    [[ "$workflow" == "true" ]] && printf 'workflow: true\n'
+
+    if [[ -n "$reviewers" ]]; then
+      printf 'reviewers:\n'
+      local IFS=','
+      for _r in $reviewers; do
+        printf '  - %s\n' "${_r// /}"
+      done
+    fi
+
+    printf '\n# Uncomment to configure:\n'
+    printf '# reviewers: [user1, user2]\n'
+    printf '# mcp:\n'
+    printf '#   - name: github\n'
+  } > "$MANIFEST_PATH"
 }
 
-# 6. Interactive wizard for first-time setup or reconfiguration
+# ---------------------------------------------------------------------------
+# Interactive follow-up (reviewers)
+# ---------------------------------------------------------------------------
+_setup_prompt_reviewers() {
+  printf "  GitHub usernames (comma-separated): "
+  local reply
+  read -r reply </dev/tty
+  SETUP_REVIEWERS="$reply"
+}
+
+# ---------------------------------------------------------------------------
+# Main flow
+# ---------------------------------------------------------------------------
 if [[ ! -f "$MANIFEST_PATH" ]]; then
-  ui_info "No .octopus.yml found at: $MANIFEST_PATH"
-
-  if [[ -t 0 && -t 1 ]]; then
-    # Interactive: run the setup wizard. It writes to $MANIFEST_DIR/.octopus.yml.
-    mkdir -p "$MANIFEST_DIR"
-    source "$CLI_DIR/lib/setup-wizard.sh"
-    run_setup_wizard "$MANIFEST_DIR" "$RELEASE_DIR"
-
-    # If wizard was non-interactive, fall back to template copy
-    if [[ ! -f "$MANIFEST_PATH" ]]; then
-      if [[ -f "$EXAMPLE_YML" ]]; then
-        mkdir -p "$(dirname "$MANIFEST_PATH")"
-        cp "$EXAMPLE_YML" "$MANIFEST_PATH"
-        ui_success "Created $MANIFEST_PATH"
-        ui_info "Edit it and re-run 'octopus setup', or continue now with defaults."
-      else
-        ui_warn "template not found at $EXAMPLE_YML — skipping scaffold."
-      fi
-    fi
+  if [[ -n "$SETUP_BUNDLE" ]]; then
+    # Flag-driven: no interaction
+    _setup_generate_manifest \
+      "$SETUP_BUNDLE" "$SETUP_HOOKS" "$SETUP_WORKFLOW" "$SETUP_REVIEWERS" "$SETUP_STACK"
+  elif [[ -t 0 && -t 1 ]]; then
+    # Interactive: launch picker
+    source "$CLI_DIR/lib/setup-picker.sh"
+    run_picker
+    [[ "${PICKER_REVIEWERS:-}" == "__ask__" ]] && _setup_prompt_reviewers
+    _setup_generate_manifest \
+      "${PICKER_BUNDLE:-starter}" \
+      "${PICKER_HOOKS:-true}" \
+      "${PICKER_WORKFLOW:-true}" \
+      "${SETUP_REVIEWERS:-}" \
+      "$SETUP_STACK"
   else
-    # Non-interactive: copy template as before
-    if [[ ! -f "$EXAMPLE_YML" ]]; then
-      ui_warn "template not found at $EXAMPLE_YML — skipping scaffold."
-    elif _ask_yes "Create .octopus.yml from template?"; then
-      mkdir -p "$(dirname "$MANIFEST_PATH")"
-      cp "$EXAMPLE_YML" "$MANIFEST_PATH"
-      ui_success "Created $MANIFEST_PATH"
-      ui_info "Edit it and re-run 'octopus setup', or continue now with defaults."
-    else
-      ui_info "Skipped. Re-run 'octopus setup' after creating $MANIFEST_PATH."
-      exit 0
-    fi
+    # Non-interactive (CI/pipe): use defaults silently
+    _setup_generate_manifest "starter" "true" "true" "" ""
   fi
-
-elif [[ "$RECONFIGURE_FLAG" == "--reconfigure" ]]; then
-  # Reconfigure existing manifest interactively
+elif [[ " ${_setup_remaining_args[*]:-} " == *" --reconfigure "* ]]; then
+  # Reconfigure existing manifest
   if [[ -t 0 && -t 1 ]]; then
-    ui_info "Reconfiguring $MANIFEST_PATH..."
-    source "$CLI_DIR/lib/setup-wizard.sh"
-    run_setup_wizard "$MANIFEST_DIR" "$RELEASE_DIR" "--reconfigure"
-  else
-    ui_warn "--reconfigure requires an interactive terminal."
-    exit 1
+    source "$CLI_DIR/lib/setup-picker.sh"
+    run_picker
+    [[ "${PICKER_REVIEWERS:-}" == "__ask__" ]] && _setup_prompt_reviewers
+    _setup_generate_manifest \
+      "${PICKER_BUNDLE:-starter}" \
+      "${PICKER_HOOKS:-true}" \
+      "${PICKER_WORKFLOW:-true}" \
+      "${SETUP_REVIEWERS:-}" \
+      "$SETUP_STACK"
   fi
 fi
 
-# 7. Scaffold .env.octopus if missing (safe boilerplate, no prompt)
-if [[ ! -f "$ENV_PATH" ]]; then
-  if [[ -f "$EXAMPLE_ENV" ]]; then
-    mkdir -p "$(dirname "$ENV_PATH")"
-    cp "$EXAMPLE_ENV" "$ENV_PATH"
-    [[ "$OCTOPUS_SCOPE" == "user" ]] && chmod 600 "$ENV_PATH" 2>/dev/null || true
-    ui_success "Created $ENV_PATH"
-    ui_info "Fill in your API tokens before running integrations."
-  fi
-fi
-
-# 8. Delegate to the release setup.sh with the remaining args.
-bash "$SETUP_SCRIPT" "${_remaining_args[@]}"
+# Delegate delivery to root setup.sh
+bash "$SETUP_SCRIPT" "${_setup_remaining_args[@]+"${_setup_remaining_args[@]}"}"
