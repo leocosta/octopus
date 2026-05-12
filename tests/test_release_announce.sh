@@ -127,15 +127,11 @@ for f in notes.md.tmpl readme.md.tmpl; do
 done
 echo "PASS: remaining templates present"
 
-echo "Test 12: slash command + wizard + bundle + README + skills.md"
+echo "Test 12: slash command + bundle + README + skills.md"
 CMD="$SCRIPT_DIR/commands/launch-release.md"
 [[ -f "$CMD" ]] || { echo "FAIL: command file missing"; exit 1; }
 head -n 5 "$CMD" | grep -q "^name: launch-release$" \
   || { echo "FAIL: command frontmatter missing"; exit 1; }
-
-WIZARD="$SCRIPT_DIR/cli/lib/setup-wizard.sh"
-grep -E "^[[:space:]]*local items=\(.*launch-release.*\)" "$WIZARD" >/dev/null \
-  || { echo "FAIL: launch-release not in wizard items"; exit 1; }
 
 BUNDLE="$SCRIPT_DIR/bundles/growth.yml"
 grep -q -- "- launch-release" "$BUNDLE" \

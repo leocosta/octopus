@@ -130,13 +130,3 @@ grep -q "launch-feature" "$CMD_FILE" \
 
 echo "PASS: slash command present"
 
-echo "Test 13: wizard includes launch-feature"
-
-WIZARD="$SCRIPT_DIR/cli/lib/setup-wizard.sh"
-grep -q "launch-feature" "$WIZARD" \
-  || { echo "FAIL: launch-feature not listed in setup-wizard.sh"; exit 1; }
-# Must appear in the items array (not only a comment)
-grep -E "^[[:space:]]*local items=\(.*launch-feature.*\)" "$WIZARD" >/dev/null \
-  || { echo "FAIL: launch-feature not in items array"; exit 1; }
-
-echo "PASS: wizard registration present"

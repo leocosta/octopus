@@ -68,8 +68,3 @@ head -n 5 "$CMD_FILE" | grep -q "^name: plan-backlog$" \
   || { echo "FAIL: command frontmatter missing"; exit 1; }
 echo "PASS: slash command present"
 
-echo "Test 8: wizard includes plan-backlog"
-WIZARD="$SCRIPT_DIR/cli/lib/setup-wizard.sh"
-grep -E "^[[:space:]]*local items=\(.*plan-backlog.*\)" "$WIZARD" >/dev/null \
-  || { echo "FAIL: plan-backlog not in items array"; exit 1; }
-echo "PASS: wizard registration present"

@@ -1,0 +1,13 @@
+name: backend
+description: Backend API development — patterns, helpers, and end-to-end tests.
+category: intent
+persona_question: "Does your team build backend APIs or services?"
+persona_default: false
+skills:
+  - backend-patterns
+  - test-e2e
+roles:
+  - backend-developer
+rules: []
+mcp: []
+hooks: null

@@ -1,0 +1,16 @@
+name: docs
+description: Teams that document with specs, ADRs, plans, and a living roadmap.
+category: intent
+persona_question: "Does your team maintain living documentation — specs, ADRs, and a roadmap?"
+persona_default: false
+skills:
+  - doc-lifecycle
+  - doc-plan
+  - plan-backlog
+  - continuous-learning
+  - compress-skill
+roles:
+  - writer
+rules: []
+mcp: []
+hooks: null

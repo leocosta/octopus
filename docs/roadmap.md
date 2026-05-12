@@ -259,9 +259,42 @@ All seven ergonomics gaps shipped in v1.31.0: per-task logs, cancel/retry keybin
 
 ---
 
+### Cluster 12 — Frontend and fullstack bundles
+
+#### RM-065 — `frontend` bundle
+
+- **Priority:** 🟡 Medium
+- **Effort:** medium
+- **Status:** proposed
+- **Added:** 2026-05-12
+
+Define frontend-specific skills and wire the existing `frontend-developer` role into a
+`frontend` bundle. The role exists (`roles/frontend-developer.md`) but no skills target
+frontend patterns (component design, accessibility, CSS conventions, testing with RTL/Playwright).
+
+**Rationale:** The setup UX rewrite reorganized bundles by intent. `frontend` was excluded
+because skills don't exist yet — this item tracks their creation.
+
+---
+
+#### RM-066 — `fullstack` bundle
+
+- **Priority:** 🟡 Medium
+- **Effort:** low
+- **Status:** proposed
+- **Added:** 2026-05-12
+- **Blocked by:** RM-065
+
+Combine `backend` + `frontend` bundles with `review-contracts` into a `fullstack` bundle
+for monorepos that contain both an API and a separate frontend.
+
+**Rationale:** Depends on RM-065 so both developer roles and their skills are available.
+
+---
+
 ## In Progress
 
-_No items in progress. All clusters complete through RM-064._
+_No items in progress. All clusters complete through RM-066._
 
 ---
 
