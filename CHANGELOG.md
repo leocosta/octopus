@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.39.0] - 2026-05-12
+
+✨ This release replaces the TUI setup wizard with `setup-picker.sh`, a single-screen selector that uses fzf (now bundled in the release tarball) or a plain bash fallback — no whiptail, no dialog, no ncurses windows. `octopus setup` is now flag-first: `--bundle`, `--scope`, `--stack`, `--no-hooks`, and `--no-workflow` deliver everything without interaction; non-interactive environments (CI/pipe) fall back to silent defaults.
+
+♻️ Bundles have been reorganized by team intent instead of tech stack. The new `docs`, `quality`, and `backend` bundles replace `documentation`, `saas-quality`, `quality-leadership`, `dotnet-api`, `node-api`, and `fullstack`. Stack-specific content (.NET, TypeScript) moved to the `--stack` flag. The `setup.sh` delivery output was also compacted: one `✓` line per group instead of banners and KV tables.
+
+🚀 fzf binaries are now downloaded at release build time for linux-amd64, linux-arm64, darwin-amd64, darwin-arm64, and windows-amd64, ensuring the picker works without external dependencies.
+
+📝 RM-065 (`frontend` bundle) and RM-066 (`fullstack` bundle) added to the roadmap for future tracking.
+
 ## [1.38.1] - 2026-05-10
 
 🐛 Fixed the `SessionStart` hook (`load-context.sh`) silently exiting with a non-zero code on every session start. The script used `set -euo pipefail`, causing `grep` to abort the script when `.octopus.yml` had no `knowledge_dir:` key or the knowledge `INDEX.md` had no active modules — both common conditions. The `-e` flag has been removed and `|| true` added to the affected pipelines. A secondary bug in dotnet detection (`[[ -f "*.sln" ]]` never matches globs) was also fixed.
