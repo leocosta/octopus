@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.42.5] - 2026-05-16
+
+🐛 Fixed `typecheck.sh` not running `dotnet build` in .NET projects — the hook was calling `dotnet build` from the wrong directory, failing with MSB1003 (no project file found). Now applies the same `.sln`/`.csproj` walk-up discovery used in `auto-format.sh`. Claude Code will now see compilation errors (e.g., `void Foo()` without a body) after each edit and self-correct.
+
 ## [1.42.4] - 2026-05-16
 
 🐛 Fixed PostToolUse formatter hooks never running. The hooks were reading `file_path` from the top-level JSON, but Claude Code sends it inside `tool_input` — so the path was always empty and the hook exited silently without formatting anything. Also fixed `dotnet format --include` silently ignoring absolute paths when a project directory is specified; the hook now `cd`s into the project root and passes a relative path. Affected: `auto-format.sh`, `console-log-warn.sh`, `typecheck.sh`.
