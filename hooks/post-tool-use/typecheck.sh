@@ -27,7 +27,15 @@ case "$ext" in
     ;;
   cs)
     if command -v dotnet &>/dev/null; then
-      dotnet build --no-restore 2>&1 | tail -5 || true
+      proj_dir=$(dirname "$file_path")
+      while [[ "$proj_dir" != "/" ]]; do
+        if compgen -G "$proj_dir"/*.sln &>/dev/null || compgen -G "$proj_dir"/*.csproj &>/dev/null; then
+          break
+        fi
+        proj_dir=$(dirname "$proj_dir")
+      done
+      [[ "$proj_dir" == "/" ]] && proj_dir=$(dirname "$file_path")
+      (cd "$proj_dir" && dotnet build --no-restore 2>&1 | tail -5) || true
     fi
     ;;
 esac
