@@ -1711,55 +1711,76 @@ normalize_role_frontmatter_for_agent() {
 }
 
 deliver_git_hooks() {
-  # RM-029: install pre-push audit-suggest hook into the repo's git hooks dir.
-  # Conditions: workflow: true, postMergeAuditHook not false, at least one audit skill present.
   [[ "$OCTOPUS_WORKFLOW" == "true" ]] || return 0
-  [[ "$OCTOPUS_POST_MERGE_AUDIT_HOOK" == "false" ]] && return 0
 
-  # Check if any audit skill is installed.
-  local _has_audit=0
-  for _skill in "${OCTOPUS_SKILLS[@]}"; do
-    case "$_skill" in
-      money-review|tenant-scope-audit|cross-stack-contract|security-scan|audit-all)
-        _has_audit=1; break ;;
-    esac
-  done
-  (( _has_audit )) || return 0
-
-  # Resolve hooks dir (core.hooksPath or .git/hooks).
+  # Resolve hooks dir (core.hooksPath or .git/hooks), rooted at install root.
+  local root
+  root="$(_install_root)"
   local hooks_dir
-  hooks_dir="$(git rev-parse --git-dir 2>/dev/null)/hooks"
+  hooks_dir="$(git -C "$root" rev-parse --git-dir 2>/dev/null)" || return 0
+  hooks_dir="$root/$hooks_dir/hooks"
   local core_hooks
-  core_hooks="$(git config --local core.hooksPath 2>/dev/null || true)"
+  core_hooks="$(git -C "$root" config --local core.hooksPath 2>/dev/null || true)"
   [[ -n "$core_hooks" ]] && hooks_dir="$core_hooks"
-
   mkdir -p "$hooks_dir"
-  local target="$hooks_dir/pre-push"
-  local hook_src="$OCTOPUS_DIR/hooks/git/pre-push-audit-suggest.sh"
 
-  if [[ ! -f "$hook_src" ]]; then
-    echo "WARNING: pre-push-audit-suggest.sh not found at $hook_src — skipping git hook install." >&2
-    return 0
+  # RM-029: pre-push audit-suggest hook.
+  # Conditions: postMergeAuditHook not false, at least one audit skill present.
+  if [[ "$OCTOPUS_POST_MERGE_AUDIT_HOOK" != "false" ]]; then
+    local _has_audit=0
+    for _skill in "${OCTOPUS_SKILLS[@]}"; do
+      case "$_skill" in
+        money-review|tenant-scope-audit|cross-stack-contract|security-scan|audit-all)
+          _has_audit=1; break ;;
+      esac
+    done
+    if (( _has_audit )); then
+      local audit_src="$OCTOPUS_DIR/hooks/git/pre-push-audit-suggest.sh"
+      if [[ ! -f "$audit_src" ]]; then
+        echo "WARNING: pre-push-audit-suggest.sh not found — skipping." >&2
+      else
+        local audit_target="$hooks_dir/pre-push"
+        if ! { [[ -f "$audit_target" ]] && grep -q "octopus:pre-push-audit-suggest" "$audit_target" 2>/dev/null; }; then
+          if [[ "${OCTOPUS_DRY_RUN:-}" == "true" ]]; then
+            _dry_run_log "would install pre-push audit-suggest hook → $audit_target"
+          elif [[ -f "$audit_target" ]]; then
+            printf '\n# octopus:pre-push-audit-suggest\nbash "%s"\n' "$audit_src" >> "$audit_target"
+          else
+            cp "$audit_src" "$audit_target" && chmod +x "$audit_target"
+            echo "  Installed pre-push audit-suggest hook at $audit_target"
+          fi
+        fi
+      fi
+    fi
   fi
 
+  # RM-070: post-merge and post-checkout rules-sync hooks.
+  # Re-runs octopus setup when .octopus/rules/*.local.md files change after a pull/checkout.
+  local rules_sync_src="$OCTOPUS_DIR/hooks/git/rules-sync.sh"
+  if [[ -f "$rules_sync_src" ]]; then
+    _install_rules_sync_hook "$hooks_dir/post-merge"    "$rules_sync_src"
+    _install_rules_sync_hook "$hooks_dir/post-checkout" "$rules_sync_src"
+  fi
+}
+
+_install_rules_sync_hook() {
+  local target="$1"
+  local hook_src="$2"
   # Idempotent: skip if already installed.
-  if [[ -f "$target" ]] && grep -q "octopus:pre-push-audit-suggest" "$target" 2>/dev/null; then
+  if [[ -f "$target" ]] && grep -q "octopus:rules-sync" "$target" 2>/dev/null; then
     return 0
   fi
-
   if [[ "${OCTOPUS_DRY_RUN:-}" == "true" ]]; then
-    _dry_run_log "would install pre-push audit-suggest hook → $target"
+    _dry_run_log "would install rules-sync hook → $target"
     return 0
   fi
-
   if [[ -f "$target" ]]; then
-    echo "  Chaining Octopus audit-suggest onto existing pre-push hook..."
-    printf '\n# octopus:pre-push-audit-suggest\nbash "%s"\n' "$hook_src" >> "$target"
+    printf '\n# octopus:rules-sync\nbash "%s" "$@"\n' "$hook_src" >> "$target"
   else
-    cp "$hook_src" "$target"
+    printf '#!/usr/bin/env bash\n# octopus:rules-sync\nbash "%s" "$@"\n' "$hook_src" > "$target"
     chmod +x "$target"
-    echo "  Installed pre-push audit-suggest hook at $target"
   fi
+  echo "  Installed rules-sync hook at $target"
 }
 
 deliver_roles() {
