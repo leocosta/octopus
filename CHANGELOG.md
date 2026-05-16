@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.42.0] - 2026-05-16
+
+✨ The `delegate` skill now supports **multi-step role pipelines**. A single message with multiple `@role:` mentions and sequencing language (PT-BR or EN: `após`, `then`, `after`, `ao final`, etc.) automatically enters pipeline mode. Octopus shows a plan preview, validates all roles before starting, executes each step with the previous outputs as context, and asks for confirmation at each gate. Roles joined by "e"/"and" are dispatched in parallel in a single turn. The `--auto` flag (or "rode tudo de uma vez") runs all steps without stopping. A role alias table resolves shorthands (`pm`, `staff-engineer`, `frontend-specialist`, `backend`, etc.) to their canonical names. Pre-flight validation reports missing roles with installation hints before any dispatch runs.
+
 ## [1.41.4] - 2026-05-16
 
 🎨 All slash command descriptions now carry an `(Octopus)` prefix, making them easy to distinguish from other plugins in the Claude Code `/` menu.
