@@ -1245,31 +1245,74 @@ deliver_hooks() {
 
     echo "Injecting hooks into $MANIFEST_DELIVERY_HOOKS_TARGET for $agent..."
 
-    python3 - "$settings_file" "$hooks_template" "${OCTOPUS_DISABLED_HOOKS:-}" "$OCTOPUS_DIR" << 'PYEOF'
-import json, sys
+    local local_hooks_path="$(_install_root)/.octopus/hooks/hooks.local.json"
+    local local_hooks_arg=""
+    [[ -f "$local_hooks_path" ]] && local_hooks_arg="$local_hooks_path"
 
-settings_path, hooks_path, disabled, install_root = sys.argv[1:5]
+    python3 - "$settings_file" "$hooks_template" "${OCTOPUS_DISABLED_HOOKS:-}" "$OCTOPUS_DIR" "${OCTOPUS_RULES[*]:-}" "$local_hooks_arg" << 'PYEOF'
+import json, os, sys
+
+settings_path, hooks_path, disabled, install_root, active_stacks_str, local_hooks_path = sys.argv[1:7]
+active_stacks = set(active_stacks_str.split()) if active_stacks_str.strip() else set()
 
 with open(settings_path) as f:
     settings = json.load(f)
 with open(hooks_path) as f:
     hooks = json.load(f)
 
+# Apply project-level override: hooks in hooks.local.json replace matching ids in defaults.
+if local_hooks_path and os.path.isfile(local_hooks_path):
+    with open(local_hooks_path) as f:
+        local_hooks = json.load(f)
+    for event_type, local_entries in local_hooks.items():
+        default_entries = hooks.get(event_type, [])
+        override_by_id = {
+            h["id"]: (ei, hi, h)
+            for ei, entry in enumerate(default_entries)
+            for hi, h in enumerate(entry.get("hooks", []))
+            if h.get("id")
+        }
+        for local_entry in local_entries:
+            for local_hook in local_entry.get("hooks", []):
+                lid = local_hook.get("id")
+                if lid and lid in override_by_id:
+                    ei, hi, _ = override_by_id[lid]
+                    default_entries[ei]["hooks"][hi] = local_hook
+                else:
+                    default_entries.append(local_entry)
+        hooks[event_type] = default_entries
+
 # Filter disabled hooks (comma-separated list from env).
-# Hook ids live inside each matcher entry's `hooks` array, so filter at
-# both levels: drop nested hooks whose id matches, then drop matcher
-# entries whose `hooks` array ends up empty.
 if disabled:
     disabled_set = set(d.strip() for d in disabled.split(",") if d.strip())
     for event_type in list(hooks.keys()):
         new_entries = []
         for entry in hooks[event_type]:
-            inner = entry.get("hooks", [])
-            filtered = [h for h in inner if h.get("id", "") not in disabled_set]
+            filtered = [h for h in entry.get("hooks", []) if h.get("id", "") not in disabled_set]
             if filtered:
-                entry["hooks"] = filtered
-                new_entries.append(entry)
+                new_entries.append({**entry, "hooks": filtered})
         hooks[event_type] = new_entries
+
+# Filter by stacks: hooks with a "stacks" field are only injected when at least
+# one of their stacks is active. Hooks without "stacks" are always injected.
+if active_stacks:
+    for event_type in list(hooks.keys()):
+        new_entries = []
+        for entry in hooks[event_type]:
+            filtered = []
+            for h in entry.get("hooks", []):
+                hook_stacks = h.get("stacks")
+                if hook_stacks is None or any(s in active_stacks for s in hook_stacks):
+                    filtered.append(h)
+            if filtered:
+                new_entries.append({**entry, "hooks": filtered})
+        hooks[event_type] = new_entries
+
+# Strip internal-only "stacks" field before writing to settings.json.
+for event_type, entries in hooks.items():
+    for entry in entries:
+        for hook in entry.get("hooks", []):
+            hook.pop("stacks", None)
 
 # Rewrite relative "octopus/hooks/..." paths to absolute install paths so
 # Claude Code can execute them regardless of its current working directory.

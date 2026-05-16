@@ -166,5 +166,107 @@ print('duplicates:' + ','.join(set(dups)) if dups else 'ok')
 echo "PASS: deliver_hooks is idempotent"
 rm -rf "$TMPDIR5"
 
+echo "Test: bundle-aware — typescript-only hooks excluded for csharp-only project"
+TMPDIR_BA=$(mktemp -d)
+mkdir -p "$TMPDIR_BA/.claude"
+echo '{"permissions": {}, "hooks": {}, "mcpServers": {}}' > "$TMPDIR_BA/.claude/settings.json"
+export OCTOPUS_HOOKS="true"
+export PROJECT_ROOT="$TMPDIR_BA"
+MANIFEST_CAP_HOOKS="true"
+MANIFEST_DELIVERY_HOOKS_METHOD="settings_json"
+MANIFEST_DELIVERY_HOOKS_TARGET=".claude/settings.json"
+OCTOPUS_RULES=("common" "csharp")
+
+deliver_hooks "claude" >/dev/null
+
+if grep -q '"id": "console-log-warn"' "$TMPDIR_BA/.claude/settings.json"; then
+  echo "FAIL: console-log-warn injected for csharp-only project (should be typescript-only)"
+  exit 1
+fi
+grep -q '"id": "auto-format"' "$TMPDIR_BA/.claude/settings.json" \
+  || { echo "FAIL: auto-format missing for csharp project"; exit 1; }
+echo "PASS: typescript-only hooks excluded for csharp-only project"
+rm -rf "$TMPDIR_BA"
+
+echo "Test: bundle-aware — typescript hooks present for typescript project"
+TMPDIR_TS=$(mktemp -d)
+mkdir -p "$TMPDIR_TS/.claude"
+echo '{"permissions": {}, "hooks": {}, "mcpServers": {}}' > "$TMPDIR_TS/.claude/settings.json"
+export PROJECT_ROOT="$TMPDIR_TS"
+OCTOPUS_RULES=("common" "typescript")
+
+deliver_hooks "claude" >/dev/null
+
+grep -q '"id": "console-log-warn"' "$TMPDIR_TS/.claude/settings.json" \
+  || { echo "FAIL: console-log-warn missing for typescript project"; exit 1; }
+echo "PASS: typescript hooks present for typescript project"
+rm -rf "$TMPDIR_TS"
+
+echo "Test: .octopus/hooks/hooks.local.json overrides default formatter hook"
+TMPDIR_OV=$(mktemp -d)
+mkdir -p "$TMPDIR_OV/.claude" "$TMPDIR_OV/.octopus/hooks"
+echo '{"permissions": {}, "hooks": {}, "mcpServers": {}}' > "$TMPDIR_OV/.claude/settings.json"
+cat > "$TMPDIR_OV/.octopus/hooks/hooks.local.json" << 'HOOKEOF'
+{
+  "PostToolUse": [
+    {
+      "matcher": "Write|Edit",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "/usr/local/bin/custom-format.sh",
+          "id": "auto-format"
+        }
+      ]
+    }
+  ]
+}
+HOOKEOF
+export PROJECT_ROOT="$TMPDIR_OV"
+OCTOPUS_RULES=("common")
+
+deliver_hooks "claude" >/dev/null
+
+python3 - "$TMPDIR_OV/.claude/settings.json" <<'PYEOF'
+import json, sys
+with open(sys.argv[1]) as f:
+    settings = json.load(f)
+for entry in settings["hooks"].get("PostToolUse", []):
+    for hook in entry["hooks"]:
+        if hook["id"] == "auto-format":
+            if hook["command"] == "/usr/local/bin/custom-format.sh":
+                print("PASS: .octopus/hooks/hooks.local.json overrides auto-format")
+                sys.exit(0)
+            else:
+                print(f"FAIL: expected custom-format.sh, got {hook['command']}")
+                sys.exit(1)
+print("FAIL: auto-format hook not found")
+sys.exit(1)
+PYEOF
+rm -rf "$TMPDIR_OV"
+
+echo "Test: stacks field is stripped from delivered hooks"
+TMPDIR_ST=$(mktemp -d)
+mkdir -p "$TMPDIR_ST/.claude"
+echo '{"permissions": {}, "hooks": {}, "mcpServers": {}}' > "$TMPDIR_ST/.claude/settings.json"
+export PROJECT_ROOT="$TMPDIR_ST"
+OCTOPUS_RULES=("common" "typescript")
+
+deliver_hooks "claude" >/dev/null
+
+python3 - "$TMPDIR_ST/.claude/settings.json" <<'PYEOF'
+import json, sys
+with open(sys.argv[1]) as f:
+    settings = json.load(f)
+for event, entries in settings["hooks"].items():
+    for entry in entries:
+        for hook in entry["hooks"]:
+            if "stacks" in hook:
+                print(f"FAIL: stacks field leaked into delivered hook {hook.get('id')}")
+                sys.exit(1)
+print("PASS: no stacks field in delivered hooks")
+PYEOF
+rm -rf "$TMPDIR_ST"
+
 echo ""
 echo "All hooks injection tests passed!"

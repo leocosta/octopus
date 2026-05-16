@@ -42,7 +42,17 @@ case "$ext" in
     if has csharpier; then
       run_formatter csharpier csharpier format "$file_path"
     elif has dotnet; then
-      run_formatter "dotnet format" dotnet format --include "$file_path"
+      # Walk up from the file to find the nearest .sln or .csproj
+      local proj_dir
+      proj_dir=$(dirname "$file_path")
+      while [[ "$proj_dir" != "/" ]]; do
+        if compgen -G "$proj_dir"/*.sln "$proj_dir"/*.csproj &>/dev/null; then
+          break
+        fi
+        proj_dir=$(dirname "$proj_dir")
+      done
+      [[ "$proj_dir" == "/" ]] && proj_dir=$(dirname "$file_path")
+      run_formatter "dotnet format" dotnet format "$proj_dir" --include "$file_path" --no-restore
     fi
     ;;
   py)

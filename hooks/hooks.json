@@ -80,7 +80,8 @@
         {
           "type": "command",
           "command": "octopus/hooks/post-tool-use/console-log-warn.sh",
-          "id": "console-log-warn"
+          "id": "console-log-warn",
+          "stacks": ["typescript", "python"]
         }
       ]
     }
