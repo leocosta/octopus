@@ -1966,8 +1966,7 @@ deliver_commands() {
         local cmd_name
         cmd_name=$(basename "$cmd_file" .md)
         GENERATED_WORKFLOW_CMDS+=("$cmd_name")
-        strip_frontmatter "$cmd_file" \
-          | sed '/./,$!d' \
+        cat "$cmd_file" \
           > "$commands_dir/${prefix}${cmd_name}.md"
         echo "  → ${MANIFEST_DELIVERY_COMMANDS_TARGET}${prefix}${cmd_name}.md"
       done
