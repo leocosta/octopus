@@ -67,35 +67,45 @@ _PICKER_FEATURE_DEFAULTS=(true true false false)
 _picker_run_fzf() {
   local fzf_bin="$1"
 
-  # Build display lines. Format: "bundle:<name>  <desc>" or "feature:[on/  ] <name>  <desc>"
-  local lines=()
+  # Build selectable lines only — no separator lines (those become --header-lines).
+  # Format: "bundle:<name>  <desc>" or "feature:[on/  ] <name>  <desc>"
+  local bundle_lines=() feature_lines=()
   local i
-  lines+=("  ── Bundle ─────────────────────────────────────────────────")
   for (( i=0; i<${#_PICKER_BUNDLES[@]}; i++ )); do
-    lines+=("bundle:${_PICKER_BUNDLES[$i]}  ${_PICKER_BUNDLE_DESCS[$i]}")
+    bundle_lines+=("bundle:${_PICKER_BUNDLES[$i]}  ${_PICKER_BUNDLE_DESCS[$i]}")
   done
-  lines+=("  ── Features ────────────────────────────────────────────────")
   for (( i=0; i<${#_PICKER_FEATURES[@]}; i++ )); do
     local prefix
     [[ "${_PICKER_FEATURE_DEFAULTS[$i]}" == "true" ]] && prefix="[on] " || prefix="[  ] "
-    lines+=("feature:${prefix}${_PICKER_FEATURES[$i]}  ${_PICKER_FEATURE_DESCS[$i]}")
+    feature_lines+=("feature:${prefix}${_PICKER_FEATURES[$i]}  ${_PICKER_FEATURE_DESCS[$i]}")
   done
 
+  # Section labels prepended as header lines (non-selectable in fzf --header-lines).
+  # Layout is reverse so they appear above their respective items when rendered.
+  local all_lines=()
+  all_lines+=("  ── Features ─────────────────────────────────────────────────")
+  all_lines+=("${feature_lines[@]}")
+  all_lines+=("  ── Bundle ───────────────────────────────────────────────────")
+  all_lines+=("${bundle_lines[@]}")
+
   local header
-  header="  TAB/SPACE = toggle   ENTER = confirm   Ctrl-C = cancel"
+  header="  SPACE/TAB = toggle   ENTER = confirm   Ctrl-C = cancel"
 
   local selected
-  selected=$(printf '%s\n' "${lines[@]}" | \
+  selected=$(printf '%s\n' "${all_lines[@]}" | \
     "$fzf_bin" \
       --multi \
       --no-sort \
       --layout=reverse \
       --header="$header" \
-      --height=~60% \
+      --height=~80% \
       --border=rounded \
       --prompt="  Octopus Setup › " \
       --pointer="▶" \
       --marker="✓" \
+      --bind="space:toggle" \
+      --bind="tab:toggle+down" \
+      --bind="btab:toggle+up" \
       2>/dev/tty) || { ui_warn "Setup cancelled."; exit 0; }
 
   # Parse bundles — collect all selected bundle lines (multi-select)
