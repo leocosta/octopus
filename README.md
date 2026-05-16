@@ -192,6 +192,37 @@ You can also type `@role:` directly without navigating first — it routes to th
 
 **From the terminal** — use [`octopus ask`](#octopus-ask) without opening the TUI.
 
+### Multi-step role pipelines
+
+Chain multiple roles in a single message using sequencing language (PT-BR or EN). Octopus detects the pipeline, shows a preview, validates all roles upfront, and executes each step — passing the previous output as context to the next.
+
+```
+@tech-writer: create a spec for lesson plan management.
+After documenting, have @product-manager review it.
+Once validated, delegate implementation to @frontend-developer and @backend-developer.
+Finally, have @architect do the code review.
+```
+
+Roles joined by "and"/"e" dispatch in parallel in a single turn. After each step, Octopus pauses for confirmation:
+
+```
+» Etapa 2/4 concluída — product-manager respondeu (1284 chars)
+Próxima: Etapa 3/4 — paralelo: @frontend-developer + @backend-developer
+Continuar? [y/s · auto · n · skip]
+```
+
+Add `--auto` (or include "rode tudo de uma vez") to run all steps without stopping.
+
+**Role aliases** — common shorthands are resolved automatically:
+
+| Alias | Resolves to |
+|---|---|
+| `@pm` | `@product-manager` |
+| `@staff-engineer`, `@staff` | `@architect` |
+| `@frontend`, `@fe`, `@frontend-specialist` | `@frontend-developer` |
+| `@backend`, `@be`, `@backend-specialist` | `@backend-developer` |
+| `@writer`, `@tech-writer` | `@tech-writer` |
+
 ### Keybindings
 
 | Key | Action |
