@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.41.2] - 2026-05-16
+
+🐛 Fixed SPACE not toggling items in the fzf picker — it was documented as a toggle key but never bound, so fzf used its default (cursor-down). SPACE and TAB now both toggle selection; TAB also advances the cursor and shift-TAB goes back. Removed an incorrect `--nth=1` flag that was limiting search scope. Picker height increased to 80% for better readability.
+
 ## [1.41.1] - 2026-05-16
 
 🐛 Fixed `octopus update` not installing bundled fzf binaries. The installer was downloading the bare git archive (`archive/refs/tags/`) which contains only source files, not the fzf binaries built by CI. It now downloads the release asset (`releases/download/`) which includes `bin/fzf/` for all platforms. The release tarball is also restructured to include a versioned root directory (`octopus-<tag>/`) so the installer's extraction logic works correctly. After running `octopus update`, the fzf picker will appear automatically during `octopus setup`.
