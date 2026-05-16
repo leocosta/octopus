@@ -148,7 +148,8 @@ resolve_tarball_url() {
   if [[ -n "${OCTOPUS_INSTALL_ENDPOINT:-}" ]]; then
     echo "${OCTOPUS_INSTALL_ENDPOINT%/}/$version/octopus-$version.tar.gz"
   else
-    echo "https://github.com/$GITHUB_REPO/archive/refs/tags/$version.tar.gz"
+    # Use the release asset (includes bundled fzf binaries), not the bare git archive.
+    echo "https://github.com/$GITHUB_REPO/releases/download/$version/octopus-$version.tar.gz"
   fi
 }
 

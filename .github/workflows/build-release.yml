@@ -35,7 +35,11 @@ jobs:
         shell: bash
         run: |
           TAG="${GITHUB_REF##*/}"
-          tar -czf "/tmp/octopus-${TAG}.tar.gz" --exclude .git --exclude .github -C "$GITHUB_WORKSPACE" .
+          # Wrap content in octopus-<tag>/ so install.sh can find it via find -name 'octopus-*'
+          tar -czf "/tmp/octopus-${TAG}.tar.gz" \
+            --exclude .git --exclude .github \
+            --transform "s,^\./,octopus-${TAG}/," \
+            -C "$GITHUB_WORKSPACE" .
           sha256sum "/tmp/octopus-${TAG}.tar.gz" > "/tmp/octopus-${TAG}.sha256"
 
       # RM-020 — Sign the tarball with the maintainer's GPG key so install.sh
