@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.41.1] - 2026-05-16
+
+🐛 Fixed `octopus update` not installing bundled fzf binaries. The installer was downloading the bare git archive (`archive/refs/tags/`) which contains only source files, not the fzf binaries built by CI. It now downloads the release asset (`releases/download/`) which includes `bin/fzf/` for all platforms. The release tarball is also restructured to include a versioned root directory (`octopus-<tag>/`) so the installer's extraction logic works correctly. After running `octopus update`, the fzf picker will appear automatically during `octopus setup`.
+
 ## [1.41.0] - 2026-05-16
 
 ✨ The setup picker now supports **multi-bundle selection**. In the bash fallback, entering `1, 3` or `1 2 3` selects multiple bundles; invalid numbers trigger a re-prompt with a clear error instead of silently defaulting to `starter`. The fzf picker (available after updating to v1.40.0+) collects all TAB-selected bundles rather than discarding extras. The `--bundle=` CLI flag also accepts comma-separated values (`--bundle=starter,docs`) for non-interactive setups. The generated `.octopus.yml` lists each selected bundle as a separate entry under `bundles:`.
