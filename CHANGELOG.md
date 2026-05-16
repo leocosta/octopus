@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.42.3] - 2026-05-16
+
+🐛 Fixed Stop hook error ("Failed with non-blocking status code") in projects that are not git repositories. `console-log-check.sh` called `git diff` inside a `set -euo pipefail` subshell — `git` exits 128 outside a repo, propagating as 129. Now exits 0 cleanly when no git repo is detected.
+
 ## [1.42.2] - 2026-05-16
 
 🐛 Fixed `dotnet format` not running in projects that have a `.csproj` but no `.sln`. The `auto-format.sh` project discovery used `compgen -G` with two patterns in one call — `compgen` only accepts one pattern, so `.csproj` files were never found. Now uses separate `compgen -G` calls for `.sln` and `.csproj`.
