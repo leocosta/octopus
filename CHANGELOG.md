@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.43.0] - 2026-05-16
+
+✨ The `typecheck.sh` hook now injects type/build errors back into Claude's context so it self-corrects without manual intervention. Previously it only printed errors to the hooks panel (invisible to Claude). It now returns `{"decision": "block", "reason": "<errors>"}` — Claude Code feeds the reason back to Claude in the same turn, which then fixes the code automatically. Covers TypeScript (`tsc`), Python (`mypy`/`pyright`), and C# (`dotnet build`).
+
 ## [1.42.5] - 2026-05-16
 
 🐛 Fixed `typecheck.sh` not running `dotnet build` in .NET projects — the hook was calling `dotnet build` from the wrong directory, failing with MSB1003 (no project file found). Now applies the same `.sln`/`.csproj` walk-up discovery used in `auto-format.sh`. Claude Code will now see compilation errors (e.g., `void Foo()` without a body) after each edit and self-correct.
