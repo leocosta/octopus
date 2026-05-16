@@ -3,6 +3,9 @@
 
 set -euo pipefail
 
+# Skip gracefully when not in a git repository
+git rev-parse --git-dir &>/dev/null || exit 0
+
 # Get files modified in this session (unstaged + staged)
 modified_files=$(git diff --name-only 2>/dev/null; git diff --cached --name-only 2>/dev/null)
 
