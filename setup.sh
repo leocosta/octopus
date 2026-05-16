@@ -900,6 +900,19 @@ concatenate_from_manifest() {
     cat "$OCTOPUS_DIR/$core_file" >> "$full_output"
   done
 
+  # When rules are delivered natively (symlinked), append a reference section so the
+  # assistant knows where to find them (RM-073). Mirrors the {{RULES}} injection in
+  # generate_from_template.
+  if [[ "$MANIFEST_CAP_RULES" == "true" && -n "$MANIFEST_DELIVERY_RULES_TARGET" ]]; then
+    local rules_ref=""
+    for rule in "${OCTOPUS_RULES[@]}"; do
+      rules_ref+="- See ${MANIFEST_DELIVERY_RULES_TARGET}${rule}/ for ${rule} coding rules"$'\n'
+    done
+    if [[ -n "$rules_ref" ]]; then
+      printf '\n## Coding Rules\n\n%s' "${rules_ref%$'\n'}" >> "$full_output"
+    fi
+  fi
+
   # Append rules (only if NOT delivered natively)
   if [[ "$MANIFEST_CAP_RULES" != "true" ]]; then
     for rule in "${OCTOPUS_RULES[@]}"; do

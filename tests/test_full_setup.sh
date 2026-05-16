@@ -160,6 +160,16 @@ echo "PASS: copilot rules symlinked as .instructions.md"
   || { echo "FAIL: coding-style.md not symlinked for codex"; exit 1; }
 echo "PASS: codex rules symlinked as .md"
 
+# Verify copilot-instructions.md references .github/instructions/ (RM-073)
+grep -q "\.github/instructions/" ".github/copilot-instructions.md" \
+  || { echo "FAIL: copilot-instructions.md does not reference .github/instructions/"; exit 1; }
+echo "PASS: copilot-instructions.md references rules path (RM-073)"
+
+# Verify AGENTS.md references .codex/rules/ (RM-073)
+grep -q "\.codex/rules/" "AGENTS.md" \
+  || { echo "FAIL: AGENTS.md does not reference .codex/rules/"; exit 1; }
+echo "PASS: AGENTS.md references rules path (RM-073)"
+
 # Verify workflow commands
 [[ -f ".claude/commands/octopus:branch-create.md" ]] || { echo "FAIL: workflow command missing"; exit 1; }
 [[ -f ".claude/commands/octopus:doc-research.md" ]] || { echo "FAIL: doc-research command missing"; exit 1; }
