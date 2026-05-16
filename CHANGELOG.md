@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.41.4] - 2026-05-16
+
+🎨 All slash command descriptions now carry an `(Octopus)` prefix, making them easy to distinguish from other plugins in the Claude Code `/` menu.
+
 ## [1.41.3] - 2026-05-16
 
 🐛 Fixed slash commands showing no description in the `/` menu. The setup script was stripping the YAML frontmatter from command files before writing them — removing the `description:` field that Claude Code reads to populate the menu. Commands now include their full frontmatter.
