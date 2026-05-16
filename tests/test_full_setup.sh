@@ -93,6 +93,24 @@ readlink ".claude/rules/common/coding-style.local.md" | grep -q "\.octopus/rules
   || { echo "FAIL: coding-style.local.md symlink target wrong"; exit 1; }
 echo "PASS: .local.md overrides symlinked from .octopus/rules/"
 
+# Verify personal ~/.octopus/rules/ overrides are symlinked (RM-068)
+mkdir -p "$HOME/.octopus/rules/common"
+echo "# personal override" > "$HOME/.octopus/rules/common/patterns.local.md"
+./octopus/setup.sh >/dev/null 2>&1
+[[ -L ".claude/rules/common/patterns.local.md" ]] \
+  || { echo "FAIL: personal patterns.local.md not symlinked from ~/.octopus/rules/"; exit 1; }
+readlink ".claude/rules/common/patterns.local.md" | grep -q "\.octopus/rules/common/patterns.local.md" \
+  || { echo "FAIL: patterns.local.md symlink should point to ~/.octopus/rules/"; exit 1; }
+echo "PASS: personal ~/.octopus/rules/ overrides symlinked"
+# project override wins over personal when both define the same file
+echo "# project override" > ".octopus/rules/common/patterns.local.md"
+./octopus/setup.sh >/dev/null 2>&1
+readlink ".claude/rules/common/patterns.local.md" | grep -q "\.octopus/rules/common/patterns.local.md" \
+  && readlink ".claude/rules/common/patterns.local.md" | grep -qv "^$HOME" \
+  || { echo "FAIL: project override should win over personal override"; exit 1; }
+echo "PASS: project override wins over personal override"
+rm -f "$HOME/.octopus/rules/common/patterns.local.md" ".octopus/rules/common/patterns.local.md"
+
 # Verify skills symlinks
 [[ -L ".claude/skills/doc-adr" ]] || { echo "FAIL: .claude/skills/doc-adr symlink missing"; exit 1; }
 [[ -L ".claude/skills/test-e2e" ]] || { echo "FAIL: .claude/skills/test-e2e symlink missing"; exit 1; }

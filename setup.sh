@@ -912,11 +912,17 @@ concatenate_from_manifest() {
       done
     done
 
-    # Append project rule overrides from .octopus/rules/ (.local.md files win by position)
-    local octopus_rules_overrides="$(_install_root)/.octopus/rules"
-    if [[ -d "$octopus_rules_overrides" ]]; then
+    # Append personal overrides from ~/.octopus/rules/ (RM-068), then project overrides.
+    # Later content wins by position — project overrides take precedence over personal.
+    local personal_rules="$HOME/.octopus/rules"
+    local project_rules="$(_install_root)/.octopus/rules"
+    for overrides_dir in "$personal_rules" "$project_rules"; do
+      [[ "$overrides_dir" == "$project_rules" || "$overrides_dir" != "$project_rules" ]] || continue
+      [[ -d "$overrides_dir" ]] || continue
+      # Skip personal layer when install root IS home (user scope — they're the same dir)
+      [[ "$overrides_dir" == "$personal_rules" && "$personal_rules" == "$project_rules" ]] && continue
       for rule in "${OCTOPUS_RULES[@]}"; do
-        local override_dir="$octopus_rules_overrides/$rule"
+        local override_dir="$overrides_dir/$rule"
         [[ -d "$override_dir" ]] || continue
         for local_file in "$override_dir"/*.local.md; do
           [[ -f "$local_file" ]] || continue
@@ -924,7 +930,7 @@ concatenate_from_manifest() {
           cat "$local_file" >> "$full_output"
         done
       done
-    fi
+    done
 
     # Only inject language override when 'common' rule set is active
     if [[ " ${OCTOPUS_RULES[*]} " == *" common "* ]]; then
@@ -1080,10 +1086,22 @@ deliver_rules() {
         dest_name="$(_rules_dest_name "$(basename "$f")" "$use_instructions_ext")"
         ln -sf "$f" "$target/$rule/$dest_name"
       done
-      # Symlink project-level .local.md overrides from .octopus/rules/$rule/
-      local override_dir="$(_install_root)/.octopus/rules/$rule"
-      if [[ -d "$override_dir" ]]; then
-        for f in "$override_dir"/*.local.md; do
+      # Symlink personal overrides from ~/.octopus/rules/$rule/ (RM-068).
+      # Applied before project overrides so project wins on conflict.
+      local personal_dir="$HOME/.octopus/rules/$rule"
+      local project_override_dir="$(_install_root)/.octopus/rules/$rule"
+      if [[ -d "$personal_dir" && "$personal_dir" != "$project_override_dir" ]]; then
+        for f in "$personal_dir"/*.local.md; do
+          [[ -f "$f" ]] || continue
+          local dest_name
+          dest_name="$(_rules_dest_name "$(basename "$f")" "$use_instructions_ext")"
+          ln -sf "$f" "$target/$rule/$dest_name"
+        done
+      fi
+      # Symlink project-level .local.md overrides from .octopus/rules/$rule/.
+      # These overwrite personal overrides for the same filename.
+      if [[ -d "$project_override_dir" ]]; then
+        for f in "$project_override_dir"/*.local.md; do
           [[ -f "$f" ]] || continue
           local dest_name
           dest_name="$(_rules_dest_name "$(basename "$f")" "$use_instructions_ext")"
