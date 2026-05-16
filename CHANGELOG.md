@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.40.0] - 2026-05-16
+
+✨ This release delivers **Cluster 13 — Rules override consistency & formatter hooks**, a complete overhaul of how Octopus manages coding rules across assistants, teams, and developer environments.
+
+✨ Rules now support a **four-layer override hierarchy**: Octopus defaults → workspace shared repo → personal `~/.octopus/rules/` → project `.octopus/rules/`. A new `workspace:` key in `.octopus.yml` lets teams point to a shared repository so organisation-wide standards propagate automatically to every project. Personal overrides in `~/.octopus/rules/` apply across all projects without committing anything to the repo.
+
+✨ The symlink delivery mode now **picks up `.local.md` overrides immediately** — no `octopus update` required after creating an override file. For agents using concatenate mode (Gemini), `post-merge` and `post-checkout` git hooks detect `.local.md` changes after a pull or branch switch and re-run setup automatically.
+
+✨ **Copilot and Codex** manifests were updated to `native_rules: true`. Copilot rules are now symlinked to `.github/instructions/` as `.instructions.md` files; Codex rules land in `.codex/rules/`. Both agents also receive an auto-generated "Coding Rules" section in their main config file pointing to the correct paths, matching the behaviour Claude already had via template injection.
+
+✨ A new `rules/csharp/coding-style.md` preset ships with Octopus, covering the Allman brace convention, `var` usage, null handling, and expression bodies. All rule files in `rules/csharp/` and `rules/common/` now carry an `Override:` or `Extend-only:` header so teams know exactly what they can customise.
+
+🔧 **Formatter hooks** are now bundle-aware: `deliver_hooks` filters hooks tagged with a `stacks` field against `OCTOPUS_RULES`, so TypeScript-only hooks like `console-log-warn` are not injected for C#-only projects. Teams can override any default formatter by providing `.octopus/hooks/hooks.local.json`. The `auto-format.sh` dotnet handler was also improved to discover the nearest `.sln`/`.csproj` and pass `--no-restore`.
+
+📝 The roadmap was updated to record all eight RM entries (RM-067–074) as completed.
+
 ## [1.39.0] - 2026-05-12
 
 ✨ This release replaces the TUI setup wizard with `setup-picker.sh`, a single-screen selector that uses fzf (now bundled in the release tarball) or a plain bash fallback — no whiptail, no dialog, no ncurses windows. `octopus setup` is now flag-first: `--bundle`, `--scope`, `--stack`, `--no-hooks`, and `--no-workflow` deliver everything without interaction; non-interactive environments (CI/pipe) fall back to silent defaults.
