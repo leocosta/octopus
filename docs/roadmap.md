@@ -294,137 +294,15 @@ for monorepos that contain both an API and a separate frontend.
 
 ### Cluster 13 — Rules override consistency & formatter hooks
 
-#### RM-067 — Symlink mode: incluir `.local.md` do `.octopus/rules/` no delivery
+_RM-067..074 complete. Cluster 13 has no open items._
 
-- **Priority:** 🟡 Medium
-- **Effort:** low
-- **Status:** proposed
-- **Added:** 2026-05-16
-
-`deliver_rules` (symlink mode) symlinks apenas arquivos de `OCTOPUS_DIR/rules/`, ignorando overrides em `.octopus/rules/*.local.md`. Time cria um override → não aparece sem re-run.
-
-Fix: adicionar segundo loop em `deliver_rules` que symlinks `*.local.md` de `.octopus/rules/$rule/` para o delivery target junto dos defaults.
-
-**Rationale:** Symlinks são live por natureza. Com o fix, criar um `.local.md` no projeto é suficiente — sem `octopus update`.
-
----
-
-#### RM-068 — Personal override layer via `~/.octopus/rules/`
-
-- **Priority:** 🟡 Medium
-- **Effort:** medium
-- **Status:** proposed
-- **Added:** 2026-05-16
-
-Não existe mecanismo de override pessoal que valha para todos os projetos. Preferências individuais (ex.: estilo de braces diferente do time) precisam ser duplicadas em cada repo ou ficam fora do Octopus.
-
-Fix: `setup.sh` escaneia `~/.octopus/rules/` como camada de override pessoal, com precedência sobre os defaults do Octopus mas abaixo dos overrides do projeto (`.octopus/rules/`). Ordem: Octopus defaults → `~/.octopus/rules/` → `.octopus/rules/`.
-
-**Rationale:** Mesma semântica que `~/.claude/settings.json` (user scope) vs `.claude/settings.json` (project scope). Faz sentido ter a mesma hierarquia para rules.
-
----
-
-#### RM-069 — Workspace/shared repo como fonte de rules para múltiplos projetos
-
-- **Priority:** 🟢 Low
-- **Effort:** high
-- **Status:** proposed
-- **Added:** 2026-05-16
-
-Times com monorepo ou multi-repo compartilhado mantêm rules, `.editorconfig` e outros padrões em um repo central (`workspace`). Hoje não há mecanismo para que esses artefatos propaguem automaticamente para repos filhos via Octopus.
-
-Requer: definir uma config `workspace:` no `.octopus.yml` dos projetos filhos apontando para o repo compartilhado, e o `setup` resolver e aplicar as rules desse workspace antes das overrides locais.
-
-**Rationale:** Reduz duplicação em organizações com múltiplos repos que compartilham os mesmos padrões de time.
-
----
-
-#### RM-070 — Concatenate mode: git hooks para re-assembly automático após `.local.md`
-
-- **Priority:** 🟡 Medium
-- **Effort:** low
-- **Status:** proposed
-- **Added:** 2026-05-16
-
-Agentes com `native_rules: false` (Gemini) usam concatenate mode. Após criar um `.local.md` em `.octopus/rules/`, o time precisa rodar `octopus update` manualmente para o arquivo compilado ser atualizado.
-
-Fix: `setup.sh` instala `post-merge` e `post-checkout` hooks no `.git/hooks/` que verificam se algum `*.local.md` mudou no último pull/checkout e re-rodam o assembly automaticamente se sim.
-
-**Rationale:** Para symlink mode (RM-067) o re-run é eliminado. Para concatenate mode, git hooks são o menor atrito possível — transparente para o desenvolvedor.
-
----
-
-#### RM-071 — Atualizar manifesto do Copilot para `native_rules: true`
-
-- **Priority:** 🟢 Low
-- **Effort:** low
-- **Status:** proposed
-- **Added:** 2026-05-16
-
-O manifesto `agents/copilot/manifest.yml` declara `native_rules: false`, fazendo o Octopus concatenar rules num arquivo único. Copilot hoje suporta `.github/instructions/*.md` com directory scanning nativo e `applyTo` frontmatter — o manifesto está desatualizado.
-
-Fix: atualizar para `native_rules: true`, definir `rules_target: .github/instructions/`, migrar delivery para symlink mode.
-
-**Rationale:** Descoberto por verificação contra documentação oficial do Copilot em 2026-05-16. Com `native_rules: true`, Copilot se beneficia do mesmo fix do RM-067.
-
----
-
-#### RM-072 — Atualizar manifesto do Codex para `native_rules: true`
-
-- **Priority:** 🟢 Low
-- **Effort:** low
-- **Status:** proposed
-- **Added:** 2026-05-16
-
-Mesmo cenário do RM-071 para o Codex. O manifesto declara `native_rules: false`, mas Codex suporta `.codex/rules/` como diretório nativo (user scope `~/.codex/rules/` + project scope `.codex/rules/`).
-
-Fix: atualizar para `native_rules: true`, definir `rules_target: .codex/rules/`, migrar para symlink mode.
-
-**Rationale:** Descoberto por verificação contra documentação oficial do Codex em 2026-05-16.
-
----
-
-#### RM-073 — Setup auto-configura todos os assistentes ativos para apontar para as rules
-
-- **Priority:** 🟡 Medium
-- **Effort:** medium
-- **Status:** proposed
-- **Added:** 2026-05-16
-
-Hoje cada assistente precisa ter seu config file apontando para as rules manualmente. Um time que usa Claude + Copilot + Gemini precisa garantir que `.claude/CLAUDE.md`, `.github/copilot-instructions.md` e `GEMINI.md` todos referenciem os paths corretos — isso não é automatizado pelo setup.
-
-Fix: `octopus setup` detecta os agentes configurados no `.octopus.yml` e garante que o config file de cada um inclua a referência correta às rules do bundle ativo.
-
-**Rationale:** Elo fraco atual: rules existem e são distribuídas, mas ficam invisíveis para assistentes cujo config file não foi atualizado após um `octopus update` que adicionou novas rule directories.
-
----
-
-#### RM-074 — Bundle-aware formatter hooks: Octopus configura PostToolUse hooks por stack
-
-- **Priority:** 🔴 High
-- **Effort:** medium
-- **Status:** proposed
-- **Added:** 2026-05-16
-
-Hoje o time configura manualmente hooks de formatter no `settings.json`. Não há conexão entre o bundle ativo no `.octopus.yml` e os hooks de enforcement de código.
-
-O Octopus deveria, durante o `setup`, injetar hooks `PostToolUse` (matcher `Write|Edit`) baseados nas stacks do bundle:
-
-| Stack | Hook |
-|---|---|
-| `csharp` | `dotnet format --include <file> --no-restore` |
-| `typescript` | `biome format --write <file>` ou `prettier --write <file>` |
-| `python` | `ruff format <file>` |
-
-Os hooks respeitam o `.editorconfig` do projeto como fonte de verdade das regras de estilo. Times podem sobrescrever via `.octopus/hooks/` (análogo ao padrão `.local.md` de RM-067).
-
-**Rationale:** Ponto de partida da discussão que gerou este cluster. O assistente gera código → formatter corrige automaticamente → padrão do time garantido sem disciplina manual. Complementa as rules (que guiam o modelo) com enforcement real pós-geração.
+All eight items shipped together: rule override layering (workspace → personal → project), symlink live-reload for `.local.md`, git hook re-assembly for concatenate mode, Copilot/Codex native rules delivery, auto-configured rules references in agent config files, and bundle-aware formatter hooks with project override support.
 
 ---
 
 ## In Progress
 
-_No items in progress. All clusters complete through RM-066; Cluster 13 (RM-067–074) proposed._
+_No items in progress. All clusters complete through RM-074._
 
 ---
 
@@ -496,3 +374,11 @@ _No items in progress. All clusters complete through RM-066; Cluster 13 (RM-067�
 | RM-062 | Model override in TUI command bar — `--model opus\|sonnet\|haiku` | completed → v1.31.0 | 2026-04-25 |
 | RM-063 | Daemon mode — `octopus control --daemon start/stop/status` | completed → v1.31.0 | 2026-04-25 |
 | RM-064 | `content-images` skill — AI image generation for blog covers, Instagram posts, and carousels with social-media agent integration | completed → [Spec](specs/2026-04-27-content-images-skill-design.md) | 2026-04-27 |
+| RM-067 | Symlink mode: incluir `.local.md` do `.octopus/rules/` no delivery — `deliver_rules` now symlinks project `.local.md` overrides alongside defaults; live without re-run | completed | 2026-05-16 |
+| RM-068 | Personal override layer via `~/.octopus/rules/` — new precedence layer between Octopus defaults and project overrides for both symlink and concatenate modes | completed | 2026-05-16 |
+| RM-069 | Workspace/shared repo como fonte de rules — `workspace:` key in `.octopus.yml` adds a team-wide rule layer; precedence: defaults → workspace → personal → project | completed | 2026-05-16 |
+| RM-070 | Concatenate mode: git hooks para re-assembly automático — `post-merge`/`post-checkout` hooks detect `.local.md` changes and re-run setup automatically | completed | 2026-05-16 |
+| RM-071 | Atualizar manifesto do Copilot para `native_rules: true` — rules now symlinked to `.github/instructions/` as `.instructions.md` files | completed | 2026-05-16 |
+| RM-072 | Atualizar manifesto do Codex para `native_rules: true` — rules now symlinked to `.codex/rules/` | completed | 2026-05-16 |
+| RM-073 | Setup auto-configura todos os assistentes para apontar para as rules — `concatenate_from_manifest` injects a "## Coding Rules" section with rule paths when `native_rules: true` | completed | 2026-05-16 |
+| RM-074 | Bundle-aware formatter hooks — `deliver_hooks` filters by `stacks` field; `.octopus/hooks/hooks.local.json` overrides defaults; `auto-format.sh` dotnet fix | completed | 2026-05-16 |
