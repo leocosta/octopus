@@ -1,10 +1,10 @@
 ---
 name: delegate
-description: (Octopus) Delegate a task to an Octopus role — returns result inline with attribution (» role respondeu:).
+description: (Octopus) Delegate one task or a multi-step pipeline to Octopus roles — sequential, parallel, with confirmation gates between steps.
 ---
 
 ---
-description: (Octopus) Delegate a task to an Octopus role — returns result inline with attribution (» role respondeu:).
+description: (Octopus) Delegate one task or a multi-step pipeline to Octopus roles — sequential, parallel, with confirmation gates between steps.
 agent: code
 ---
 
