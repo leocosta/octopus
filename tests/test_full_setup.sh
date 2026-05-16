@@ -82,6 +82,17 @@ readlink ".claude/rules/common/coding-style.md" | grep -q "rules/common/coding-s
 [[ -f ".claude/rules/common/coding-style.md" ]] || { echo "FAIL: coding-style.md not accessible"; exit 1; }
 [[ -f ".claude/rules/csharp/naming-style.md" ]] || { echo "FAIL: csharp naming-style.md not accessible"; exit 1; }
 
+# Verify .local.md overrides in .octopus/rules/ are symlinked into delivery target
+mkdir -p ".octopus/rules/common" ".octopus/rules/csharp"
+echo "# override" > ".octopus/rules/common/coding-style.local.md"
+echo "# override" > ".octopus/rules/csharp/naming-style.local.md"
+./octopus/setup.sh >/dev/null 2>&1
+[[ -L ".claude/rules/common/coding-style.local.md" ]] || { echo "FAIL: coding-style.local.md not symlinked"; exit 1; }
+[[ -L ".claude/rules/csharp/naming-style.local.md" ]] || { echo "FAIL: csharp naming-style.local.md not symlinked"; exit 1; }
+readlink ".claude/rules/common/coding-style.local.md" | grep -q "\.octopus/rules/common/coding-style.local.md" \
+  || { echo "FAIL: coding-style.local.md symlink target wrong"; exit 1; }
+echo "PASS: .local.md overrides symlinked from .octopus/rules/"
+
 # Verify skills symlinks
 [[ -L ".claude/skills/doc-adr" ]] || { echo "FAIL: .claude/skills/doc-adr symlink missing"; exit 1; }
 [[ -L ".claude/skills/test-e2e" ]] || { echo "FAIL: .claude/skills/test-e2e symlink missing"; exit 1; }

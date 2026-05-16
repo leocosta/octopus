@@ -1060,6 +1060,14 @@ deliver_rules() {
         [[ -f "$f" ]] || continue
         ln -sf "$f" "$target/$rule/$(basename "$f")"
       done
+      # Symlink project-level .local.md overrides from .octopus/rules/$rule/
+      local override_dir="$(_install_root)/.octopus/rules/$rule"
+      if [[ -d "$override_dir" ]]; then
+        for f in "$override_dir"/*.local.md; do
+          [[ -f "$f" ]] || continue
+          ln -sf "$f" "$target/$rule/$(basename "$f")"
+        done
+      fi
       echo "  -> ${MANIFEST_DELIVERY_RULES_TARGET}$rule/ (per-file symlinks)"
       # Generate language.local.md for the common rule directory
       if [[ "$rule" == "common" ]]; then
