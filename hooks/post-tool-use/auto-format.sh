@@ -46,7 +46,7 @@ case "$ext" in
       local proj_dir
       proj_dir=$(dirname "$file_path")
       while [[ "$proj_dir" != "/" ]]; do
-        if compgen -G "$proj_dir"/*.sln "$proj_dir"/*.csproj &>/dev/null; then
+        if compgen -G "$proj_dir"/*.sln &>/dev/null || compgen -G "$proj_dir"/*.csproj &>/dev/null; then
           break
         fi
         proj_dir=$(dirname "$proj_dir")
