@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.42.4] - 2026-05-16
+
+🐛 Fixed PostToolUse formatter hooks never running. The hooks were reading `file_path` from the top-level JSON, but Claude Code sends it inside `tool_input` — so the path was always empty and the hook exited silently without formatting anything. Also fixed `dotnet format --include` silently ignoring absolute paths when a project directory is specified; the hook now `cd`s into the project root and passes a relative path. Affected: `auto-format.sh`, `console-log-warn.sh`, `typecheck.sh`.
+
 ## [1.42.3] - 2026-05-16
 
 🐛 Fixed Stop hook error ("Failed with non-blocking status code") in projects that are not git repositories. `console-log-check.sh` called `git diff` inside a `set -euo pipefail` subshell — `git` exits 128 outside a repo, propagating as 129. Now exits 0 cleanly when no git repo is detected.
