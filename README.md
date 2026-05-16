@@ -194,7 +194,7 @@ You can also type `@role:` directly without navigating first — it routes to th
 
 ### Multi-step role pipelines
 
-Chain multiple roles in a single message using sequencing language (PT-BR or EN). Octopus detects the pipeline, shows a preview, validates all roles upfront, and executes each step — passing the previous output as context to the next.
+Chain multiple roles in a single message using sequencing language. Octopus detects the pipeline, shows a preview, validates all roles upfront, and executes each step — passing the previous output as context to the next.
 
 ```
 @tech-writer: create a spec for lesson plan management.
@@ -203,15 +203,15 @@ Once validated, delegate implementation to @frontend-developer and @backend-deve
 Finally, have @architect do the code review.
 ```
 
-Roles joined by "and"/"e" dispatch in parallel in a single turn. After each step, Octopus pauses for confirmation:
+Roles joined by "and" dispatch in parallel in a single turn. After each step, Octopus pauses for confirmation:
 
 ```
-» Etapa 2/4 concluída — product-manager respondeu (1284 chars)
-Próxima: Etapa 3/4 — paralelo: @frontend-developer + @backend-developer
-Continuar? [y/s · auto · n · skip]
+» Step 2/4 done — product-manager replied (1284 chars)
+Next: Step 3/4 — parallel: @frontend-developer + @backend-developer
+Continue? [y/s · auto · n · skip]
 ```
 
-Add `--auto` (or include "rode tudo de uma vez") to run all steps without stopping.
+Add `--auto` to run all steps without stopping.
 
 **Role aliases** — common shorthands are resolved automatically:
 
