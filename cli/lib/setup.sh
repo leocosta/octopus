@@ -50,6 +50,9 @@ for _setup_arg in "$@"; do
 done
 unset _setup_arg _setup_prev_arg
 
+# Normalise --bundle: accept comma or space-separated list → space-separated
+SETUP_BUNDLE=$(printf '%s' "$SETUP_BUNDLE" | tr ',' ' ' | tr -s ' ')
+
 # ---------------------------------------------------------------------------
 # Resolve scope
 # ---------------------------------------------------------------------------
@@ -80,14 +83,16 @@ export MANIFEST_PATH
 # Manifest generation
 # ---------------------------------------------------------------------------
 _setup_generate_manifest() {
-  local bundle="$1" hooks="$2" workflow="$3" reviewers="$4" stack="$5"
+  local bundles_str="$1" hooks="$2" workflow="$3" reviewers="$4" stack="$5"
 
   mkdir -p "$(dirname "$MANIFEST_PATH")"
 
   {
     printf '# Edit and re-run '"'"'octopus setup'"'"' to apply changes.\n'
     printf 'agents:\n  - claude\n'
-    printf 'bundles:\n  - %s\n' "$bundle"
+    printf 'bundles:\n'
+    local _b
+    for _b in $bundles_str; do printf '  - %s\n' "$_b"; done
 
     if [[ -n "$stack" ]]; then
       case "$stack" in
@@ -143,7 +148,7 @@ if [[ ! -f "$MANIFEST_PATH" ]]; then
     run_picker
     [[ "${PICKER_REVIEWERS:-}" == "__ask__" ]] && _setup_prompt_reviewers
     _setup_generate_manifest \
-      "${PICKER_BUNDLE:-starter}" \
+      "${PICKER_BUNDLES[*]:-starter}" \
       "${PICKER_HOOKS:-true}" \
       "${PICKER_WORKFLOW:-true}" \
       "${SETUP_REVIEWERS:-}" \
@@ -159,7 +164,7 @@ elif [[ " ${_setup_remaining_args[*]:-} " == *" --reconfigure "* ]]; then
     run_picker
     [[ "${PICKER_REVIEWERS:-}" == "__ask__" ]] && _setup_prompt_reviewers
     _setup_generate_manifest \
-      "${PICKER_BUNDLE:-starter}" \
+      "${PICKER_BUNDLES[*]:-starter}" \
       "${PICKER_HOOKS:-true}" \
       "${PICKER_WORKFLOW:-true}" \
       "${SETUP_REVIEWERS:-}" \

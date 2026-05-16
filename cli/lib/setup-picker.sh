@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # cli/lib/setup-picker.sh — Single-screen setup picker (fzf or bash fallback).
-# Exports: PICKER_BUNDLE, PICKER_HOOKS, PICKER_WORKFLOW,
+# Exports: PICKER_BUNDLES (array), PICKER_HOOKS, PICKER_WORKFLOW,
 #          PICKER_REVIEWERS, PICKER_MCP_ENABLED
 # Sourced by cli/lib/setup.sh — never executed directly.
 
@@ -10,7 +10,7 @@ _PICKER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_PICKER_DIR/ui.sh"
 
 # Defaults (overwritten by run_picker)
-PICKER_BUNDLE="starter"
+PICKER_BUNDLES=("starter")
 PICKER_HOOKS="true"
 PICKER_WORKFLOW="true"
 PICKER_REVIEWERS=""
@@ -98,11 +98,15 @@ _picker_run_fzf() {
       --marker="✓" \
       2>/dev/tty) || { ui_warn "Setup cancelled."; exit 0; }
 
-  # Parse bundle (first bundle: line selected; if none, keep default)
-  local bundle_line
-  bundle_line=$(printf '%s\n' "$selected" | grep "^bundle:" | head -1 || true)
-  if [[ -n "$bundle_line" ]]; then
-    PICKER_BUNDLE=$(printf '%s' "$bundle_line" | sed 's/^bundle:\([^ ]*\).*/\1/')
+  # Parse bundles — collect all selected bundle lines (multi-select)
+  local bundle_lines
+  bundle_lines=$(printf '%s\n' "$selected" | grep "^bundle:" || true)
+  if [[ -n "$bundle_lines" ]]; then
+    PICKER_BUNDLES=()
+    while IFS= read -r bundle_line; do
+      [[ -z "$bundle_line" ]] && continue
+      PICKER_BUNDLES+=("$(printf '%s' "$bundle_line" | sed 's/^bundle:\([^ ]*\).*/\1/')")
+    done <<< "$bundle_lines"
   fi
 
   # Parse features: selected feature lines are enabled; unselected follow their defaults
@@ -137,15 +141,34 @@ _picker_run_bash() {
     printf "    %d. %-12s %s\n" "$((i+1))" "${_PICKER_BUNDLES[$i]}" "${_PICKER_BUNDLE_DESCS[$i]}"
   done
   echo ""
-  printf "  Bundle [1]: "
-  local choice
-  read -r choice </dev/tty
-  choice="${choice:-1}"
-  if [[ "$choice" =~ ^[1-9][0-9]*$ ]] && (( choice >= 1 && choice <= ${#_PICKER_BUNDLES[@]} )); then
-    PICKER_BUNDLE="${_PICKER_BUNDLES[$((choice-1))]}"
-  else
-    PICKER_BUNDLE="starter"
-  fi
+  PICKER_BUNDLES=()
+  while true; do
+    printf "  Bundle(s) — space or comma-separated [1]: "
+    local raw_choice
+    read -r raw_choice </dev/tty
+    raw_choice="${raw_choice:-1}"
+    local normalised
+    normalised=$(printf '%s' "$raw_choice" | tr ',\t' '  ' | tr -s ' ')
+    local invalid=() valid_picks=()
+    local token
+    for token in $normalised; do
+      if [[ "$token" =~ ^[1-9][0-9]*$ ]] && (( token >= 1 && token <= ${#_PICKER_BUNDLES[@]} )); then
+        valid_picks+=("${_PICKER_BUNDLES[$((token-1))]}")
+      else
+        invalid+=("$token")
+      fi
+    done
+    if [[ ${#invalid[@]} -gt 0 ]]; then
+      printf "  Invalid: %s — enter numbers 1–%d\n" "${invalid[*]}" "${#_PICKER_BUNDLES[@]}"
+      continue
+    fi
+    if [[ ${#valid_picks[@]} -eq 0 ]]; then
+      printf "  Enter at least one number.\n"
+      continue
+    fi
+    PICKER_BUNDLES=("${valid_picks[@]}")
+    break
+  done
 
   echo ""
   echo "  Features (Enter = keep default, y/n = change):"
