@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.41.3] - 2026-05-16
+
+🐛 Fixed slash commands showing no description in the `/` menu. The setup script was stripping the YAML frontmatter from command files before writing them — removing the `description:` field that Claude Code reads to populate the menu. Commands now include their full frontmatter.
+
 ## [1.41.2] - 2026-05-16
 
 🐛 Fixed SPACE not toggling items in the fzf picker — it was documented as a toggle key but never bound, so fzf used its default (cursor-down). SPACE and TAB now both toggle selection; TAB also advances the cursor and shift-TAB goes back. Removed an incorrect `--nth=1` flag that was limiting search scope. Picker height increased to 80% for better readability.
