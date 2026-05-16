@@ -1,5 +1,7 @@
 # Coding Style
 
+> **Override:** create `coding-style.local.md` in this directory to replace these conventions entirely. The local file takes full precedence.
+
 ## Principles
 
 - **Readability over cleverness** — code is read far more than it is written

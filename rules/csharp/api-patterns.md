@@ -1,5 +1,7 @@
 # C# API Patterns
 
+> **Override:** create `api-patterns.local.md` in this directory to replace these conventions entirely. The local file takes full precedence.
+
 ## Minimal APIs Only
 
 Use `app.MapGroup()` with extension methods. **No controllers.**

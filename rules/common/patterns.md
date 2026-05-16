@@ -1,5 +1,7 @@
 # Design Patterns
 
+> **Override:** create `patterns.local.md` in this directory to replace these conventions entirely. The local file takes full precedence.
+
 ## Architecture
 
 - **Feature-based organization** — group code by domain, not by technical layer

@@ -1,5 +1,7 @@
 # Security
 
+> **Extend-only:** create `security.local.md` in this directory to add rules. Do not use to remove or weaken Octopus security defaults.
+
 ## Secrets Management
 
 - **Never hardcode secrets** — use environment variables or secret managers

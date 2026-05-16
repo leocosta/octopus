@@ -1,5 +1,7 @@
 # Quality Checklist
 
+> **Extend-only:** create `quality.local.md` in this directory to add checks. Removing Octopus defaults via a local file is not recommended.
+
 ## Before Committing
 - Never use `--no-verify` — always execute pre-commit hooks
 - Check for hardcoded secrets (API keys, JWT tokens, passwords, AWS keys, Slack/GitHub/Stripe/SendGrid tokens) — use environment variables

@@ -1,5 +1,7 @@
 # C# Error Handling
 
+> **Override:** create `error-handling.local.md` in this directory to replace these conventions entirely. The local file takes full precedence.
+
 ## Result Pattern
 
 Use a Result type for operation outcomes. Do not throw exceptions for business logic errors.

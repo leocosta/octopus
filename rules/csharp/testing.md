@@ -1,5 +1,7 @@
 # C# Testing
 
+> **Override:** create `testing.local.md` in this directory to replace these conventions entirely. The local file takes full precedence.
+
 ## Stack
 
 - **xUnit** as the test framework

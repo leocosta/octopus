@@ -1,5 +1,7 @@
 # C# Naming & Style
 
+> **Override:** create `naming-style.local.md` in this directory to replace these conventions entirely. The local file takes full precedence.
+
 ## Casing Rules
 
 - **PascalCase** for types, methods, properties, public members, and constants

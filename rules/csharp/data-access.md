@@ -1,5 +1,7 @@
 # C# Data Access
 
+> **Override:** create `data-access.local.md` in this directory to replace these conventions entirely. The local file takes full precedence.
+
 ## EF Core + PostgreSQL
 
 - Use `Npgsql.EntityFrameworkCore.PostgreSQL` as the provider

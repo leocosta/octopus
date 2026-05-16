@@ -1,5 +1,7 @@
 # C# Architecture
 
+> **Override:** create `architecture.local.md` in this directory to replace these conventions entirely. The local file takes full precedence.
+
 ## Vertical Slice
 
 Organize code by **feature**, not by technical layer. Each feature folder is self-contained.
