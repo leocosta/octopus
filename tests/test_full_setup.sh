@@ -170,6 +170,27 @@ grep -q "\.codex/rules/" "AGENTS.md" \
   || { echo "FAIL: AGENTS.md does not reference .codex/rules/"; exit 1; }
 echo "PASS: AGENTS.md references rules path (RM-073)"
 
+# Verify workspace rules are symlinked (RM-069)
+WORKSPACE_DIR=$(mktemp -d)
+mkdir -p "$WORKSPACE_DIR/rules/common" "$WORKSPACE_DIR/rules/csharp"
+echo "# workspace shared style" > "$WORKSPACE_DIR/rules/common/workspace-style.local.md"
+echo "# workspace csharp" > "$WORKSPACE_DIR/rules/csharp/workspace-csharp.local.md"
+# Add workspace: to .octopus.yml and re-run setup
+echo "workspace: $WORKSPACE_DIR" >> .octopus.yml
+./octopus/setup.sh >/dev/null 2>&1
+[[ -L ".claude/rules/common/workspace-style.local.md" ]] \
+  || { echo "FAIL: workspace common rule not symlinked"; exit 1; }
+[[ -L ".claude/rules/csharp/workspace-csharp.local.md" ]] \
+  || { echo "FAIL: workspace csharp rule not symlinked"; exit 1; }
+# Project override still wins over workspace
+echo "# project wins" > ".octopus/rules/common/workspace-style.local.md"
+./octopus/setup.sh >/dev/null 2>&1
+readlink ".claude/rules/common/workspace-style.local.md" | grep -q "\.octopus/rules" \
+  || { echo "FAIL: project override should win over workspace rule"; exit 1; }
+rm -f ".octopus/rules/common/workspace-style.local.md"
+rm -rf "$WORKSPACE_DIR"
+echo "PASS: workspace rules symlinked and project override wins (RM-069)"
+
 # Verify workflow commands
 [[ -f ".claude/commands/octopus:branch-create.md" ]] || { echo "FAIL: workflow command missing"; exit 1; }
 [[ -f ".claude/commands/octopus:doc-research.md" ]] || { echo "FAIL: doc-research command missing"; exit 1; }

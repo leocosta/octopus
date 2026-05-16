@@ -89,6 +89,7 @@ OCTOPUS_DREAM=""               # RM-013: "true" schedules auto-dream (memory con
 OCTOPUS_SANDBOX=""             # RM-014: "true" enables CC's sandbox on tool calls
 OCTOPUS_OUTPUT_STYLE=""        # RM-015: "concise" | "verbose" | "structured" | "explanatory"
 OCTOPUS_GITHUB_ACTION=""       # RM-016: "true" scaffolds .github/workflows/claude.yml
+OCTOPUS_WORKSPACE_PATH=""      # RM-069: path to shared workspace repo with rules/
 
 # Reads a bundle YAML file and appends its components into the global
 # OCTOPUS_* arrays. Does NOT de-duplicate — that is expand_bundles()'s
@@ -350,6 +351,7 @@ parse_octopus_yml() {
         knowledge_dir)  OCTOPUS_KNOWLEDGE_DIR="$val" ;;
         effortLevel)    OCTOPUS_EFFORT_LEVEL="$val" ;;
         permissionMode) OCTOPUS_PERMISSION_MODE="$val" ;;
+        workspace)      OCTOPUS_WORKSPACE_PATH="$val" ;;
         outputStyle)    OCTOPUS_OUTPUT_STYLE="$val" ;;
         scope)
           # Warn when the manifest declares a scope different from the one
@@ -925,6 +927,20 @@ concatenate_from_manifest() {
       done
     done
 
+    # Append workspace rules (RM-069), then personal (RM-068), then project overrides.
+    # Later content wins by position — project > personal > workspace > defaults.
+    if [[ -n "$OCTOPUS_WORKSPACE_PATH" ]]; then
+      for rule in "${OCTOPUS_RULES[@]}"; do
+        local ws_rule_dir="$OCTOPUS_WORKSPACE_PATH/rules/$rule"
+        [[ -d "$ws_rule_dir" ]] || continue
+        for ws_file in "$ws_rule_dir"/*.local.md; do
+          [[ -f "$ws_file" ]] || continue
+          echo "" >> "$full_output"
+          cat "$ws_file" >> "$full_output"
+        done
+      done
+    fi
+
     # Append personal overrides from ~/.octopus/rules/ (RM-068), then project overrides.
     # Later content wins by position — project overrides take precedence over personal.
     local personal_rules="$HOME/.octopus/rules"
@@ -1099,6 +1115,19 @@ deliver_rules() {
         dest_name="$(_rules_dest_name "$(basename "$f")" "$use_instructions_ext")"
         ln -sf "$f" "$target/$rule/$dest_name"
       done
+      # Symlink workspace rules from $OCTOPUS_WORKSPACE_PATH/rules/$rule/ (RM-069).
+      # Applied after Octopus defaults but before personal/project overrides.
+      if [[ -n "$OCTOPUS_WORKSPACE_PATH" ]]; then
+        local workspace_rule_dir="$OCTOPUS_WORKSPACE_PATH/rules/$rule"
+        if [[ -d "$workspace_rule_dir" ]]; then
+          for f in "$workspace_rule_dir"/*.local.md; do
+            [[ -f "$f" ]] || continue
+            local dest_name
+            dest_name="$(_rules_dest_name "$(basename "$f")" "$use_instructions_ext")"
+            ln -sf "$f" "$target/$rule/$dest_name"
+          done
+        fi
+      fi
       # Symlink personal overrides from ~/.octopus/rules/$rule/ (RM-068).
       # Applied before project overrides so project wins on conflict.
       local personal_dir="$HOME/.octopus/rules/$rule"
