@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.42.2] - 2026-05-16
+
+🐛 Fixed `dotnet format` not running in projects that have a `.csproj` but no `.sln`. The `auto-format.sh` project discovery used `compgen -G` with two patterns in one call — `compgen` only accepts one pattern, so `.csproj` files were never found. Now uses separate `compgen -G` calls for `.sln` and `.csproj`.
+
 ## [1.42.1] - 2026-05-16
 
 🐛 Fixed hooks and workflow not being enabled after running `octopus setup --reconfigure` with the fzf picker. Default-on features were reset to `false` before parsing fzf output — since fzf multi-select is opt-in, not toggling an item means "keep the default", not "disable it". Hooks and workflow now stay enabled unless explicitly toggled off.
