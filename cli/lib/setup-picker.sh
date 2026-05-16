@@ -119,12 +119,10 @@ _picker_run_fzf() {
     done <<< "$bundle_lines"
   fi
 
-  # Parse features: selected feature lines are enabled; unselected follow their defaults
-  # Since fzf multi-select means TAB-selected = chosen, we reset defaults and apply selections
-  # Default-on features (hooks, workflow) stay true unless user explicitly deselected them.
-  # We use a simpler model: whatever feature lines appear in the output are "enabled".
-  PICKER_HOOKS="false"
-  PICKER_WORKFLOW="false"
+  # Parse features: initialize from defaults — fzf multi-select is opt-in so unselected
+  # default-on features (hooks, workflow) remain enabled unless explicitly toggled off.
+  PICKER_HOOKS="${_PICKER_FEATURE_DEFAULTS[0]:-true}"
+  PICKER_WORKFLOW="${_PICKER_FEATURE_DEFAULTS[1]:-true}"
   local feat_lines
   feat_lines=$(printf '%s\n' "$selected" | grep "^feature:" || true)
   while IFS= read -r line; do
