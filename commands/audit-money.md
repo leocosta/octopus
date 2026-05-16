@@ -1,10 +1,10 @@
 ---
 name: audit-money
-description: Pre-merge audit of money-touching code — types, rounding, cents tests, env drift, idempotency, webhook signatures, fee disclosure.
+description: (Octopus) Pre-merge audit of money-touching code — types, rounding, cents tests, env drift, idempotency, webhook signatures, fee disclosure.
 ---
 
 ---
-description: Pre-merge audit of money-touching code — types, rounding, cents tests, env drift, idempotency, webhook signatures, fee disclosure.
+description: (Octopus) Pre-merge audit of money-touching code — types, rounding, cents tests, env drift, idempotency, webhook signatures, fee disclosure.
 agent: code
 ---
 

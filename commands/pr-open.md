@@ -1,11 +1,11 @@
 ---
 name: pr-open
-description: Open a PR with an agent-written title + body following Octopus conventions
+description: (Octopus) Open a PR with an agent-written title + body following Octopus conventions
 cli: octopus.sh pr-open
 ---
 
 ---
-description: Open a PR with an agent-written title + body following Octopus conventions
+description: (Octopus) Open a PR with an agent-written title + body following Octopus conventions
 agent: code
 ---
 

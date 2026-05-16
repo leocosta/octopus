@@ -1,10 +1,10 @@
 ---
 name: doc-spec
-description: Create a new feature spec from template
+description: (Octopus) Create a new feature spec from template
 ---
 
 ---
-description: Create a new feature specification from the Octopus template
+description: (Octopus) Create a new feature specification from the Octopus template
 agent: code
 ---
 

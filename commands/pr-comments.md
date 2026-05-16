@@ -1,11 +1,11 @@
 ---
 name: pr-comments
-description: Address PR review comments
+description: (Octopus) Address PR review comments
 cli: octopus.sh pr-comments
 ---
 
 ---
-description: Address PR review comments
+description: (Octopus) Address PR review comments
 agent: code
 ---
 

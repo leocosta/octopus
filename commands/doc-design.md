@@ -1,10 +1,10 @@
 ---
 name: doc-design
-description: Interactive design session that fills a spec stub's Design, Implementation Plan, Testing, and adaptive sections one question at a time
+description: (Octopus) Interactive design session that fills a spec stub's Design, Implementation Plan, Testing, and adaptive sections one question at a time
 ---
 
 ---
-description: Interactive design session that fills a spec stub's Design, Implementation Plan, Testing, and adaptive sections one question at a time
+description: (Octopus) Interactive design session that fills a spec stub's Design, Implementation Plan, Testing, and adaptive sections one question at a time
 agent: code
 ---
 

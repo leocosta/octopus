@@ -1,11 +1,11 @@
 ---
 name: pr-review
-description: Self-review a PR and assign human reviewers
+description: (Octopus) Self-review a PR and assign human reviewers
 cli: octopus.sh pr-review
 ---
 
 ---
-description: Self-review a PR and assign human reviewers
+description: (Octopus) Self-review a PR and assign human reviewers
 agent: code
 ---
 

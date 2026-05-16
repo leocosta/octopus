@@ -1,10 +1,10 @@
 ---
 name: doc-rfc
-description: Create a new RFC from template with project context
+description: (Octopus) Create a new RFC from template with project context
 ---
 
 ---
-description: Create a new RFC document from the Octopus template
+description: (Octopus) Create a new RFC document from the Octopus template
 agent: code
 ---
 

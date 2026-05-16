@@ -1,10 +1,10 @@
 ---
 name: dev-flow
-description: Full development workflow orchestrator
+description: (Octopus) Full development workflow orchestrator
 ---
 
 ---
-description: Full development workflow orchestrator
+description: (Octopus) Full development workflow orchestrator
 agent: code
 ---
 

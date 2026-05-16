@@ -1,6 +1,6 @@
 ---
 name: update
-description: Update the Octopus submodule to a newer version
+description: (Octopus) Update the Octopus submodule to a newer version
 cli: octopus update
 ---
 

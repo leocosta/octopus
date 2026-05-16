@@ -1,11 +1,11 @@
 ---
 name: release
-description: Create a versioned release with CHANGELOG, README sync, and GitHub Release
+description: (Octopus) Create a versioned release with CHANGELOG, README sync, and GitHub Release
 cli: octopus.sh release
 ---
 
 ---
-description: Create a versioned release with CHANGELOG, README sync, and GitHub Release
+description: (Octopus) Create a versioned release with CHANGELOG, README sync, and GitHub Release
 agent: code
 ---
 

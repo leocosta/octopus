@@ -1,10 +1,10 @@
 ---
 name: delegate
-description: Delegate a task to an Octopus role — returns result inline with attribution (» role respondeu:).
+description: (Octopus) Delegate a task to an Octopus role — returns result inline with attribution (» role respondeu:).
 ---
 
 ---
-description: Delegate a task to an Octopus role — returns result inline with attribution (» role respondeu:).
+description: (Octopus) Delegate a task to an Octopus role — returns result inline with attribution (» role respondeu:).
 agent: code
 ---
 

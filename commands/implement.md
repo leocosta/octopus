@@ -1,10 +1,10 @@
 ---
 name: implement
-description: Walk the Octopus implementation workflow explicitly — TDD, plan-before-code, verification, simplify, commit cadence.
+description: (Octopus) Walk the Octopus implementation workflow explicitly — TDD, plan-before-code, verification, simplify, commit cadence.
 ---
 
 ---
-description: Walk the Octopus implementation workflow explicitly — TDD, plan-before-code, verification, simplify, commit cadence.
+description: (Octopus) Walk the Octopus implementation workflow explicitly — TDD, plan-before-code, verification, simplify, commit cadence.
 agent: code
 ---
 

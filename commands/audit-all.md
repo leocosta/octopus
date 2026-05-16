@@ -1,10 +1,10 @@
 ---
 name: audit-all
-description: Run all quality-audit skills in parallel against one ref — consolidated severity report with a cross-audit hotspots table.
+description: (Octopus) Run all quality-audit skills in parallel against one ref — consolidated severity report with a cross-audit hotspots table.
 ---
 
 ---
-description: Run all quality-audit skills in parallel against one ref — consolidated severity report with a cross-audit hotspots table.
+description: (Octopus) Run all quality-audit skills in parallel against one ref — consolidated severity report with a cross-audit hotspots table.
 agent: code
 ---
 

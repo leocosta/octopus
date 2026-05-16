@@ -1,10 +1,10 @@
 ---
 name: launch-feature
-description: Generate a multi-channel launch kit from a completed feature (RM/spec/PR).
+description: (Octopus) Generate a multi-channel launch kit from a completed feature (RM/spec/PR).
 ---
 
 ---
-description: Generate a multi-channel launch kit from a completed feature (RM/spec/PR).
+description: (Octopus) Generate a multi-channel launch kit from a completed feature (RM/spec/PR).
 agent: code
 ---
 

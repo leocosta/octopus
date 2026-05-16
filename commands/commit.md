@@ -1,6 +1,6 @@
 ---
 name: commit
-description: Suggest a Conventional Commits message from the staged diff and commit after confirmation
+description: (Octopus) Suggest a Conventional Commits message from the staged diff and commit after confirmation
 cli: octopus commit
 ---
 

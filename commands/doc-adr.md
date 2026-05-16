@@ -1,10 +1,10 @@
 ---
 name: doc-adr
-description: Create a new ADR with auto-incrementing number
+description: (Octopus) Create a new ADR with auto-incrementing number
 ---
 
 ---
-description: Create a new Architecture Decision Record from the Octopus template
+description: (Octopus) Create a new Architecture Decision Record from the Octopus template
 agent: code
 ---
 

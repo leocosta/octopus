@@ -1,10 +1,10 @@
 ---
 name: doc-research
-description: Conduct an interactive brainstorming session and capture results as a research document + roadmap items
+description: (Octopus) Conduct an interactive brainstorming session and capture results as a research document + roadmap items
 ---
 
 ---
-description: Conduct an interactive brainstorming session and capture results as a research document and roadmap items
+description: (Octopus) Conduct an interactive brainstorming session and capture results as a research document and roadmap items
 agent: code
 ---
 

@@ -1,10 +1,10 @@
 ---
 name: doc-plan
-description: Turn a completed spec into a bite-sized, TDD-style implementation plan under docs/plans/<slug>.md
+description: (Octopus) Turn a completed spec into a bite-sized, TDD-style implementation plan under docs/plans/<slug>.md
 ---
 
 ---
-description: Turn a completed spec into a bite-sized, TDD-style implementation plan under docs/plans/<slug>.md
+description: (Octopus) Turn a completed spec into a bite-sized, TDD-style implementation plan under docs/plans/<slug>.md
 agent: code
 ---
 

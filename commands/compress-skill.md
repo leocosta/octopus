@@ -1,10 +1,10 @@
 ---
 name: compress-skill
-description: Shrink a SKILL.md — deterministic cleanup + optional LLM rewrite — with invariants on frontmatter, headings, code blocks, and test anchors.
+description: (Octopus) Shrink a SKILL.md — deterministic cleanup + optional LLM rewrite — with invariants on frontmatter, headings, code blocks, and test anchors.
 ---
 
 ---
-description: Shrink a SKILL.md — deterministic cleanup + optional LLM rewrite — with invariants on frontmatter, headings, code blocks, and test anchors.
+description: (Octopus) Shrink a SKILL.md — deterministic cleanup + optional LLM rewrite — with invariants on frontmatter, headings, code blocks, and test anchors.
 agent: code
 ---
 

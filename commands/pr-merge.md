@@ -1,11 +1,11 @@
 ---
 name: pr-merge
-description: Merge an approved PR
+description: (Octopus) Merge an approved PR
 cli: octopus.sh pr-merge
 ---
 
 ---
-description: Merge an approved PR
+description: (Octopus) Merge an approved PR
 agent: code
 ---
 

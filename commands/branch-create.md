@@ -1,11 +1,11 @@
 ---
 name: branch-create
-description: Create a development branch following conventions
+description: (Octopus) Create a development branch following conventions
 cli: octopus.sh branch-create
 ---
 
 ---
-description: Create a development branch following Octopus conventions
+description: (Octopus) Create a development branch following Octopus conventions
 agent: code
 ---
 
