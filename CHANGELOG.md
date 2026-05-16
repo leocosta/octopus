@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.44.0] - 2026-05-16
+
+✨ New `rules/typescript/ui-conventions.md` rule template for frontend projects. Codifies input mask conventions (CPF, CNPJ, phone, CEP, date, currency) so AI assistants always use the designated mask component and formatter helpers instead of generating raw `<input>` elements. Teams override with `.octopus/rules/typescript/ui-conventions.local.md` to supply their actual component names, mask patterns, import paths, and Zod schemas — delivered automatically via the existing `.local.md` symlink mechanism.
+
 ## [1.43.0] - 2026-05-16
 
 ✨ The `typecheck.sh` hook now injects type/build errors back into Claude's context so it self-corrects without manual intervention. Previously it only printed errors to the hooks panel (invisible to Claude). It now returns `{"decision": "block", "reason": "<errors>"}` — Claude Code feeds the reason back to Claude in the same turn, which then fixes the code automatically. Covers TypeScript (`tsc`), Python (`mypy`/`pyright`), and C# (`dotnet build`).
