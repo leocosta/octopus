@@ -3,7 +3,7 @@ output: .github/copilot-instructions.md
 content_mode: concatenate
 
 capabilities:
-  native_rules: false
+  native_rules: true
   native_skills: false
   native_hooks: false
   native_commands: false
@@ -12,6 +12,10 @@ capabilities:
   native_knowledge: false
 
 delivery:
+  rules:
+    method: symlink
+    target: .github/instructions/
+    instructions_ext: true
   mcp:
     method: vscode_json
     target: .vscode/mcp.json

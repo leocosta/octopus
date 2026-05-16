@@ -130,9 +130,17 @@ print('PASS: MCP injection verified')
 grep -q ".claude/rules/csharp/" ".claude/CLAUDE.md" || { echo "FAIL: csharp rules not in CLAUDE.md"; exit 1; }
 grep -q ".claude/skills/doc-adr/" ".claude/CLAUDE.md" || { echo "FAIL: adr skill not in CLAUDE.md"; exit 1; }
 
-# Verify copilot has rules content (concatenated, not symlinked)
-grep -q "Coding Style" ".github/copilot-instructions.md" || { echo "FAIL: rules not in copilot"; exit 1; }
-grep -q "Architecture Decision Records" ".github/copilot-instructions.md" || { echo "FAIL: adr skill not in copilot"; exit 1; }
+# Verify copilot rules are symlinked as .instructions.md (native_rules: true)
+[[ -d ".github/instructions" ]] || { echo "FAIL: .github/instructions/ missing for copilot"; exit 1; }
+[[ -L ".github/instructions/common/coding-style.instructions.md" ]] \
+  || { echo "FAIL: coding-style.instructions.md not symlinked for copilot"; exit 1; }
+echo "PASS: copilot rules symlinked as .instructions.md"
+
+# Verify codex rules are symlinked as .md (native_rules: true)
+[[ -d ".codex/rules" ]] || { echo "FAIL: .codex/rules/ missing for codex"; exit 1; }
+[[ -L ".codex/rules/common/coding-style.md" ]] \
+  || { echo "FAIL: coding-style.md not symlinked for codex"; exit 1; }
+echo "PASS: codex rules symlinked as .md"
 
 # Verify workflow commands
 [[ -f ".claude/commands/octopus:branch-create.md" ]] || { echo "FAIL: workflow command missing"; exit 1; }

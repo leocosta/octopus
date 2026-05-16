@@ -504,6 +504,7 @@ MANIFEST_CAP_AGENTS="false"
 MANIFEST_CAP_MCP="false"
 MANIFEST_DELIVERY_RULES_METHOD=""
 MANIFEST_DELIVERY_RULES_TARGET=""
+MANIFEST_DELIVERY_RULES_INSTRUCTIONS_EXT="false"
 MANIFEST_DELIVERY_SKILLS_METHOD=""
 MANIFEST_DELIVERY_SKILLS_TARGET=""
 MANIFEST_DELIVERY_HOOKS_METHOD=""
@@ -540,6 +541,7 @@ load_manifest() {
   MANIFEST_CAP_MCP="false"
   MANIFEST_DELIVERY_RULES_METHOD=""
   MANIFEST_DELIVERY_RULES_TARGET=""
+  MANIFEST_DELIVERY_RULES_INSTRUCTIONS_EXT="false"
   MANIFEST_DELIVERY_SKILLS_METHOD=""
   MANIFEST_DELIVERY_SKILLS_TARGET=""
   MANIFEST_DELIVERY_HOOKS_METHOD=""
@@ -628,8 +630,9 @@ load_manifest() {
       dval="${dval%\"}"
       dval="${dval#\"}"
       case "${current_delivery}_${dkey}" in
-        rules_method)    MANIFEST_DELIVERY_RULES_METHOD="$dval" ;;
-        rules_target)    MANIFEST_DELIVERY_RULES_TARGET="$dval" ;;
+        rules_method)            MANIFEST_DELIVERY_RULES_METHOD="$dval" ;;
+        rules_target)            MANIFEST_DELIVERY_RULES_TARGET="$dval" ;;
+        rules_instructions_ext)  MANIFEST_DELIVERY_RULES_INSTRUCTIONS_EXT="$dval" ;;
         skills_method)   MANIFEST_DELIVERY_SKILLS_METHOD="$dval" ;;
         skills_target)   MANIFEST_DELIVERY_SKILLS_TARGET="$dval" ;;
         hooks_method)    MANIFEST_DELIVERY_HOOKS_METHOD="$dval" ;;
@@ -1034,6 +1037,20 @@ LANGEOF
   # No override — language.md detection rule is sufficient, no .local.md needed
 }
 
+# Returns the destination filename for a rule file symlink.
+# With instructions_ext=true, renames foo.md → foo.instructions.md
+# and foo.local.md → foo.local.instructions.md (preserving .local. infix).
+_rules_dest_name() {
+  local basename="$1"
+  local instructions_ext="$2"
+  if [[ "$instructions_ext" == "true" ]]; then
+    # Replace trailing .md with .instructions.md
+    echo "${basename%.md}.instructions.md"
+  else
+    echo "$basename"
+  fi
+}
+
 deliver_rules() {
   local agent="$1"
   if [[ "$MANIFEST_CAP_RULES" != "true" ]]; then return; fi
@@ -1046,6 +1063,7 @@ deliver_rules() {
   local target="$(_install_root)/$MANIFEST_DELIVERY_RULES_TARGET"
 
   if [[ "$method" == "symlink" ]]; then
+    local use_instructions_ext="${MANIFEST_DELIVERY_RULES_INSTRUCTIONS_EXT:-false}"
     echo "Generating rules symlinks for $agent..."
     rm -rf "$target"
     mkdir -p "$target"
@@ -1058,14 +1076,18 @@ deliver_rules() {
       mkdir -p "$target/$rule"
       for f in "$source_dir"/*.md; do
         [[ -f "$f" ]] || continue
-        ln -sf "$f" "$target/$rule/$(basename "$f")"
+        local dest_name
+        dest_name="$(_rules_dest_name "$(basename "$f")" "$use_instructions_ext")"
+        ln -sf "$f" "$target/$rule/$dest_name"
       done
       # Symlink project-level .local.md overrides from .octopus/rules/$rule/
       local override_dir="$(_install_root)/.octopus/rules/$rule"
       if [[ -d "$override_dir" ]]; then
         for f in "$override_dir"/*.local.md; do
           [[ -f "$f" ]] || continue
-          ln -sf "$f" "$target/$rule/$(basename "$f")"
+          local dest_name
+          dest_name="$(_rules_dest_name "$(basename "$f")" "$use_instructions_ext")"
+          ln -sf "$f" "$target/$rule/$dest_name"
         done
       fi
       echo "  -> ${MANIFEST_DELIVERY_RULES_TARGET}$rule/ (per-file symlinks)"

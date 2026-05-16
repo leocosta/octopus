@@ -3,7 +3,7 @@ output: AGENTS.md
 content_mode: concatenate
 
 capabilities:
-  native_rules: false
+  native_rules: true
   native_skills: false
   native_hooks: false
   native_commands: false
@@ -12,8 +12,12 @@ capabilities:
   native_knowledge: false
 
 delivery:
+  rules:
+    method: symlink
+    target: .codex/rules/
   mcp:
     method: cli_add
     command: codex mcp add
 
-gitignore_extra: []
+gitignore_extra:
+  - .codex/rules/
