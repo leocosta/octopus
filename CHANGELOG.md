@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.49.2] - 2026-05-19
+
+📝 Complete the `docs/superpowers/plans/` purge started in v1.49.1. The directory contents were untracked there; this release removes the path from the active codebase — `skills/plan-backlog/SKILL.md` no longer autodetects it, `commands/plan-backlog.md` and `docs/features/plan-backlog.md` drop it from the scan paths, `commands/doc-design.md` and `docs/specs/doc-design-command.md` point at existing `docs/plans/` instead of the external pattern source, and `docs/specs/doc-plan-command.md` rephrases the two contrast mentions to "external plan-storage convention" instead of naming the directory. Plugin references (`superpowers:brainstorming`, `superpowers:writing-plans`, `superpowers:systematic-debugging`, etc.) are deliberately kept — they document real integration with the externally-installed `superpowers` plugin (routing between overlapping skills, hand-off to more appropriate siblings, historical motivation for Octopus skills).
+
 ## [1.49.1] - 2026-05-19
 
 🔧 Stop tracking `docs/superpowers/` contents. The 8 plan and spec files under that directory were committed before `/docs/superpowers` was added to `.gitignore`; git ignores `.gitignore` entries for already-tracked files, so they remained in the index. Untracked via `git rm --cached` (files stay on the user's disk locally so superpowers workflows continue to work), and `/.superpowers/` added to `.gitignore` so the root-level plugin cache is explicitly ignored too. References to the `docs/superpowers/plans/` path in `plan-backlog`, `doc-design`, `doc-plan`, and related skills/commands are unchanged — those are directory-scan conventions, not file links, and remain valid even when the directory is untracked.
