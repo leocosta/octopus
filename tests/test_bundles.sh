@@ -65,9 +65,10 @@ OCTOPUS_MCP=()
 
 _load_bundle "starter"
 
-# starter contributes doc-adr, doc-lifecycle, context-budget, implement, debug, review-pr, delegate
+# starter contributes doc-adr, doc-lifecycle, context-budget, implement, debug, review-pr, delegate,
+# test-tdd, map-system, prototype, context-handoff (Cluster 14 — RM-076, RM-078, RM-081, RM-082)
 printf '%s\n' "${OCTOPUS_SKILLS[@]}" | sort > /tmp/got_skills.$$
-printf '%s\n' doc-adr doc-lifecycle context-budget implement debug review-pr delegate | sort > /tmp/exp_skills.$$
+printf '%s\n' doc-adr doc-lifecycle context-budget implement debug review-pr delegate test-tdd map-system prototype context-handoff | sort > /tmp/exp_skills.$$
 diff -q /tmp/got_skills.$$ /tmp/exp_skills.$$ >/dev/null \
   || { echo "FAIL: starter did not populate skills correctly"; exit 1; }
 rm -f /tmp/got_skills.$$ /tmp/exp_skills.$$
@@ -95,7 +96,7 @@ OCTOPUS_BUNDLES=("starter" "quality")
 
 expand_bundles
 
-expected_skills=(doc-adr doc-lifecycle context-budget implement debug review-pr delegate audit-all audit-security audit-money audit-tenant review-contracts)
+expected_skills=(doc-adr doc-lifecycle context-budget implement debug review-pr delegate test-tdd map-system prototype context-handoff audit-all audit-security audit-money audit-tenant review-contracts refactor-deepen)
 printf '%s\n' "${OCTOPUS_SKILLS[@]}" | sort -u > /tmp/got.$$
 printf '%s\n' "${expected_skills[@]}" | sort -u > /tmp/exp.$$
 diff -q /tmp/got.$$ /tmp/exp.$$ >/dev/null \
@@ -150,9 +151,9 @@ OCTOPUS_RULES=()
 parse_octopus_yml "$TMPDIR/.octopus.yml"
 expand_bundles
 
-# starter (7 skills) + quality (audit-all + 4 deps + review-contracts = 5 unique skills) = 12 distinct skills
-[[ ${#OCTOPUS_SKILLS[@]} -eq 12 ]] \
-  || { echo "FAIL: expected 12 skills after bundle expansion, got ${#OCTOPUS_SKILLS[@]}"; exit 1; }
+# starter (11 skills) + quality (audit-all + 4 deps + review-contracts + refactor-deepen = 6 unique skills) = 17 distinct skills
+[[ ${#OCTOPUS_SKILLS[@]} -eq 17 ]] \
+  || { echo "FAIL: expected 17 skills after bundle expansion, got ${#OCTOPUS_SKILLS[@]}"; exit 1; }
 
 printf '%s\n' "${OCTOPUS_ROLES[@]}" | grep -q "^architect$" \
   || { echo "FAIL: architect role missing after expansion"; exit 1; }

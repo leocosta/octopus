@@ -10,32 +10,52 @@ skill's marketing copy.
 
 - Max ~1024 chars
 - Third person, indicative ("Synthesises X", not "I synthesise X")
-- First sentence: the capability
-- Second sentence: "Use when …" with concrete triggers
+- First sentence: the **capability** — what the skill does, named
+  artifacts where relevant
+- Follow-up: **integration cues** that help the agent route — any of
+  *pairs with X*, *active by default on Y*, *family of Z*, *triggers
+  on @-mention / path / keyword*. Skip cues that do not apply.
+
+The "capability + integration cues" shape matches what every existing
+Octopus skill uses (see `debug`, `implement`, `audit-money`,
+`compress-skill`, `plan-backlog`, `doc-lifecycle`). A "Use when …"
+trigger sentence is fine but not required — pick the form that
+expresses the routing signal best.
+
+For skills that engage automatically on file paths or keywords, also
+add a `triggers:` frontmatter field. Examples in the codebase:
+`audit-money` (keywords), `compress-skill` (paths), `plan-backlog`
+(paths). The `triggers:` field is the precise way to express
+auto-engagement; description prose is the human-readable summary.
 
 ### Bad description
 
 > "Helps with documents."
 
 Why it fails: doesn't differentiate from any other doc-related skill;
-no trigger; no capability boundary.
+no integration cue; no capability boundary.
 
 ### Good description
 
-> "Synthesise the current conversation context into a PRD and publish
-> it to the issue tracker without re-interviewing the user. Use when
-> a brainstorm or doc-align session just concluded and decisions are
-> fresh in context."
+> "Pre-merge audit of money-touching code. Given a branch or PR,
+> inspects numeric types, rounding, tests for non-round cents,
+> env-var consistency, payment idempotency, webhook signature
+> verification, and fee disclosure coupling. Produces a
+> severity-tiered report (block / warn / info)."
 
-Why it works: names the artifact (PRD), names the anti-behaviour (no
-re-interview), names the trigger (post-brainstorm).
+Why it works: names the capability (pre-merge audit), the inputs
+(branch or PR), the inspections (concrete list — the agent knows
+what triggers this), and the output shape (severity-tiered report).
+This is the actual `audit-money` description in the codebase.
 
 ## Review Checklist
 
 Before closing a `scaffold-skill` session, confirm:
 
 - [ ] Frontmatter present with `name` and `description`
-- [ ] Description has capability + "Use when" triggers
+- [ ] Description has capability + integration cues (pairs / active
+      by default / family / triggers / "Use when") — at least one
+      routing signal
 - [ ] SKILL.md target ≤ 150 lines, hard cap 250 (run `wc -l skills/<name>/SKILL.md`)
 - [ ] No time-sensitive content ("as of Q3 2025" rots)
 - [ ] Vocabulary consistent with `CONTEXT.md` and adjacent skills
@@ -89,10 +109,21 @@ For PII-leak detection:
 
 ### Description
 
-> "Scan staged changes for PII leaks — emails, document numbers,
-> phone numbers, names — using project-configured rules. Use when
-> running pre-commit audits on a feature branch or when handling
-> a customer-data migration."
+> "Pre-commit audit of staged changes for PII leaks — emails,
+> document numbers, phone numbers, names — using project-configured
+> rules. Active by default on every pre-commit task; pairs with
+> audit-security (broader secrets/auth audit) and composes with
+> audit-all (pre-merge composer)."
 
-Concrete capability, concrete triggers, references project config —
-agent can decide invocation without reading the body.
+Concrete capability, concrete integration cues, references project
+config — agent can decide invocation without reading the body. The
+shape mirrors `debug` and `audit-money` from the existing codebase.
+
+For path/keyword-based engagement, add `triggers:` to the
+frontmatter:
+
+```yaml
+triggers:
+  paths: ["**/*.csv", "**/seed*.{ts,sql}"]
+  keywords: ["email", "cpf", "ssn", "address"]
+```

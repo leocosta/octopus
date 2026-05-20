@@ -76,8 +76,12 @@ Length budget: target ≤ 150 lines, hard cap 250. Over budget?
 Split into REFERENCE.md (see the splitting rule in
 [REFERENCE.md](./REFERENCE.md#when-to-split-into-referencemd)).
 
-Description-writing rules — the most important part of the skill —
-live in [REFERENCE.md](./REFERENCE.md#the-description-field).
+Description shape (the most important part of the skill): capability
+first, then integration cues — pairs with X / active by default on Y
+/ family of Z / triggers on path or keyword. Some skills also expose
+a structured `triggers:` frontmatter field for automatic engagement.
+The full rules and examples drawn from existing Octopus skills live
+in [REFERENCE.md](./REFERENCE.md#the-description-field).
 
 ### Step 4 — Scripts beat generated code
 

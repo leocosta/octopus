@@ -5,10 +5,10 @@ description: >
   the decision tree of a new feature or problem until shared
   understanding is reached. No dependency on CONTEXT.md or docs/adr/.
   Produces a summary the user confirms, ready as input for doc-align,
-  doc-prd, or implement. The greenfield counterpart to doc-align (which
-  validates an existing plan against existing docs). Use when scoping
-  one feature or problem; for area-level exploration that generates
-  multiple backlog items, use /octopus:doc-research.
+  doc-prd, or implement. The greenfield counterpart to doc-align
+  (which validates an existing plan against existing docs); pairs
+  with doc-research (area-level exploration that generates multiple
+  backlog items, while interview scopes one feature).
 ---
 
 # Requirements Interview
