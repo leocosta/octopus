@@ -1,0 +1,28 @@
+/* Octopus brand tweaks for Starlight */
+:root {
+  --sl-color-accent-low: #1a2a4a;
+  --sl-color-accent: #4a90e2;
+  --sl-color-accent-high: #b3d1f5;
+  --sl-color-white: #ffffff;
+  --sl-color-gray-1: #e8eaed;
+  --sl-color-gray-2: #b3b6bf;
+  --sl-color-gray-3: #7a7e89;
+  --sl-color-gray-4: #4a4e58;
+  --sl-color-gray-5: #2d3038;
+  --sl-color-gray-6: #1c1e24;
+  --sl-color-black: #0d0e12;
+}
+
+:root[data-theme='light'] {
+  --sl-color-accent-low: #d6e6fa;
+  --sl-color-accent: #1f6feb;
+  --sl-color-accent-high: #0a2e6e;
+}
+
+/* Slightly tighter rhythm for dense rationale pages */
+.sl-markdown-content h2 {
+  margin-top: 2rem;
+}
+.sl-markdown-content h3 {
+  margin-top: 1.5rem;
+}

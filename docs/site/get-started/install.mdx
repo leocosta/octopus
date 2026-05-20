@@ -1,0 +1,137 @@
+---
+title: Installation
+description: Install Octopus on macOS, Linux, or Windows with a single command. Update with the same command. Uninstall by removing two directories.
+sidebar:
+  order: 2
+---
+
+import { Code, Tabs, TabItem } from '@astrojs/starlight/components';
+
+Octopus ships as a single self-contained binary plus a small set of
+shell scripts. Installation is one command on each platform.
+
+## Install
+
+<Tabs>
+  <TabItem label="macOS / Linux">
+    <Code
+      code="curl -fsSL https://github.com/leocosta/octopus/releases/latest/download/install.sh | bash"
+      lang="bash"
+    />
+  </TabItem>
+  <TabItem label="Windows (PowerShell)">
+    <Code
+      code="irm https://github.com/leocosta/octopus/releases/latest/download/install.ps1 | iex"
+      lang="powershell"
+    />
+  </TabItem>
+</Tabs>
+
+Both installers do the same four things:
+
+1. Detect your OS and architecture
+2. Download the latest release tarball from GitHub
+3. Verify the SHA-256 signature against the published checksum
+4. Extract to `~/.octopus-cli/v<version>/` and symlink
+   `octopus` into `~/.local/bin/` (or `~/.octopus-cli/bin/` on
+   Windows)
+
+After the installer finishes, run `octopus --version` to confirm.
+If the command isn't found, your `~/.local/bin/` is probably not
+on `PATH` — add it to your shell rc file and re-source.
+
+## What the installer leaves on disk
+
+| Path | Purpose |
+|---|---|
+| `~/.octopus-cli/v<version>/` | The CLI binary, scripts, and the bundled skill / command / hook / template corpus for that version. |
+| `~/.octopus-cli/cache/v<version>/` | Auto-generated content (compiled rules, agent manifests) for that version. Safe to delete. |
+| `~/.local/bin/octopus` | Symlink to the binary in the versioned directory. |
+| `~/.octopus/` | Per-user state — proposal queue (`proposals/`), session save-state, persistent settings. Created on first run. |
+
+Octopus does **not** touch your shell rc files. If you need to add
+`~/.local/bin` to `PATH`, do it yourself.
+
+## Update
+
+Same command. The installer is idempotent — re-running it picks up
+the latest release and atomically swaps the symlink.
+
+<Tabs>
+  <TabItem label="macOS / Linux">
+    <Code
+      code="curl -fsSL https://github.com/leocosta/octopus/releases/latest/download/install.sh | bash"
+      lang="bash"
+    />
+  </TabItem>
+  <TabItem label="Windows (PowerShell)">
+    <Code
+      code="irm https://github.com/leocosta/octopus/releases/latest/download/install.ps1 | iex"
+      lang="powershell"
+    />
+  </TabItem>
+</Tabs>
+
+To update the **agent config files** inside a repo (after Octopus
+itself has been updated), run `octopus update` inside that repo.
+That regenerates `.claude/CLAUDE.md`, agent rules, slash commands,
+and hook scripts from the new Octopus version.
+
+## Pin a version
+
+The installer always grabs the latest release. To pin to a specific
+version, replace `latest/download` with `download/v<version>` in
+the URL:
+
+<Code
+  code={`curl -fsSL https://github.com/leocosta/octopus/releases/download/v1.51.1/install.sh | bash`}
+  lang="bash"
+/>
+
+Versioned releases are immutable — once `v1.51.1` is published it
+stays available indefinitely. CI systems typically pin to a specific
+version and update on a deliberate cadence rather than tracking
+`latest`.
+
+## Uninstall
+
+```bash
+rm -rf ~/.octopus-cli ~/.octopus ~/.local/bin/octopus
+```
+
+That's it. Octopus never writes outside those three locations. Per-
+repo agent config (`.claude/`, `AGENTS.md`, `GEMINI.md`, etc) is
+left alone — you can remove that with `git clean` inside each repo
+where you'd run `octopus update`.
+
+## Build from source
+
+If you'd rather avoid the prebuilt tarball, clone the repo and run
+the setup script:
+
+```bash
+git clone https://github.com/leocosta/octopus.git
+cd octopus
+./setup.sh
+```
+
+The setup script does the same atomic install — copying into
+`~/.octopus-cli/v<version>/` and symlinking — but from the working
+copy rather than a release tarball. Use this when you're developing
+against Octopus itself.
+
+## Troubleshooting
+
+**"Command not found: octopus"** — your `~/.local/bin/` is not on
+`PATH`. Add `export PATH="$HOME/.local/bin:$PATH"` to `~/.bashrc`,
+`~/.zshrc`, or your equivalent.
+
+**"SHA-256 mismatch"** — the installer is paranoid about download
+integrity. If this happens repeatedly, retry; if it persists, file
+an issue with the version and platform.
+
+**Windows installer doesn't run** — PowerShell execution policy may
+be blocking it. Run `Set-ExecutionPolicy -Scope CurrentUser
+RemoteSigned` and retry.
+
+Next: [Quick Start](/octopus/get-started/quickstart/).

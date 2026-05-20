@@ -1,0 +1,162 @@
+---
+title: Quick Start
+description: A 10-minute walkthrough on a real repo — pick a bundle, generate agent config, run your first skill.
+sidebar:
+  order: 3
+---
+
+import { Code, Steps } from '@astrojs/starlight/components';
+
+This walkthrough assumes you've already
+[installed Octopus](/octopus/get-started/install/) and have a real
+repo to work in. It takes about ten minutes end-to-end on a small
+repo, longer on a large monorepo.
+
+<Steps>
+
+1. ### Set up Octopus in a repo
+
+   From inside any git repository:
+
+   ```bash
+   cd your-project
+   octopus update
+   ```
+
+   On a first run, this opens an interactive **setup wizard**:
+
+   - **Pick an agent** — Claude Code (default), Copilot, Codex,
+     Gemini, OpenCode, or several at once.
+   - **Pick a bundle** — `starter` (default) is the foundation
+     every repo wants. `quality` adds audit skills. `docs` adds
+     spec / ADR / PRD workflow. `backend` adds backend-developer
+     patterns. `growth` adds launch / changelog tooling.
+   - **Pick rules** — coding-style, testing, security, quality
+     gates. Inherited from the bundle by default.
+
+   The wizard writes `.octopus.yml` at the repo root capturing
+   your choices and generates the agent config files:
+   `.claude/CLAUDE.md` + `.claude/skills/` + `.claude/commands/` +
+   `.claude/agents/` + `.claude/settings.json` if you picked
+   Claude Code; similar layouts for the other agents.
+
+2. ### Inspect what landed
+
+   Look at three places:
+
+   - **`.claude/CLAUDE.md`** — the per-session instructions
+     Claude Code loads at startup. Coding conventions, commit
+     style, PR workflow, plus references to the skills it has
+     access to.
+   - **`.claude/skills/`** — one directory per skill, each with
+     a `SKILL.md`. The skill descriptions live in frontmatter;
+     that's what Claude Code matches against to decide when to
+     engage a skill.
+   - **`.claude/commands/`** — slash commands like
+     `/octopus:debug`, `/octopus:doc-prd`,
+     `/octopus:context-handoff`. Type these in Claude Code to
+     invoke a skill explicitly.
+
+   The same content lands in `.github/copilot-instructions.md`
+   for Copilot, `AGENTS.md` for Codex, `GEMINI.md` for Gemini,
+   `.opencode/rules.md` for OpenCode — Octopus translates the
+   format for each agent.
+
+3. ### Try your first skill
+
+   Open Claude Code in your repo and ask it to fix a bug. Watch
+   for the `debug` skill engaging automatically — the agent will
+   walk the four-phase protocol (reproduce → isolate → fix with
+   regression test → document non-obvious cause) instead of
+   jumping to a guess.
+
+   Or invoke explicitly with a slash command:
+
+   ```
+   /octopus:debug the auth-refresh endpoint returns 401 on retry
+   ```
+
+   Other useful first-time invocations:
+
+   - `/octopus:doc-prd` — turn the current conversation into a
+     PRD and publish it to your issue tracker.
+   - `/octopus:context-handoff` — compact the current session
+     into a handoff document for the next agent.
+   - `/octopus:audit-all` — pre-merge audit composing security,
+     money, tenant, and contract checks.
+
+4. ### Discover what else is installed
+
+   ```bash
+   octopus skills list      # all skills available in this repo
+   octopus commands list    # all slash commands
+   octopus bundles list     # the bundles you have + the ones available
+   octopus roles list       # delegation personas
+   ```
+
+   Every entry has a description and points back to its source
+   file. Use these lists to learn the surface area without
+   trawling the directories.
+
+5. ### Customise
+
+   When the defaults don't match your team:
+
+   - **Add a rule** — drop a markdown file in
+     `.octopus/rules/typescript/local.md`. It gets included in
+     the generated agent config on the next `octopus update`.
+   - **Override a skill** — copy a skill from
+     `~/.octopus-cli/v<version>/skills/<name>/` to
+     `.octopus/skills/<name>/` in your repo. The local copy wins.
+   - **Pin a bundle version** — set `bundles: [starter@v1.45.0]`
+     in `.octopus.yml` to freeze the bundle definition until you
+     explicitly bump it.
+
+   Re-run `octopus update` after every change.
+
+6. ### Set up the daemon (optional)
+
+   For long-running multi-agent workflows, start the Octopus
+   control TUI:
+
+   ```bash
+   octopus control
+   ```
+
+   This opens a terminal UI with:
+
+   - A queue of pending and running agent invocations.
+   - Per-task log streaming with scroll-back.
+   - Keybindings to cancel, retry, or reply to any task.
+   - A schedule panel for recurring tasks.
+
+   Useful when you're orchestrating several roles in parallel
+   via `/octopus:delegate @backend-developer …` and
+   `/octopus:delegate @writer …`.
+
+</Steps>
+
+## What to do next
+
+Now that the setup is working, dig into the layer that matters
+most for your team:
+
+- **You write a lot of features** → start at the
+  [`implement` skill](/octopus/skills/implement/) and the
+  [`debug` skill](/octopus/skills/debug/). Then look at
+  [`test-tdd`](/octopus/skills/test-tdd/) and
+  [`prototype`](/octopus/skills/prototype/).
+- **You spend time on review / audit** → look at
+  [`review-pr`](/octopus/skills/review-pr/),
+  [`audit-all`](/octopus/skills/audit-all/), and the four
+  audits it composes.
+- **You write a lot of docs / specs / PRDs** → start at the
+  [docs bundle](/octopus/bundles/docs/) and walk the
+  [doc-* family](/octopus/skills/#docs).
+- **You're scaling configuration across repos** → read the
+  [mental model](/octopus/get-started/mental-model/) and the
+  [bundles overview](/octopus/bundles/).
+
+If you get stuck, the
+[Troubleshooting page](/octopus/architecture/troubleshooting/)
+covers the most common failure modes.

@@ -18,6 +18,11 @@
 AGENTS.md
 .octopus/queue/
 .octopus/proposals/
+site/node_modules/
+site/dist/
+site/.astro/
+site/src/content/docs/
+site/public/cover.png
 cli/control/__pycache__/
 tests/__pycache__/
 .opencode/package-lock.json

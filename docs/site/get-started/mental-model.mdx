@@ -1,0 +1,195 @@
+---
+title: Mental Model
+description: The five primitives — Bundle, Skill, Command, Hook, Role — and how they compose into a coherent workflow.
+sidebar:
+  order: 4
+---
+
+Octopus has five primitives. Each does one thing. They compose into
+the workflows that make up a team's day. Once you've seen all five,
+the rest of the documentation falls into place.
+
+## The five primitives
+
+### Bundle
+
+A **bundle** is a curated package of skills + roles + rules + hooks
+tuned to a team archetype. You pick a bundle (or several) when
+running `octopus update` and the bundle decides what gets installed.
+
+The bundles that ship today:
+
+- **`starter`** — the foundation every team wants. Coding-style
+  rules, the `debug` and `implement` skills, the lifecycle hooks
+  (format on save, block destructive git, propose knowledge
+  updates), the doc-lifecycle and context-* skills.
+- **`quality`** — audit composition. Security, money, tenant,
+  cross-stack contracts, refactor-deepen, audit-config.
+- **`docs`** — the doc-* family. Spec, ADR, PRD, plan, research
+  flows. Plus interview, doc-align, triage-issues, scaffold-skill.
+- **`backend`** — backend-developer role + backend-patterns skill.
+- **`growth`** — launch / changelog / release-announce tooling
+  for shipping features to users.
+
+A bundle's job is to make the choice "what do I install?" tractable.
+Without bundles, every team would have to scroll a list of 34 skills
+and decide individually.
+
+[See all bundles →](/octopus/bundles/)
+
+### Skill
+
+A **skill** is a protocol the agent follows when its description
+matches the current task — or when you invoke it explicitly. Each
+skill lives in `skills/<name>/SKILL.md`: frontmatter with `name`,
+`description`, and (optionally) `triggers`; body with `Overview`,
+`When to Engage`, `Protocol`, `Anti-Patterns`, and `Integration
+with Other Skills`.
+
+Skills are how Octopus codifies process. The TDD loop, the
+debugging protocol, the PR-review discipline, the PRD synthesis
+flow, the refactoring vocabulary — each lives as a skill with a
+documented protocol the agent follows.
+
+Skills come in two flavours:
+
+- **Auto-engaged**: the agent matches the skill's description /
+  triggers against the task and engages without being asked.
+  Most skills work this way. `debug` engages when there's a bug
+  report; `audit-money` engages when you edit billing-adjacent
+  files.
+- **Manual-only**: the skill is explicit, invoked by the user
+  with a slash command. `map-system` is the canonical example —
+  it's marked manual-invocation so the agent doesn't zoom out
+  on its own initiative.
+
+[See all skills →](/octopus/skills/)
+
+### Command
+
+A **slash command** is a typed entry point that pins a specific
+skill to a specific phrase. `/octopus:debug` invokes the `debug`
+skill. `/octopus:doc-prd` invokes `doc-prd`. The mapping is one
+command per skill (mostly), and the command body is thin — it
+points at the skill and the skill owns the protocol.
+
+Why have both? Two reasons:
+
+- **Discoverability**: typing `/octopus:` and seeing the autocomplete
+  list is a faster surface than reading skill descriptions.
+- **Predictability**: when you explicitly invoke a command, the
+  agent engages the named skill *for sure*. Description matching
+  is fuzzy; slash commands are not.
+
+Not every skill has a command. Skills with no clear "I want to
+do this now" moment — `compress-skill`, `continuous-learning`,
+`scaffold-skill` — stay engine-only. Skills with explicit
+entry-point moments — `debug`, `prototype`, `triage-issues`,
+`context-handoff`, `interview` — get a command.
+
+[See all commands →](/octopus/commands/)
+
+### Hook
+
+A **hook** is a lifecycle script that runs automatically at one of
+seven moments: before a tool call, after a tool call, on session
+start, before context compaction, after context compaction, on
+stop, on session end. Hooks enforce discipline without prompting
+the agent.
+
+Examples:
+
+- **`auto-format.sh`** (PostToolUse on Write/Edit) — runs the
+  project's formatter after every file edit. The agent doesn't
+  need to remember to format.
+- **`block-no-verify.sh`** (PreToolUse on Bash) — refuses to run
+  `git commit --no-verify`. Pre-commit hooks exist for a reason.
+- **`detect-secrets.sh`** (PreToolUse on Bash) — scans for
+  secrets in tracked files before they get pushed.
+- **`propose-knowledge-update.sh`** (Stop) — scans the session
+  transcript for corrections, re-reads, re-greps, and writes a
+  proposal to `.octopus/proposals/` for human review.
+
+The principle: anything deterministic that *must* happen on every
+session goes in a hook, not in a prompt. Prompts can be ignored;
+hooks can't.
+
+[See all hooks →](/octopus/hooks/)
+
+### Role
+
+A **role** is a persona you can delegate to. `@architect` reviews
+designs and surfaces architectural smells. `@backend-developer`
+implements API-side work. `@writer` produces marketing or
+documentation copy. `@product-manager` thinks about user-facing
+trade-offs. Roles let you address an agent with a specific scope
+in mind:
+
+```
+/octopus:delegate @backend-developer add idempotency-key support to /charges
+```
+
+The role's persona file (`roles/<name>.md`) scopes the agent's
+behaviour for that one task: what they own, what they don't,
+which skills they typically activate, what tone they take in
+output.
+
+[See all roles →](/octopus/roles/)
+
+## How they compose
+
+A typical workflow uses all five:
+
+1. **You pick a bundle** when you set up the repo (`starter` +
+   `quality` for most teams).
+2. The bundle installs **skills**, **commands**, **hooks**, and
+   the **roles** it considers part of its surface.
+3. You work in Claude Code. The agent matches your task against
+   the skill descriptions and engages the right one automatically.
+4. When you want to be explicit, you type a **slash command** to
+   invoke a specific skill.
+5. **Hooks** run silently in the background, enforcing format /
+   typecheck / no-verify-blocking / knowledge-proposal.
+6. When you have a task with a specific scope, you delegate to a
+   **role** rather than the default agent.
+
+The primitives are deliberately small. Most teams don't write new
+ones — they pick a bundle, customise a rule or two, and live in
+the workflow the bundle defines. The framework exists so the
+*authors* of bundles and skills can write them once and have them
+work consistently across every consuming repo and every supported
+agent.
+
+## What's *not* a primitive
+
+A few things look like they could be primitives but aren't:
+
+- **Rules** — markdown files that get inlined into the generated
+  agent config. They're configuration, not behaviour. Rules say
+  "use TypeScript" or "prefer integration tests"; skills say "run
+  this protocol".
+- **Knowledge** — domain-scoped facts the agent learns over time
+  via `continuous-learning`. Knowledge is *data*; skills are
+  *behaviour*.
+- **MCP servers** — external integrations (GitHub, Notion,
+  Postgres) the agent can call. MCP is a protocol Anthropic
+  defined; Octopus ships templates but doesn't define new
+  primitives on top.
+- **Bundles of bundles** — there's no "meta-bundle". If you want
+  `starter + quality + docs`, you list all three in your
+  `.octopus.yml`. No nesting.
+
+This keeps the model flat and the documentation tractable.
+
+## Where to go next
+
+- [Bundles](/octopus/bundles/) — pick the one that matches your
+  team's shape.
+- [Skills](/octopus/skills/) — browse by family (`doc-*`,
+  `audit-*`, `test-*`, etc).
+- [Commands](/octopus/commands/) — slash-command reference with
+  rationale per command.
+- [Hooks](/octopus/hooks/) — failure-scenario-per-hook
+  documentation.
+- [Roles](/octopus/roles/) — when to delegate vs when to stay
+  in the default agent.
