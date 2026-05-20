@@ -1,0 +1,110 @@
+---
+title: Bundles
+description: Bundles are opinionated packages of skills, roles, rules, and hooks tuned to a team archetype — the way you pick how much Octopus shows up in a repo.
+sidebar:
+  order: 0
+---
+
+A **bundle** is the unit Octopus uses to ship coherent slices of
+configuration. When you run `octopus update` in a repo and choose a
+bundle, the CLI installs the skills, roles, rules, and hooks that
+belong to it — and stops there. Picking the right bundle is how you
+control how much Octopus shows up in a given codebase.
+
+Bundles exist because the alternative is worse. Without them, every
+team would have to scroll a list of 34 skills, 37 commands, and 15
+hooks and decide each one individually. That choice gets made wrong
+under time pressure, and people end up either installing too much
+(noise) or too little (Octopus doesn't help). A small set of
+curated bundles takes the choice from "decide 80 things" to "pick
+the closest archetype to your team".
+
+## The five bundles
+
+- **[starter](/octopus/bundles/starter/)** — the foundation every
+  repo should have. Doc lifecycle skills, the `implement` and
+  `debug` protocols, the TDD loop, the prototyping discipline, the
+  session-handoff and review-feedback skills, and the lifecycle
+  hooks that enforce them.
+- **[quality](/octopus/bundles/quality/)** — the audit composer.
+  Security, money, multi-tenant scope, cross-stack contracts,
+  configuration freshness, architecture-depth refactors. Picks up
+  what `starter` doesn't cover for pre-merge audits.
+- **[docs](/octopus/bundles/docs/)** — the documentation lifecycle.
+  Specs, ADRs, plans, PRDs, the interview / grilling discipline,
+  triage, per-module CLAUDE.md authoring, and skill authoring.
+- **[backend](/octopus/bundles/backend/)** — backend-specific
+  patterns and end-to-end test conventions. Pairs with the
+  `backend-developer` role.
+- **[growth](/octopus/bundles/growth/)** — launch + retention
+  tooling. Multi-channel feature launches, release announcements,
+  content image generation.
+
+## How bundles compose
+
+Bundles are designed to **stack**. Most teams ship with one or two:
+
+- **Just `starter`** — solo or two-person teams who want the
+  foundation without the audit overhead.
+- **`starter` + `docs`** — teams that maintain living
+  documentation (RFC / Spec / ADR / PRD culture).
+- **`starter` + `quality`** — teams shipping to production with
+  pre-merge audit gates (security, billing, multi-tenant).
+- **`starter` + `backend`** — backend-only repos with deep
+  framework patterns.
+- **`starter` + `quality` + `docs` + `growth`** — a fully-equipped
+  product team across the spectrum.
+
+The combinations are not enforced — you can stack any bundles you
+want in `.octopus.yml`. The recommendations above are starting
+points, not rules.
+
+## What lives in a bundle definition
+
+Each bundle is a single YAML file at `bundles/<name>.yml` with:
+
+```yaml
+name: starter
+description: <one sentence — shows in the setup wizard>
+category: foundation        # foundation | intent | stack
+persona_question: <only on intent/stack bundles>
+persona_default: false
+skills: [...]
+roles: [...]
+rules: []
+mcp: []
+hooks: null
+```
+
+The `category` field carries weight:
+
+- **`foundation`** bundles (currently just `starter`) install by
+  default — the setup wizard offers them as "the baseline".
+- **`intent`** bundles install when the user opts in to a workflow
+  (`docs`, `quality`, `growth`). Each carries a `persona_question`
+  the wizard asks.
+- **`stack`** bundles install when the user identifies a stack
+  (`backend`). Same `persona_question` pattern.
+
+## When to author a new bundle
+
+You probably shouldn't. The five existing bundles cover the
+clearest team archetypes, and adding more dilutes the "pick the
+closest archetype" mental model that makes bundles useful.
+
+Reasons to add a bundle anyway:
+
+- A coherent workflow involves 4+ skills that don't fit any
+  existing bundle's archetype
+- The skills compose into a recognisable team activity (not just
+  a random grouping)
+- The bundle's persona question would actually help users decide
+
+If you're tempted to add a bundle for one or two skills, the
+better move is to add them to an existing bundle.
+
+## Reference
+
+Bundle definitions live in [`bundles/`](https://github.com/leocosta/octopus/tree/main/bundles)
+in the source repo. Each file is short — the rationale per bundle
+lives in the pages linked above.

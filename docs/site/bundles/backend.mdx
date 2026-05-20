@@ -1,0 +1,115 @@
+---
+title: backend
+description: Backend-specific patterns and end-to-end test conventions. Pairs with the backend-developer role for stack-aware implementation.
+sidebar:
+  order: 4
+---
+
+`backend` is a small bundle. It adds two skills and one role on top
+of `starter`, focused on backend-specific patterns and end-to-end
+testing. The bundle exists to give backend teams a coherent
+extension point without bloating `starter` for non-backend repos.
+
+## Why this exists
+
+The skills in `starter` are stack-agnostic. `debug` doesn't care
+whether you're debugging Python or C#; `implement` doesn't ship
+framework-specific opinions. But backend work has framework-shaped
+patterns that the stack-agnostic skills can't carry: how Repository
+and Service layers compose, what an idempotency key looks like at
+the API boundary, what shape an end-to-end test takes against a
+real HTTP server with a real database.
+
+Putting those patterns in `starter` would force every repo to load
+them, even pure-frontend or pure-tooling ones. `backend` keeps them
+opt-in.
+
+## Team archetype
+
+This is for teams whose primary work is on a server-side API or
+service:
+
+- REST or gRPC APIs serving a frontend or other services
+- Background workers, queues, batch jobs
+- Database-heavy code (migrations, ORMs, raw SQL)
+- Webhook handlers and integration adapters
+
+If your repo is a frontend, a CLI, a library, or a tooling
+project, `backend` is the wrong shape. Stay with `starter` (and
+add `quality` for audits if you handle money / auth / multi-tenant).
+
+## What it includes
+
+```yaml
+skills:
+  - backend-patterns  # framework-shaped patterns for backend code
+  - test-e2e          # end-to-end testing protocol (real DB, real HTTP)
+roles:
+  - backend-developer # senior backend persona for /octopus:delegate
+```
+
+[Source: `bundles/backend.yml`](https://github.com/leocosta/octopus/blob/main/bundles/backend.yml)
+
+### Why each one is in
+
+- **`backend-patterns`** — codifies the common shapes backend code
+  takes: repository pattern (encapsulate data access behind a
+  uniform interface), service layer (orchestrate business logic
+  between repositories and external services), error envelope
+  (`{ data, error, metadata }`), idempotency at the API boundary,
+  parameterised queries always. The skill engages when the agent
+  is working on backend code and routes the implementation
+  through these patterns.
+- **`test-e2e`** — the end-to-end test discipline. Distinct from
+  `test-tdd` (which lives at the unit / integration boundary).
+  `test-e2e` covers running tests against a real HTTP server, a
+  real database (often via testcontainers), and asserting on
+  observable behaviour rather than internal state.
+- **`backend-developer` role** — the persona you delegate to when
+  the task is unambiguously backend. The role file enforces stack
+  detection (.NET / Scala / Node / Python) and applies the
+  detected stack's conventions. Useful when a frontend developer
+  is dispatching backend work and wants the agent in the right
+  mental model.
+
+### Why not included
+
+- **`backend-developer` is here, but no other persona** —
+  intentional. The bundle is backend-focused; including other
+  roles would be off-theme.
+- **`audit-money`, `audit-tenant`, `audit-security`** — those
+  live in `quality` because their audit shape applies regardless
+  of stack. A backend repo that ships to production almost always
+  wants `backend + quality`.
+- **Framework-specific skills like `dotnet`, `node`, etc.** — the
+  `dotnet` skill exists as a separate, optional install. It's not
+  bundled into `backend` because not every backend is .NET.
+  Future stack-specific skills follow the same pattern.
+
+## Workflow this enables
+
+Backend-shaped tasks become routed:
+
+1. A task comes in: "add idempotency to the `/charges` endpoint."
+2. The agent recognises the backend signal (the path,
+   `Program.cs` in the tree, or your explicit `/octopus:delegate
+   @backend-developer …`) and engages `backend-developer` mode.
+3. `backend-patterns` informs the implementation: idempotency
+   keys go in the request header, get checked against a store
+   before the side effect happens, and the response is cached for
+   subsequent retries with the same key.
+4. Tests follow `test-e2e`: spin up the API against a real
+   testcontainer-backed DB, make a request with an idempotency
+   key, repeat the same request, assert the second one returns
+   the cached response without re-charging the customer.
+5. If the change touches money or tenant scope (likely for
+   `/charges`), the `quality` bundle's audits run pre-merge.
+
+## Composes with
+
+- **[starter](/octopus/bundles/starter/)** — required foundation.
+- **[quality](/octopus/bundles/quality/)** — almost always paired.
+  Most backend code that ships to production wants the audits.
+- **[docs](/octopus/bundles/docs/)** — pairs naturally. Backend
+  changes often warrant ADRs (idempotency key format, retry
+  policy) and PRDs for new endpoints.

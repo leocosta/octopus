@@ -1,0 +1,137 @@
+---
+title: starter
+description: The foundation every repo should have — doc lifecycle, implement, debug, TDD, prototype, system mapping, review-feedback discipline, session handoff, and the lifecycle hooks that enforce them.
+sidebar:
+  order: 1
+---
+
+`starter` is the bundle that should land in **every Octopus-managed
+repo**. It is the only bundle in the `foundation` category — the
+setup wizard installs it by default and you have to deliberately
+opt out. The other four bundles assume `starter` is already
+present.
+
+## Why this exists
+
+Every team using an AI coding agent ends up needing the same core
+behaviours: a debugging protocol that doesn't just guess, a way to
+implement features with TDD discipline, a review-feedback flow that
+doesn't capitulate to bad suggestions, a session-handoff mechanism
+for when context runs out, a prototyping discipline for design
+questions. These are not optional — without them, the agent's
+output quality is unpredictable and the team relearns the same
+lessons every quarter.
+
+`starter` codifies these as skills + commands + hooks, so every
+repo gets them on the first `octopus update`. The bundle is
+deliberately broad — eleven skills — because the cost of a
+*missing* foundational behaviour is much higher than the cost of
+shipping one you don't immediately use.
+
+## Team archetype
+
+This is **for everyone**. Solo developers, two-person teams, large
+product teams, monorepos, microservices. The skills are
+agent-agnostic and stack-agnostic.
+
+If you're not sure which bundles to pick during setup, pick this
+one and add others later as needs surface.
+
+## What it includes
+
+```yaml
+skills:
+  - doc-adr           # capture hard-to-reverse decisions as ADRs
+  - doc-lifecycle     # RFC → Spec → ADR → Knowledge → Changelog
+  - context-budget    # monitor token overhead
+  - implement         # the Octopus implementation workflow (TDD, plan-gate, simplify)
+  - debug             # 4-phase bug protocol (reproduce, isolate, fix, document)
+  - review-pr         # PR-feedback discipline
+  - delegate          # @role: dispatch with attribution
+  - test-tdd          # standalone red-green-refactor loop
+  - map-system        # higher-level codebase map (manual-only)
+  - prototype         # throwaway code to answer one design question
+  - context-handoff   # session compaction for the next agent
+```
+
+[Source: `bundles/starter.yml`](https://github.com/leocosta/octopus/blob/main/bundles/starter.yml)
+
+### Why each one is in
+
+- **`implement` + `debug`** — paired primitives. `implement`
+  handles features; `debug` handles bugs. Both engage by default
+  on every code task and they call each other through their
+  protocols.
+- **`test-tdd`** — the TDD loop is embedded in `implement`, but
+  some tasks (bug fixes, isolated refactors) want the loop without
+  the full implement workflow. Extracted as a standalone skill.
+- **`doc-adr` + `doc-lifecycle`** — the documentation primitives
+  every team uses, even minimally. ADRs capture hard-to-reverse
+  decisions; `doc-lifecycle` orchestrates the doc chain (RFC →
+  Spec → ADR → Knowledge → Changelog).
+- **`review-pr`** — PR-feedback discipline is foundational: verify
+  the critique, ask for evidence on generic comments, never make
+  performative changes. Without this, agents agree with every
+  suggestion in review.
+- **`delegate`** — the bundle includes the role-dispatch primitive
+  even though no roles ship in `starter` itself. Reason: most
+  teams add `backend` / writer / etc later and `delegate` should
+  be present from day one.
+- **`context-budget` + `context-handoff`** — the session
+  management pair. `context-budget` measures token overhead;
+  `context-handoff` compacts the session into a doc the next
+  agent can pick up.
+- **`map-system`** — manual-invocation only. Quick higher-level
+  map of the codebase in the project's domain vocabulary.
+- **`prototype`** — design discipline: throwaway code to answer
+  one question before committing to it.
+
+### Why not included (deliberate exclusions)
+
+- **`audit-*` skills** — those live in `quality`. `starter` is
+  about *workflow*; audits are about *gates*. Different concern.
+- **`doc-rfc`, `doc-spec`, `doc-plan`, `doc-design`, `doc-prd`,
+  `interview`, `triage-issues`, `doc-align`** — the documentation
+  lifecycle skills live in `docs`. `starter` ships `doc-adr` and
+  `doc-lifecycle` because they're foundational; the rest is
+  opt-in.
+- **`refactor-deepen`** — lives in `quality`. Architecture
+  refactors are audit-shaped, not workflow-shaped.
+- **`scaffold-skill`, `compress-skill`** — meta-skills. Useful
+  when you author/maintain Octopus skills, not when you consume
+  them. Live in `docs`.
+
+## Workflow this enables
+
+A typical day inside a `starter`-only repo:
+
+1. You start work on a new feature. Claude Code engages
+   [`implement`](/octopus/skills/implement/) automatically. The
+   skill walks the plan-before-code gate, runs TDD on each slice,
+   commits at checkpoints.
+2. A bug report comes in. The agent engages
+   [`debug`](/octopus/skills/debug/) instead — reproduces first,
+   isolates, writes a regression test before fixing.
+3. A teammate's PR review surfaces feedback. The agent applies
+   [`review-pr`](/octopus/skills/review-pr/) discipline —
+   verifies each comment against evidence, asks for clarification
+   on the vague ones, never agrees performatively.
+4. You hit the context limit before finishing. You run
+   `/octopus:context-handoff` and pick the work up in a fresh
+   session, with the previous one summarised in tmp.
+5. A design question comes up that prose can't resolve. You run
+   `/octopus:prototype` and build a throwaway terminal app or UI
+   variant set to answer the question concretely, then delete it
+   once you have the answer.
+
+## Composes with
+
+- **[quality](/octopus/bundles/quality/)** — for pre-merge audits
+  (security / money / tenant / contracts / config).
+- **[docs](/octopus/bundles/docs/)** — for the full doc lifecycle
+  (RFCs / specs / PRDs / per-module CLAUDE.md / interview /
+  triage).
+- **[backend](/octopus/bundles/backend/)** — for backend-specific
+  patterns and the backend-developer role.
+- **[growth](/octopus/bundles/growth/)** — for shipping launches
+  and release announcements to users.

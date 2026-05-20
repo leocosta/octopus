@@ -1,0 +1,138 @@
+---
+title: backend-developer
+description: Senior Backend Specialist — implements backend code (APIs, services, data layer, integrations) following implementation plans with stack-aware conventions.
+sidebar:
+  order: 2
+---
+
+`backend-developer` is the role you delegate to when the task is
+unambiguously backend implementation: a new endpoint, a service
+class, a migration, a webhook handler, a background worker.
+
+**The role writes and modifies code.** It is the executor — it
+turns plans into working code.
+
+## Persona
+
+A Senior Backend Specialist responsible for implementing backend
+tasks following implementation plans. They start every task with
+**stack detection** — identifying whether the repo is .NET, Scala,
+Node, Python, or something else — and apply only the relevant
+stack's conventions. They follow the existing modular structure
+rather than imposing patterns.
+
+## Frontmatter
+
+```yaml
+name: backend-developer
+description: manual start
+model: sonnet
+color: "#ffa500"   # orange — visible in octopus control TUI
+```
+
+`manual start` means the role does not engage automatically from
+description matching. You invoke it via `/octopus:delegate
+@backend-developer …` or the `@backend-developer:` mention pattern.
+
+## Scope and boundaries
+
+**What backend-developer owns:**
+
+- Domain layer (entities, enums, value objects)
+- DTOs and validation
+- Application layer (commands, queries, handlers, services)
+- Endpoints / controllers / API surface
+- Configuration (DI, routing, middleware)
+- Database migrations
+- Tests for the implementation
+
+**What backend-developer does NOT own:**
+
+- Frontend code (delegate to `frontend-developer`)
+- Architectural review of the change (delegate to `architect`)
+- Documentation beyond the implementation report (delegate to
+  `writer`)
+- Product / scope decisions (delegate to `product-manager`)
+
+The role's job is to **execute a plan**, not to redesign one. If
+the plan is incomplete or ambiguous, the role explores the
+codebase to clarify, then presents a brief summary before starting.
+
+## How the role behaves differently from the default agent
+
+- **Stack detection always runs first** — the role inspects the
+  tree for `*.csproj`, `*.sln`, `Program.cs` (→ .NET), `build.sbt`
+  (→ Scala), `package.json` + `tsconfig.json` (→ Node), or
+  `pyproject.toml` (→ Python). The detected stack determines the
+  build command, the test command, the formatter, and the layer
+  conventions to apply.
+- **Layer order is fixed** — for any new feature, the role works
+  in a deterministic order: domain → DTOs → application →
+  endpoints → configuration → migrations. The default agent
+  might jump straight to the endpoint; `backend-developer`
+  doesn't.
+- **Build + test + format gates are non-negotiable** — Phase 3 of
+  the role's workflow runs the full build, all tests, and the
+  formatter before the role considers the work done. The default
+  agent often skips one of these under time pressure.
+- **Implementation reports follow a fixed structure** — at the
+  end of every task, the role documents: changes made, new files
+  created, test results, technical decisions and trade-offs.
+
+## Workflow
+
+Four phases (Phase 0 always runs first):
+
+1. **Phase 0: Stack detection** — identify the stack, load the
+   matching conventions and build / test / format commands.
+2. **Phase 1: Understand the plan** — read the implementation
+   plan, identify files to modify / create, the execution order,
+   the domain rules. Clarify ambiguity before starting.
+3. **Phase 2: Implementation** — work in layer order (domain →
+   DTOs → application → endpoints → configuration → migrations).
+4. **Phase 3: Testing and verification** — full build, all tests,
+   lint / format, `git diff` review.
+5. **Phase 4: Documentation** — changes made, new files, test
+   results, decisions.
+
+## When to delegate to backend-developer
+
+- A specific backend task with a clear implementation plan
+- A bug in backend code that the default agent's `debug` skill
+  identified but hasn't fixed yet (delegate the fix so role
+  conventions apply to the regression test)
+- Multi-step backend work where you want consistent layer
+  ordering and full build / test gates
+- When you're in `octopus control` orchestrating parallel
+  workstreams and want clear attribution per worker
+
+## When NOT to delegate to backend-developer
+
+- The task spans backend + frontend (use the default agent or
+  delegate the parts separately)
+- The task is exploratory ("see if it's feasible") — use the
+  default agent's `prototype` skill instead
+- The task is pure refactor with no behaviour change — the
+  default agent + `refactor-deepen` handles this more directly
+- Code review (use `architect`)
+
+## Composes with
+
+- **[implement skill](/octopus/skills/implement/)** — the
+  workflow the role applies. TDD loop, plan-before-code gate,
+  verification-before-completion, simplify pass.
+- **[test-tdd skill](/octopus/skills/test-tdd/)** — used inside
+  the implement workflow for the red-green-refactor loop.
+- **[backend-patterns skill](/octopus/skills/backend-patterns/)**
+  — installed by the `backend` bundle, ships the stack-specific
+  conventions the role applies during Phase 2.
+- **[debug skill](/octopus/skills/debug/)** — for bug-fix tasks
+  delegated to this role.
+- **[dotnet skill](/octopus/skills/dotnet/)** — engages when the
+  detected stack is .NET. Brings framework-specific conventions
+  (Minimal APIs, EF Core, MediatR, FluentValidation, Mapster).
+
+## Reference
+
+[Source: `roles/backend-developer.md`](https://github.com/leocosta/octopus/blob/main/roles/backend-developer.md)
+— 82 lines, full persona definition.

@@ -1,0 +1,151 @@
+---
+title: docs
+description: The documentation lifecycle bundle — RFCs, specs, plans, PRDs, ADRs, the interview / grilling discipline, triage, per-module CLAUDE.md authoring, and skill authoring.
+sidebar:
+  order: 3
+---
+
+`docs` is the bundle for teams that **document their work**. It
+extends `starter`'s foundational `doc-adr` and `doc-lifecycle` with
+the full lifecycle of documentation artifacts: from the initial
+research / interview that produces a problem statement, through
+PRDs and specs, into plans and ADRs, and down to per-module
+CLAUDE.md files for monorepos and meta-skills for authoring more
+skills.
+
+## Why this exists
+
+Teams that take documentation seriously hit the same gaps. They
+have an RFC template but no skill to fill it. They write specs
+but no flow to grill the spec against the actual code. They
+maintain a `CLAUDE.md` at the root of a 5-module monorepo and it
+becomes either bloated or generic. Issues land in their tracker
+and nobody triages them with discipline.
+
+`docs` codifies each of these as a skill with a documented
+protocol. The bundle is opt-in because not every team writes docs
+at this depth — but the teams that do, gain a coherent flow from
+problem to artifact.
+
+## Team archetype
+
+This is for teams that:
+
+- Maintain living documentation (specs, ADRs, PRDs) as part of the
+  development cycle
+- Run a structured backlog with triage discipline
+- Work in monorepos where per-module conventions matter
+- Author their own Octopus skills (or fork Octopus for an
+  in-house variant)
+
+If your team's "docs" are a README and a TODO list, this bundle
+is overkill. Stay with `starter`'s `doc-adr` for the rare
+hard-to-reverse decision and revisit if doc volume grows.
+
+## What it includes
+
+```yaml
+skills:
+  - doc-lifecycle     # RFC → Spec → ADR → Knowledge → Changelog
+  - doc-plan          # spec → implementation plan
+  - plan-backlog      # plan-directory hygiene audit
+  - continuous-learning # promote recurring patterns to rules
+  - compress-skill    # shrink an existing SKILL.md
+  - interview         # greenfield requirements interview
+  - doc-align         # grill a plan against CONTEXT.md + ADRs
+  - doc-prd           # synthesise conversation into a PRD
+  - doc-subcontext    # per-module CLAUDE.md authoring
+  - triage-issues     # state-machine issue triage
+  - scaffold-skill    # create new Octopus skills + register in bundle
+roles:
+  - writer            # documentation specialist
+```
+
+[Source: `bundles/docs.yml`](https://github.com/leocosta/octopus/blob/main/bundles/docs.yml)
+
+### Why each one is in
+
+The skills cluster into four sub-flows:
+
+**Problem → artifact** (greenfield to publishable doc):
+
+- **`interview`** — when there's no plan yet, runs an interactive
+  requirements interview. One question at a time, decision tree,
+  produces a confirmed intent summary
+- **`doc-align`** — when there's a plan but it needs to be
+  stress-tested against existing CONTEXT.md / ADRs. Grilling
+  discipline with the ADR triple-gate
+- **`doc-prd`** — when the decisions are pinned and ready for an
+  AFK agent, synthesises the conversation into a tracker-ready
+  PRD without re-interviewing
+
+**Spec → execution** (artifact to working code):
+
+- **`doc-plan`** — turns a spec into an implementation plan with
+  checkpoint commits
+- **`doc-lifecycle`** — orchestrates the RFC → Spec → ADR →
+  Knowledge → Changelog chain (also in `starter`)
+
+**Maintenance** (keeping docs healthy):
+
+- **`plan-backlog`** — hygiene audit on the plans directory and
+  roadmap (orphan plans, stale entries, broken links)
+- **`continuous-learning`** — promotes recurring patterns observed
+  during sessions into project knowledge / rules
+- **`compress-skill`** — shrinks an existing SKILL.md when it
+  grows past the soft cap
+- **`doc-subcontext`** — authors per-module `CLAUDE.md` in
+  monorepos (the Anthropic large-codebases article calls this out
+  as the top scaling practice)
+
+**Issue lifecycle**:
+
+- **`triage-issues`** — state-machine triage with mandatory AI
+  disclaimer, reproduce-before-grill discipline, out-of-scope
+  records
+
+**Meta**:
+
+- **`scaffold-skill`** — creates new Octopus skills end-to-end
+  and registers them into a target bundle (no skill ships loose)
+
+### Why not included
+
+- **`doc-adr`** — in `starter`. ADRs are foundational, not
+  optional.
+- **`doc-spec`, `doc-design`, `doc-rfc`** — these are slash
+  commands available in any Octopus repo, not skills. They're
+  installed regardless of bundle choice because they're the
+  primary entry points to the doc lifecycle.
+
+## Workflow this enables
+
+The full lifecycle for a new feature:
+
+1. A vague idea: "we should let parents see enrollment status."
+   You run `/octopus:interview` and walk a decision tree until
+   the intent is concrete enough to package.
+2. The interview ends with a confirmed root statement plus
+   constraints / actors / trade-offs. You run `/octopus:doc-prd`
+   to synthesise that into a PRD and publish it to your tracker
+   labelled `ready-for-agent`.
+3. An AFK agent picks up the ticket. Before implementation, the
+   skill runs `doc-align` if relevant — grilling the PRD against
+   CONTEXT.md and existing ADRs to surface contradictions.
+4. The agent moves to `/octopus:doc-plan` to convert the PRD into
+   a checkpoint-committed implementation plan.
+5. After merge, the changelog entry references the PRD ID and the
+   plan. `continuous-learning` may surface a recurring pattern
+   from the session worth promoting to a rule.
+6. Every few months, `plan-backlog` audits the plans directory for
+   hygiene (orphan plans, stale entries, broken links).
+
+## Composes with
+
+- **[starter](/octopus/bundles/starter/)** — required foundation
+  (provides the implement workflow that the docs eventually drive).
+- **[quality](/octopus/bundles/quality/)** — pairs naturally.
+  Audits feed knowledge, which `continuous-learning` promotes to
+  rules.
+- **[growth](/octopus/bundles/growth/)** — pairs naturally. PRDs
+  feed feature launches via `launch-feature`.

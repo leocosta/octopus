@@ -1,0 +1,126 @@
+---
+title: growth
+description: Ship features and releases as multi-channel launch kits — landing pages, email, Slack, Discord, in-app banners, social posts, content images, themed release announcements.
+sidebar:
+  order: 5
+---
+
+`growth` is the bundle for teams that **launch** their work. It adds
+the multi-channel launch tooling and image generation to `starter`,
+turning a shipped feature into a coordinated rollout across email,
+in-app surfaces, social channels, and the changelog.
+
+## Why this exists
+
+Shipping a feature is only half the work. The other half — getting
+existing users to notice it, getting prospects to evaluate it,
+keeping the team aligned on what the message is — usually gets
+ad-libbed. Each channel (email, Slack, Discord, in-app banner, X
+thread, Discord post, landing page copy) gets its own messy
+copy-paste pass, the message drifts between them, and the launch
+ships at lower velocity than it should.
+
+`growth` codifies the launch as a single skill that produces
+**channel-native payloads** in one pass. One feature → one launch
+kit → 9 ready-to-paste artifacts.
+
+## Team archetype
+
+This is for teams that:
+
+- Ship to existing users (retention-focused) **and** to prospects
+  (acquisition-focused)
+- Coordinate launches across more than two channels
+- Write changelogs that real users actually read
+- Have a brand voice they want to enforce across surfaces
+
+If your "launch" is a commit message and a Slack ping to one
+channel, `growth` is overkill. Add it when launches become
+recurring effort that nobody owns.
+
+## What it includes
+
+```yaml
+skills:
+  - launch-feature     # acquisition-focused multi-channel launch kit
+  - launch-release    # retention-focused themed release announcement
+  - content-images   # AI-generated images for posts and landings
+roles:
+  - marketer         # social media strategist + copywriter
+```
+
+[Source: `bundles/growth.yml`](https://github.com/leocosta/octopus/blob/main/bundles/growth.yml)
+
+### Why each one is in
+
+- **`launch-feature`** — acquisition-focused. Given a completed
+  feature (RM number, spec path, research path, or PR), produces
+  a versioned launch kit under `docs/marketing/launches/`:
+  positioning, posts for X / LinkedIn / WhatsApp / Slack /
+  Discord / email body / landing page copy / changelog entry /
+  optional video script. Designed for prospects who don't know
+  the product yet.
+- **`launch-release`** — retention-focused. Given a release tag
+  range, produces a themed release announcement: landing HTML,
+  email, Slack, Discord, in-app banner, status page note, X
+  thread, WhatsApp, slide deck. Designed for *existing users*
+  catching up on what changed. Tone differs from
+  `launch-feature` — assumes the reader uses the product.
+- **`content-images`** — auxiliary skill that generates image
+  assets (hero shots, social cards, banner images) tied to a
+  launch's theme. Lives in the same bundle so the launch payload
+  can include matching visuals.
+- **`marketer` role** — the persona you delegate to for
+  approval-gated publishing workflows, channel strategy, and
+  campaign-level decisions. Distinct from the `writer` role
+  (which focuses on internal docs); `marketer` writes for
+  external audiences.
+
+### Why not included
+
+- **No engineering skills** — `growth` is post-merge work.
+  Engineering is `starter` / `backend` / `quality`. Keep the
+  bundles single-purpose.
+- **No code-touching skills** — the `marketer` role explicitly
+  does not modify application code. The bundle stays in the
+  content / marketing lane.
+
+## Workflow this enables
+
+Two distinct launch shapes:
+
+**Feature launch** (acquisition):
+
+1. You ship a new feature (RM-095, say).
+2. You run `/octopus:launch-feature RM-095`. The skill reads the
+   spec, the implementation plan, the PR, and produces a
+   versioned launch kit at `docs/marketing/launches/2026-05-20-RM-095/`.
+3. The kit has positioning, landing copy, three social posts
+   (X / LinkedIn / WhatsApp), an email body, a Slack
+   announcement, a Discord post, and a changelog entry — each
+   tuned to its channel.
+4. You review, edit for voice, hand to the `marketer` role for
+   publication-readiness review, then publish.
+
+**Release announcement** (retention):
+
+1. You cut a release (`octopus release` produces v1.50.0
+   covering 10 RMs).
+2. You run `/octopus:launch-release v1.49.0..v1.50.0`. The skill
+   walks the release range, picks a theme that connects the
+   shipped items, and produces a themed announcement kit.
+3. The kit includes a landing HTML page (the "what's new"
+   summary), an email, channel-specific posts, an in-app banner,
+   and a status page note. Tone is for *existing users*: assumes
+   they know the product, focuses on what's new and why it
+   matters.
+4. You schedule the rollout across channels.
+
+## Composes with
+
+- **[starter](/octopus/bundles/starter/)** — required foundation
+  (provides `implement` and `debug` that produce the features
+  being launched).
+- **[docs](/octopus/bundles/docs/)** — pairs naturally. PRDs
+  written via `doc-prd` become the source of truth that
+  `launch-feature` reads from to write positioning copy.

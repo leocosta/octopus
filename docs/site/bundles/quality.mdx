@@ -1,0 +1,126 @@
+---
+title: quality
+description: Pre-merge audit gates — security, money-logic, multi-tenant scope, cross-stack contracts, architecture-depth refactoring, and configuration freshness.
+sidebar:
+  order: 2
+---
+
+`quality` is the bundle for teams that ship to production. It adds
+**pre-merge audit gates** on top of `starter`'s implementation
+workflow: separate audits for security, money handling, multi-tenant
+scope, cross-stack contracts, architecture depth, and configuration
+freshness — composed in parallel by `audit-all`.
+
+## Why this exists
+
+`starter` codifies how to write code well. `quality` codifies how
+to verify code is safe to merge. The two are different concerns:
+implementation is a *workflow*, audits are *gates*. Mixing them
+into a single bundle would mean teams that don't need audits (a
+hobby project, a prototype repo) pay the noise cost anyway; teams
+that do need audits would lose the visibility that comes from
+having them as deliberate add-ons.
+
+The audits in this bundle target specific failure modes that have
+real production cost: a money calculation that rounds the wrong
+way, a multi-tenant query missing the tenant filter, an API
+contract that drifts between frontend and backend.
+
+## Team archetype
+
+This is for teams that:
+
+- ship to paying users (money-handling, billing, subscriptions)
+- run a multi-tenant SaaS (data-scope rules, ownership filters)
+- have a frontend + backend split (API contracts, DTO alignment)
+- have non-trivial security surface (auth, secrets, public
+  endpoints)
+- want quarterly hygiene on the agent configuration itself
+
+If your repo is a single-tenant tool with no money / auth / API
+contracts, `quality` is mostly overkill. Stay with `starter` and
+add `quality` later if the surface grows.
+
+## What it includes
+
+```yaml
+skills:
+  - audit-all         # parallel composer of the four audits
+  - review-contracts  # API-vs-frontend contract drift
+  - refactor-deepen   # find shallow modules, propose deepening
+  - audit-config      # configuration freshness (rules, skills, hooks)
+roles:
+  - architect         # senior reviewer with BLOCKING/ADVISORY/QUESTION discipline
+```
+
+Plus the audit skills `audit-all` composes — `audit-security`,
+`audit-money`, `audit-tenant`, `review-contracts` — which install
+as transitive dependencies.
+
+[Source: `bundles/quality.yml`](https://github.com/leocosta/octopus/blob/main/bundles/quality.yml)
+
+### Why each one is in
+
+- **`audit-all`** — the composer that runs all four audits in
+  parallel against a branch or PR, producing a consolidated
+  severity-tiered report with cross-audit hotspots. This is the
+  entry point most teams use.
+- **`review-contracts`** — separate from `audit-all` because it
+  applies to a different scope (cross-stack contract drift detected
+  across the diff, not file-content audits).
+- **`refactor-deepen`** — architecture-depth audits don't fit the
+  pre-merge gate shape, but they belong to the same "is this code
+  clean?" concern as the security and money audits. The skill
+  finds shallow-module deepening opportunities via the deletion
+  test and a canonical vocabulary.
+- **`audit-config`** — added in v1.50.0 to catch the
+  configuration-drift problem the Anthropic large-codebases
+  article calls out: rules calibrated for older models can
+  constrain newer ones. Audits `rules/`, `skills/`, `hooks/`,
+  `commands/`, `bundles/` for stale dates, phantom skills, and
+  deprecated path references.
+- **`architect` role** — `quality` includes the senior-reviewer
+  persona because audit findings often need a human-grade
+  classification: blocking vs advisory vs needs-discussion. The
+  role formalises that.
+
+### Why not included
+
+- **`debug`, `implement`, `review-pr`** — in `starter`. `quality`
+  audits *outcomes*; `starter` produces them.
+- **`audit-pii`** — would fit, but doesn't exist as a skill yet.
+  A potential future addition if PII handling becomes a frequent
+  audit target.
+
+## Workflow this enables
+
+A typical PR ready to merge:
+
+1. You finish a feature and push your branch.
+2. Before opening the PR, you run `/octopus:audit-all` locally.
+   The skill dispatches the four audits in parallel against the
+   diff, then produces a consolidated report with severities:
+   `⛔ block`, `⚠ warn`, `ℹ info`. Cross-audit hotspots (files
+   that triggered findings in multiple audits) get highlighted.
+3. If the change touches API contracts, `review-contracts`
+   inspects the diff for DTO / endpoint / enum / status-code
+   drift between the backend and the frontend, beyond what the
+   per-stack audits cover.
+4. Periodically (quarterly), you run `/octopus:audit-config` to
+   catch configuration drift — stale model assumptions, phantom
+   skills, deprecated paths.
+5. When the audit surface needs human judgement, you
+   `/octopus:delegate @architect` to walk the findings and
+   classify them.
+
+## Composes with
+
+- **[starter](/octopus/bundles/starter/)** — required foundation
+  (provides `implement`, `debug`, `review-pr` that produce the
+  code being audited).
+- **[docs](/octopus/bundles/docs/)** — pairs naturally. Audit
+  findings often turn into ADRs (decisions recorded for next
+  time) or backlog items.
+- **[backend](/octopus/bundles/backend/)** — pairs naturally.
+  Most audit-worthy code (money, multi-tenant, auth) lives in
+  backend repos.

@@ -1,0 +1,118 @@
+---
+title: Roles
+description: Personas you can delegate to via /octopus:delegate. Each role scopes an agent's behaviour for one task — architect, backend, frontend, marketer, product-manager, writer.
+sidebar:
+  order: 0
+---
+
+A **role** is a persona you can address an agent as. When you run
+`/octopus:delegate @architect …`, the agent loads the architect role
+file before responding — adopting that persona's scope, principles,
+and output format for the duration of the task.
+
+Roles exist because not every task should be handled the same way.
+A code review wants a senior-reviewer mindset that classifies
+findings as blocking / advisory / question. A backend
+implementation wants stack detection and a layered execution
+workflow. A marketing post wants approval gates and platform-native
+copy. The default agent persona is a generalist; roles give you
+targeted alternatives.
+
+## The six roles
+
+- **[architect](/octopus/roles/architect/)** — senior reviewer and
+  code-quality gate. Validates technical quality, architectural
+  integrity, and ADR compliance before merge. Uses BLOCKING /
+  ADVISORY / QUESTION discipline.
+- **[backend-developer](/octopus/roles/backend-developer/)** —
+  implements backend code following plans. Stack-aware (.NET,
+  Scala, Node, Python). Modifies code.
+- **[frontend-developer](/octopus/roles/frontend-developer/)** —
+  implements frontend code with UX and accessibility focus.
+  Modifies code.
+- **[marketer](/octopus/roles/marketer/)** — social media
+  strategist and copywriter. Approval-gated publishing workflows.
+  Does NOT modify code.
+- **[product-manager](/octopus/roles/product-manager/)** — product
+  strategy, prioritisation, SaaS metric analysis, experiment
+  design. Does NOT modify code.
+- **[writer](/octopus/roles/writer/)** — documentation specialist
+  for specs, ADRs, release notes, knowledge capture. Modifies
+  docs (and only docs).
+
+## How a role differs from a skill
+
+Skills are **protocols**: numbered steps for handling a class of
+task. Roles are **personas**: who the agent is being while it
+applies skills.
+
+A typical interaction:
+
+```
+/octopus:delegate @backend-developer add idempotency to /charges
+```
+
+The agent loads the backend-developer role, detects the stack,
+engages the `implement` skill (which applies stack-aware patterns
+from `backend-patterns`), runs the TDD loop, and reports back —
+all under the role's persona constraints.
+
+Skills can engage automatically by description match. Roles only
+engage by explicit delegation via `/octopus:delegate @<role> <task>`
+or the `@role:` mention pattern.
+
+## Role anatomy
+
+Every role lives at `roles/<name>.md` with frontmatter:
+
+```yaml
+---
+name: <role>
+description: <one sentence>
+model: opus | sonnet | haiku    # which Claude model fits the task
+color: "#hex"                    # UI color for the role in TUI
+tools: [Read, Write, ...]        # optional tool allowlist
+---
+```
+
+The body is the role's full persona definition: mission, operating
+principles, workflow phases, output format. Bigger roles (writer,
+marketer, product-manager) run 200–300 lines because the persona
+needs precise scope rules to behave consistently.
+
+## When to delegate vs stay in the default agent
+
+Delegate when:
+
+- The task is unambiguously in a role's lane (a backend feature,
+  a code review, a launch post, a PRD)
+- You want the agent to enforce role-specific constraints (the
+  marketer role refuses to modify code; the architect role refuses
+  to write code)
+- You want clear attribution in the output (`» <role> respondeu:`)
+- You're orchestrating multiple roles in parallel via
+  `octopus control` and want them visibly attributed
+
+Stay in the default agent when:
+
+- The task is small and crosses lanes (a bugfix that touches
+  three layers)
+- You're iterating quickly and the role overhead would interrupt
+  flow
+- The task is exploratory and a strict persona would be premature
+
+## Composes with
+
+- **[delegate skill](/octopus/skills/delegate/)** — the dispatch
+  mechanism. Lives in `starter` because the primitive is
+  foundational even if no roles ship in `starter` itself.
+- **Bundles ship their own roles** — `quality` ships `architect`;
+  `docs` ships `writer`; `backend` ships `backend-developer`;
+  `growth` ships `marketer`. `product-manager` and
+  `frontend-developer` are available standalone.
+
+## Reference
+
+Role definitions live in [`roles/`](https://github.com/leocosta/octopus/tree/main/roles)
+in the source repo. The shared base lives at `roles/_base.md`
+(structured markdown conventions, file-reference format).

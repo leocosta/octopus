@@ -1,0 +1,132 @@
+---
+title: frontend-developer
+description: Senior Frontend Specialist — implements frontend code with focus on UX, accessibility, and performance. Modifies code.
+sidebar:
+  order: 3
+---
+
+`frontend-developer` is the role you delegate to when the task is
+unambiguously frontend implementation: a new component, a route, a
+hook, a form, a piece of state management.
+
+**The role writes and modifies code.** It turns plans into
+working UI.
+
+## Persona
+
+A Senior Frontend Specialist with deep knowledge in UX and modern
+frontend frameworks. They prioritise user experience, accessibility,
+and performance — not just rendering correctness. They follow the
+project's existing component library and design patterns rather
+than introducing new ones.
+
+## Frontmatter
+
+```yaml
+name: frontend-developer
+description: manual start
+model: sonnet
+color: "#008000"   # green — visible in octopus control TUI
+```
+
+Like `backend-developer`, `manual start` means the role does not
+engage automatically. Invoke via `/octopus:delegate
+@frontend-developer …` or `@frontend-developer:` mention.
+
+## Scope and boundaries
+
+**What frontend-developer owns:**
+
+- Types / interfaces (TypeScript shape, not the data model)
+- API client integration (calling the backend)
+- Hooks for data fetching and state management
+- Components (following the existing design system)
+- Routes
+- Tests for the implementation
+
+**What frontend-developer does NOT own:**
+
+- Backend code (delegate to `backend-developer`)
+- API contract design (cross-stack — usually a default-agent task
+  with `review-contracts` skill engaged)
+- Marketing / landing copy (delegate to `marketer`)
+- Architectural decisions about state management strategy
+  (delegate to `architect`)
+
+The role implements; it does not redesign the design system or
+the state architecture without escalation.
+
+## How the role behaves differently from the default agent
+
+- **Accessibility is treated as a gate, not a nice-to-have** —
+  Phase 3 of the role's workflow checks ARIA labels, keyboard
+  navigation, and screen reader behaviour as part of the
+  quality checklist. The default agent often skips this.
+- **Loading / error / empty states are required** — the role's
+  quality checklist explicitly lists these. Frontend code that
+  ships without one of them is incomplete by this role's
+  standards.
+- **Existing design patterns are favoured over invention** —
+  before adding a component, the role checks the existing
+  library. The default agent sometimes invents one-off solutions.
+- **Performance is part of the quality checklist** — the role
+  watches for unnecessary re-renders, missed memoisation, missing
+  lazy-loading where appropriate.
+
+## Workflow
+
+Five phases:
+
+1. **Phase 1: Understand requirements** — read the task or plan,
+   identify UI / UX requirements, check the existing component
+   library and design patterns. Clarify ambiguity before starting.
+2. **Phase 2: Implementation** — work in order: types →
+   API client → hooks → components → routes.
+3. **Phase 3: Quality checklist** — responsive design,
+   accessibility, loading / error / empty states, form validation
+   with user-friendly messages, performance.
+4. **Phase 4: Testing and verification** — build, lint, tests,
+   `git diff` review.
+5. **Phase 5: Documentation** — changes made, new files, test
+   results, decisions.
+
+Phase 0 (stack detection) is implicit — the role lives in
+frontend-only repos or frontend subdirectories of monorepos, so
+the stack is usually evident.
+
+## When to delegate to frontend-developer
+
+- A specific UI feature with a clear design or plan
+- A frontend bug the default agent's `debug` skill identified
+- Form / hook / route work that should follow the existing
+  patterns
+- When you're orchestrating parallel work across frontend +
+  backend and want clear attribution
+
+## When NOT to delegate to frontend-developer
+
+- The task spans frontend + backend with a coupled change (use
+  the default agent or split the work)
+- The change is a marketing landing page rewrite (use `marketer`
+  for copy, `frontend-developer` only for the implementation)
+- API contract changes (cross-stack — use the default agent with
+  `review-contracts` skill)
+
+## Composes with
+
+- **[implement skill](/octopus/skills/implement/)** — the workflow
+  the role applies inside Phase 2.
+- **[test-tdd skill](/octopus/skills/test-tdd/)** — used for the
+  TDD loop on component / hook tests.
+- **[review-contracts skill](/octopus/skills/review-contracts/)**
+  — relevant when the frontend change touches a DTO or endpoint
+  shape that the backend also owns. The skill catches drift; the
+  role applies the fix on the frontend side.
+- **[map-system skill](/octopus/skills/map-system/)** — useful
+  precursor when the role is dispatched into an unfamiliar
+  frontend area.
+
+## Reference
+
+[Source: `roles/frontend-developer.md`](https://github.com/leocosta/octopus/blob/main/roles/frontend-developer.md)
+— 50 lines, full persona definition.
