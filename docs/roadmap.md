@@ -518,6 +518,36 @@ invoke.
 
 ---
 
+#### RM-084 — `interview` skill + `/octopus:interview` command
+
+- **Priority:** 🟠 High
+- **Effort:** low
+- **Status:** proposed
+- **Added:** 2026-05-19
+- **Bundle:** `docs`
+
+Interactive requirements interview — one question at a time, walking
+the decision tree of a new feature until shared understanding. The
+**greenfield** counterpart to `doc-align` (which validates an
+existing plan against existing docs). No dependency on `CONTEXT.md`
+or `docs/adr/`. Closes the original gap analysis item missed in the
+initial Cluster 14 batch.
+
+**Design pillars:**
+
+- One question per turn — never batch, never "and also…" hedge
+- Prefer open-ended over yes/no — open-ended surfaces unknowns
+- Anchor on a one-sentence root statement before branching
+- Visible decision-tree recap every 3–5 questions, sharing format
+  with `triage-issues` `needs-info` notes
+- Recognise tree resolution and stop — do not pad with "be thorough"
+- Hands off to `doc-align` (validate against docs), `doc-prd`
+  (package as ticket), or `implement` (start work immediately)
+
+**Natural flow:** `interview → doc-align → doc-prd → implement`.
+
+---
+
 #### RM-083 — `scaffold-skill` skill
 
 - **Priority:** 🟡 Medium
@@ -547,7 +577,7 @@ REFERENCE/EXAMPLES/scripts) and progressive disclosure. Complements
 ## In Progress
 
 _No items in progress. All clusters complete through RM-074. Cluster
-14 (RM-075..083) is proposed and awaits prioritisation._
+14 (RM-075..084) is proposed and awaits prioritisation._
 
 ---
 
