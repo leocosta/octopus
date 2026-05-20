@@ -323,7 +323,7 @@ than discovered through automatic skill routing.
 
 - **Priority:** 🟡 Medium
 - **Effort:** medium
-- **Status:** proposed
+- **Status:** shipped (v1.45.0)
 - **Added:** 2026-05-19
 - **Bundle:** `docs`
 
@@ -347,7 +347,7 @@ CONTEXT.md / ADRs **lazily** as terms get resolved.
 
 - **Priority:** 🟠 High
 - **Effort:** medium
-- **Status:** proposed
+- **Status:** shipped (v1.45.0)
 - **Added:** 2026-05-19
 - **Bundle:** `starter` (pairs with `implement`)
 
@@ -373,7 +373,7 @@ debug sessions and isolated bugfixes can use the loop without the full
 
 - **Priority:** 🟡 Medium
 - **Effort:** medium
-- **Status:** proposed
+- **Status:** shipped (v1.45.0)
 - **Added:** 2026-05-19
 - **Bundle:** `quality`
 
@@ -402,7 +402,7 @@ chosen candidate via `doc-align`.
 
 - **Priority:** 🟢 Low
 - **Effort:** low
-- **Status:** proposed
+- **Status:** shipped — skill v1.45.0, command v1.46.0
 - **Added:** 2026-05-19
 - **Bundle:** `starter` (transversal utility)
 
@@ -424,7 +424,7 @@ expressed in the project's domain language.
 
 - **Priority:** 🟡 Medium
 - **Effort:** medium
-- **Status:** proposed
+- **Status:** shipped (v1.45.0)
 - **Added:** 2026-05-19
 - **Bundle:** `docs`
 
@@ -449,7 +449,7 @@ State-machine triage flow with explicit categories (`bug` /
 
 - **Priority:** 🟠 High
 - **Effort:** medium
-- **Status:** proposed
+- **Status:** shipped (v1.45.0)
 - **Added:** 2026-05-19
 - **Bundle:** `docs` (`doc-*` family)
 
@@ -473,7 +473,7 @@ or grilling.
 
 - **Priority:** 🟡 Medium
 - **Effort:** medium
-- **Status:** proposed
+- **Status:** shipped (v1.45.0)
 - **Added:** 2026-05-19
 - **Bundle:** `starter` (design-time discipline)
 
@@ -497,7 +497,7 @@ multiple variants toggleable from one route.
 
 - **Priority:** 🟢 Low
 - **Effort:** low
-- **Status:** proposed
+- **Status:** shipped (v1.45.0)
 - **Added:** 2026-05-19
 - **Bundle:** `starter` (sits next to `context-budget`, family
   `context-*`)
@@ -522,7 +522,7 @@ invoke.
 
 - **Priority:** 🟠 High
 - **Effort:** low
-- **Status:** proposed
+- **Status:** shipped (v1.47.0)
 - **Added:** 2026-05-19
 - **Bundle:** `docs`
 
@@ -552,7 +552,7 @@ initial Cluster 14 batch.
 
 - **Priority:** 🟡 Medium
 - **Effort:** low
-- **Status:** proposed
+- **Status:** shipped — skill v1.45.0, command v1.48.0
 - **Added:** 2026-05-19
 - **Bundle:** `docs` (sits next to `compress-skill`, family `*-skill`)
 
@@ -699,11 +699,11 @@ but nothing audits the configuration surface itself.
 
 ## In Progress
 
-_No items in progress. All clusters complete through RM-074.
-Cluster 14 (RM-075..084) is proposed and awaits prioritisation.
-Cluster 15 is complete: RM-085 and RM-087 shipped in v1.50.0,
-RM-086 shipped in v1.51.0 after the Stop-hook viability check
-confirmed transcript availability._
+_No items in progress. All clusters complete through RM-087.
+Cluster 14 (RM-075..084) shipped across v1.45.0 → v1.49.0.
+Cluster 15 (RM-085..087) shipped across v1.50.0 → v1.51.0
+(viability check for RM-086 confirmed Stop-hook transcript
+availability)._
 
 ---
 
