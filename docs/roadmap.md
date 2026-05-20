@@ -300,9 +300,254 @@ All eight items shipped together: rule override layering (workspace → personal
 
 ---
 
+### Cluster 14 — Engineering process skills
+
+Octopus today covers **audit + doc lifecycle + release**. It is thin
+on the **individual engineering process** layer that frames how a
+developer (or an agent acting as one) makes decisions inside a single
+session: grilling a plan against the project's domain model, running
+TDD as a standalone discipline, finding deep-module refactor
+opportunities, mapping unfamiliar territory, triaging incoming issues,
+synthesising a conversation into a PRD, building throwaway prototypes,
+handing a session off to the next agent, and authoring new skills.
+
+The nine items below add that layer with names that follow our
+`verb-noun` / family-prefix convention (`doc-*`, `test-*`,
+`refactor-*`, `context-*`, `*-skill`) and slot each skill into an
+existing bundle so no skill ships loose. Four also get explicit
+`commands/` slash-commands (`doc-prd`, `triage-issues`, `prototype`,
+`context-handoff`) — the ones likely to be invoked by name rather
+than discovered through automatic skill routing.
+
+#### RM-075 — `doc-align` skill
+
+- **Priority:** 🟡 Medium
+- **Effort:** medium
+- **Status:** proposed
+- **Added:** 2026-05-19
+- **Bundle:** `docs`
+
+Interactive grilling skill that stress-tests a plan against the
+project's **CONTEXT.md glossary** and `docs/adr/` decisions, surfacing
+contradictions between user claims and the actual code, and updating
+CONTEXT.md / ADRs **lazily** as terms get resolved.
+
+**Design pillars:**
+
+- CONTEXT.md is **glossary only** — never spec, never scratchpad
+- ADR **triple gate**: hard-to-reverse **and** surprising-without-context
+  **and** real trade-off; missing any one cancels the ADR
+- When code diverges from user's claim, surface the contradiction
+  immediately rather than continuing the question chain
+- Composes with `doc-prd` and `refactor-deepen`
+
+---
+
+#### RM-076 — `test-tdd` skill
+
+- **Priority:** 🟠 High
+- **Effort:** medium
+- **Status:** proposed
+- **Added:** 2026-05-19
+- **Bundle:** `starter` (pairs with `implement`)
+
+Standalone red-green-refactor loop with vertical tracer-bullet slices
+and integration-style tests targeting the public interface. Today TDD
+only exists embedded inside the `implement` skill; this extracts it so
+debug sessions and isolated bugfixes can use the loop without the full
+`implement` workflow.
+
+**Design pillars:**
+
+- Named `test-tdd` to sit beside the existing `test-e2e` family
+- Hard ban on **horizontal slicing** (all tests then all code) —
+  rationale: horizontal slicing tests imagined behaviour and breaks
+  on internal renames
+- "Never refactor in red" as a non-negotiable phase gate
+- Test vocabulary comes from CONTEXT.md
+- Explicit confirmation step with the user on **what is worth testing**
+
+---
+
+#### RM-077 — `refactor-deepen` skill
+
+- **Priority:** 🟡 Medium
+- **Effort:** medium
+- **Status:** proposed
+- **Added:** 2026-05-19
+- **Bundle:** `quality`
+
+Find **deepening opportunities** — shallow modules with interfaces as
+complex as their implementations, micro-modules with no locality,
+pure-function extractions made only for testability. Presents a
+numbered candidate list (files / problem / solution / benefits)
+**without proposing interfaces**, then enters a grilling loop on the
+chosen candidate via `doc-align`.
+
+**Design pillars:**
+
+- **Deletion test**: imagine deleting the module; if complexity
+  disappears it was pass-through, if it reappears in N callers it
+  was load-bearing
+- **"One adapter = hypothetical seam; two adapters = real seam"**
+- Enforced canonical vocabulary (Module / Interface / Implementation /
+  Depth / Seam / Adapter / Leverage / Locality) — forbid drift to
+  "component / service / boundary"
+- Vocabulary table + signal catalog + worked examples split into
+  REFERENCE.md
+
+---
+
+#### RM-078 — `map-system` skill
+
+- **Priority:** 🟢 Low
+- **Effort:** low
+- **Status:** proposed
+- **Added:** 2026-05-19
+- **Bundle:** `starter` (transversal utility)
+
+One-shot skill that produces a higher-level map of relevant modules
+and their callers when the agent does not know the area of the code,
+expressed in the project's domain language.
+
+**Design pillars:**
+
+- **Manually-invoked only** — agents must not zoom-out on their own
+  initiative
+- Output stays in CONTEXT.md vocabulary, not implementation jargon
+- Skill body itself short — most of the value is the invocation
+  discipline, not the prose
+
+---
+
+#### RM-079 — `triage-issues` skill + `/octopus:triage-issues` command
+
+- **Priority:** 🟡 Medium
+- **Effort:** medium
+- **Status:** proposed
+- **Added:** 2026-05-19
+- **Bundle:** `docs`
+
+State-machine triage flow with explicit categories (`bug` /
+`enhancement`) and states (`needs-triage`, `needs-info`,
+`ready-for-agent`, `ready-for-human`, `wontfix`).
+
+**Design pillars:**
+
+- Every AI-generated comment carries a **mandatory disclaimer**:
+  `> *This was generated by AI during triage.*`
+- **Reproduce bugs before grilling** — failure to repro is a strong
+  `needs-info` signal
+- Rejected enhancements go into a permanent `.out-of-scope/` record
+  so the same suggestion is not re-litigated
+- `needs-info` notes preserve "Established so far" so grilling work
+  is not lost when blocked on the reporter
+
+---
+
+#### RM-080 — `doc-prd` skill + `/octopus:doc-prd` command
+
+- **Priority:** 🟠 High
+- **Effort:** medium
+- **Status:** proposed
+- **Added:** 2026-05-19
+- **Bundle:** `docs` (`doc-*` family)
+
+Synthesise the current conversation context into a PRD and publish it
+to the issue tracker **without re-interviewing the user** — the
+knowledge is assumed to be already in context from a prior brainstorm
+or grilling.
+
+**Design pillars:**
+
+- **No file paths or code snippets in the PRD body** — they rot fast,
+  with the explicit exception of snippets from prototypes that encode
+  a decision more precisely than prose
+- Skips directly to `ready-for-agent` — no re-triage round
+- User-stories section is **exhaustive**, not representative
+- Reuses the publication layer already used by `doc-rfc`
+
+---
+
+#### RM-081 — `prototype` skill + `/octopus:prototype` command
+
+- **Priority:** 🟡 Medium
+- **Effort:** medium
+- **Status:** proposed
+- **Added:** 2026-05-19
+- **Bundle:** `starter` (design-time discipline)
+
+Throwaway code to answer **one** design question. Bifurcates by
+question type: logic/state → runnable terminal app; UI/look →
+multiple variants toggleable from one route.
+
+**Design pillars:**
+
+- "Throwaway from day one, and clearly marked"
+- **No persistence by default** — in-memory state, because
+  persistence is what is being tested, not assumed
+- Always surface the state after each action / variant switch
+- The single most important deliverable is the **answer**, not the
+  code — capture it durably before deleting
+- Branch details + worked examples split into REFERENCE.md
+
+---
+
+#### RM-082 — `context-handoff` skill + `/octopus:context-handoff` command
+
+- **Priority:** 🟢 Low
+- **Effort:** low
+- **Status:** proposed
+- **Added:** 2026-05-19
+- **Bundle:** `starter` (sits next to `context-budget`, family
+  `context-*`)
+
+Compact the current conversation into a handoff document another
+agent can pick up, with **suggested skills** for the successor to
+invoke.
+
+**Design pillars:**
+
+- Save to the OS tmp dir, **not the workspace** — handoffs do not
+  pollute the repo
+- Reference existing PRDs / plans / ADRs / issues / commits by
+  path/URL — never duplicate their content
+- Mandatory redaction of secrets / PII
+- The "suggested skills" section is prescriptive, not optional
+- Tie-in with `/octopus:delegate`
+
+---
+
+#### RM-083 — `scaffold-skill` skill
+
+- **Priority:** 🟡 Medium
+- **Effort:** low
+- **Status:** proposed
+- **Added:** 2026-05-19
+- **Bundle:** `docs` (sits next to `compress-skill`, family `*-skill`)
+
+Create new Octopus skills with the correct structure (frontmatter +
+SKILL.md ≤ 250 lines with target 150 + optional
+REFERENCE/EXAMPLES/scripts) and progressive disclosure. Complements
+`compress-skill` (which modifies existing skills).
+
+**Design pillars:**
+
+- The `description` is **the only thing the agent sees when picking
+  a skill** — enforce shape (capability + "Use when" triggers) with
+  bad/good example pair built into the skill itself
+- **Scripts beat generated code** for deterministic operations
+- References stay **one level deep** — no recursive linking trees
+- **Octopus-specific extension:** must register the new skill into a
+  target bundle as part of the flow — no skill ships loose
+- Description-writing rules + review checklist split into REFERENCE.md
+
+---
+
 ## In Progress
 
-_No items in progress. All clusters complete through RM-074._
+_No items in progress. All clusters complete through RM-074. Cluster
+14 (RM-075..083) is proposed and awaits prioritisation._
 
 ---
 

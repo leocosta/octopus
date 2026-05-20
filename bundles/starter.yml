@@ -1,5 +1,5 @@
 name: starter
-description: Baseline for any repo — ADRs, feature lifecycle, context budget, implementation workflow, debugging protocol, review-feedback discipline.
+description: Baseline for any repo — ADRs, feature lifecycle, context budget, implementation workflow, debugging protocol, TDD loop, prototyping, system mapping, session handoff, review-feedback discipline.
 category: foundation
 skills:
   - doc-adr
@@ -9,6 +9,10 @@ skills:
   - debug
   - review-pr
   - delegate
+  - test-tdd
+  - map-system
+  - prototype
+  - context-handoff
 roles: []
 rules: []
 mcp: []
