@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.47.1] - 2026-05-19
+
+📝 Clarify the boundary between `/octopus:interview` and `/octopus:doc-research` in the agent-facing descriptions and the `When to Engage` / `Purpose` sections. Both surfaces ask "one question at a time" and can be triggered by phrases like "let's think about X", so the picker needs a clean differentiator: `interview` scopes **one** feature or problem into concrete intent, `doc-research` explores an **area** and generates **multiple** backlog items. The integration section in `skills/interview/SKILL.md` now documents the natural sequencing `doc-research → picks RM-NNN → interview → doc-align → doc-prd → implement`.
+
 ## [1.47.0] - 2026-05-19
 
 ✨ New `interview` skill + `/octopus:interview` slash command (RM-084) close the gap missed in the initial Cluster 14 batch. The skill is the **greenfield** counterpart to `doc-align` — it runs when the user has an idea but no plan yet, with no dependency on `CONTEXT.md` or `docs/adr/`. It walks the decision tree one question at a time (never batched, never "and also…" hedges), prefers open-ended over yes/no questions, recaps the established branches every 3–5 turns in the same format used by `triage-issues` `needs-info` notes, and recognises tree resolution to stop without padding. The output is a confirmed intent summary ready to hand off to `doc-align` (validate against docs), `doc-prd` (package as a ticket), or `implement` (start immediately). This establishes the natural flow `interview → doc-align → doc-prd → implement` (establish → validate → package → execute). Registered in the `docs` bundle next to its siblings `doc-align`, `doc-prd`, `triage-issues`, and `scaffold-skill`. 📝 Roadmap updated with RM-084 in Cluster 14.
