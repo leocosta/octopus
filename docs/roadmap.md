@@ -589,7 +589,7 @@ pending explicit demand.
 
 - **Priority:** 🟠 High
 - **Effort:** low-medium
-- **Status:** proposed
+- **Status:** shipped (v1.50.0)
 - **Added:** 2026-05-19
 - **Bundle:** `docs` (next to `doc-adr`, `doc-lifecycle`)
 
@@ -646,7 +646,7 @@ written down.
 
 - **Priority:** 🟡 Medium
 - **Effort:** low
-- **Status:** proposed
+- **Status:** shipped (v1.50.0)
 - **Added:** 2026-05-19
 - **Bundle:** `quality` (next to `audit-all`, `refactor-deepen`)
 
@@ -694,8 +694,10 @@ but nothing audits the configuration surface itself.
 ## In Progress
 
 _No items in progress. All clusters complete through RM-074.
-Cluster 14 (RM-075..084) and Cluster 15 (RM-085..087) are
-proposed and await prioritisation._
+Cluster 14 (RM-075..084) is proposed and awaits prioritisation.
+Cluster 15: RM-085 and RM-087 shipped in v1.50.0; RM-086 (Stop
+hook for knowledge update proposals) remains proposed pending a
+Claude Code Stop-hook viability check._
 
 ---
 

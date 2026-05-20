@@ -1,5 +1,5 @@
 name: docs
-description: Teams that document with specs, ADRs, plans, PRDs, requirements interviews, plan-alignment grilling, issue triage, and a living roadmap.
+description: Teams that document with specs, ADRs, plans, PRDs, per-module CLAUDE.md subcontexts, requirements interviews, plan-alignment grilling, issue triage, and a living roadmap.
 category: intent
 persona_question: "Does your team maintain living documentation — specs, ADRs, PRDs, and a triaged backlog?"
 persona_default: false
@@ -12,6 +12,7 @@ skills:
   - interview
   - doc-align
   - doc-prd
+  - doc-subcontext
   - triage-issues
   - scaffold-skill
 roles:
