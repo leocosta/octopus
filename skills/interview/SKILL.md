@@ -6,7 +6,9 @@ description: >
   understanding is reached. No dependency on CONTEXT.md or docs/adr/.
   Produces a summary the user confirms, ready as input for doc-align,
   doc-prd, or implement. The greenfield counterpart to doc-align (which
-  validates an existing plan against existing docs).
+  validates an existing plan against existing docs). Use when scoping
+  one feature or problem; for area-level exploration that generates
+  multiple backlog items, use /octopus:doc-research.
 ---
 
 # Requirements Interview
@@ -37,6 +39,8 @@ Do **not** engage when:
 - A plan already exists and needs validation — use `doc-align`
 - The decisions are already in context from a prior session — use
   `doc-prd` to synthesise directly
+- The user is exploring an **area** (auth, performance, observability)
+  to generate multiple backlog items — use `/octopus:doc-research`
 - The user is exploring options open-endedly with no commitment to
   converge — use `superpowers:brainstorming` if installed
 
@@ -184,5 +188,9 @@ Then suggest the next skill:
 - **`superpowers:brainstorming`** — sibling territory when the
   plugin is installed; that skill is broader exploration,
   `interview` converges on concrete intent
+- **`/octopus:doc-research`** — area-level exploration that produces
+  research docs and **multiple** roadmap items. `interview` picks up
+  *after* `doc-research`, when a single RM item is ready to be
+  scoped into a concrete plan
 - **`triage-issues`** — borrows the "Established so far / Still
   unresolved" recap format from this skill
