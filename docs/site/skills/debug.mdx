@@ -1,0 +1,63 @@
+---
+title: debug
+description: Disciplined diagnosis loop for hard bugs and performance regressions — reproduce, minimise, hypothesise, instrument, fix, regression-test.
+sidebar:
+  order: 3
+---
+
+`debug` is the skill that engages when the user reports a bug, a
+test failure, or unexpected behaviour. It replaces the default
+"read the code and guess" with a six-step loop that gets to root
+cause instead of patching symptoms.
+
+## The loop
+
+1. **Reproduce.** Get the bug to happen reliably under known
+   conditions. Without reproduction, every subsequent step is a
+   guess. If reproduction is hard, fix that first — capture a
+   failing test or a deterministic input set.
+2. **Minimise.** Strip away everything not required to make the
+   bug happen. A reduced test case isolates the cause from the
+   noise around it.
+3. **Hypothesise.** State explicitly what you think is broken,
+   *before* looking at the code that might prove it. Writing down
+   the hypothesis forces a falsifiable claim rather than a vibe.
+4. **Instrument.** Add logging, breakpoints, asserts, or test
+   probes that would confirm or refute the hypothesis. If the
+   instrumentation finds the cause, the next step is the fix. If
+   not, the hypothesis was wrong — back to step 3 with the new
+   information.
+5. **Fix.** Make the minimal change that resolves the root cause.
+   Avoid the temptation to also "clean up while I'm here" — the
+   bugfix and the cleanup are different commits.
+6. **Regression-test.** Add a test that fails on the old behaviour
+   and passes on the new one. Future regressions in this area now
+   have a catch.
+
+## Why structure beats vibes
+
+The dominant debugging anti-pattern is "I changed X and now it
+works" without understanding why. The fix may have worked by
+coincidence, masked the real bug, or moved it somewhere else.
+Skipping the hypothesis step is what makes that happen — the agent
+goes straight from symptom to "try this", and even if it works,
+the cause isn't understood.
+
+The structured loop costs more in early debugging time but pays
+back when the same area breaks again — the regression test catches
+it, and the captured root cause is in the commit message.
+
+## When to skip steps
+
+The full loop is overkill for trivial bugs (a typo, a missing
+null check). The skill engages on signals that the bug is hard:
+
+- The user says "I can't figure out why X happens"
+- The test failure is intermittent
+- Performance regressed and the cause isn't obvious
+- The same area has been edited multiple times without sticking
+
+For one-line obvious fixes the agent goes straight to the fix; the
+skill stays out of the way.
+
+[Source: `skills/debug/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/debug/SKILL.md)

@@ -1,0 +1,65 @@
+---
+title: prototype
+description: Build a throwaway prototype to flush out a design before committing to it — terminal app for state/business-logic questions, or several UI variations toggleable from one route.
+sidebar:
+  order: 4
+---
+
+`prototype` engages when the user wants to *try something* before
+deciding what to build. The output is intentionally throwaway —
+not production code, not a starting point, not something to "tidy
+up later". The point is to make a decision; once the decision is
+made, the prototype is deleted.
+
+## Why a separate skill from `implement`
+
+`implement` is for code you intend to keep. Prototypes are for
+code you intend to throw away. The two have opposite incentives:
+
+- `implement` cares about tests, types, error handling, naming.
+- `prototype` cares about *making the question concrete* — what
+  does this state machine actually feel like? Does this UI
+  affordance read the way I think it does?
+
+If you applied `implement`'s discipline to a prototype, you'd
+spend hours making throwaway code clean — that's wasted effort.
+If you applied `prototype`'s permission to permanent code, you'd
+ship a mess. The skill separation keeps both modes honest.
+
+## Two branches the skill routes between
+
+The skill picks one based on the question's shape.
+
+**Terminal app** — for questions about state, business logic, or
+data shape. Example: "does this discount calculation produce the
+right result for stacking promotions?" The prototype is a single
+file that takes input, runs the logic, and prints output.
+Zero UI; the question doesn't need one.
+
+**UI variations** — for questions about presentation or interaction.
+Example: "should the lesson plan editor be a single long form, a
+wizard, or a split-pane layout?" The prototype is several radically
+different implementations toggleable from one route (`/proto/v1`,
+`/proto/v2`, `/proto/v3`) so the answers can be compared side by
+side.
+
+## What "throwaway" actually means
+
+The skill writes the prototype under `prototypes/<topic>/` (or
+similar — the path is project-dependent) and adds the directory to
+`.gitignore`. When the decision is made and the real
+implementation lands, the prototype directory is deleted in the
+same commit as the implementation. The decision rationale moves
+to the spec, ADR, or PR description — the code itself doesn't need
+to survive.
+
+## When NOT to prototype
+
+- The question can be answered by reading existing code (no need
+  to build anything — just look).
+- The question is about an external system the team doesn't
+  control (prototype it on the external system's side, not yours).
+- The decision is reversible cheaply (skip the prototype and just
+  pick one — you'll learn faster from the real implementation).
+
+[Source: `skills/prototype/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/prototype/SKILL.md)

@@ -1,0 +1,63 @@
+---
+title: plan-backlog
+description: Scan planning directories and the roadmap for hygiene issues — orphan plans, plans for already-completed RMs still outside archive/, duplicates, broken links, roadmap entries without a plan, stale plans.
+sidebar:
+  order: 16
+---
+
+`plan-backlog` is the hygiene audit for the project's planning
+layer — `docs/roadmap.md`, `docs/specs/`, `docs/plans/`, and the
+archive directory beneath them. It runs read-only by default and
+produces a list of drift findings; with `--fix` it applies
+reversible moves to `plans/archive/`.
+
+## What the audit catches
+
+| Finding | What it means |
+|---|---|
+| **Orphan plan** | A plan file with no roadmap RM and no spec — work that someone started planning without going through the normal entry path. |
+| **Concluded-not-archived** | A plan for an RM that's already `shipped (vX.Y.Z)` but the plan file is still sitting in `docs/plans/` instead of `docs/plans/archive/`. |
+| **Duplicate** | More than one plan file for the same RM. Usually a result of someone starting a fresh plan instead of editing the existing one. |
+| **Broken internal links** | A plan or spec linking to a file path that no longer exists (or never existed). |
+| **Roadmap orphan** | An RM entry in `docs/roadmap.md` with no linked plan, spec, or research doc. The idea exists, but the work to advance it has gone missing. |
+| **Stale plan** | A plan file with no `git log` touches in the last 90 days. Either dead or actively being ignored. |
+
+## Why this skill instead of "just clean it up manually"
+
+The planning layer is the kind of surface that accumulates entropy
+faster than it's noticed. Each individual drift is small (one
+stale plan, one broken link); the cumulative effect is that
+nobody trusts the roadmap to be accurate, which means new work
+goes around it instead of through it.
+
+The audit makes the drift visible. Once it's a list, fixing it is
+mechanical — and the `--fix` flag does the reversible moves
+automatically (archives concluded plans, doesn't delete duplicates
+or orphans).
+
+## Why `--fix` only does archives
+
+The archive move is reversible (the file still exists, just in a
+different directory) and the criterion is unambiguous (the linked
+RM is shipped). The other findings need a human judgment call:
+
+- An **orphan plan** might be wanted work that bypassed the
+  process — archiving it could lose context.
+- A **duplicate** needs review to pick which one is authoritative.
+- A **broken link** might be a typo or might be a real reference
+  to a moved file — the fix differs.
+- A **roadmap orphan** might be an idea waiting for prioritisation
+  — archiving it is destructive.
+- A **stale plan** might be dormant-but-still-relevant.
+
+So `--fix` is conservative: it cleans the unambiguous case and
+leaves the judgment calls for the human.
+
+## Cadence
+
+The audit is cheap enough to run as a `pre-push-audit-suggest`
+trigger when the diff touches `docs/roadmap.md` or `docs/plans/`.
+Quarterly review of the full report (regardless of diff) catches
+the slow accumulation that per-push runs miss.
+
+[Source: `skills/plan-backlog/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/plan-backlog/SKILL.md)

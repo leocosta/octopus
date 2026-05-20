@@ -1,0 +1,65 @@
+---
+title: implement
+description: The Octopus implementation workflow — TDD loop, plan-before-code gate, verification-before-completion, simplify pass, commit cadence. Active by default on every code task.
+sidebar:
+  order: 2
+---
+
+`implement` is the foundational implementation skill — the one that
+engages on every code-editing task whether the user asked for it or
+not. It codifies five practices that, taken together, separate
+disciplined implementation from "just write the code".
+
+## The five practices
+
+1. **TDD loop.** Write the failing test first, then the minimal
+   implementation, then refactor, then commit. The discipline isn't
+   about test coverage as a metric — it's about forcing the
+   interface design decision to happen before the implementation.
+2. **Plan-before-code gate.** On any non-trivial task (more than
+   one file, more than ~50 lines, any architecture decision), the
+   agent presents a short plan and waits for approval before
+   editing. The cost of writing the plan is much smaller than the
+   cost of editing in the wrong direction.
+3. **Verification-before-completion.** Run the project's tests,
+   typechecker, and formatter before declaring work complete.
+   Include the output in the reply — evidence before assertions.
+4. **Simplify pass.** Re-read the change with a simplifier lens
+   (duplication, dead code, premature abstraction, unclear names,
+   error handling for impossible states) before committing.
+5. **Commit cadence.** One commit per logical step, each passing
+   the project's pre-commit hooks. Never `--no-verify`.
+
+## Why a default skill instead of a rule
+
+Rules describe *what the code should look like*. Implementation is
+*how the agent should arrive at that code* — a process, not a
+property. Codifying the process as a skill makes it explicit and
+adjustable per project; codifying it as a system-prompt rule would
+bury it under every other prompt instruction and lose visibility.
+
+The skill is active by default in the `starter` bundle, which is
+the foundation everyone gets. Opting out requires explicit removal
+from `.octopus.yml`, which forces the team to acknowledge they're
+disabling discipline rather than silently dropping it.
+
+## When the skill stays out of the way
+
+`implement` doesn't engage for:
+
+- Read-only analysis tasks (the user asks a question, no edit)
+- Pure documentation changes
+- Conversational planning before a task has actually started
+
+The trigger is *the agent is about to write or edit code* — when
+that happens, the workflow turns on; otherwise, the skill is silent.
+
+## Pairing with `simplify`
+
+The simplify pass at step 4 has its own skill: `simplify`. The
+`implement` skill invokes it at the right moment rather than
+duplicating the lens. Two skills, one for the workflow, one for the
+review pass — separable so a user can run `/simplify` on its own
+against an already-merged change.
+
+[Source: `skills/implement/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/implement/SKILL.md)

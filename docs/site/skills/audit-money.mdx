@@ -1,0 +1,65 @@
+---
+title: audit-money
+description: Pre-merge audit of money-touching code — numeric types, rounding, cents-not-round tests, env-var consistency, payment idempotency, webhook signature verification, fee-disclosure coupling.
+sidebar:
+  order: 7
+---
+
+`audit-money` checks the changes for the specific class of failure
+mode that lives in billing, payments, and any other code that
+computes monetary amounts. The failures are stereotyped — they
+recur across codebases — which makes a static audit cheap and
+high-value.
+
+## The seven checks
+
+1. **Numeric types.** Every monetary value is in an exact type
+   (cents as integer, or `Decimal` / `BigDecimal` with explicit
+   precision) — never a JS `number` or a C# `double`. Float
+   arithmetic on money is the single most common source of
+   visible-to-customer rounding errors.
+2. **Rounding.** Every division or percentage calculation has an
+   explicit rounding mode (`ROUND_HALF_EVEN`, `ROUND_DOWN`, etc.).
+   Implicit rounding is flagged because different runtimes pick
+   different modes by default.
+3. **Cents-not-round tests.** Every money calculation has at least
+   one test case with a value that doesn't divide evenly. Tests
+   that only check `100 / 2 == 50` miss the entire rounding-error
+   surface.
+4. **Env-var consistency.** If the diff adds or changes a Stripe /
+   SendGrid / etc. environment variable, the audit checks that the
+   same variable exists in `.env.example`, `.env.sandbox`, and
+   `.env.production` with the appropriate placeholder. Drift here
+   produces "works in staging, breaks in prod" failures.
+5. **Payment idempotency.** Any new payment-creation call must
+   pass an idempotency key. Retried HTTP requests without one have
+   produced the classic "customer charged twice" incident.
+6. **Webhook signature verification.** Any new webhook handler
+   from a payment provider must verify the signature before
+   reading the body. Without verification, the endpoint accepts
+   forged webhooks claiming any payment status.
+7. **Fee-disclosure coupling.** If the diff changes how a fee is
+   calculated, the audit checks that the customer-facing
+   disclosure (UI copy, email template, invoice line item) was
+   updated in the same PR. Decoupled fee changes ship as
+   surprises.
+
+## Why these recur across codebases
+
+Money is the area where the runtime's default behaviour is
+*almost right* — `100 / 3 == 33.333...` for math, but for money
+the merchant needs `33.33` or `33.34` depending on the rounding
+policy. The defaults make the code look correct until it ships and
+the accountant complains. The audit codifies the checks that turn
+"looks right" into "is provably right".
+
+## When the audit goes quiet
+
+If the diff doesn't touch money-handling code, `audit-money`
+reports nothing and exits clean. The trigger is heuristic — paths
+under `src/billing/`, `src/payments/`, or any file matching
+`money|price|cents|fee|discount|invoice`. Files outside those
+patterns aren't audited even if they happen to handle money;
+expanding the heuristic per project is a one-line config change.
+
+[Source: `skills/audit-money/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/audit-money/SKILL.md)

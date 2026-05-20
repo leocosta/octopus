@@ -1,0 +1,80 @@
+---
+title: launch-release
+description: Themed release announcement kit — landing page, email, Slack, Discord, in-app banner, status page, X thread, WhatsApp, slide deck. Presets and on-demand custom theme synthesis.
+sidebar:
+  order: 19
+---
+
+`launch-release` is the release-level counterpart to
+`launch-feature`. Given a release (a single tag, a tag range, or
+one or more RM IDs), it generates the announcement kit for
+existing users: the channels that make sense for a versioned
+release rather than a single feature.
+
+## What ships in a release kit
+
+| Artefact | Channel |
+|---|---|
+| Landing-page HTML | Public-facing release announcement |
+| Plain release notes | Email-ready, no formatting |
+| Theme snapshot | The visual theme picked for this release |
+| `email.md` | Newsletter to existing customers |
+| `slack.md` / `discord.md` | Community / customer channels |
+| `banner.html` | In-app announcement banner (HTML snippet) |
+| `status-page.md` | Status-page maintenance / feature entry |
+| `x.md` | X / Twitter thread |
+| `whatsapp.md` | WhatsApp broadcast copy |
+| `deck.md` | 5–7 slide deck outline for internal demo |
+
+The team picks which channels go live; the skill produces them all.
+
+## Themes
+
+Release announcements benefit from a thread that ties the kit
+together — a visual + copy theme that makes the release feel like
+an event rather than a list of CHANGELOG entries.
+
+The skill ships with a small set of preset themes (e.g., "speed",
+"quality", "developer-experience") and can synthesise a custom
+theme on demand via the frontend-design skill. The theme picks:
+
+- A name and tagline for the release
+- A visual style (colour palette, illustration direction) the
+  banner and landing page use
+- A voice register for the copy across channels
+
+The same theme runs through every artefact so the release lands
+as one coherent message rather than nine disjoint posts.
+
+## Source of truth
+
+The kit is generated from:
+
+- The commit messages and CHANGELOG entries in the release range
+- The linked RMs and specs for the features included
+- The team's previous release announcements (for voice
+  continuity)
+
+The agent doesn't make up features — if a CHANGELOG entry is
+vague, the kit's wording will reflect that. Tight CHANGELOG
+entries produce sharp announcements.
+
+## When NOT to use it
+
+- Hotfix releases. The kit is overkill — a single status-page
+  entry is enough.
+- Pre-1.0 releases. The audience is usually the team itself; a
+  Slack post and a deck outline are sufficient.
+- Releases with nothing user-visible. Internal-only releases
+  (refactors, infrastructure) don't need an announcement —
+  invoking `launch-release` on one of those will produce a
+  thin kit that flags the lack of user-facing changes.
+
+## Approval-gated
+
+Like `launch-feature`, the skill drafts; it doesn't publish. The
+team reviews and ships through whatever publishing tools they
+already use. The marketer role has `tools:` forbidding publishing
+APIs — the discipline is built into the role.
+
+[Source: `skills/launch-release/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/launch-release/SKILL.md)

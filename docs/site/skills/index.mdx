@@ -1,0 +1,119 @@
+---
+title: Skills
+description: Reusable AI capabilities organised by intent — audits, workflows, doc lifecycle, refactoring, launches, knowledge management, and skill authoring.
+sidebar:
+  order: 1
+---
+
+Skills are how Octopus tells the agent *what to do* and *how to do it
+disciplined*. Each skill is a small Markdown file with frontmatter
+that triggers engagement based on the user's intent — a description
+that says "use when X", optional `triggers:` for auto-engagement on
+specific file patterns, and a body that walks the agent through the
+right sequence of steps.
+
+## Why skills, not just rules
+
+Rules describe *what good code looks like* (coding style, security,
+patterns) — they're loaded into every conversation as standing
+context. Skills describe *how to perform a task* — they're loaded
+on demand when the user's intent matches the skill's description.
+
+The split keeps the active context lean: a rule about Conventional
+Commits is always loaded, but the full PR-feedback discipline only
+loads when you're actually receiving feedback on a PR. Skills are
+the "engage when needed" layer.
+
+## Granularity
+
+Per the docs-site rule, only skills with non-trivial design
+decisions get a detail page. Stack-specific patterns, thin
+wrappers, and one-trick utilities are listed in the overview tables
+without a page of their own.
+
+## Audits
+
+Pre-merge audit gates. Each runs read-only and produces a severity-
+tiered report (`⛔ block` / `⚠ warn` / `ℹ info`). The `audit-all`
+composer runs the relevant ones in parallel.
+
+| Skill | Audits | Detail |
+|---|---|---|
+| `audit-all` | Composer for the four audits below — shared file discovery, parallel execution, consolidated report. | [→](./audit-all/) |
+| `audit-security` | Hardcoded secrets, injection risks, public route auth gaps, dependency CVEs. | [→](./audit-security/) |
+| `audit-money` | Money types, rounding, cents-not-round tests, env-var consistency, payment idempotency, webhook signature verification, fee-disclosure coupling. | [→](./audit-money/) |
+| `audit-tenant` | Multi-tenant data-scope enforcement — query filters, raw SQL, new entity configs, controller ownership, admin endpoints. | [→](./audit-tenant/) |
+| `audit-config` | Agent-configuration freshness — model-specific assumptions, stale dates, phantom skills, deprecated paths. | [→](./audit-config/) |
+| `review-contracts` | Frontend/backend contract drift — endpoints, DTOs, enums, status codes, auth rules, params. | [→](./review-contracts/) |
+
+## Implementation workflows
+
+| Skill | Engages when | Detail |
+|---|---|---|
+| `implement` | Any code-editing task — default on every implementation. | [→](./implement/) |
+| `debug` | The user reports a bug, test failure, or unexpected behaviour. | [→](./debug/) |
+| `prototype` | The user wants to flush out a design before committing — throwaway code in service of decisions. | [→](./prototype/) |
+| `test-tdd` | Implementing a new feature with explicit red/green/refactor loop. | — |
+| `test-e2e` | Adding an end-to-end test that hits real services. | — |
+| `backend-patterns` | Backend implementation work — stack-aware layering. | — |
+
+## Refactoring
+
+| Skill | Engages when | Detail |
+|---|---|---|
+| `refactor-deepen` | The codebase has shallow modules that should be consolidated. | [→](./refactor-deepen/) |
+
+## Doc lifecycle
+
+The full RFC → Spec → ADR → Knowledge chain. Each step is a skill
+the corresponding command invokes.
+
+| Skill | Output | Detail |
+|---|---|---|
+| `doc-lifecycle` | Routes between RFC / Spec / ADR / Knowledge based on scope and risk — the entry-point skill for documentation work. | [→](./doc-lifecycle/) |
+| `doc-adr` | A new Architecture Decision Record in `docs/adr/`. | [→](./doc-adr/) |
+| `doc-plan` | A bite-sized TDD-style implementation plan from an approved spec. | [→](./doc-plan/) |
+| `doc-subcontext` | Per-module `CLAUDE.md` for monorepos — inherits from parent. | [→](./doc-subcontext/) |
+| `doc-align` | Reconcile drift between code and docs. | — |
+| `doc-prd` | PRD published to the project issue tracker. | — |
+
+## Knowledge & planning
+
+| Skill | Engages when | Detail |
+|---|---|---|
+| `continuous-learning` | Capturing insights worth keeping across sessions. | [→](./continuous-learning/) |
+| `plan-backlog` | Auditing the roadmap and plans for staleness, orphans, broken links. | [→](./plan-backlog/) |
+| `context-budget` | The conversation is heavy on tokens and needs pruning. | — |
+| `context-handoff` | Handing the current session to another agent. | — |
+| `map-system` | Generating a system map for onboarding or for AFK agents. | — |
+| `interview` | Stress-testing a plan via grilling. | — |
+| `triage-issues` | Routing incoming issues through a state machine. | — |
+
+## Launches
+
+| Skill | Output | Detail |
+|---|---|---|
+| `launch-feature` | Multi-channel launch kit from a completed feature (RM / spec / PR). | [→](./launch-feature/) |
+| `launch-release` | Themed release announcement kit for existing users — landing page, email, Slack, Discord, banner, X thread, deck. | [→](./launch-release/) |
+
+## Skill authoring (meta)
+
+| Skill | Engages when | Detail |
+|---|---|---|
+| `scaffold-skill` | Creating a new skill end-to-end. | Covered in [/commands/scaffold-skill/](/octopus/commands/scaffold-skill/) |
+| `compress-skill` | Shrinking a SKILL.md without changing semantics. | — |
+| `delegate` | Routing a task to a specific role. | — |
+
+## Stack patterns
+
+| Skill | What it adds |
+|---|---|
+| `dotnet` | .NET / C# stack-specific guidance — async/await, EF Core, naming, file structure. |
+
+## Receiving code review
+
+| Skill | Engages when | Detail |
+|---|---|---|
+| `review-pr` | Receiving feedback on a PR — the verify / ask-for-evidence / disagree-with-reasoning triage. | Covered in [/commands/pr-comments/](/octopus/commands/pr-comments/) |
+
+[Source: `skills/`](https://github.com/leocosta/octopus/tree/main/skills)

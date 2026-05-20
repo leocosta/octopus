@@ -1,0 +1,72 @@
+---
+title: audit-config
+description: Quarterly freshness audit of the agent-configuration surface — model assumptions, stale dates, phantom skills, hooks behind model-family changes, deprecated paths.
+sidebar:
+  order: 9
+---
+
+`audit-config` (RM-087) is the audit that catches configuration
+drift — the gap between what the rules / skills / hooks / commands
+/ bundles claim and what's actually current. It runs read-only,
+produces a severity-tiered report, and refuses to auto-fix —
+configuration is sensitive and changes should be deliberate.
+
+## Why a config audit is separate from a code audit
+
+Code audits look for failure modes in the diff being merged.
+Config audits look for failure modes in the *agent configuration
+itself* — the thing that tells the agent how to think. Those
+failure modes are different:
+
+- A skill description that mentions "Opus 3" when the project now
+  uses Opus 4.7 (model assumption drift).
+- A rule citing a deadline from nine months ago that everyone has
+  forgotten about (stale dates).
+- A skill listed in a bundle but never engaged because the
+  `description:` field is too vague to match user intent (phantom
+  skill).
+- A hook touched last when Claude 3.5 was current; today's runtime
+  behaves differently (hooks behind model-family changes).
+- A command referencing a path that was renamed two releases ago
+  (deprecated paths).
+
+These are different from "is the code correct?" and need their
+own audit lens.
+
+## The five checks
+
+1. **Model-specific assumptions.** Grep for "Claude 3", "Opus 3",
+   "Sonnet 3.5" and similar version references in rules / skills /
+   hooks. Flag for review unless explicitly intentional.
+2. **Stale date references.** Dates older than 9 months without a
+   successor reference (a follow-up date or a "completed" marker).
+   The threshold of 9 months matches the typical model-family
+   turnover.
+3. **Phantom skills.** Skills with no `triggers:` frontmatter and a
+   vague `description:` that doesn't include a routing cue. These
+   exist in the catalogue but the agent never engages them because
+   nothing matches.
+4. **Hooks behind model-family changes.** Hooks whose
+   `last-modified` timestamp predates the last major model-family
+   change. Heuristic — flagged for review, not auto-failed.
+5. **Deprecated path references.** Commands / skills referencing
+   paths that don't exist in the current tree. The canonical
+   example is the `docs/superpowers/plans/` → `docs/plans/`
+   migration in v1.49.x — anything still pointing at the old path
+   is dead.
+
+## Cadence
+
+Run quarterly, or after any major model-family change. The
+project's own `pre-push-audit-suggest` hook will suggest it when
+the diff touches `rules/`, `skills/`, `hooks/`, `commands/`, or
+`bundles/`.
+
+## Why no auto-fix
+
+Configuration changes are the kind of change that should be
+reviewed in a PR — "the audit said so" is not a sufficient commit
+message. The audit produces the list; a human authors the fixes
+as separate commits with the rationale.
+
+[Source: `skills/audit-config/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/audit-config/SKILL.md)

@@ -1,0 +1,68 @@
+---
+title: refactor-deepen
+description: Find deepening opportunities in a codebase — shallow modules with tight coupling that should be consolidated, surfaced from CONTEXT.md domain language and ADR decisions.
+sidebar:
+  order: 11
+---
+
+`refactor-deepen` is the skill that looks for the opposite of the
+usual refactoring target. The dominant refactoring instinct is
+"split this big file into smaller ones"; the dominant *quality*
+opportunity in mature codebases is the inverse — *consolidate
+shallow modules that have grown coupled enough to be one thing*.
+
+## What "shallow" means here
+
+A shallow module is small (often a single file or function), has
+a thin public surface, but is intimately coupled to one or two
+callers that always use it together. The split looked clean at
+the time but produced the worst of both worlds: an abstraction
+boundary without abstraction value, plus two units that change
+together and review together.
+
+The give-away signals:
+
+- The module's name is structural (`helpers`, `utils`, `formatter`)
+  rather than domain (`InvoiceTotal`, `LessonSchedule`).
+- Every change to a caller also changes the module.
+- The module has one or two callers, not many.
+- The tests for the module mostly mock its caller, or vice versa.
+
+## Why deepening helps AI navigation
+
+Octopus optimises for AI-navigable codebases. Three deep modules
+are easier for an agent to load into context and reason about than
+fifteen shallow ones — there are fewer files to enumerate, fewer
+boundaries to chase across, and the domain vocabulary is
+concentrated where it actually lives. Tightly-coupled-but-split
+modules are the worst case: the agent reads each file, doesn't
+find the answer, and has to assemble the picture from fragments.
+
+## The skill's signal sources
+
+The skill doesn't guess. It pulls from two places:
+
+- **CONTEXT.md domain language.** The vocabulary the team uses to
+  describe what the system does. Modules whose names match domain
+  terms are usually deep enough; modules whose names don't are
+  candidates.
+- **ADR decisions.** Past decisions that introduced a boundary
+  for a reason that may no longer apply. The skill flags
+  boundaries explicitly created by an ADR that's now five years
+  old and superseded.
+
+## What it produces
+
+A report listing candidates with:
+
+- The shallow module and its callers
+- The signal that flagged it (structural name, change coupling,
+  caller count, ADR age)
+- A consolidation proposal (which module merges into which) — not
+  a refactor patch, just the proposal
+
+Like `audit-config`, the skill never auto-fixes. The consolidation
+is a human decision because it changes module boundaries — code
+review-significant in ways the audit can't judge.
+
+[Source: `skills/refactor-deepen/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/refactor-deepen/SKILL.md)

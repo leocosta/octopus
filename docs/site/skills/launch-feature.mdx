@@ -1,0 +1,81 @@
+---
+title: launch-feature
+description: Turn a completed feature (RM, spec, research path, or PR) into a versioned multi-channel launch kit — posts, email, landing-page copy, commercial changelog, video script, optional image assets.
+sidebar:
+  order: 18
+---
+
+`launch-feature` takes a feature that just shipped and produces
+the artefacts the team needs to announce it: a landing-page
+section, an email template, social posts for the platforms the
+team uses, a commercial changelog entry (different voice from the
+technical CHANGELOG), and optionally a video script and image
+assets.
+
+## Why a launch skill instead of "the marketer writes it"
+
+Two reasons:
+
+- **The feature context is local.** The launch copy that lands
+  well refers to the actual problem the feature solves — the
+  RM's motivation, the spec's constraints, the PR's diff. That
+  context lives in the repo, not in the marketer's head.
+  Generating from the source means the launch matches the
+  feature.
+- **The launch is multi-channel.** Email, Slack, X, LinkedIn,
+  landing page — each has a different voice and length. Writing
+  six versions manually is high-friction and prone to drift
+  between channels. The skill produces all six from one source
+  with the channel-specific voice applied.
+
+## What goes in a launch kit
+
+The output lives at
+`docs/marketing/launches/YYYY-MM-DD-<slug>/`:
+
+| File | Channel |
+|---|---|
+| `landing.html` | Marketing landing page section |
+| `email.md` | Newsletter / announcement email |
+| `slack.md` | Slack post for the team's customer / community channel |
+| `x.md` | X / Twitter thread |
+| `linkedin.md` | LinkedIn post |
+| `changelog.md` | Commercial changelog entry (user-facing) |
+| `script.md` | 60-90 second video script (if applicable) |
+| `assets/` | Optional image assets generated to match |
+
+The team picks which channels are relevant and ignores the rest —
+the skill produces them all to remove the friction of "I should
+write a Slack post too".
+
+## Voice per channel
+
+- **Email** — second-person, addresses the customer's pain;
+  ends with the call to action.
+- **Slack** — short, casual, links to the landing page; one-line
+  hook + bullet + link.
+- **X** — thread; first post is the hook, subsequent posts
+  develop the use case; last post is the link.
+- **LinkedIn** — longer than X, professional tone, single post.
+- **Landing-page section** — third-person, benefit-led headline,
+  technical proof points.
+- **Commercial changelog** — neutral tone, focused on user-
+  visible behaviour, no internal jargon.
+
+## Approval-gated by design
+
+The skill drafts; it doesn't publish. Every artefact lands as a
+file the team reviews before sending. The marketer role's
+`tools:` allowlist explicitly forbids the file-modification or
+network tools that would let an agent publish autonomously — a
+deliberate guardrail.
+
+## Pairing with `launch-release`
+
+`launch-feature` is for one shipped feature. `launch-release` is
+for a whole release that bundled several. The release variant
+adds a release-notes summary, a status-page entry, and an in-app
+banner — channels that fit a versioned release but not a single
+feature.
+
+[Source: `skills/launch-feature/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/launch-feature/SKILL.md)

@@ -1,0 +1,68 @@
+---
+title: continuous-learning
+description: Capture insights, test hypotheses, and promote confirmed patterns to project knowledge — multi-agent ready, designed to survive across Claude, Kilo Code, Copilot, Codex sessions.
+sidebar:
+  order: 17
+---
+
+`continuous-learning` is the skill that turns one session's
+discoveries into the next session's knowledge. It's the editorial
+counterpart to the `propose-knowledge-update` hook: the hook
+captures signals automatically, this skill is what the user (or
+the `/octopus:review-proposals` flow) uses to draft, test, and
+promote them.
+
+## Why a learning system at all
+
+Without one, every session re-discovers the same things — the
+same surprising file, the same naming convention, the same
+project-specific gotcha. The agent has no memory across sessions,
+and the human has no patience for re-explaining the same context
+twice.
+
+A learning system is the project-level memory: rules in
+`rules/common/`, structural facts in `knowledge/`, behavioural
+preferences in `CLAUDE.md`. The skill's job is to populate those
+homes deliberately rather than letting them grow ad hoc.
+
+## The lifecycle of a learning
+
+1. **Capture.** Something happened that seems worth keeping. The
+   hook captures it automatically (corrections, re-reads,
+   re-greps); the user can also surface a learning manually
+   ("remember that we always use X for Y").
+2. **Draft.** The skill writes a candidate entry in the
+   appropriate genre — a rule for "always do X", a knowledge file
+   for "here's how Y works", a `CLAUDE.md` line for "the user
+   prefers Z".
+3. **Hypothesise.** The draft includes the prediction: *if this
+   becomes a rule, the agent will stop doing W next time*. The
+   prediction is testable.
+4. **Test.** The next session that hits the relevant context
+   either follows the rule or doesn't. The skill helps the user
+   notice which.
+5. **Promote or retire.** Confirmed patterns become real rules /
+   knowledge / `CLAUDE.md` lines. Patterns that didn't hold get
+   archived without shame — half of captured signal turns out to
+   be one-off context, and pretending otherwise just pollutes the
+   knowledge base.
+
+## What it doesn't do
+
+- It doesn't auto-edit. Every promotion is a human disposition.
+- It doesn't synthesise across sessions. Each captured signal is
+  judged on its own; the skill doesn't infer "you said X three
+  times" without an explicit prompt.
+- It doesn't write generic advice. "Use good variable names" goes
+  in a coding-style rule, not a learning — learnings are
+  project-specific.
+
+## Why multi-agent-ready
+
+Knowledge captured under Claude should also flow to Copilot,
+Codex, Gemini, and OpenCode. The skill writes to the canonical
+Octopus locations (`rules/`, `knowledge/`, `CLAUDE.md`-equivalents
+per agent) so the project-wide manifest generation can pick them
+up. A learning isn't trapped in one agent's session memory.
+
+[Source: `skills/continuous-learning/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/continuous-learning/SKILL.md)

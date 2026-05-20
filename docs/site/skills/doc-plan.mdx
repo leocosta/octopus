@@ -1,0 +1,84 @@
+---
+title: doc-plan
+description: Turn an approved spec into a bite-sized, TDD-style implementation plan under docs/plans/<slug>.md — each task small enough for an agent to ship independently with a passing test.
+sidebar:
+  order: 14
+---
+
+`doc-plan` reads an approved spec and produces an implementation
+plan: a list of tasks small enough that each one is a single
+TDD red/green/refactor loop with a clean commit. The output is
+saved to `docs/plans/<slug>.md` and consumed by `octopus run` to
+dispatch tasks to agents in parallel.
+
+## Why plans, not just specs
+
+A spec describes *what to build*. An implementation plan
+describes *how to build it incrementally* — what's the first
+test, what's the smallest commit that passes it, what depends on
+what so tasks can run in parallel. The two are different shapes
+and need different artifacts.
+
+Specs without plans tend to get implemented as one giant PR. Plans
+without specs lose track of why the work is being done. The
+spec-then-plan sequence gives both — the why and the how-in-chunks.
+
+## Task shape
+
+Each task in the plan has:
+
+- A short title
+- A description of the behaviour being added
+- The failing test that proves the behaviour is missing
+- The minimal implementation that makes the test pass
+- The agent type best suited (`backend-developer`,
+  `frontend-developer`, etc.)
+- A `depends_on:` list of other tasks that must finish first
+
+Tasks with no shared dependencies run in parallel when consumed by
+`octopus run`. The dependency DAG is the schedule.
+
+## Enriched-plan frontmatter
+
+The plan is a Markdown checklist with a YAML frontmatter block
+that machines read:
+
+```yaml
+---
+slug: user-auth
+pipeline:
+  review_skill: octopus:codereview
+  pr_on_success: true
+tasks:
+  - id: t1
+    agent: backend-developer
+    depends_on: []
+  - id: t2
+    agent: backend-developer
+    depends_on: [t1]
+  - id: t3
+    agent: frontend-developer
+    depends_on: [t1]
+---
+
+- [ ] **t1** — Create users table and migration
+- [ ] **t2** — Implement auth endpoints
+- [ ] **t3** — Login screen and registration form
+```
+
+The checkboxes get ticked in the file as tasks complete. If a task
+fails, the runner pauses and prompts `[r]etry  [s]kip  [a]bort`.
+
+## Tasks are TDD-sized, not feature-sized
+
+The discipline that makes the plan work is keeping tasks small.
+"Implement auth" is a feature, not a task — it's too big for one
+red/green/refactor loop. "Implement POST /login that returns a JWT
+for valid credentials, with one test for the happy path" is a
+task. The plan breaks features into tasks at that grain.
+
+When the spec is fuzzy enough that the plan can't pin down
+TDD-sized tasks, that's a signal the spec needs more detail before
+planning. Go back to the spec, fill the gap, come back to the plan.
+
+[Source: `skills/doc-plan/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/doc-plan/SKILL.md)

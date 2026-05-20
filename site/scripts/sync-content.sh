@@ -88,33 +88,7 @@ generate_page \
 # docs/features/ is the legacy reference home — site sections re-render the
 # same hand-written prose under sidebar-friendly paths. Update the source
 # files, not the generated copies.
-features_dir="$project_root/docs/features"
-mkdir -p "$content_dir/commands" "$content_dir/skills"
-
-# Hooks (v1.55.0+) and Commands (v1.56.0+) ship hand-curated MDX under
-# docs/site/<section>/ — no sync from docs/features/ for those sections.
-
-generate_page "$features_dir/skills.md" "$content_dir/skills/index.md" \
-  "Skills" "Reusable AI capabilities organised by intent."
-
-# Per-skill / per-concept rationale pages. Title is derived from the source
-# file's H1 when present; falls back to the slug.
-declare -A SKILL_TITLES=(
-  [audit-all]="Audit all"
-  [audit-money]="Audit money"
-  [audit-tenant]="Audit tenant"
-  [cross-stack-contract]="Cross-stack contract"
-  [debug]="Debug"
-  [feature-lifecycle]="Feature lifecycle"
-  [feature-to-market]="Feature to market"
-  [implement]="Implement"
-  [plan-backlog]="Plan backlog hygiene"
-  [release-announce]="Release announce"
-  [review-pr]="Review PR"
-)
-for slug in "${!SKILL_TITLES[@]}"; do
-  generate_page "$features_dir/$slug.md" "$content_dir/skills/$slug.md" \
-    "${SKILL_TITLES[$slug]}" "Rationale and usage for the $slug skill."
-done
+# Hooks (v1.55.0+), Commands (v1.56.0+), and Skills (v1.57.0+) ship hand-
+# curated MDX under docs/site/<section>/ — no sync from docs/features/.
 
 echo "sync-content: linked $(ls -1 "$content_dir" | wc -l) entries under $content_dir"

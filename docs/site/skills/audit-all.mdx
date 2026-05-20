@@ -1,0 +1,66 @@
+---
+title: audit-all
+description: Parallel composer for security, money, multi-tenant, and contract audits — shared file discovery, single severity-tiered report, cross-audit hotspots.
+sidebar:
+  order: 5
+---
+
+`audit-all` is the composer that runs the four pre-merge audits
+in parallel against one ref. It's the right default for any
+non-trivial PR on a multi-tenant SaaS codebase — instead of
+remembering to run `audit-security`, `audit-money`, `audit-tenant`,
+and `review-contracts` separately, you run `audit-all` once and
+get a consolidated report.
+
+## Why a composer instead of a one-big-audit
+
+The four audits target different failure modes — secrets and
+injection vs. rounding and idempotency vs. tenant-scope and SQL
+filters vs. frontend/backend DTO drift. Combining them into a
+single monolithic audit would lose two properties that matter:
+
+- **Per-audit severity.** Each audit ranks its own findings;
+  collapsing them into a global severity dilutes the signal
+  ("everything is medium-severity" is useless).
+- **Independent opt-out.** Teams that don't handle money can
+  disable `audit-money` without losing the others; a monolith
+  would force all-or-nothing.
+
+The composer keeps them as four independent skills coordinated by
+shared file discovery (the list of changed files is computed once
+and handed to each audit) so they don't each re-walk the diff.
+
+## What `audit-all` adds beyond running them serially
+
+- **Parallel execution.** The four audits run concurrently. On a
+  typical PR diff that's a 3–4× speedup over the sequential form.
+- **Shared file discovery.** One `git diff` walk instead of four.
+- **Consolidated report.** Findings from all four are merged into
+  a single table sorted by severity, with a cross-audit hotspots
+  section that highlights files flagged by more than one audit
+  (usually the first place to look).
+
+## What it doesn't audit
+
+The four are tuned for SaaS-flavoured failure modes. Specialised
+audits live in their own skills and aren't included by default:
+
+- Performance regressions → use a dedicated benchmark suite, not
+  a static audit.
+- Accessibility → not a skill yet; falls back to the frontend
+  rules in `rules/frontend.md`.
+- Compliance (GDPR, SOC2 evidence) → too domain-specific to
+  generalise — file a project-specific skill if needed.
+
+## Invocation
+
+```bash
+/octopus:audit-all                  # against the current diff
+/octopus:audit-all main..HEAD       # against a specific range
+```
+
+Bypass marker for false positives is on individual audit findings,
+not on `audit-all` as a whole — see each audit's page for the
+syntax.
+
+[Source: `skills/audit-all/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/audit-all/SKILL.md)

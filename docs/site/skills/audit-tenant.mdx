@@ -1,0 +1,68 @@
+---
+title: audit-tenant
+description: Pre-merge audit of multi-tenant data-scope enforcement — query filters, new entity configs, raw SQL, controller ownership, admin endpoints.
+sidebar:
+  order: 8
+---
+
+`audit-tenant` checks the changes for tenant-scope leaks — the
+class of bug where one tenant's data becomes visible to another
+because the query missed a `WHERE tenant_id = ?` clause or the
+controller skipped its ownership check. These bugs are rarely
+caught by tests (the test data usually has one tenant) and rarely
+caught in review (the missing clause is invisible).
+
+## The five checks
+
+1. **Query filters.** Every query against a multi-tenant table
+   must filter by the tenant scope (typically `tenant_id`,
+   `organization_id`, or whatever the project's convention is).
+   New queries without the filter are flagged.
+2. **New entity configs.** Adding a new entity / model / table
+   that should be multi-tenant must include the scope column in
+   the schema and a default filter at the ORM level (e.g., EF
+   Core global query filter, Prisma extension, Sequelize scope).
+   Without the default, future queries silently drop the filter.
+3. **Raw SQL.** Any new raw SQL (`db.execute(...)`, `EXEC sp_…`)
+   bypasses the ORM's global filters by definition. Flagged
+   unconditionally — the author must annotate why the raw query is
+   safe (e.g., a system-level cron that intentionally crosses
+   tenants).
+4. **Controller ownership.** New endpoints that operate on a
+   tenant-owned resource must verify the resource belongs to the
+   caller's tenant before returning or modifying it. The check is
+   often missing on `GET /resources/:id` — the query joins on `id`
+   and ignores the tenant.
+5. **Admin endpoints.** Any endpoint marked admin / internal /
+   system must explicitly state which tenants it can act on
+   (single, all, system-only). Unbounded admin endpoints are the
+   classic "we never thought a malicious admin could be in scope"
+   source of incidents.
+
+## Why this matters more than it looks
+
+Multi-tenant leaks have an asymmetric blast radius. A normal bug
+affects one customer; a tenant-scope leak affects *every*
+customer's relationship with your product the moment it's
+discovered, plus any regulatory reporting it triggers. The audit
+is one of the few places where the cost of running it on every PR
+is unambiguously worth it.
+
+## Pairing with EF Core / ORM conventions
+
+The audit is most effective when the project commits to a
+convention: a base entity that carries the scope column, a global
+query filter that applies it by default, and a rule that any
+deviation must be explicitly annotated. The audit then enforces
+the convention; without the convention, the audit has to inspect
+every query individually and the false-positive rate climbs.
+
+## When the audit goes quiet
+
+If the changed files don't reference any multi-tenant entity, the
+audit reports nothing. The trigger is heuristic — files under
+`db/`, `src/entities/`, `src/controllers/`, `src/api/`, plus any
+file that imports a known multi-tenant model. Files outside those
+patterns are skipped.
+
+[Source: `skills/audit-tenant/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/audit-tenant/SKILL.md)

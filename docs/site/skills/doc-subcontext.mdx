@@ -1,0 +1,76 @@
+---
+title: doc-subcontext
+description: Per-module CLAUDE.md for monorepos — inherits from the parent chain, captures conventions unique to the subdirectory, target 50–100 lines so it doesn't displace the parent.
+sidebar:
+  order: 15
+---
+
+`doc-subcontext` (RM-085) is the skill that handles the scaling
+problem Anthropic flagged in *"How Claude Code Works in Large
+Codebases"*: a single top-level `CLAUDE.md` doesn't carry enough
+context for a large monorepo, but copying the full context into
+every subdirectory produces N copies that drift.
+
+The skill writes a *sub-context* — a small `CLAUDE.md` inside a
+specific subdirectory that **inherits from the parent chain** and
+captures only what's unique to its scope.
+
+## Why inherit instead of duplicate
+
+A naive per-module `CLAUDE.md` repeats project-wide conventions
+(testing strategy, branch naming, commit format) in every
+directory. As soon as one of those conventions changes, the
+sub-contexts drift — some get updated, some don't, and the agent
+ends up with conflicting guidance depending on which path it's
+working in.
+
+Inheriting solves that: each sub-context starts with "inherits
+from `../CLAUDE.md`" as an explicit pointer, and includes only
+what's unique to this directory. When a project-wide convention
+changes, the parent updates; the sub-contexts don't need to know.
+
+## The skill's discipline
+
+When invoked for a subdirectory, the skill:
+
+1. Reads the parent chain (this dir → parent → … → root
+   `CLAUDE.md`) and shows the user what's already inherited.
+2. Asks only about conventions *unique to this subdirectory*. If
+   a question's answer is the same as the parent's, it's not
+   asked.
+3. Writes the sub-context with a `## Inherits from` section at the
+   top pointing at `../CLAUDE.md`, then a small set of
+   subdirectory-specific sections.
+4. Targets 50–100 lines. If the sub-context grows past that, the
+   skill suggests splitting further or pushing common content up
+   to the parent.
+
+## What goes in a sub-context
+
+Good candidates:
+
+- This module's domain vocabulary (when it differs from the
+  project's wider vocabulary)
+- Files an agent should always open first when working in this
+  directory
+- Module-specific anti-patterns ("don't reach into `../../core/`
+  — use the public API in `../core/index.ts`")
+- Per-module test conventions if they diverge from the
+  project-wide ones
+
+Bad candidates (these belong in the root `CLAUDE.md` instead):
+
+- Project-wide coding style
+- Commit conventions
+- Anything that applies to more than one module
+
+## When NOT to write a sub-context
+
+If everything the agent needs to know about a directory is
+already in the parent, don't write a sub-context — the empty
+file is worse than no file because it suggests something
+directory-specific exists when nothing does. The skill refuses to
+write a sub-context that would consist only of "inherits from
+parent".
+
+[Source: `skills/doc-subcontext/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/doc-subcontext/SKILL.md)

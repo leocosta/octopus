@@ -1,0 +1,72 @@
+---
+title: doc-adr
+description: Create and manage Architecture Decision Records — captures the context, decision, and consequences of significant technical decisions in docs/adr/.
+sidebar:
+  order: 13
+---
+
+`doc-adr` writes a new Architecture Decision Record from the
+project's ADR template — the Context / Decision / Consequences
+format that captures *why* a decision was made, not just *what*.
+ADRs live in `docs/adr/` with a numeric prefix (`0042-jwt-auth.md`)
+and are append-only: once an ADR is accepted, it's not edited;
+superseding decisions create new ADRs that reference the old.
+
+## When ADR vs Spec
+
+The two are easy to confuse. The split:
+
+- **Spec** answers "what are we going to build?" It's implementable
+  — someone can pick it up and start writing code. Specs are
+  feature-shaped.
+- **ADR** answers "why did we choose this approach over the
+  alternatives?" It's not implementable. ADRs are decision-shaped.
+
+A typical sequence: spec describes the feature, ADR captures the
+key architectural choice the spec depends on. The spec moves
+through review and into a plan; the ADR sits as the rationale that
+future readers consult when the choice comes up again.
+
+## The structure
+
+The template has four sections:
+
+- **Context.** What problem or constraint prompted the decision?
+  What was the situation when the team needed to choose?
+- **Decision.** What did the team decide?
+- **Rationale.** Why this option over the alternatives? What were
+  the alternatives, and why were they rejected?
+- **Consequences.** What follow-on effects does this decision
+  have? Both positive (what becomes easier) and negative (what
+  becomes harder or what's now constrained).
+
+The Consequences section is often the most undervalued — it's
+what future readers actually want when they come back asking "why
+is this the way it is?" The decision itself is usually obvious
+from the code; the consequences explain the trade-offs that made
+it the right call.
+
+## When to write the ADR
+
+Two valid moments:
+
+- **Just before deciding** — the act of writing the ADR forces
+  the alternatives onto the page, often surfacing one that wasn't
+  considered. The ADR drafts what the team will discuss.
+- **Just after deciding** — capture the decision while the
+  rationale is fresh. Wait a week and the alternatives blur into
+  "I think we picked this because…".
+
+Don't write the ADR much later than that. ADRs written six months
+after the fact tend to retrofit the rationale and lose the actual
+trade-offs.
+
+## Numbering and supersession
+
+ADRs are numbered sequentially. When a decision is replaced, the
+new ADR includes a "Supersedes: ADR-NNNN" header and the old ADR
+gets a "Superseded-by: ADR-MMMM" marker without editing the
+original body. The history stays readable; the current state is
+always the latest non-superseded ADR in the chain.
+
+[Source: `skills/doc-adr/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/doc-adr/SKILL.md)

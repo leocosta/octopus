@@ -1,0 +1,59 @@
+---
+title: audit-security
+description: Pre-merge security audit — hardcoded secrets, injection vectors, public-route auth gaps, dependency CVEs.
+sidebar:
+  order: 6
+---
+
+`audit-security` runs a four-axis check on the changes since the
+last tag (or a user-specified range). It's the audit that catches
+the security mistakes most likely to land in PRs from a working
+team — not advanced threat models, but the recurring carelessness
+that produces real incidents.
+
+## The four axes
+
+1. **Secrets.** Wider than the `detect-secrets` hook: scans the
+   whole modified file (not just the diff), checks the working tree
+   for new `.env*` files that shouldn't be tracked, and flags any
+   placeholder that looks suspiciously real (e.g., a "test" key
+   that has the right entropy to be a live one).
+2. **Injection.** Looks for string concatenation into SQL queries,
+   shell commands, and HTML output. Flags any change that
+   introduces a `${var}` interpolation into a query string or a
+   template literal feeding `eval` / `Function()`.
+3. **Auth gaps.** New routes added under common public-route paths
+   (`/api/`, `/v1/`) without an authentication decorator,
+   middleware, or attribute. Excludes routes explicitly marked
+   public.
+4. **Dependencies.** Cross-references `package.json` /
+   `*.csproj` / `requirements.txt` changes against known CVEs.
+   Patch-level updates are noted; major-version updates of
+   security-relevant packages are flagged for review.
+
+## Why these four and not more
+
+The skill makes a deliberate choice to be a *gate*, not a
+*comprehensive scanner*. A full security review takes hours; an
+audit that takes hours runs once a quarter, not on every PR. The
+four axes cover the failure modes that actually appear in PRs from
+disciplined teams — the long tail of advanced threats stays in
+quarterly security work.
+
+## Pairing with the `detect-secrets` hook
+
+The hook fires PreToolUse before each commit; the audit runs as
+a pre-merge gate over the whole diff. Both target secrets but at
+different points in the lifecycle. The hook is fast and tight; the
+audit is slower and wider, catching things the hook missed (e.g.,
+a secret added before the hook was installed in this repo).
+
+## Severity tiers and bypass
+
+Findings are tagged `⛔ block` (must fix before merge), `⚠ warn`
+(should fix, but not blocking), or `ℹ info` (note for context).
+Block-level findings require a marker comment on the offending
+line acknowledging the false positive — see the report itself for
+the exact syntax per finding type.
+
+[Source: `skills/audit-security/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/audit-security/SKILL.md)

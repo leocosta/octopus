@@ -1,0 +1,64 @@
+---
+title: doc-lifecycle
+description: Routes between RFC / Spec / ADR / Knowledge based on scope and risk — the entry skill for any documentation work that doesn't already have an obvious home.
+sidebar:
+  order: 12
+---
+
+`doc-lifecycle` is the routing skill for documentation work. It
+answers "which document type should I create?" given the work
+being done — RFC for stakeholder-input gathering, Spec for
+implementation-ready feature description, ADR for capturing a
+decision after the fact, Knowledge for module-specific facts
+worth preserving.
+
+## Why routing instead of "just create a doc"
+
+The dominant documentation anti-pattern is creating a doc in the
+wrong genre. A spec written as an RFC is too vague to implement
+from; an RFC written as a spec is too prescriptive to gather
+real input; an ADR written as a spec loses the decision moment.
+Each document type carries different audience and lifecycle
+expectations, and getting the genre wrong wastes both writer and
+reader time.
+
+The routing logic is the value: the skill asks two questions
+about the work, then picks the right document.
+
+## The two-question route
+
+1. **Is the decision made, or still being made?**
+   - Still being made → RFC (gathers stakeholder input)
+   - Made, awaiting capture → ADR (records the decision)
+   - Made, becoming work → Spec (implementation-ready)
+2. **Is the scope a feature, an architectural change, or a fact?**
+   - Feature → Spec
+   - Architectural change with multiple stakeholders → RFC, then
+     ADR when decided
+   - Fact about a module or domain → Knowledge or per-module
+     `CLAUDE.md` (via `doc-subcontext`)
+
+The skill walks the user through the two questions and invokes
+the corresponding sub-skill (`doc-rfc`, `doc-spec`, `doc-adr`,
+`doc-subcontext`).
+
+## The full chain
+
+| Stage | Output | Skill |
+|---|---|---|
+| Early — gathering input | RFC | `doc-rfc` |
+| Decision made | ADR | `doc-adr` |
+| Feature ready to build | Spec | `doc-spec` |
+| Spec ready, plan to write | Plan | `doc-plan` |
+| Module-specific fact | Sub-context | `doc-subcontext` |
+| Cross-session learning | CLAUDE.md / rule | `continuous-learning` |
+| PRD for the issue tracker | PRD | `doc-prd` |
+
+## When to skip the routing
+
+If you already know the document type, invoke its skill directly
+(`/octopus:doc-adr` for an ADR, etc.). `doc-lifecycle` is the
+entry point for "I have something to document but don't know which
+genre it is".
+
+[Source: `skills/doc-lifecycle/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/doc-lifecycle/SKILL.md)
