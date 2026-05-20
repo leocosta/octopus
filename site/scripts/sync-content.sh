@@ -25,7 +25,7 @@ rm -rf "$content_dir"
 mkdir -p "$content_dir"
 
 # Hard-copy docs/site/* into src/content/docs/*. Symlinks break
-# Vite/Rollup import resolution inside .mdx files (they look for
+# Vite/Rollup import resolution inside .md files (they look for
 # node_modules relative to the file's real path, which is outside
 # site/). Hard copy keeps the build deterministic.
 #
@@ -46,5 +46,42 @@ cp -f "$project_root/images/cover-dark.png" "$public_dir/cover-dark.png"
 cp -f "$project_root/images/cover-light.png" "$public_dir/cover-light.png"
 cp -f "$project_root/images/logo-dark.png" "$public_dir/logo-dark.png"
 cp -f "$project_root/images/logo-light.png" "$public_dir/logo-light.png"
+
+# Generate roadmap & changelog MDX pages from the canonical sources at the
+# repo root. They live outside docs/site/ because they're updated by tooling
+# (release flow, /octopus:doc-research). Wrapping them with a Starlight
+# frontmatter is enough to make them routable pages.
+generate_page() {
+  local src="$1" dest="$2" title="$3" description="$4"
+  if [[ ! -f "$src" ]]; then
+    echo "sync-content: skipped $dest (source $src not found)" >&2
+    return
+  fi
+  # Strip the first H1 — Starlight renders title from frontmatter.
+  local body
+  body=$(awk 'BEGIN{skip=0} /^# /{ if(!skip){skip=1; next} } {print}' "$src")
+  {
+    echo "---"
+    echo "title: $title"
+    echo "description: $description"
+    echo "tableOfContents:"
+    echo "  maxHeadingLevel: 3"
+    echo "---"
+    echo
+    printf '%s\n' "$body"
+  } > "$dest"
+}
+
+generate_page \
+  "$project_root/docs/roadmap.md" \
+  "$content_dir/roadmap.md" \
+  "Roadmap" \
+  "Project backlog — ideas that need team discussion before becoming a spec."
+
+generate_page \
+  "$project_root/CHANGELOG.md" \
+  "$content_dir/changelog.md" \
+  "Changelog" \
+  "All notable changes to Octopus, version by version."
 
 echo "sync-content: linked $(ls -1 "$content_dir" | wc -l) entries under $content_dir"
