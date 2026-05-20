@@ -7,6 +7,9 @@ description: >
   grilling, preserve grilling work in needs-info notes, record rejected
   enhancements in .out-of-scope/. Every AI-generated comment carries a
   mandatory disclaimer. Sits in the docs bundle next to plan-backlog.
+triggers:
+  paths: [".github/ISSUE_TEMPLATE/**", ".out-of-scope/**"]
+  keywords: ["triage", "wontfix", "needs-info", "ready-for-agent", "out-of-scope"]
 ---
 
 # Issue Triage Protocol

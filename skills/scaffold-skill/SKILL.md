@@ -7,6 +7,8 @@ description: >
   register the skill into a target bundle so no skill ships loose.
   Complements compress-skill (which modifies existing skills). Family
   *-skill.
+triggers:
+  keywords: ["new skill", "create skill", "scaffold skill", "author skill", "scaffold-skill"]
 ---
 
 # Skill Authoring Protocol

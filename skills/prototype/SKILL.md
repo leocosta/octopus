@@ -7,6 +7,9 @@ description: >
   by default. The most important deliverable is the answer, not the
   code — capture durably before deleting. Sits in the starter bundle
   as a design-time discipline.
+triggers:
+  paths: ["**/__prototype__/**", "**/LOGIC.md", "**/UI.md"]
+  keywords: ["prototype", "throwaway", "sanity-check"]
 ---
 
 # Prototyping Protocol
