@@ -17,6 +17,7 @@
 .claude/knowledge/
 AGENTS.md
 .octopus/queue/
+.octopus/proposals/
 cli/control/__pycache__/
 tests/__pycache__/
 .opencode/package-lock.json

@@ -616,9 +616,15 @@ limitation.
 
 - **Priority:** 🟡 Medium
 - **Effort:** medium
-- **Status:** proposed
+- **Status:** shipped (v1.51.0)
 - **Added:** 2026-05-19
 - **Surface:** `hooks/stop/` + `commands/`
+
+**Viability check confirmed:** Claude Code Stop hooks receive
+`transcript_path` on stdin JSON, pointing at a JSONL file with all
+user + assistant turns and tool calls. The hook parses it with `jq`,
+detects the three signals (corrections, re-reads ≥3×, re-greps ≥3×),
+and writes proposals when any signal exceeds threshold.
 
 The article highlights *"Stop hooks to propose CLAUDE.md updates"*
 as a self-improvement loop. Octopus has the `continuous-learning`
@@ -695,9 +701,9 @@ but nothing audits the configuration surface itself.
 
 _No items in progress. All clusters complete through RM-074.
 Cluster 14 (RM-075..084) is proposed and awaits prioritisation.
-Cluster 15: RM-085 and RM-087 shipped in v1.50.0; RM-086 (Stop
-hook for knowledge update proposals) remains proposed pending a
-Claude Code Stop-hook viability check._
+Cluster 15 is complete: RM-085 and RM-087 shipped in v1.50.0,
+RM-086 shipped in v1.51.0 after the Stop-hook viability check
+confirmed transcript availability._
 
 ---
 
