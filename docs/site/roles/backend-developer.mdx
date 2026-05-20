@@ -121,14 +121,14 @@ Four phases (Phase 0 always runs first):
 - **[implement skill](/octopus/skills/implement/)** — the
   workflow the role applies. TDD loop, plan-before-code gate,
   verification-before-completion, simplify pass.
-- **[test-tdd skill](/octopus/skills/test-tdd/)** — used inside
+- **`test-tdd` skill** — used inside
   the implement workflow for the red-green-refactor loop.
-- **[backend-patterns skill](/octopus/skills/backend-patterns/)**
+- **`backend-patterns` skill**
   — installed by the `backend` bundle, ships the stack-specific
   conventions the role applies during Phase 2.
 - **[debug skill](/octopus/skills/debug/)** — for bug-fix tasks
   delegated to this role.
-- **[dotnet skill](/octopus/skills/dotnet/)** — engages when the
+- **`dotnet` skill** — engages when the
   detected stack is .NET. Brings framework-specific conventions
   (Minimal APIs, EF Core, MediatR, FluentValidation, Mapster).
 
