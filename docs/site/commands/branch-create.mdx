@@ -1,0 +1,42 @@
+---
+title: branch-create
+description: Create a development branch following Conventional Commits prefixes — infers a name from context, validates the format, and refuses underscores or camelCase.
+sidebar:
+  order: 2
+---
+
+`/octopus:branch-create` creates a feature branch from the current
+base, following the project's branch-naming convention:
+`<type>/<short-description>` where `type` is one of the Conventional
+Commits types (`feat`, `fix`, `refactor`, `docs`, `test`, `chore`,
+`style`, `perf`, `ci`).
+
+When invoked without an argument, the agent infers the branch name
+from recent context — current task, last user message, open files,
+git status — and proposes it for confirmation before creating.
+
+## Why a command and not just `git checkout -b`
+
+Three small decisions add up to enough friction that codifying them
+in a command was worth it:
+
+- **Prefix discipline.** The branch prefix anchors downstream
+  automation: `pr-open` derives the PR title emoji from it,
+  `release` derives the version bump (feat → minor, fix → patch).
+  An ad-hoc branch name breaks the chain.
+- **Format validation.** Lowercase with hyphens, no underscores,
+  no camelCase, no slashes beyond the prefix. The CLI refuses
+  malformed names so the convention stays consistent across
+  contributors and bots.
+- **Base-branch picking.** Defaults to `main`, or to the active
+  `release/*` branch if the team uses GitFlow-style releases.
+  No silent commits to the wrong base.
+
+## Pairing with other commands
+
+The natural successor is `/octopus:commit` after the first edit,
+then `/octopus:pr-open` once the branch is ready. The full sequence
+is a single `/octopus:dev-flow` invocation if you want orchestration
+with pauses between phases.
+
+[Source: `commands/branch-create.md`](https://github.com/leocosta/octopus/blob/main/commands/branch-create.md)

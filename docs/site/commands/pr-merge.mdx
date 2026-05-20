@@ -1,0 +1,51 @@
+---
+title: pr-merge
+description: Merge an approved PR with squash strategy, delete the branch — refuses unapproved PRs and failing checks.
+sidebar:
+  order: 7
+---
+
+`/octopus:pr-merge` closes the PR lifecycle: verifies the PR is
+approved and CI is green, then merges with squash and deletes the
+branch. If either condition is false, the command reports the
+current status and stops — no override flags.
+
+## Why squash by default
+
+The PR is the unit of review. Merging with squash collapses the
+PR's commits into one entry on the target branch, which keeps
+`git log --oneline main` legible and makes the commit message
+authoritative for the change.
+
+Merge commits and rebase strategies both have their place, but
+they shift the unit of change away from the PR — merges add
+history noise, rebases lose the PR boundary. Squash keeps the
+two aligned: one PR, one commit on main.
+
+The squash commit message follows Conventional Commits format
+(picked from the PR title) and includes the PR body as the commit
+body, so `git show <sha>` on main tells the full story without
+needing GitHub.
+
+## Refusals
+
+The command refuses to merge if:
+
+- The PR has no approving review
+- Any required check is failing or in progress
+- The target branch is `main` and the PR title is `chore(release):`
+  but the version bump doesn't match what's in `CHANGELOG.md`
+  (catches a recurring mistake)
+
+There is no `--force` flag. If you genuinely need to merge against
+the checks (a CI outage, for example), use the GitHub UI directly
+— the manual step is the audit trail.
+
+## Branch cleanup
+
+The PR's branch is deleted on the remote after a successful merge.
+Local branch cleanup is the developer's responsibility: `git fetch
+--prune` to drop the stale remote-tracking ref, `git branch -d
+<branch>` once the local branch has been merged.
+
+[Source: `commands/pr-merge.md`](https://github.com/leocosta/octopus/blob/main/commands/pr-merge.md)

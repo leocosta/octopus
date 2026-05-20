@@ -1,0 +1,79 @@
+---
+title: scaffold-skill
+description: Author a new Octopus skill end-to-end — frontmatter, SKILL.md, optional REFERENCE.md, and bundle registration so no skill ships loose.
+sidebar:
+  order: 11
+---
+
+`/octopus:scaffold-skill` is the meta-discipline command: it
+creates the file layout for a new skill, fills the frontmatter,
+drafts the SKILL.md from the user's intent, and registers the
+skill in at least one bundle so it doesn't ship orphaned.
+
+## Why scaffolded, not freeform
+
+Three things have to be right for a skill to engage properly:
+
+- **Frontmatter `description`.** The agent matches user intent
+  against descriptions to pick a skill. A vague description means
+  the skill never fires when it should; an over-broad one fires
+  for the wrong tasks.
+- **`triggers:` for auto-engagement.** Skills that should
+  activate on specific patterns (file edits, command outputs)
+  need explicit trigger conditions, not "engage when relevant".
+- **Bundle membership.** A skill not listed in any bundle is
+  unreachable through the normal `octopus setup` path. It exists
+  in the catalogue but no one gets it.
+
+The scaffold command enforces all three. The output is a skill
+that's wired into a bundle from day one — never a loose file
+under `skills/`.
+
+## What it produces
+
+```
+skills/<slug>/
+  SKILL.md              # required — the agent-facing instructions
+  REFERENCE.md          # optional — long-form rationale or examples
+  tests/                # optional — fixtures for verifying the skill
+```
+
+Plus an entry added to one of the bundles in `bundles/<name>.yml`.
+The user picks which bundle at scaffold time; the default
+suggestion is based on what the skill does.
+
+## Bundle assignment rule
+
+Per the project rule, every new Octopus skill must map to an
+existing bundle or propose a new one. The command refuses to
+create a skill without a bundle target. If the new skill doesn't
+fit any current bundle, the scaffolder prompts for a new bundle
+proposal — bundle creation is its own separate workflow, but the
+intent is captured at skill-creation time so it doesn't get lost.
+
+## Frontmatter coverage
+
+The frontmatter the scaffold fills:
+
+```yaml
+---
+name: <slug>
+description: <one-line agent-routing hint>
+model: <opus | sonnet | haiku — defaults to inheritance>
+triggers: [<optional auto-engagement conditions>]
+tools: [<optional allowlist>]
+---
+```
+
+The description is the only part the scaffolder spends real time
+on — it interviews the user about *when* the skill should engage
+to produce a tight description, then drafts the SKILL.md body
+around that intent.
+
+## Pairing
+
+`/octopus:compress-skill` is the maintenance counterpart — it
+shrinks a SKILL.md without changing semantics once the skill is
+mature and bloated.
+
+[Source: `commands/scaffold-skill.md`](https://github.com/leocosta/octopus/blob/main/commands/scaffold-skill.md)

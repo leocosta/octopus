@@ -1,0 +1,122 @@
+---
+title: Commands
+description: Slash commands that wrap Octopus skills and CLI subcommands into one-keystroke invocations — branch / commit / PR / merge cycle, doc lifecycle, audits, delegation, and release.
+sidebar:
+  order: 1
+---
+
+Commands are the friction-removers. Every command in this section
+is a thin wrapper that either invokes a skill with the right
+arguments, runs an `octopus.sh` subcommand, or stitches several of
+both into a single orchestrated flow. They install as agent slash
+commands during `octopus setup`: type `/octopus:commit` and the
+agent runs the commit skill against the staged diff.
+
+## Why commands exist when skills do too
+
+A skill is *how the agent thinks about a task*. A command is *the
+keystroke that starts the task*. The split matters for two
+reasons:
+
+- **Discoverability.** Typing `/` shows the catalogue of things
+  the user can ask for. Skills are invisible until the agent
+  decides to engage one; commands surface them.
+- **Wrapping.** Some flows aren't just one skill — `dev-flow`
+  walks the agent through branch / commit / PR / review / merge,
+  with pauses for human input. The command is the orchestrator
+  that holds the state; the skills are the steps.
+
+Per the docs-site rule, commands that *only* invoke a skill get a
+row in the table here — the rationale lives on the skill page.
+Commands with their own design decisions get a detail page.
+
+## PR lifecycle
+
+The end-to-end PR loop, designed to be invokable step-by-step or
+end-to-end via `/octopus:dev-flow`.
+
+| Command | What it does | Detail |
+|---|---|---|
+| `/octopus:branch-create` | Create a branch following Conventional Commits prefixes; infers a name from context. | [→](./branch-create/) |
+| `/octopus:commit` | Suggest a Conventional Commits message from the staged diff; commits after confirmation; adds AI co-authored trailer when applicable. | [→](./commit/) |
+| `/octopus:pr-open` | Open a PR with an agent-written title + body following Octopus PR conventions; pushes the branch if needed. | [→](./pr-open/) |
+| `/octopus:pr-review` | Self-review the PR diff against the project's correctness/design/readability/edge-case/security/tests checklist, then assign human reviewers. | [→](./pr-review/) |
+| `/octopus:pr-comments` | Walk the receiving-code-review discipline against feedback on the PR — verify, ask for evidence, separate reasoned vs preference, never performative, clarify ambiguity. | [→](./pr-comments/) |
+| `/octopus:pr-merge` | Merge an approved PR with squash; deletes the branch; refuses if unapproved or checks failing. | [→](./pr-merge/) |
+| `/octopus:dev-flow` | The full lifecycle in one command, with human pauses between phases. | [→](./dev-flow/) |
+| `/octopus:codereview` | Comprehensive security + quality review of uncommitted changes. Wider scope than `pr-review`. | — |
+
+## Doc lifecycle
+
+The full RFC → Spec → ADR → Knowledge chain. Each command invokes
+its eponymous skill; their rationale lives on the skill pages
+([feature-lifecycle](/octopus/skills/feature-lifecycle/) is the
+overall guide).
+
+| Command | Maps to skill |
+|---|---|
+| `/octopus:doc-research` | `doc-research` — interactive brainstorming → research doc + roadmap RM | [→](./doc-research/) |
+| `/octopus:doc-rfc` | `doc-rfc` — Request for Comments draft |
+| `/octopus:doc-spec` | `doc-spec` — new feature spec from template |
+| `/octopus:doc-design` | `doc-design` — interactive design fill-in for an existing spec |
+| `/octopus:doc-plan` | `doc-plan` — bite-sized TDD-style implementation plan from a spec |
+| `/octopus:doc-prd` | `doc-prd` — PRD published to the project issue tracker |
+| `/octopus:doc-adr` | `doc-adr` — Architecture Decision Record from template |
+| `/octopus:doc-subcontext` | `doc-subcontext` — per-module `CLAUDE.md` for monorepos |
+
+## Audits
+
+All audits wrap their respective skills. Run `audit-all` to dispatch
+the relevant ones in parallel.
+
+| Command | What it audits |
+|---|---|
+| `/octopus:audit-all` | Dispatches `audit-security`, `audit-money`, `audit-tenant`, and `cross-stack-contract` in parallel; consolidates findings with severity tiers. |
+| `/octopus:audit-money` | Money-touching code — types, rounding, cents tests, env drift, idempotency, webhook signatures. |
+| `/octopus:audit-tenant` | Multi-tenant data-scope enforcement — query filters, raw SQL, controller ownership. |
+| `/octopus:audit-config` | Agent-configuration freshness — model assumptions, stale dates, phantom skills, deprecated paths. |
+
+## Implementation & debugging
+
+| Command | Maps to skill |
+|---|---|
+| `/octopus:implement` | `implement` — the TDD / plan / verify / simplify / commit workflow. |
+| `/octopus:debug` | `debug` — reproduce → isolate → regression-test → document. |
+| `/octopus:prototype` | `prototype` — throwaway prototypes to flush out a design before committing to it. |
+| `/octopus:review-contracts` | `cross-stack-contract` — frontend/backend contract drift detection. |
+| `/octopus:review-pr` | `receiving-code-review` — discipline for handling PR feedback. |
+
+## Orchestration
+
+| Command | What it does | Detail |
+|---|---|---|
+| `/octopus:delegate` | Dispatch a task (or multi-step pipeline) to one or more Octopus roles; supports parallel dispatch, role aliases, and step gates. | [→](./delegate/) |
+| `/octopus:context-handoff` | Compact the current conversation into a handoff doc for another agent to pick up. | — |
+| `/octopus:interview` | Grill the user on a plan or design until each branch of the decision tree resolves. | — |
+| `/octopus:triage-issues` | Walk incoming bugs and feature requests through the triage state machine. | — |
+| `/octopus:review-proposals` | Review `.octopus/proposals/<ts>.md` candidates from the knowledge-update Stop hook; promote / partial / archive / discard. | [→](./review-proposals/) |
+
+## Launches & releases
+
+| Command | What it produces |
+|---|---|
+| `/octopus:launch-feature` | Multi-channel launch kit from a completed feature (RM / spec / PR). |
+| `/octopus:launch-release` | Themed release announcement kit for existing users — landing page, email, Slack, Discord, banner, X thread, deck. |
+| `/octopus:release` | Versioned release with CHANGELOG entry, README version sync, git tag, and GitHub Release. | [→](./release/) |
+
+## Skill authoring
+
+| Command | What it does | Detail |
+|---|---|---|
+| `/octopus:scaffold-skill` | Author a new skill end-to-end — frontmatter, SKILL.md, optional REFERENCE.md, bundle registration so no skill ships loose. | [→](./scaffold-skill/) |
+| `/octopus:compress-skill` | Shrink a SKILL.md without changing semantics — deterministic cleanup + optional LLM rewrite. |
+| `/octopus:plan-backlog` | Scan planning directories + roadmap for orphan plans, concluded-but-not-archived, duplicates, broken links. |
+| `/octopus:map-system` | Generate a system map of the current codebase for AFK agents and onboarding. |
+
+## Meta
+
+| Command | What it does |
+|---|---|
+| `/octopus:update` | Update the Octopus CLI to the latest release; pins version in lockfile with `--pin`. |
+
+[Source: `commands/`](https://github.com/leocosta/octopus/tree/main/commands)

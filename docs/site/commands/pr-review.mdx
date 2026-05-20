@@ -1,0 +1,70 @@
+---
+title: pr-review
+description: Self-review a PR diff against the correctness / design / readability / edge-cases / security / tests checklist, then assign human reviewers from .octopus.yml.
+sidebar:
+  order: 5
+---
+
+`/octopus:pr-review` is the agent's self-review pass on a PR it
+authored (or assisted). It runs after `pr-open` and before
+human review: pulls the diff, walks a six-axis checklist, reports
+findings to the author, and — once any blocking issues are
+addressed — assigns the human reviewers configured in
+`.octopus.yml`.
+
+## Why self-review before assigning reviewers
+
+The cheapest fixes are the ones reviewers never see. The
+six-axis checklist catches the obvious classes of mistake before
+they consume reviewer attention:
+
+- **Correctness** — does the code do what the PR description
+  claims?
+- **Design** — does the change fit the existing architecture, or
+  does it introduce a new pattern?
+- **Readability** — can a reviewer who didn't write this code
+  understand it on first read?
+- **Edge cases** — null checks, empty inputs, race conditions,
+  off-by-one boundaries.
+- **Security** — injection, auth bypass, secrets, data exposure.
+- **Tests** — are the right things being tested, at the right
+  level?
+
+The self-review is not adversarial — it's the same pass a
+disciplined contributor would do before hitting "Ready for
+review". Codifying it as a command means it happens consistently
+instead of being skipped under time pressure.
+
+## What `pr-review` is not
+
+It's a smaller scope than `/octopus:codereview`. `codereview` is a
+comprehensive security and quality review of uncommitted changes
+— wider in scope (audits secrets, scans for leftover debug
+statements, verifies tests run) and meant to be invoked
+deliberately before pushing.
+
+`pr-review` is faster and PR-focused — it's the discipline that
+runs every time, on every PR, with no skip.
+
+## Reviewer assignment
+
+Reviewers come from `.octopus.yml`:
+
+```yaml
+reviewers:
+  - alice
+  - bob
+```
+
+If the list is empty, the command leaves the PR unassigned and
+informs the user. Reviewer rotation (round-robin, area expertise,
+etc.) is out of scope — the manifest is the configuration surface.
+
+## Pairing
+
+`/octopus:pr-comments` is the next stop once feedback arrives — it
+walks the *receiving* code-review discipline (verify the critique,
+ask for evidence on generic comments, separate reasoned feedback
+from preference, never make performative changes).
+
+[Source: `commands/pr-review.md`](https://github.com/leocosta/octopus/blob/main/commands/pr-review.md)

@@ -1,0 +1,69 @@
+---
+title: commit
+description: Suggest a Conventional Commits message from the staged diff and commit after confirmation — handles language selection, scope inference, and AI co-authored trailers.
+sidebar:
+  order: 3
+---
+
+`/octopus:commit` reads the staged diff, drafts a Conventional
+Commits message (`type(scope): description` + body explaining
+*why*), shows it for confirmation, and runs `git commit` once
+approved. It handles the moves around the commit that are easy
+to forget: detecting the language to write in, picking the right
+type, appending AI co-authored trailers, and refusing
+`--no-verify`.
+
+## Why this exists
+
+Conventional Commits is a small format with outsized impact —
+the release flow reads commit types to suggest semver bumps, the
+PR title is derived from the dominant type on the branch, and the
+CHANGELOG groups entries by type emoji. A free-form message
+breaks all of that.
+
+The cost of remembering the format manually is non-trivial in
+practice (especially mid-debug). Delegating to a command that
+reads the diff and proposes a message removes that friction
+without giving up the structure.
+
+## Language resolution
+
+The commit message language is **not** the same as the
+conversation language. The command resolves it in this order:
+
+1. `.octopus/rules/common/language.local.md` if present
+2. `.octopus.yml` `language.code:` value
+3. Detection from `git log --oneline -20` — match the dominant
+   language already in the project's history
+4. Default: **English**
+
+This matters because the project may have a Portuguese-speaking
+team that documents in pt-BR but commits in English (a common
+pattern for open-source-leaning projects). The command separates
+the two channels deliberately.
+
+## AI co-authored trailers
+
+When the assistant generated or substantially modified the code,
+the command appends the corresponding trailer to the commit body:
+
+```
+Co-authored-by: claude <claude@anthropic.com>
+Co-authored-by: octopus[bot] <octopus[bot]@users.noreply.github.com>
+```
+
+The human author stays the commit author; the assistant is the
+co-author. Trailers are not added for suggestion-only assistance.
+The `octopus[bot]` trailer is automatic for any commit message
+that came through this command — it marks tool participation,
+which is separate from AI authorship.
+
+## What it refuses
+
+- Empty staging area without a clear instruction to stage
+- `--no-verify` — pre-commit hooks exist for a reason
+- Committing files that look like secrets (.env, credentials.json)
+- Mixing multiple logical changes in one commit when the diff
+  spans unrelated areas (proposes splitting instead)
+
+[Source: `commands/commit.md`](https://github.com/leocosta/octopus/blob/main/commands/commit.md)

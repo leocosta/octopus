@@ -91,11 +91,8 @@ generate_page \
 features_dir="$project_root/docs/features"
 mkdir -p "$content_dir/commands" "$content_dir/skills"
 
-# Hooks section ships hand-curated MDX under docs/site/hooks/ (v1.55.0+).
-# No sync from docs/features/ — rsync above already copied them in.
-
-generate_page "$features_dir/commands.md" "$content_dir/commands/index.md" \
-  "Commands" "Slash commands installed by Octopus."
+# Hooks (v1.55.0+) and Commands (v1.56.0+) ship hand-curated MDX under
+# docs/site/<section>/ — no sync from docs/features/ for those sections.
 
 generate_page "$features_dir/skills.md" "$content_dir/skills/index.md" \
   "Skills" "Reusable AI capabilities organised by intent."

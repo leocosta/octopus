@@ -1,0 +1,67 @@
+---
+title: review-proposals
+description: Review proposals dropped by the propose-knowledge-update Stop hook in .octopus/proposals/ — promote, partial-promote, archive, or discard each candidate.
+sidebar:
+  order: 13
+---
+
+`/octopus:review-proposals` is the human-review surface for the
+proposals that the [propose-knowledge-update](/octopus/hooks/propose-knowledge-update/)
+Stop hook drops in `.octopus/proposals/<timestamp>.md`. It loads
+the latest unreviewed proposal, walks each section, and routes
+the user's disposition through the owning skill so promotion stays
+disciplined.
+
+## Why proposals need a separate review surface
+
+The Stop hook generates raw signals: "the user corrected the agent
+three times about X", "the agent read file Y eight times", "the
+same grep ran four times". Those are *symptoms*. Turning a symptom
+into a useful knowledge update is editorial work — phrasing,
+deciding where the rule lives, choosing what to leave out.
+
+The review command is where that editorial work happens. It never
+auto-promotes; every proposal needs a human disposition before
+anything in the project tree changes.
+
+## The four dispositions
+
+For each proposal section the user picks one:
+
+- **promote** — the finding is real and the agent's draft phrasing
+  is good. Route through the owning skill (`continuous-learning`
+  for behavioural feedback, `doc-adr` for decisions,
+  `doc-subcontext` for module-specific facts) which writes to the
+  appropriate target (`CLAUDE.md`, `knowledge/`, `rules/`,
+  per-module `CLAUDE.md`).
+- **partial** — the finding is real but the phrasing needs work.
+  The user edits inline; routing then promotes the edited version.
+- **archive** — keep the proposal as a record (something happened),
+  but don't change project knowledge. Moves to
+  `.octopus/proposals/archive/`.
+- **discard** — false positive or one-off. The proposal file is
+  deleted.
+
+## Why route promotion through skills
+
+Each promotion target has its own conventions: `CLAUDE.md` is
+terse and direct, `knowledge/` files have structured sections,
+ADRs follow the Context / Decision / Consequences format.
+Dropping raw proposal text into any of these breaks the
+convention.
+
+Routing through the owning skill means the promotion respects the
+target's format — the `continuous-learning` skill knows how to
+write a `feedback_` entry, the `doc-adr` skill knows how to write
+an ADR. The proposal text becomes input to the skill, not the
+final output.
+
+## Cadence
+
+The Stop hook fires on every session end, but most sessions don't
+produce a proposal — the hook only writes one when a signal trips
+its threshold. In practice you'll review proposals when you
+remember to check `.octopus/proposals/`, or after a particularly
+frustrating session where you knew something was off.
+
+[Source: `commands/review-proposals.md`](https://github.com/leocosta/octopus/blob/main/commands/review-proposals.md)

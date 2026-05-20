@@ -1,0 +1,77 @@
+---
+title: delegate
+description: Dispatch a task to a named Octopus role or to a multi-step pipeline — sequential, parallel, with role aliases and confirmation gates between steps.
+sidebar:
+  order: 9
+---
+
+`/octopus:delegate` is the command that hands a task to a specific
+Octopus role (`@architect`, `@backend-developer`, `@writer`, …)
+and returns the result inline with attribution. It's the
+slash-command surface to the same dispatch mechanism that
+`octopus ask` and `octopus control` use from the terminal.
+
+## Why delegate at all when the agent can just do the work
+
+The current agent has one persona — usually a generalist tuned by
+the loaded skills and rules. Roles narrow that persona: an
+`@architect` reviews with BLOCKING/ADVISORY/QUESTION discipline
+and uses Opus; a `@product-manager` works problem-first without
+touching code; a `@marketer` has code-modification forbidden by
+the tools allowlist.
+
+Switching personas mid-conversation is what delegation buys. The
+agent stays in the conversation; the role-specific call goes out
+and comes back with its result attributed, ready to be reacted to.
+
+## Single-role dispatch
+
+```
+/octopus:delegate @backend-developer add POST /invoices endpoint to the API
+```
+
+The role runs in a sub-context with its own model, tools allowlist,
+and skill bias. The result is returned inline, prefixed with
+`» backend-developer respondeu:` so the conversation history
+distinguishes the role's output from the orchestrator's.
+
+## Multi-step pipelines
+
+Sequencing language lets you chain roles in one invocation:
+
+```
+@tech-writer: create a spec for lesson plan management.
+After documenting, have @product-manager review it.
+Once validated, delegate implementation to @frontend-developer and @backend-developer.
+Finally, have @architect do the code review.
+```
+
+The command parses the sequence into a DAG: roles joined by "and"
+dispatch in parallel; "after" / "once" / "then" create sequential
+edges; the previous step's output flows in as context to the next.
+
+After each step the command pauses for confirmation:
+
+```
+» Step 2/4 done — product-manager replied (1284 chars)
+Next: Step 3/4 — parallel: @frontend-developer + @backend-developer
+Continue? [y/s · auto · n · skip]
+```
+
+Add `--auto` to skip every confirmation and run the whole pipeline
+end to end.
+
+## Role aliases
+
+Common shorthands resolve automatically — no need to remember the
+full role name:
+
+| Alias | Resolves to |
+|---|---|
+| `@pm` | `@product-manager` |
+| `@staff-engineer`, `@staff` | `@architect` |
+| `@frontend`, `@fe`, `@frontend-specialist` | `@frontend-developer` |
+| `@backend`, `@be`, `@backend-specialist` | `@backend-developer` |
+| `@writer`, `@tech-writer` | `@tech-writer` |
+
+[Source: `commands/delegate.md`](https://github.com/leocosta/octopus/blob/main/commands/delegate.md)

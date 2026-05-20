@@ -1,0 +1,63 @@
+---
+title: doc-research
+description: Interactive brainstorming session that produces a research document under docs/research/ plus a new RM entry on the roadmap.
+sidebar:
+  order: 12
+---
+
+`/octopus:doc-research` is the async entry point into the
+project's planning lifecycle. It runs a structured brainstorming
+interview, captures the result as a research document in
+`docs/research/<slug>.md`, and adds the idea as a new RM entry on
+`docs/roadmap.md` so it stops being only-in-someone's-head.
+
+## Why this exists
+
+The roadmap has two valid entry paths:
+
+- **Roadmap-first** — for ideas that benefit from async brainstorm
+  or team validation before becoming a spec. The output is a
+  research doc + an RM entry; the work doesn't start until the
+  RM graduates to a Spec or RFC.
+- **Spec-first** — for work that already came out of a synchronous
+  brainstorm with a clear rationale and scope. Create the spec
+  directly via `/octopus:doc-spec`; no RM needed.
+
+`doc-research` is the roadmap-first path. The interview is the
+async stand-in for a brainstorming meeting: it surfaces the
+problem, the constraints, the alternatives, and the rationale
+before any code or spec is written.
+
+## The interview shape
+
+The brainstorm walks roughly this sequence — non-linear, adapts
+to the conversation:
+
+1. **Problem framing.** What's broken or missing? Who's affected?
+   What does success look like?
+2. **Current state.** How does the team work around this today?
+   What workaround costs are visible? What's invisible?
+3. **Alternatives.** What other shapes were considered? Why is
+   *this* shape the right one?
+4. **Risks and unknowns.** What would block this from shipping?
+   What's the "we don't know yet" list?
+5. **Next steps.** Does this need an RFC for stakeholder input,
+   or can it graduate straight to a Spec when work begins?
+
+The output is a research doc with each section filled in. The RM
+entry on the roadmap is a one-line pointer back to the research
+doc, with `status: proposed` until the work starts.
+
+## RM lifecycle
+
+The roadmap entry status transitions as the idea progresses:
+
+- `proposed` — research done, awaiting decision to start
+- `in progress` — graduated to Spec or RFC; work has begun
+- `shipped (vX.Y.Z)` — landed in a release
+
+The `plan-backlog` skill audits the roadmap for staleness and
+proposes status corrections when the linked PRs or commits don't
+match what the RM claims.
+
+[Source: `commands/doc-research.md`](https://github.com/leocosta/octopus/blob/main/commands/doc-research.md)

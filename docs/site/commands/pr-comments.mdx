@@ -1,0 +1,56 @@
+---
+title: pr-comments
+description: Walk the receiving-code-review discipline against PR feedback — verify the critique, ask for evidence on generic comments, separate reasoned feedback from preference, never make performative changes.
+sidebar:
+  order: 6
+---
+
+`/octopus:pr-comments` is the command that runs every time PR
+feedback arrives. It loads the comments via `gh`, then walks the
+receiving-code-review skill against each one — verifying the
+critique, asking for evidence when a comment is generic, and
+separating reasoned feedback from preference.
+
+## Why this command exists
+
+Code review feedback has two failure modes when fed straight to an
+agent:
+
+- **Performative compliance.** The agent agrees with whatever the
+  reviewer said and changes the code, even when the comment is
+  unclear, technically wrong, or stylistic preference. The PR
+  drifts toward whoever shouted loudest.
+- **Defensive pushback.** The agent argues with every comment as
+  a reflex, exhausting reviewer patience and burying the comments
+  that did have a real point.
+
+The receiving-code-review skill is the middle path: for each
+comment, the agent either makes the change *with understanding*,
+asks for the evidence that would justify the change, or
+explicitly disagrees with reasoning. No silent edits to placate.
+
+## What it does
+
+1. Pulls the comments via `gh pr view <pr> --comments` and groups
+   them by file/line.
+2. For each comment, the agent classifies it:
+   - **Bug or correctness** → verify, then fix or push back.
+   - **Design or readability** → engage on the trade-off, propose
+     an alternative if the comment doesn't fit.
+   - **Preference / style** → defer to the project's existing
+     convention; ask the reviewer to point at a rule if they
+     want a new one codified.
+   - **Question** → answer in the thread without editing the code.
+3. Makes the changes that pass the classification, in a new commit
+   on the same branch. Never amends existing commits unless the
+   reviewer explicitly asked.
+4. Replies in-thread for every comment — even the ones that didn't
+   result in a code change, so reviewers see they were heard.
+
+## Pairing
+
+The other side of the equation is `/octopus:pr-review` — the
+agent's self-review against the project's checklist, which catches
+the obvious comments before reviewers have to write them.
+
+[Source: `commands/pr-comments.md`](https://github.com/leocosta/octopus/blob/main/commands/pr-comments.md)

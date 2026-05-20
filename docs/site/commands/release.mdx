@@ -1,0 +1,79 @@
+---
+title: release
+description: Create a versioned release end-to-end — semver suggestion from commits, CHANGELOG narrative entry, README badge sync, annotated git tag, GitHub Release.
+sidebar:
+  order: 10
+---
+
+`/octopus:release` is the command that fires when a batch of
+commits is ready to ship. It walks the full release sequence:
+suggest a version, draft a CHANGELOG entry, sync the README
+version badges, commit, tag, push, and create a GitHub Release.
+
+## Why bundle this into one command
+
+The release sequence is six steps. Skipping or misordering any of
+them produces drift:
+
+- Tagging before the CHANGELOG entry lands means `git show v1.2.3`
+  doesn't include the release notes.
+- Updating the CHANGELOG without bumping the README badge leaves
+  the README claiming an old version.
+- Creating the GitHub Release without pushing the tag first 404s.
+
+Bundling the sequence into one command means the order is
+enforced and each step gets the right inputs from the previous
+one.
+
+## Semver suggestion
+
+`octopus release suggest-version` reads the commits since the last
+tag and proposes a bump:
+
+- Any `feat:` commit → minor bump (1.2.0 → 1.3.0)
+- Otherwise → patch bump (1.2.0 → 1.2.1)
+- `BREAKING CHANGE:` in a commit footer → major bump (1.2.0 → 2.0.0)
+
+The user can override the suggestion if the heuristic missed
+something (a documentation-only release that's actually a major
+because the docs explain a hard break, for example).
+
+## CHANGELOG narrative style
+
+The CHANGELOG isn't a bullet list of commits. It's a hand-written
+paragraph — what changed, why, what tradeoffs were considered —
+using inline emojis to mark the type (`✨` feat, `🐛` fix, `🔧`
+chore, `📝` docs, `🧪` test, `🎨` style, `⚡` perf, `🚀` ci,
+`⏪` revert).
+
+The agent drafts the entry from the commit messages and the
+diff, shows it for approval, and prepends it to `CHANGELOG.md`
+once confirmed. The narrative voice — same as the docs site —
+matches the project's existing entries: tech-dev with product
+intent, rationale curated per release.
+
+## README badge sync
+
+The version badge in `README.md` is rewritten to the new version.
+The pin in the install one-liner (`bash -s -- --version v1.x.y`)
+is rewritten too. Both are deterministic edits keyed on regex
+patterns; if either is missing from `README.md`, the command
+skips silently and continues.
+
+## Tag + GitHub Release
+
+The tag is annotated with the release notes summary (a 2–3
+sentence condensation of the CHANGELOG entry). The same summary
+becomes the GitHub Release body. Push runs `git push && git push
+--tags`; the GitHub Release is created via `gh release create`.
+
+## What it doesn't do
+
+- It doesn't decide *when* to release. That's still a human call.
+- It doesn't publish to a package registry. Octopus is a shell
+  tool installed from GitHub Releases; there's no npm/pypi step.
+- It doesn't write release announcements for end users. That's
+  `/octopus:launch-release` (or `/octopus:feature-to-market` for
+  feature-level launches).
+
+[Source: `commands/release.md`](https://github.com/leocosta/octopus/blob/main/commands/release.md)

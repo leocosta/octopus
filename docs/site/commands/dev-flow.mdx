@@ -1,0 +1,58 @@
+---
+title: dev-flow
+description: The full PR lifecycle in one orchestrated command — branch / commit / pr-open / pr-review / pr-comments / pr-merge with explicit human pauses between phases.
+sidebar:
+  order: 8
+---
+
+`/octopus:dev-flow` is the orchestrator that stitches the
+individual PR-lifecycle commands into a single guided flow. It's
+not a daemon — it doesn't run the whole thing autonomously. It
+walks the agent through each phase, pausing for human input
+between them so the developer stays in control.
+
+## Why orchestrate when each step is its own command
+
+The individual commands (`branch-create`, `commit`, `pr-open`,
+`pr-review`, `pr-comments`, `pr-merge`) are designed to be useful
+on their own — you can drop into the middle of a flow you started
+manually. But running the full lifecycle by hand means remembering
+the order, remembering to push, remembering to assign reviewers,
+remembering to merge. `dev-flow` removes the bookkeeping by
+holding the state across phases.
+
+The pauses matter as much as the steps. Without them, the agent
+would happily race from branch creation to merge in one turn,
+which is exactly the wrong shape — humans need windows to develop
+the feature, react to review feedback, and decide when the PR is
+ready.
+
+## The phases
+
+| Phase | Command | Pause? |
+|---|---|---|
+| 1 | `/octopus:branch-create` | After: develop the feature, then say "continue" |
+| 2 | `/octopus:pr-open` | After: review the PR body |
+| 3 | `/octopus:pr-review` | After: fix self-review findings, push |
+| 4 | (assign reviewers) | After: wait for review |
+| 5 | `/octopus:pr-comments` | Run per round of feedback; loop until approved |
+| 6 | `/octopus:pr-merge` | Final |
+
+The agent prompts the user at each pause boundary with a phrase
+like *"continue when ready"* — explicit handoff back to the human.
+The user resumes by saying "continue" or by invoking the next
+phase's command directly (skipping `dev-flow`'s orchestration if
+they prefer).
+
+## When not to use it
+
+Three cases where the individual commands are a better fit:
+
+- **Hotfix or trivial change.** The orchestration overhead isn't
+  worth it. `commit` → `pr-open` → `pr-merge` directly.
+- **Stacked PRs.** `dev-flow` assumes one branch from base to
+  merge. For stacked work, run the individual commands per branch.
+- **Mid-flow recovery.** If you opened the PR manually and just
+  want self-review + merge, run `pr-review` then `pr-merge`.
+
+[Source: `commands/dev-flow.md`](https://github.com/leocosta/octopus/blob/main/commands/dev-flow.md)
