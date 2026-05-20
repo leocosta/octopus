@@ -1,0 +1,61 @@
+---
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+const assets = [
+  { name: "logo-dark.png",  label: "Logo · dark variant",  kind: "logo" },
+  { name: "logo-light.png", label: "Logo · light variant", kind: "logo" },
+  { name: "cover-dark.png", label: "Cover · dark variant", kind: "cover" },
+  { name: "cover-light.png",label: "Cover · light variant",kind: "cover" },
+  { name: "logo.png",       label: "Current logo (for reference)", kind: "logo" },
+  { name: "cover.png",      label: "Current cover (for reference)",kind: "cover" },
+];
+---
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Octopus · Brand Preview</title>
+    <style>
+      :root { font-family: system-ui, sans-serif; }
+      body { margin: 0; padding: 2rem; background: #f8fafc; color: #0f172a; }
+      h1 { margin: 0 0 0.25rem; font-size: 1.5rem; }
+      p.lead { margin: 0 0 2rem; color: #475569; }
+      .grid { display: grid; gap: 2rem; }
+      .row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: stretch; }
+      .tile { padding: 1.5rem; border-radius: 12px; display: flex; align-items: center; justify-content: center; min-height: 240px; }
+      .tile.light { background: #ffffff; border: 1px solid #e2e8f0; }
+      .tile.dark  { background: #0b1220; }
+      .tile.checker {
+        background-image:
+          linear-gradient(45deg, #ddd 25%, transparent 25%),
+          linear-gradient(-45deg, #ddd 25%, transparent 25%),
+          linear-gradient(45deg, transparent 75%, #ddd 75%),
+          linear-gradient(-45deg, transparent 75%, #ddd 75%);
+        background-size: 16px 16px;
+        background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+        background-color: #fafafa;
+      }
+      .logo  img { max-height: 160px; width: auto; }
+      .cover img { max-width: 100%; max-height: 240px; height: auto; }
+      .card { border: 1px solid #e2e8f0; border-radius: 14px; padding: 1.25rem; background: white; }
+      .card h2 { margin: 0 0 0.75rem; font-size: 1rem; font-weight: 600; }
+      .meta { font-size: 0.8rem; color: #64748b; margin-top: 0.5rem; font-family: ui-monospace, monospace; }
+    </style>
+  </head>
+  <body>
+    <h1>Octopus · brand preview</h1>
+    <p class="lead">Each asset shown on three surfaces: light, dark, and transparency checker.</p>
+
+    <div class="grid">
+      {assets.map(a => (
+        <div class="card">
+          <h2>{a.label}</h2>
+          <div class="row" style="grid-template-columns: 1fr 1fr 1fr;">
+            <div class={`tile light ${a.kind}`}><img src={`${base}/${a.name}`} alt={a.label} /></div>
+            <div class={`tile dark ${a.kind}`}><img src={`${base}/${a.name}`} alt={a.label} /></div>
+            <div class={`tile checker ${a.kind}`}><img src={`${base}/${a.name}`} alt={a.label} /></div>
+          </div>
+          <div class="meta">{base}/{a.name}</div>
+        </div>
+      ))}
+    </div>
+  </body>
+</html>

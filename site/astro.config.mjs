@@ -15,7 +15,8 @@ export default defineConfig({
       description:
         'Centralized AI agent configuration for multi-repo teams — skills, bundles, hooks, roles, and continuous learning for Claude Code and friends.',
       logo: {
-        src: './public/logo.png',
+        light: './public/logo-light.png',
+        dark: './public/logo-dark.png',
         alt: 'Octopus',
         replacesTitle: true,
       },

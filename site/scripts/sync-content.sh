@@ -42,5 +42,9 @@ fi
 mkdir -p "$public_dir"
 cp -f "$project_root/images/cover.png" "$public_dir/cover.png"
 cp -f "$project_root/images/logo.png" "$public_dir/logo.png"
+cp -f "$project_root/images/cover-dark.png" "$public_dir/cover-dark.png"
+cp -f "$project_root/images/cover-light.png" "$public_dir/cover-light.png"
+cp -f "$project_root/images/logo-dark.png" "$public_dir/logo-dark.png"
+cp -f "$project_root/images/logo-light.png" "$public_dir/logo-light.png"
 
 echo "sync-content: linked $(ls -1 "$content_dir" | wc -l) entries under $content_dir"

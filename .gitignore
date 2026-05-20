@@ -24,6 +24,10 @@ site/.astro/
 site/src/content/docs/
 site/public/cover.png
 site/public/logo.png
+site/public/cover-dark.png
+site/public/cover-light.png
+site/public/logo-dark.png
+site/public/logo-light.png
 cli/control/__pycache__/
 tests/__pycache__/
 .opencode/package-lock.json
