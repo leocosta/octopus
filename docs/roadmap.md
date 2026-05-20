@@ -574,10 +574,128 @@ REFERENCE/EXAMPLES/scripts) and progressive disclosure. Complements
 
 ---
 
+### Cluster 15 — Claude Code in large codebases (article-parity)
+
+Gap analysis against Anthropic's *"How Claude Code Works in Large
+Codebases — Best Practices and Where to Start"*
+(<https://claude.com/blog/how-claude-code-works-in-large-codebases-best-practices-and-where-to-start>).
+Octopus already covers most of the article's recommendations
+(skills, hooks, subagents, MCP templates, plan-before-code, codebase
+maps, plugin/marketplace distribution, restart/handoff, continuous
+learning). Three gaps stand out as worth closing; one is parked
+pending explicit demand.
+
+#### RM-085 — Subdirectory CLAUDE.md tooling
+
+- **Priority:** 🟠 High
+- **Effort:** low-medium
+- **Status:** proposed
+- **Added:** 2026-05-19
+- **Bundle:** `docs` (next to `doc-adr`, `doc-lifecycle`)
+
+The article emphasises subdirectory CLAUDE.md as a top scaling
+practice (*"Initialize CLAUDE.md in subdirectories, not repo
+root"*) — local conventions for a module live next to the module,
+keeping the root file lean. Octopus today generates only a
+root-level CLAUDE.md; large monorepos using Octopus inherit the
+limitation.
+
+**Design pillars:**
+
+- New skill `doc-subcontext` + command `/octopus:doc-subcontext
+  <path>` following the established `doc-*` family pattern
+- Reads the parent CLAUDE.md to avoid duplication; asks for the
+  conventions **unique to that area** only
+- Writes `<subdir>/CLAUDE.md` lean (~50–100 lines)
+- Pairs with `compress-skill` for periodic shrinking
+- Registered in the `docs` bundle
+
+---
+
+#### RM-086 — Stop hook for CLAUDE.md / knowledge update proposals
+
+- **Priority:** 🟡 Medium
+- **Effort:** medium
+- **Status:** proposed
+- **Added:** 2026-05-19
+- **Surface:** `hooks/stop/` + `commands/`
+
+The article highlights *"Stop hooks to propose CLAUDE.md updates"*
+as a self-improvement loop. Octopus has the `continuous-learning`
+skill but it engages only when the user invokes it; sessions that
+surface a recurring pattern often end without that pattern getting
+written down.
+
+**Design pillars:**
+
+- New `hooks/stop/propose-knowledge-update.sh` — at session end,
+  detects user corrections, facts the agent had to re-discover, or
+  recurring rule-violation patterns, and writes a proposal to
+  `.octopus/proposals/<timestamp>.md`
+- Proposals are **reviewed manually before merge** — no auto-edit
+  of CLAUDE.md / knowledge files
+- New `/octopus:review-proposals` slash command walks the queue
+- **Feasibility check required:** does Claude Code expose the
+  session transcript to Stop hooks? If not, the hook degrades to a
+  "session-end ping" that just opens `continuous-learning` —
+  still useful but less ambitious
+
+---
+
+#### RM-087 — Configuration freshness audit
+
+- **Priority:** 🟡 Medium
+- **Effort:** low
+- **Status:** proposed
+- **Added:** 2026-05-19
+- **Bundle:** `quality` (next to `audit-all`, `refactor-deepen`)
+
+The article calls for 3–6 month config audits, citing that rules
+written for older models can constrain newer ones (*"Rules
+enforcing single-file refactors may help older models but prevent
+newer ones from making coordinated cross-file edits"*). Octopus
+has `plan-backlog` (audits plans) and `audit-all` (audits code)
+but nothing audits the configuration surface itself.
+
+**Design pillars:**
+
+- New skill `audit-config` + command `/octopus:audit-config`
+- Scans `rules/`, `skills/`, `hooks/`, `commands/`, `bundles/` for:
+  (a) date references older than ~9 months without follow-up;
+  (b) model-specific assumptions (e.g. "Opus 3", "Claude 3.5");
+  (c) skills with no triggers and no description-driven hints;
+  (d) hooks that haven't been touched since a model-family change;
+  (e) commands that reference deprecated paths (the recent
+  `docs/superpowers/plans/` cleanup is the canonical example)
+- Output mirrors `audit-all`: severity-tiered report
+  (block / warn / info)
+- No model calls needed for the basic version — file scanning +
+  heuristics only
+
+---
+
+#### Parked (Tier B) — not roadmapped
+
+- **LSP integration** — the article calls out language-server
+  symbol navigation as a critical practice for typed languages.
+  High value, high effort (probably needs an MCP server wrapping
+  language servers per stack). **Acknowledged but not roadmapped**
+  pending explicit demand. When demand arrives, open as a
+  dedicated planning round.
+- **`.claudeignore` template** — small surface; `permissions.deny`
+  in settings covers most cases today. Revisit if a user reports
+  the gap.
+- **Per-subdirectory test/lint commands** — `auto-format.sh`
+  already scopes by file path; full-suite test timeouts haven't
+  been reported. Revisit if monorepos start hitting it.
+
+---
+
 ## In Progress
 
-_No items in progress. All clusters complete through RM-074. Cluster
-14 (RM-075..084) is proposed and awaits prioritisation._
+_No items in progress. All clusters complete through RM-074.
+Cluster 14 (RM-075..084) and Cluster 15 (RM-085..087) are
+proposed and await prioritisation._
 
 ---
 
