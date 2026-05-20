@@ -195,7 +195,7 @@ Show → approve → write.
      /octopus:doc-plan <slug>
 
    Or create docs/plans/<slug>.md manually following the
-   pattern in docs/superpowers/plans/.
+   pattern of existing plans under docs/plans/.
    ```
 7. **STOP.** Do not implement, do not dispatch another skill,
    do not open the PR automatically. See the HARD-GATE section

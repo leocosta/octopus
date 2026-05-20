@@ -84,9 +84,10 @@ Existing executors (`superpowers:executing-plans`,
 format directly.
 
 The output **path** is Octopus-native: `docs/plans/<slug>.md`
-rather than `docs/superpowers/plans/`. This clarifies
-ownership: plans produced by Octopus live under Octopus, and
-external executors are pointed at `docs/plans/` when invoked.
+rather than any external plan-storage convention. This
+clarifies ownership: plans produced by Octopus live under
+Octopus, and external executors are pointed at `docs/plans/`
+when invoked.
 
 Chaining:
 
@@ -304,7 +305,7 @@ RM-037 ships.
 **Constraints**:
 - Pure markdown command (no SKILL.md, no shell of its own).
 - Output path is `docs/plans/<slug>.md` exclusively. Never
-  writes under `docs/superpowers/plans/`.
+  writes under any external plan-storage convention.
 - HARD-GATE: no code, no tests, no feature branches.
   Docs-only branch `docs/<slug>-plan` auto-created when
   starting from `main`/`master`.

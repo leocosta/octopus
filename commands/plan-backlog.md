@@ -12,8 +12,8 @@ agent: code
 
 ## Purpose
 
-Audit the repo's `plans/` directory (or `docs/plans/`,
-`docs/superpowers/plans/`) and `docs/roadmap.md` for hygiene issues.
+Audit the repo's `plans/` directory (or `docs/plans/`) and
+`docs/roadmap.md` for hygiene issues.
 Produces a severity-tiered report (`⚠ Warn` / `ℹ Info`). With `--fix`,
 moves concluded plans to `plans/archive/YYYY-MM/`.
 

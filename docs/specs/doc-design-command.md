@@ -162,8 +162,8 @@ Spec ready at docs/specs/<slug>.md.
 To generate the implementation plan, run:
   /octopus:doc-plan <slug>         (available once RM-036 ships)
 
-Or create docs/plans/<slug>.md manually following the pattern in
-docs/superpowers/plans/.
+Or create docs/plans/<slug>.md manually following the pattern of
+existing plans under docs/plans/.
 ```
 
 ### Migration / Backward Compatibility

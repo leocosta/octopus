@@ -1,7 +1,7 @@
 # Plan-Backlog-Hygiene
 
 Keeps the planning surface honest over time. Scans `plans/` (or
-`docs/plans/`, `docs/superpowers/plans/`) and `docs/roadmap.md` for
+`docs/plans/`) and `docs/roadmap.md` for
 orphan plans, plans for already-completed RMs still sitting outside
 `archive/`, duplicates for the same RM, broken internal links,
 roadmap entries without a plan, and stale plans.

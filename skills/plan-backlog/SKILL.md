@@ -50,8 +50,8 @@ Resolve the plans directory in this order:
 1. `.octopus.yml` top-level field `plansDir:` (string path). When
    present, it wins.
 2. Autodetection — first existing directory among: `plans/`,
-   `docs/plans/`, `docs/superpowers/plans/`. If more than one exists,
-   pick the directory with the most `*.md` files.
+   `docs/plans/`. If more than one exists, pick the directory with
+   the most `*.md` files.
 3. If none of the above exist, abort with the message
    "no plans directory found — set `plansDir:` in `.octopus.yml`
    or create `plans/`".
