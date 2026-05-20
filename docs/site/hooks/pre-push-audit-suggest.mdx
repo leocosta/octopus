@@ -1,0 +1,73 @@
+---
+title: Pre-push audit suggest
+description: Advisory git pre-push hook that inspects the diff and prints which Octopus audit skills are relevant — never blocks the push, never runs the audits, never touches the network.
+sidebar:
+  order: 6
+---
+
+`pre-push-audit-suggest` is the only hook in the suite that
+attaches to a native git lifecycle event rather than to the agent
+runtime. It runs on every `git push`, inspects the diff against
+the upstream branch, and prints one or two lines:
+
+```
+Octopus suggests running:
+  /octopus:audit-money   — touched 3 files under src/billing/
+  /octopus:audit-tenant  — added new entity in src/db/schema.ts
+```
+
+That's it. No audit runs. No network call. No exit code that
+would block the push.
+
+## Why advisory, not blocking
+
+The audits are heavy — they read the diff, cross-reference
+patterns across the codebase, sometimes spawn sub-agents. Running
+them on every push would add 30–90 seconds of waiting before the
+push leaves the developer's machine, which makes the push hook
+hostile and lights up `--no-verify` as a constant workaround.
+
+The advisory model is also more honest: an audit might find a
+real issue, or it might not, and forcing it on every push assumes
+the cost is worth paying every time. By printing the suggestion,
+the hook leaves the call to the developer — they can run
+`/octopus:audit-money` if they touched money-handling code, or
+push and address findings in PR review.
+
+The same design choice shows up in other hooks (e.g., `auto-format`
+exits 0 on errors, `typecheck` doesn't block tool calls). The
+shared rule: hooks that surface advice run advisory; hooks that
+prevent damage run blocking.
+
+## How relevance is computed
+
+The hook examines the diff with a small set of path/content
+patterns:
+
+| Audit | Trigger |
+|---|---|
+| `audit-money` | Touched files under `src/billing/`, `src/payments/`, or anything matching `money\|price\|cents\|fee\|discount\|invoice` |
+| `audit-tenant` | New `class … : DbContext` lines, new entity configs, raw SQL with no `WHERE` filter on tenant columns |
+| `audit-security` | Changes to auth code, middleware, env-var loading, public route handlers |
+| `cross-stack-contract` | Touched files on both sides of a frontend/backend split (`api/` + `web/`, etc.) |
+| `audit-config` | Edits under `rules/`, `skills/`, `hooks/`, `commands/`, or `bundles/` |
+
+The patterns are intentionally conservative — better to suggest
+nothing than to suggest something irrelevant. Adding a new audit
+pattern is a one-line change to the script.
+
+## Opting out
+
+Set the env var to skip the hook for the current push:
+
+```bash
+OCTOPUS_SKIP_AUDIT_HOOK=1 git push
+```
+
+Permanent opt-out is via the hook file itself — the hook installs
+as `.git/hooks/pre-push` (chained with anything already there).
+Removing it requires editing the installed file; the manifest
+doesn't expose a toggle because the hook is so cheap that opting
+out per-push has been sufficient in practice.
+
+[Source: `hooks/git/pre-push-audit-suggest.sh`](https://github.com/leocosta/octopus/blob/main/hooks/git/pre-push-audit-suggest.sh)

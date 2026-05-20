@@ -1,0 +1,91 @@
+---
+title: Propose knowledge update
+description: Stop hook that mines the session transcript for corrections, re-reads, and re-greps — writes a proposal to .octopus/proposals/ for manual review and promotion.
+sidebar:
+  order: 5
+---
+
+`propose-knowledge-update` is the Stop hook that turns one
+session's friction into the next session's knowledge. When the
+conversation ends, the hook reads the full transcript and looks
+for three signals that suggest something is missing from the
+project's persistent context — `CLAUDE.md`, `knowledge/`,
+`rules/`, or a per-module sub-context. If any signal trips its
+threshold, the hook writes a proposal to
+`.octopus/proposals/<timestamp>.md` for a human to review and
+promote via `/octopus:review-proposals`.
+
+The hook never edits the project tree directly. It reads the
+transcript, writes one file under `.octopus/proposals/`
+(gitignored), and exits. All promotion happens under human review.
+
+## The three signals
+
+### Corrections from the user
+
+User messages that start with a correction marker — `no`, `não`,
+`don't`, `stop`, `wrong`, `actually`, `instead`, `remove`. The
+match is strict (start-of-message only, lowercase) because the
+markers are noisy in the middle of sentences. A high correction
+count in a single session usually means the agent kept making
+the same mistake; the proposal extracts the corrected behaviour
+into a `feedback_<topic>.md` candidate.
+
+### Re-read of the same file
+
+When the same file is read 3 or more times in a session. Threshold
+of 3 — not 2 — because the normal edit cycle is *read → edit →
+review*, which legitimately reads the same file three times in
+quick succession. Beyond 3, the agent is usually re-discovering
+something that could have been captured.
+
+### Re-grep of the same pattern
+
+When the same grep pattern runs 3 or more times. Recurring greps
+mean "I keep needing to find this thing" — the answer often
+belongs in a skill description (so the agent knows where to look
+without searching) or in `CONTEXT.md` (so it's already loaded).
+
+## Why three signals, not one
+
+Each signal catches a different failure mode:
+
+- **Corrections** capture *behavioural* knowledge — how the team
+  wants work done.
+- **Re-reads** capture *structural* knowledge — where things
+  live in the codebase.
+- **Re-greps** capture *terminology* knowledge — what concepts
+  go by what names.
+
+Combining them into a single "frustration metric" would collapse
+information that's useful to keep separate. The proposal file
+shows each signal under its own heading so the reviewer can
+promote just the part that's worth keeping.
+
+## Why proposals, not auto-updates
+
+The hook deliberately stops short of editing `CLAUDE.md`,
+`knowledge/`, or `rules/` directly. Three reasons:
+
+- **Quality control.** A signal that fires in the session might
+  represent a one-off context (a misnamed feature, a stale grep)
+  that shouldn't become permanent project knowledge.
+- **Voice.** Project memory is tone-curated — auto-generated text
+  from transcript signals doesn't match the project's writing
+  style.
+- **Routing.** Different findings belong in different homes:
+  behavioural feedback → `CLAUDE.md` or `continuous-learning`,
+  structural facts → `knowledge/` or `doc-subcontext`,
+  decisions → an ADR. The hook can't make that call;
+  `/octopus:review-proposals` can.
+
+## Graceful degradation
+
+The hook depends on `jq` and on Claude Code's
+`transcript_path` field in the Stop-hook payload. Both can be
+absent: an older Claude Code without `transcript_path`, a
+different agent runtime, or a system without `jq` installed. In
+all those cases the hook exits 0 silently. Skipping is always
+better than blocking session end.
+
+[Source: `hooks/stop/propose-knowledge-update.sh`](https://github.com/leocosta/octopus/blob/main/hooks/stop/propose-knowledge-update.sh)

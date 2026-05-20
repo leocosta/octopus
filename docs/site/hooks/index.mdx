@@ -1,0 +1,96 @@
+---
+title: Hooks
+description: Lifecycle hooks that wrap every tool call, session boundary, and compaction — the agent-agnostic safety and automation layer beneath skills and rules.
+sidebar:
+  order: 1
+---
+
+Hooks are scripts the agent runtime fires at well-defined points in
+the conversation: before a tool runs, after a tool succeeds, when a
+tool fails, when the session starts, when context is compacted, when
+the conversation stops. Octopus ships a curated set of hooks that
+attach automatically in any repo with `hooks: true` in
+`.octopus.yml` (the default for the `quality` bundle and common in
+`starter`).
+
+## Why hooks live below skills
+
+Skills tell the agent *how* to do things — instructions in prose.
+Hooks tell the runtime *what to do regardless of the agent* —
+deterministic shell scripts. The split matters: a skill that says
+"don't run `rm -rf`" can be talked out of by a clever prompt; a
+hook that exits non-zero on `rm -rf` cannot. Hooks are the layer
+where Octopus enforces guarantees that hold whether the agent is
+Claude Code in `bypassPermissions` mode, Copilot, Codex, Gemini,
+or OpenCode.
+
+The flip side: hooks add latency to every tool call they attach to,
+so the set stays small and each hook short-circuits aggressively
+(checks one thing, exits fast).
+
+## Lifecycle phases
+
+| Phase | When it fires | Stop on non-zero? |
+|---|---|---|
+| `session-start` | Conversation begins | No — output is added to context |
+| `pre-tool-use` | Before any tool call | Yes — blocks the call |
+| `post-tool-use` | After a tool succeeds | No — advisory |
+| `post-tool-use-failure` | After a tool fails | No — advisory |
+| `pre-compact` | Before context compaction | No — output saved as state |
+| `post-compact` | After compaction completes | No — output added to new context |
+| `stop` | Conversation ends | No — advisory |
+| `session-end` | Session terminates | No — advisory |
+| `git pre-push` | Native git hook on `git push` | No — advisory |
+
+## Installed hooks
+
+Hooks that have rationale worth a page of their own get one (linked
+in the table). The rest are listed for completeness.
+
+| Hook | Phase | What it does | Detail |
+|---|---|---|---|
+| `destructive-guard` | pre-tool-use | Blocks `rm -rf`, `git push --force`, `DROP TABLE`, `DELETE FROM` without `WHERE`, `chmod -R 777`, `curl \| bash`, etc. Bypass via `# destructive-guard-ok: <reason>` marker. | [→](./destructive-guard/) |
+| `detect-secrets` | pre-tool-use | Scans staged files for hardcoded API keys, JWTs, Stripe/SendGrid/Slack/GitHub tokens before commit. Exits 2 to block. | [→](./detect-secrets/) |
+| `block-no-verify` | pre-tool-use | Refuses `git commit --no-verify` and `git push --no-verify`. Pre-commit hooks exist for a reason. | — |
+| `format-check` | pre-tool-use | Verifies the project formatter would not reformat the file the agent is about to write. | — |
+| `git-push-reminder` | pre-tool-use | One-time reminder to self-review the diff before pushing. | — |
+| `auto-format` | post-tool-use | Auto-runs the project formatter on every `Write`/`Edit` based on file extension. Idempotent; never fails the hook. | [→](./auto-format/) |
+| `typecheck` | post-tool-use | Runs `tsc --noEmit`, `dotnet build`, `mypy`, etc. after edits to surface type regressions before the next prompt. | [→](./auto-format/#typecheck) |
+| `console-log-warn` | post-tool-use | Warns when `console.log` / `print()` lands in a non-test file. | — |
+| `console-log-check` | stop | Final sweep for debug statements left behind. | — |
+| `mcp-health` | post-tool-use-failure | Detects MCP server outages and prints a one-line diagnosis instead of letting the agent retry blindly. | — |
+| `propose-knowledge-update` | stop | Scans the session transcript for corrections, re-reads, re-greps; writes a proposal to `.octopus/proposals/<ts>.md` for human review. | [→](./propose-knowledge-update/) |
+| `load-context` | session-start | Loads `~/.octopus/state/pre-compact.yml` and surfaces it as initial context. | — |
+| `save-state` | pre-compact | Captures session metadata before compaction so the next session starts informed. | — |
+| `reload-context` | post-compact | Reattaches relevant state after compaction discards mid-turn buffers. | — |
+| `lifecycle-marker` | session-end | Records session boundaries for downstream tooling. | — |
+| `rules-sync` | git pre-push (custom) | Verifies the project's rules tree matches the manifest before pushing. | — |
+| `pre-push-audit-suggest` | git pre-push | Advisory: inspects the diff and prints which Octopus audit skills (`audit-security`, `audit-money`, etc.) are relevant. Never blocks the push. | [→](./pre-push-audit-suggest/) |
+
+## Opting out
+
+Two levels of granularity:
+
+```yaml
+# Disable the whole hooks layer
+hooks: false
+
+# Keep hooks but disable the destructive guard specifically
+hooks: true
+destructiveGuard: false
+```
+
+Other hooks can be removed individually by editing the generated
+`.claude/settings.json` after `octopus setup`, but that drifts from
+the manifest — prefer asking for a manifest opt-out flag if you
+find yourself doing it repeatedly.
+
+## Agent coverage
+
+Hooks are a Claude Code platform feature. For Copilot, Codex,
+Gemini, and OpenCode, Octopus inlines equivalent rules from
+`rules/common/quality.md` and `rules/common/security.md` into the
+generated configuration — same intent, weaker enforcement, since
+those agents have no runtime layer that can refuse a tool call.
+
+[Source: `hooks/`](https://github.com/leocosta/octopus/tree/main/hooks)

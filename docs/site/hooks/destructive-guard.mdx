@@ -1,0 +1,102 @@
+---
+title: Destructive-action guard
+description: PreToolUse hook that blocks irreversible Bash commands — rm -rf, git push --force, DROP TABLE, DELETE FROM without WHERE — with a visible bypass marker.
+sidebar:
+  order: 2
+---
+
+`destructive-guard` is the hook that catches the careless-mistake
+class of agent error: a `rm -rf node_modules` typed without
+thinking, a `git push --force` that overwrites someone else's
+commits, a `DELETE FROM users;` without a `WHERE` clause. It runs
+as a PreToolUse hook on Bash calls, exits 2 to block, and prints a
+single line explaining why.
+
+## Why this exists
+
+Claude Code's system prompt warns the agent about destructive
+actions, but the warning is a prompt — it can be overridden, lost
+to compaction, or simply ignored in
+`--permission-mode=bypassPermissions`. Other agents (Copilot,
+Codex, Gemini, OpenCode) don't ship any equivalent warning.
+
+The guard is the layer below all of that: an unconditional regex
+gate. The agent cannot talk the runtime out of refusing the call.
+That asymmetry — prompt advice vs. runtime refusal — is the whole
+point of having a hooks layer.
+
+## Patterns blocked
+
+| Pattern | Why |
+|---|---|
+| `rm -rf` | Recursive force delete |
+| `git push --force` / `-f` | Rewrites remote history |
+| `git reset --hard` | Discards local changes |
+| `git checkout --` | Discards uncommitted edits |
+| `git clean -f` | Irreversibly removes untracked files |
+| `DROP TABLE` / `DROP DATABASE` / `TRUNCATE` | Schema or data loss |
+| `DELETE FROM ... ;` without `WHERE` | Deletes every row |
+| `chmod -R 777` | World-writable recursion |
+| `find ... -delete` | Bulk deletion from find results |
+| `npm uninstall -g` | Removes globally installed package |
+| `curl ... \| bash` | Executes unverified remote script |
+
+A legitimate `DELETE FROM sessions WHERE expired_at < now();` is
+**not** blocked — the regex specifically requires a missing `WHERE`
+clause for `DELETE`. The goal is to catch carelessness, not to
+make valid SQL impossible.
+
+## How to bypass
+
+When the destructive action is genuinely intended, add the marker
+inline:
+
+```bash
+rm -rf node_modules  # destructive-guard-ok: regenerated from package.json
+```
+
+The reason must be non-empty. Why an inline marker instead of an
+env var or a config toggle?
+
+- **Visibility.** The marker surfaces in the conversation, in
+  command history, and in any PR diff that includes the change.
+  Silent overrides hide the dangerous moment.
+- **Per-command.** Disabling globally would protect nothing for
+  the rest of the session; per-command keeps the guard armed for
+  everything else.
+- **Audit-friendly.** A reviewer reading the transcript or log
+  sees both the action and the rationale together.
+
+## How to disable
+
+For repos with stronger out-of-band protections (read-only
+production, ephemeral sandboxes, branch protection that already
+forbids force-push), opt out in `.octopus.yml`:
+
+```yaml
+hooks: true
+destructiveGuard: false
+```
+
+Disabling the guard does not affect any other hook.
+
+## Known limits
+
+The guard is a regex over the Bash command string. Agents that
+obfuscate — base64-encoding the command, piping through `eval`,
+constructing the destructive string from variables, calling out to
+a Python one-liner — bypass it. That's a known limitation;
+defeating a determined adversary is the sandbox's job, not the
+hook's. The hook's value is stopping the common careless case,
+which is by far the dominant failure mode in practice.
+
+## Extending
+
+Each pattern is a regex in `hooks/pre-tool-use/destructive-guard.sh`,
+stored as an array. Adding a pattern is a two-line change: append
+to the array, add a test case in `tests/test_destructive_guard.sh`.
+Prefer narrower patterns that match the dangerous form precisely
+over broad patterns that catch incidental matches — false positives
+erode trust in the guard and lead teams to disable it entirely.
+
+[Source: `hooks/pre-tool-use/destructive-guard.sh`](https://github.com/leocosta/octopus/blob/main/hooks/pre-tool-use/destructive-guard.sh)
