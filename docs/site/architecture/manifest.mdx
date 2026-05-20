@@ -1,0 +1,104 @@
+---
+title: Manifest-driven generation
+description: How .octopus.yml becomes per-agent generated configuration — template rendering, concatenation, and the rule that the manifest is the only file you edit.
+sidebar:
+  order: 2
+---
+
+Every Octopus-managed repo has one file the human edits:
+`.octopus.yml`. Everything else under `.claude/`, `.github/`,
+`AGENTS.md`, `GEMINI.md`, and `.opencode/` is generated. The
+generation is the architecture's central mechanism.
+
+## Why generation instead of templates
+
+The naive alternative is for every project to start from a
+template repo and edit each agent's config file directly. That
+breaks down quickly:
+
+- A team that uses three agents has three files to keep in sync
+  for any policy change.
+- A new agent's release means every repo has to be touched
+  manually to add support.
+- Custom skills land as a per-repo edit instead of a shared
+  artifact.
+
+Generation collapses all three: the policy lives once in the
+manifest, the generation knows how to deliver it to each agent,
+and adding an agent is a generator-only change.
+
+## The two content modes
+
+Different agents expect different shapes. Octopus supports two:
+
+**Template mode** — the agent's output is a single file with
+placeholders that the generator fills. Claude Code uses this for
+its `CLAUDE.md`: there's a template `agents/claude/CLAUDE.md` with
+`{{rules}}`, `{{skills}}`, `{{commands}}`, etc. markers, and the
+generator substitutes the content the manifest selected. This
+mode is right when the file has a fixed structure the user wants
+to see.
+
+**Concatenate mode** — the agent's output is assembled by
+concatenating ordered sections: header + core + rules + skills +
+commands + roles. Copilot, Codex, Gemini, and OpenCode all use
+this mode. The concatenation order is fixed; the content per
+section comes from the manifest.
+
+The choice between modes is per-agent, set in
+`agents/<name>/manifest.yml`. The generator reads the mode and
+runs the right pipeline.
+
+## The generation pipeline
+
+```
+.octopus.yml
+   │
+   │  1. Validate manifest schema
+   │  2. Expand bundles → flat list of skills + roles + rules
+   │  3. Resolve transitive dependencies (e.g., audit-all pulls audit-security)
+   │  4. For each agent in `agents:`:
+   │     a. Load agents/<name>/manifest.yml (capabilities)
+   │     b. Pick template or concatenate mode
+   │     c. Deliver each capability (symlink, inline, file copy)
+   │  5. Update .gitignore with generated paths
+   │  6. Write .env.octopus.example for any MCP servers selected
+   ▼
+.claude/CLAUDE.md, .claude/settings.json, .claude/rules/, .claude/skills/, .claude/agents/, .claude/commands/
+.github/copilot-instructions.md
+AGENTS.md
+GEMINI.md
+.opencode/rules.md, .opencode/commands/, .opencode/skills/, .opencode/agents/, .opencode/settings.json
+```
+
+## Why the manifest is never auto-edited
+
+`octopus setup` writes generated files; it never writes back to
+`.octopus.yml`. The reverse direction would be a hidden side
+effect — the user would lose track of which lines they wrote and
+which the tool decided. Keeping the manifest human-only means the
+mental model stays clean: edit the manifest, run setup, inspect
+the diff.
+
+The one exception is `octopus update`, which can bump the version
+pin in `.octopus.yml` to match the just-installed CLI. That's the
+only line the tool writes; the rest of the manifest stays human-
+owned.
+
+## How agents discover the generated config
+
+Each agent has its own discovery convention:
+
+- **Claude Code** reads `.claude/CLAUDE.md`, plus `settings.json`
+  for hooks and MCP servers, plus the file tree under
+  `.claude/skills/`, `.claude/commands/`, `.claude/agents/`.
+- **Copilot** reads `.github/copilot-instructions.md`.
+- **Codex** reads `AGENTS.md`.
+- **Gemini** reads `GEMINI.md`.
+- **OpenCode** reads `.opencode/rules.md` + the file tree under
+  `.opencode/`.
+
+The generator respects each agent's convention — no agent has to
+know about Octopus to consume its output.
+
+[Source: `setup.sh`](https://github.com/leocosta/octopus/blob/main/setup.sh)

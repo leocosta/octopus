@@ -61,9 +61,11 @@ export default defineConfig({
           autogenerate: { directory: 'roles' },
           collapsed: true,
         },
-        // Architecture ships in a later phase. Re-enable alongside MDX
-        // content under docs/site/architecture/.
-        // { label: 'Architecture', autogenerate: { directory: 'architecture' }, collapsed: true },
+        {
+          label: 'Architecture',
+          autogenerate: { directory: 'architecture' },
+          collapsed: true,
+        },
         {
           label: 'Roadmap & Specs',
           collapsed: true,

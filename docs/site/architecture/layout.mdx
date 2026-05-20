@@ -1,0 +1,131 @@
+---
+title: Project structure
+description: What lives where in the Octopus repository — the file tree that backs every concept (rules, skills, hooks, commands, roles, bundles, agents).
+sidebar:
+  order: 5
+---
+
+The Octopus repo is the catalog of primitives plus the
+generation machinery that delivers them. The file tree is the
+architecture — each top-level directory is a category of
+configurable content.
+
+## The tree
+
+```
+octopus/
+├── agents/                 # Per-agent capability manifests
+│   ├── claude/             # manifest.yml + CLAUDE.md template + settings.json template
+│   ├── copilot/            # manifest.yml + header.md
+│   ├── codex/              # manifest.yml + header.md
+│   ├── gemini/             # manifest.yml + header.md
+│   └── opencode/           # manifest.yml + header.md
+│
+├── bundles/                # Curated bundle definitions
+│   ├── starter.yml         # The foundation — always recommended
+│   ├── quality.yml         # Pre-merge audit gates
+│   ├── docs.yml            # Full doc lifecycle
+│   ├── backend.yml         # Stack-aware backend patterns
+│   └── growth.yml          # Multi-channel launch kits
+│
+├── core/                   # Universal standards (no opt-out)
+│   ├── guidelines.md
+│   ├── architecture.md
+│   ├── commit-conventions.md
+│   ├── pr-workflow.md
+│   └── task-management.md
+│
+├── rules/                  # Language and topic rules
+│   ├── common/             # Always loaded — coding-style, patterns, security, testing, quality, language
+│   ├── csharp/
+│   ├── typescript/
+│   └── python/
+│
+├── skills/                 # 35 reusable capabilities
+│   ├── implement/          # SKILL.md + optional REFERENCE.md + tests/
+│   ├── debug/
+│   ├── audit-all/
+│   └── ...
+│
+├── hooks/                  # Claude Code lifecycle hooks
+│   ├── pre-tool-use/       # destructive-guard, detect-secrets, …
+│   ├── post-tool-use/      # auto-format, typecheck, console-log-warn
+│   ├── session-start/      # load-context
+│   ├── stop/               # propose-knowledge-update
+│   └── hooks.json          # Hook registration manifest
+│
+├── commands/               # 40 slash command definitions
+│   ├── commit.md
+│   ├── pr-open.md
+│   ├── release.md
+│   └── ...
+│
+├── roles/                  # 6 agent personas
+│   ├── _base.md            # Shared role frontmatter
+│   ├── architect.md
+│   ├── backend-developer.md
+│   ├── frontend-developer.md
+│   ├── product-manager.md
+│   ├── tech-writer.md
+│   └── marketer.md
+│
+├── knowledge/              # Modular domain knowledge templates
+│   ├── _template/          # Empty bootstrap shape
+│   └── _examples/          # Reference examples
+│
+├── mcp/                    # MCP server configurations
+│   ├── notion.json
+│   ├── github.json
+│   ├── slack.json
+│   └── postgres.json
+│
+├── templates/              # Document templates (RFC, Spec, ADR)
+├── cli/                    # CLI sources (bash + Python)
+├── bin/                    # Compiled / global CLI shims
+├── docs/                   # Project documentation (this site's source)
+├── tests/                  # Bash test suite
+├── setup.sh                # The generator
+└── .octopus.example.yml    # Sample manifest
+```
+
+## Reading the tree
+
+Three rules make the tree navigable:
+
+- **One directory per primitive.** `skills/`, `commands/`, `hooks/`,
+  `roles/`, `rules/`, `bundles/`. The category is in the path.
+- **One subdirectory per instance.** Each skill is `skills/<name>/`
+  with its own `SKILL.md`. Each bundle is one YAML. Each hook is
+  one shell script under the right phase directory. The instance
+  name is in the path.
+- **No cross-category files.** A skill never lives under `commands/`,
+  a hook never lives under `skills/`. The category boundary is
+  enforced by where the file is, not by its content.
+
+## What lives outside the tree (in user projects)
+
+The Octopus repo is the catalog. User projects consume the catalog
+by referencing it from their `.octopus.yml`. After running
+`octopus setup`, the user project gets:
+
+```
+user-project/
+├── .octopus.yml                            # The only file the user edits
+├── .octopus/                               # Runtime state (gitignored)
+├── .claude/CLAUDE.md                       # Generated
+├── .claude/settings.json                   # Generated
+├── .claude/rules/                          # Generated (symlinks to Octopus)
+├── .claude/skills/                         # Generated (symlinks to Octopus)
+├── .claude/commands/                       # Generated (symlinks to Octopus)
+├── .claude/agents/                         # Generated (roles, symlinked)
+├── .github/copilot-instructions.md         # Generated
+├── AGENTS.md                               # Generated for Codex
+├── GEMINI.md                               # Generated for Gemini
+└── .opencode/                              # Generated for OpenCode
+```
+
+All generated files are gitignored — the source of truth is
+`.octopus.yml` plus the Octopus catalog version. Regenerate at
+any time with `octopus setup`.
+
+[Source: repo tree](https://github.com/leocosta/octopus)

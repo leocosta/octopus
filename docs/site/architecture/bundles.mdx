@@ -1,0 +1,123 @@
+---
+title: Bundle composition
+description: How bundles expand to flat lists of skills + roles + rules, how transitive dependencies resolve, and the rule that every skill must belong to at least one bundle.
+sidebar:
+  order: 4
+---
+
+Bundles are the architectural answer to "users don't want to
+compose 35 skills by hand". A bundle is a curated package of
+skills + roles + rules + (optionally) hooks, scoped to a team
+archetype — `starter` for the foundation, `quality` for teams
+that ship to paying users, `docs` for teams investing in
+documentation, etc. The Quick-mode wizard maps a few yes/no
+answers to bundles; users never have to memorise the skill catalog.
+
+## What's in a bundle file
+
+```yaml
+# bundles/quality.yml
+name: quality
+description: Pre-merge audit gates + senior-reviewer discipline
+skills:
+  - audit-all
+  - review-contracts
+  - refactor-deepen
+  - audit-config
+roles:
+  - architect
+rules: []
+```
+
+That's it. Bundles are pure composition — they reference primitives
+by name, they don't add new content of their own. The composition
+is the value.
+
+## Expansion to flat lists
+
+When `octopus setup` reads `.octopus.yml` and sees
+`bundles: [starter, quality]`, it expands each bundle and unions
+the results:
+
+```
+starter:    skills: [implement, debug, ...] roles: [...] rules: [common]
+quality:    skills: [audit-all, review-contracts, ...] roles: [architect]
+                            │
+                            ▼ union (dedup by name)
+effective:  skills: [implement, debug, audit-all, ...] roles: [...] rules: [common]
+```
+
+The expansion produces a single flat list per category. Duplicate
+references (the same skill in two bundles) collapse to one entry.
+The user's manifest can also add individual skills on top, which
+union into the same list.
+
+## Transitive dependencies
+
+Some skills declare dependencies on other skills via frontmatter:
+
+```yaml
+# skills/audit-all/SKILL.md
+---
+name: audit-all
+depends_on:
+  - audit-security
+  - audit-money
+  - audit-tenant
+  - review-contracts
+---
+```
+
+When `audit-all` ends up in the effective list (via any bundle or
+explicit selection), the dependency resolver adds the four audits
+too. This keeps bundles small: `quality.yml` only lists `audit-all`
+because `audit-all`'s frontmatter pulls in the four audits
+automatically.
+
+Cycles are forbidden — the resolver fails at setup time with a
+clear error rather than silently looping.
+
+## The "no loose skills" rule
+
+Every new skill must belong to at least one bundle. The rule
+exists because skills not in any bundle are effectively
+unreachable through `octopus setup` — they're in the catalog but
+nobody gets them. The `scaffold-skill` command enforces the rule
+at creation time by refusing to scaffold a skill without picking
+a bundle (or proposing a new one).
+
+The rule is a discipline against orphan skills, not against
+specialisation. If a skill doesn't fit any current bundle, the
+right answer is usually a new bundle (or a small one like
+`growth`); the wrong answer is a skill nobody finds.
+
+## Composing multiple bundles
+
+The default Octopus setup uses several bundles together:
+
+```yaml
+bundles:
+  - starter        # the foundation
+  - quality        # audits for SaaS
+  - docs           # documentation lifecycle
+  - dotnet-api     # stack-specific
+```
+
+Composition is associative — order doesn't matter for the
+effective list. Order does matter for `rules/`, where later
+entries override earlier ones (this is how `language.local.md`
+works for per-project rule overrides), but that's a rule-loading
+detail, not a bundle-composition concern.
+
+## Quick mode vs Full mode
+
+`octopus setup` defaults to Quick mode: 4–6 yes/no questions map
+to bundles ("Are you on a SaaS with billing?" → yes adds `quality`,
+"Is this a doc-heavy project?" → yes adds `docs`). The wizard
+hides the bundle catalog entirely.
+
+Full mode is for users who want per-component control — pick
+specific skills, exclude bundle members, custom rule sets. Full
+mode is rarely needed; bundles cover the common shapes.
+
+[Source: `bundles/`](https://github.com/leocosta/octopus/tree/main/bundles)
