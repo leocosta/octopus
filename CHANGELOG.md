@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.47.0] - 2026-05-19
+
+✨ New `interview` skill + `/octopus:interview` slash command (RM-084) close the gap missed in the initial Cluster 14 batch. The skill is the **greenfield** counterpart to `doc-align` — it runs when the user has an idea but no plan yet, with no dependency on `CONTEXT.md` or `docs/adr/`. It walks the decision tree one question at a time (never batched, never "and also…" hedges), prefers open-ended over yes/no questions, recaps the established branches every 3–5 turns in the same format used by `triage-issues` `needs-info` notes, and recognises tree resolution to stop without padding. The output is a confirmed intent summary ready to hand off to `doc-align` (validate against docs), `doc-prd` (package as a ticket), or `implement` (start immediately). This establishes the natural flow `interview → doc-align → doc-prd → implement` (establish → validate → package → execute). Registered in the `docs` bundle next to its siblings `doc-align`, `doc-prd`, `triage-issues`, and `scaffold-skill`. 📝 Roadmap updated with RM-084 in Cluster 14.
+
 ## [1.46.0] - 2026-05-19
 
 ✨ New `/octopus:map-system` slash command. The `map-system` skill (added in v1.45.0) is manual-invocation only by design — agents must not engage it autonomously from task signals — so until now the only trigger was natural-language phrasing like "zoom out" or "map this". The new command makes the invocation canonical and discoverable through the slash-command list alongside the other engineering process commands (`/octopus:doc-prd`, `/octopus:triage-issues`, `/octopus:prototype`, `/octopus:context-handoff`).
