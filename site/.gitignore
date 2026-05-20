@@ -3,6 +3,7 @@ dist/
 .astro/
 src/content/docs/
 public/cover.png
+public/logo.png
 .env
 .env.*
 !.env.example

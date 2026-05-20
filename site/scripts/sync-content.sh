@@ -38,8 +38,9 @@ else
   cp -R "$project_root/docs/site/." "$content_dir/"
 fi
 
-# Copy the hero asset.
+# Copy the brand assets.
 mkdir -p "$public_dir"
 cp -f "$project_root/images/cover.png" "$public_dir/cover.png"
+cp -f "$project_root/images/logo.png" "$public_dir/logo.png"
 
 echo "sync-content: linked $(ls -1 "$content_dir" | wc -l) entries under $content_dir"

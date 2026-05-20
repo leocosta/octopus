@@ -23,6 +23,7 @@ site/dist/
 site/.astro/
 site/src/content/docs/
 site/public/cover.png
+site/public/logo.png
 cli/control/__pycache__/
 tests/__pycache__/
 .opencode/package-lock.json
