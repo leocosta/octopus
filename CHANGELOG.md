@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.63.1] - 2026-05-21
+
+🐛 The v1.63.0 release moved the dba role and dba-* skills into `bundles/backend.yml` and deleted `bundles/dba.yml`, but the docs site still rendered a `dba` bundle page at https://leocosta.github.io/octopus/bundles/dba/ because the canonical sources at `docs/site/bundles/dba.mdx` and `docs/site/pt-br/bundles/dba.mdx` weren't removed in that commit. The synced output under `site/src/content/docs/` is gitignored and regenerated from `docs/site/` by `site/scripts/sync-content.sh`, so changes have to land in the canonical tree. Both dba bundle pages deleted; the `dba` bullet and the intent-bundle list entry in `bundles/index.mdx` (EN + pt-br) cleaned out; `backend.mdx` (EN + pt-br) updated to reflect the new shape — 6 skills (`backend-patterns`, `test-e2e`, `dba-mssql`, `dba-postgres`, `dba-mongodb`, `dba-redis`) and 2 roles (`backend-developer`, `dba`) — with a "Why each one is in" section covering the four engine-specific failure modes (Postgres FK columns without indexes, MSSQL `ALTER COLUMN NOT NULL` on hot tables, Mongo ESR-rule violations, Redis `KEYS *` and missing TTLs) and the dba role's dual-gate orchestration with `architect`. `needs_retranslation: true` flipped on the pt-br backend page so the translation pipeline picks it up.
+
 ## [1.63.0] - 2026-05-21
 
 🐛 The `dba` bundle introduced in v1.62.0 was a packaging mistake. The role and its four engine-specific skills (`dba-mssql`, `dba-postgres`, `dba-mongodb`, `dba-redis`) are a pre-merge gate that pairs with `architect` and belong inside an existing intent bundle, not as a standalone selectable. `bundles/dba.yml` is removed; the dba role and dba-* skills move into `bundles/backend.yml`, whose description and `persona_question` now cover both backend API development and data layer review. Projects that had `bundles: [dba]` in their manifest will see "bundle not found" on the next setup and should swap for `backend` (the same skills + role land via that path).
