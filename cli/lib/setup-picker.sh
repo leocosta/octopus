@@ -5,6 +5,7 @@
 # Sourced by cli/lib/setup.sh — never executed directly.
 
 _PICKER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+_PICKER_RELEASE_ROOT="$(cd "$_PICKER_DIR/../.." && pwd)"
 
 # shellcheck source=./ui.sh
 source "$_PICKER_DIR/ui.sh"
@@ -24,14 +25,12 @@ _picker_resolve_fzf() {
     echo "fzf"
     return
   fi
-  local release_dir
-  release_dir="$(cd "$_PICKER_DIR/../.." && pwd)"
   local os arch bin
   os="$(uname -s | tr '[:upper:]' '[:lower:]')"
   arch="$(uname -m)"
   [[ "$arch" == "x86_64" ]] && arch="amd64"
   [[ "$arch" == "aarch64" || "$arch" == "arm64" ]] && arch="arm64"
-  bin="$release_dir/bin/fzf/${os}-${arch}/fzf"
+  bin="$_PICKER_RELEASE_ROOT/bin/fzf/${os}-${arch}/fzf"
   if [[ -x "$bin" ]]; then
     echo "$bin"
     return
@@ -42,16 +41,42 @@ _picker_resolve_fzf() {
 _PICKER_FZF="$(_picker_resolve_fzf)"
 
 # ---------------------------------------------------------------------------
-# Bundle and feature definitions
+# Bundle auto-discovery — enumerate $RELEASE/bundles/*.yml in stable order
+# (starter first, then alphabetical) so new bundles surface in the picker
+# without code changes.
 # ---------------------------------------------------------------------------
-_PICKER_BUNDLES=(starter docs quality growth backend)
-_PICKER_BUNDLE_DESCS=(
-  "implement, debug, review-pr, delegate, doc-adr"
-  "ADRs, specs, plans, roadmap, continuous-learning"
-  "audit-all (security/money/tenant), review-contracts"
-  "launch-feature, launch-release, content-images"
-  "backend-patterns, test-e2e"
-)
+_PICKER_BUNDLES=()
+_PICKER_BUNDLE_DESCS=()
+
+_picker_load_bundles() {
+  _PICKER_BUNDLES=()
+  _PICKER_BUNDLE_DESCS=()
+  local bundles_dir="$_PICKER_RELEASE_ROOT/bundles"
+  [[ -d "$bundles_dir" ]] || return 0
+
+  local ordered=()
+  if [[ -f "$bundles_dir/starter.yml" ]]; then
+    ordered+=("starter")
+  fi
+  local f name
+  for f in "$bundles_dir"/*.yml; do
+    [[ -f "$f" ]] || continue
+    name="$(basename "$f" .yml)"
+    [[ "$name" == "starter" ]] && continue
+    ordered+=("$name")
+  done
+
+  for name in "${ordered[@]}"; do
+    f="$bundles_dir/$name.yml"
+    local desc
+    desc="$(grep -m1 '^description:' "$f" | sed 's/^description:[[:space:]]*//' | sed 's/^"//;s/"$//' || true)"
+    _PICKER_BUNDLES+=("$name")
+    _PICKER_BUNDLE_DESCS+=("${desc:-(no description)}")
+  done
+}
+
+_picker_load_bundles
+
 _PICKER_FEATURES=(hooks workflow reviewers mcp)
 _PICKER_FEATURE_DESCS=(
   "destructive-guard, session-start"
@@ -59,25 +84,98 @@ _PICKER_FEATURE_DESCS=(
   "→ prompted after install"
   "→ prompted after install"
 )
+# Built-in defaults — used only when manifest absent OR key missing.
 _PICKER_FEATURE_DEFAULTS=(true true false false)
 
 # ---------------------------------------------------------------------------
-# fzf picker — single multi-select screen
+# Current state — read existing .octopus.yml so the picker reflects what's
+# already in effect instead of opening with everything unchecked.
+# ---------------------------------------------------------------------------
+_CURRENT_BUNDLES=()
+_CURRENT_HOOKS=""
+_CURRENT_WORKFLOW=""
+_CURRENT_MCP=""
+
+_picker_load_current_state() {
+  _CURRENT_BUNDLES=()
+  _CURRENT_HOOKS=""
+  _CURRENT_WORKFLOW=""
+  _CURRENT_MCP=""
+
+  local manifest="${MANIFEST_PATH:-${PROJECT_ROOT:-$PWD}/.octopus.yml}"
+  [[ -f "$manifest" ]] || return 0
+
+  local in_bundles=0 in_mcp=0
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    # New top-level key resets list-tracking
+    if [[ "$line" =~ ^[a-zA-Z] ]]; then
+      in_bundles=0
+      in_mcp=0
+    fi
+    if [[ "$line" =~ ^bundles:[[:space:]]*$ ]]; then
+      in_bundles=1
+      continue
+    fi
+    if [[ "$line" =~ ^mcp:[[:space:]]*$ ]]; then
+      in_mcp=1
+      continue
+    fi
+    if [[ $in_bundles -eq 1 && "$line" =~ ^[[:space:]]+-[[:space:]]*([a-zA-Z][a-zA-Z0-9_-]*) ]]; then
+      _CURRENT_BUNDLES+=("${BASH_REMATCH[1]}")
+      continue
+    fi
+    if [[ $in_mcp -eq 1 && "$line" =~ ^[[:space:]]+-[[:space:]]*([a-zA-Z][a-zA-Z0-9_-]*) ]]; then
+      _CURRENT_MCP="true"
+      continue
+    fi
+    if [[ "$line" =~ ^hooks:[[:space:]]*(true|false) ]]; then
+      _CURRENT_HOOKS="${BASH_REMATCH[1]}"
+    elif [[ "$line" =~ ^workflow:[[:space:]]*(true|false) ]]; then
+      _CURRENT_WORKFLOW="${BASH_REMATCH[1]}"
+    fi
+  done < "$manifest"
+}
+
+_picker_array_contains() {
+  local needle="$1"
+  shift
+  local item
+  for item in "$@"; do
+    [[ "$item" == "$needle" ]] && return 0
+  done
+  return 1
+}
+
+_picker_effective_default() {
+  # Args: feature_name index_in_defaults_array
+  local fname="$1" idx="$2"
+  case "$fname" in
+    hooks)    [[ -n "$_CURRENT_HOOKS"    ]] && { echo "$_CURRENT_HOOKS";    return; } ;;
+    workflow) [[ -n "$_CURRENT_WORKFLOW" ]] && { echo "$_CURRENT_WORKFLOW"; return; } ;;
+    mcp)      [[ -n "$_CURRENT_MCP"      ]] && { echo "$_CURRENT_MCP";      return; } ;;
+  esac
+  echo "${_PICKER_FEATURE_DEFAULTS[$idx]}"
+}
+
+# ---------------------------------------------------------------------------
+# fzf picker — single multi-select screen with current-state pre-selection
 # ---------------------------------------------------------------------------
 _picker_run_fzf() {
   local fzf_bin="$1"
+  _picker_load_current_state
 
-  # Build selectable lines only — no separator lines (those become --header-lines).
-  # Format: "bundle:<name>  <desc>" or "feature:[on/  ] <name>  <desc>"
+  # Build selectable lines.
   local bundle_lines=() feature_lines=()
-  local i
+  local i fname effective
   for (( i=0; i<${#_PICKER_BUNDLES[@]}; i++ )); do
     bundle_lines+=("bundle:${_PICKER_BUNDLES[$i]}  ${_PICKER_BUNDLE_DESCS[$i]}")
   done
   for (( i=0; i<${#_PICKER_FEATURES[@]}; i++ )); do
+    fname="${_PICKER_FEATURES[$i]}"
+    effective="$(_picker_effective_default "$fname" "$i")"
     local prefix
-    [[ "${_PICKER_FEATURE_DEFAULTS[$i]}" == "true" ]] && prefix="[on] " || prefix="[  ] "
-    feature_lines+=("feature:${prefix}${_PICKER_FEATURES[$i]}  ${_PICKER_FEATURE_DESCS[$i]}")
+    [[ "$effective" == "true" ]] && prefix="[on] " || prefix="[  ] "
+    feature_lines+=("feature:${prefix}${fname}  ${_PICKER_FEATURE_DESCS[$i]}")
   done
 
   # Section labels prepended as header lines (non-selectable in fzf --header-lines).
@@ -88,41 +186,85 @@ _picker_run_fzf() {
   all_lines+=("  ── Bundle ───────────────────────────────────────────────────")
   all_lines+=("${bundle_lines[@]}")
 
+  # Build pre-selection bind: for each bundle currently in .octopus.yml, and
+  # each feature currently on, compute its 1-based position in all_lines and
+  # toggle it on load. Positions count from line 1, headers included (fzf's
+  # pos() targets all rows, not only selectable ones — but with --header-lines
+  # the headers are excluded from positioning, so we count only data lines).
+  local preselect_positions=()
+  local pos=0
+  # The header line for Features is index 0 in all_lines; feature rows follow.
+  # Position counter for fzf (--header-lines=2 excludes the two label rows).
+  local feat_pos
+  for (( i=0; i<${#_PICKER_FEATURES[@]}; i++ )); do
+    fname="${_PICKER_FEATURES[$i]}"
+    effective="$(_picker_effective_default "$fname" "$i")"
+    feat_pos=$((i + 1))  # 1-based position among selectable rows
+    if [[ "$effective" == "true" && ( "$fname" == "hooks" || "$fname" == "workflow" || "$fname" == "mcp" ) ]]; then
+      preselect_positions+=("$feat_pos")
+    fi
+  done
+  local bundle_pos_start=$(( ${#_PICKER_FEATURES[@]} + 1 ))
+  for (( i=0; i<${#_PICKER_BUNDLES[@]}; i++ )); do
+    if _picker_array_contains "${_PICKER_BUNDLES[$i]}" "${_CURRENT_BUNDLES[@]}"; then
+      preselect_positions+=("$(( bundle_pos_start + i ))")
+    fi
+  done
+
+  local load_bind=""
+  if [[ ${#preselect_positions[@]} -gt 0 ]]; then
+    local p
+    for p in "${preselect_positions[@]}"; do
+      load_bind+="pos($p)+toggle+"
+    done
+    load_bind="${load_bind%+}"
+  fi
+
   local header
-  header="  SPACE/TAB = toggle   ENTER = confirm   Ctrl-C = cancel"
+  if [[ ${#_CURRENT_BUNDLES[@]} -gt 0 || -n "$_CURRENT_HOOKS$_CURRENT_WORKFLOW" ]]; then
+    header="  SPACE/TAB = toggle   ENTER = confirm   Ctrl-C = cancel    (✓ = current config)"
+  else
+    header="  SPACE/TAB = toggle   ENTER = confirm   Ctrl-C = cancel"
+  fi
+
+  local fzf_args=(
+    --multi
+    --no-sort
+    --layout=reverse
+    --header="$header"
+    --header-lines=0
+    --height=~80%
+    --border=rounded
+    --prompt="  Octopus Setup › "
+    --pointer="▶"
+    --marker="✓"
+    --bind="space:toggle"
+    --bind="tab:toggle+down"
+    --bind="btab:toggle+up"
+  )
+  [[ -n "$load_bind" ]] && fzf_args+=(--bind="load:$load_bind")
 
   local selected
   selected=$(printf '%s\n' "${all_lines[@]}" | \
-    "$fzf_bin" \
-      --multi \
-      --no-sort \
-      --layout=reverse \
-      --header="$header" \
-      --height=~80% \
-      --border=rounded \
-      --prompt="  Octopus Setup › " \
-      --pointer="▶" \
-      --marker="✓" \
-      --bind="space:toggle" \
-      --bind="tab:toggle+down" \
-      --bind="btab:toggle+up" \
-      2>/dev/tty) || { ui_warn "Setup cancelled."; exit 0; }
+    "$fzf_bin" "${fzf_args[@]}" 2>/dev/tty) || { ui_warn "Setup cancelled."; exit 0; }
 
   # Parse bundles — collect all selected bundle lines (multi-select)
-  local bundle_lines
-  bundle_lines=$(printf '%s\n' "$selected" | grep "^bundle:" || true)
-  if [[ -n "$bundle_lines" ]]; then
-    PICKER_BUNDLES=()
+  local bundle_lines_out
+  bundle_lines_out=$(printf '%s\n' "$selected" | grep "^bundle:" || true)
+  PICKER_BUNDLES=()
+  if [[ -n "$bundle_lines_out" ]]; then
     while IFS= read -r bundle_line; do
       [[ -z "$bundle_line" ]] && continue
       PICKER_BUNDLES+=("$(printf '%s' "$bundle_line" | sed 's/^bundle:\([^ ]*\).*/\1/')")
-    done <<< "$bundle_lines"
+    done <<< "$bundle_lines_out"
   fi
 
-  # Parse features: initialize from defaults — fzf multi-select is opt-in so unselected
-  # default-on features (hooks, workflow) remain enabled unless explicitly toggled off.
-  PICKER_HOOKS="${_PICKER_FEATURE_DEFAULTS[0]:-true}"
-  PICKER_WORKFLOW="${_PICKER_FEATURE_DEFAULTS[1]:-true}"
+  # Parse features: selected features are ON, others are OFF (inclusion model
+  # now that pre-selection mirrors current state).
+  PICKER_HOOKS="false"
+  PICKER_WORKFLOW="false"
+  PICKER_REVIEWERS=""
+  PICKER_MCP_ENABLED="false"
   local feat_lines
   feat_lines=$(printf '%s\n' "$selected" | grep "^feature:" || true)
   while IFS= read -r line; do
@@ -139,22 +281,44 @@ _picker_run_fzf() {
 }
 
 # ---------------------------------------------------------------------------
-# Bash fallback — numbered list + read
+# Bash fallback — numbered list + read, with [*] markers for current state
 # ---------------------------------------------------------------------------
 _picker_run_bash() {
+  _picker_load_current_state
+
   echo ""
-  echo "  Available bundles:"
-  local i
+  echo "  Available bundles (✓ = currently in .octopus.yml):"
+  local i marker
   for (( i=0; i<${#_PICKER_BUNDLES[@]}; i++ )); do
-    printf "    %d. %-12s %s\n" "$((i+1))" "${_PICKER_BUNDLES[$i]}" "${_PICKER_BUNDLE_DESCS[$i]}"
+    if _picker_array_contains "${_PICKER_BUNDLES[$i]}" "${_CURRENT_BUNDLES[@]}"; then
+      marker="✓"
+    else
+      marker=" "
+    fi
+    printf "    %d. [%s] %-12s %s\n" "$((i+1))" "$marker" "${_PICKER_BUNDLES[$i]}" "${_PICKER_BUNDLE_DESCS[$i]}"
   done
   echo ""
+
+  # Default for the input: numbers of currently-selected bundles, or "1" if none.
+  local current_indices=()
+  for (( i=0; i<${#_PICKER_BUNDLES[@]}; i++ )); do
+    if _picker_array_contains "${_PICKER_BUNDLES[$i]}" "${_CURRENT_BUNDLES[@]}"; then
+      current_indices+=("$((i+1))")
+    fi
+  done
+  local default_input
+  if [[ ${#current_indices[@]} -gt 0 ]]; then
+    default_input="${current_indices[*]}"
+  else
+    default_input="1"
+  fi
+
   PICKER_BUNDLES=()
   while true; do
-    printf "  Bundle(s) — space or comma-separated [1]: "
+    printf "  Bundle(s) — space or comma-separated [%s]: " "$default_input"
     local raw_choice
     read -r raw_choice </dev/tty
-    raw_choice="${raw_choice:-1}"
+    raw_choice="${raw_choice:-$default_input}"
     local normalised
     normalised=$(printf '%s' "$raw_choice" | tr ',\t' '  ' | tr -s ' ')
     local invalid=() valid_picks=()
@@ -178,11 +342,16 @@ _picker_run_bash() {
     break
   done
 
+  # Feature defaults follow current state when present.
+  local hooks_default workflow_default
+  [[ "$_CURRENT_HOOKS" == "false" ]] && hooks_default="n" || hooks_default="y"
+  [[ "$_CURRENT_WORKFLOW" == "false" ]] && workflow_default="n" || workflow_default="y"
+
   echo ""
-  echo "  Features (Enter = keep default, y/n = change):"
-  _picker_bash_yn "  Hooks (destructive-guard, session-start)" "y" \
+  echo "  Features (Enter = keep current, y/n = change):"
+  _picker_bash_yn "  Hooks (destructive-guard, session-start)" "$hooks_default" \
     && PICKER_HOOKS="true" || PICKER_HOOKS="false"
-  _picker_bash_yn "  Workflow commands (pr-open, pr-merge, release)" "y" \
+  _picker_bash_yn "  Workflow commands (pr-open, pr-merge, release)" "$workflow_default" \
     && PICKER_WORKFLOW="true" || PICKER_WORKFLOW="false"
   _picker_bash_yn "  Configure reviewers" "n" \
     && PICKER_REVIEWERS="__ask__" || PICKER_REVIEWERS=""
