@@ -1,0 +1,132 @@
+---
+title: dba
+description: Database review gate — indexing, modeling, migration safety, retention, capacity, security, and concurrency heuristics for MSSQL, Postgres, MongoDB, and Redis. Additional approval gate alongside architect on any PR that touches the data layer.
+sidebar:
+  order: 6
+---
+
+`dba` is the bundle for teams whose production pain comes from
+the **data layer**: full scans on tables nobody indexed, migrations
+that locked a hot table at 3am, retention policies that never
+existed, Redis keys without TTL that filled memory, Mongo shard
+keys that turned one node into the whole cluster.
+
+The bundle adds a **second pre-merge approval gate** — the `dba`
+role — that runs alongside `architect` on any PR touching the data
+layer. Two independent approvals on DB PRs, not one.
+
+## Why this exists
+
+The `architect` role already covers code-level concerns
+(correctness, security, operability). But database-specific
+heuristics — index ordering by selectivity, FK columns without
+indexes, `ALTER COLUMN NOT NULL` on hot tables, Mongo's ESR rule,
+Redis `KEYS *` in production — get diluted in a generalist review.
+The patterns that bite hardest in production are exactly the ones
+specialist reviewers catch and generalists miss.
+
+`dba` isolates the specialism: one role and one skill per engine,
+each with its own heuristics catalogue and severity mapping, all
+emitting findings in the same format so they aggregate into a
+single PR comment.
+
+## Team archetype
+
+This is for teams that:
+
+- run a transactional database in production (MSSQL, Postgres, or
+  both)
+- use MongoDB for an operational workload (not just analytics
+  exports)
+- depend on Redis for sessions, caching, queues, rate-limiting, or
+  ephemeral state
+- have had at least one production incident caused by a missing
+  index, a long migration, an unbounded data structure, or a
+  retention policy that was never written
+- want the dual-approval gate documented in `core/pr-workflow.md`
+  to actually fire on DB PRs
+
+If your repo touches a database only through a third-party SaaS
+(no migrations, no schemas under version control), this bundle is
+overkill.
+
+## What it includes
+
+```yaml
+skills:
+  - dba-mssql       # SQL Server heuristics
+  - dba-postgres    # PostgreSQL heuristics
+  - dba-mongodb     # MongoDB heuristics
+  - dba-redis       # Redis heuristics
+roles:
+  - dba             # specialist reviewer, runs alongside architect
+```
+
+[Source: `bundles/dba.yml`](https://github.com/leocosta/octopus/blob/main/bundles/dba.yml)
+
+### Why each one is in
+
+- **`dba` role** — the orchestrator. Detects which engine(s) the
+  diff touches via path/extension convention, dispatches the
+  matching skill(s), aggregates findings, classifies as
+  BLOCKING / ADVISORY / QUESTION, ships every finding with a
+  ready-to-apply fix (DDL, command, or migration snippet).
+- **`dba-mssql`** — IDENTITY vs UNIQUEIDENTIFIER clustering,
+  `WITH (NOLOCK)` in financial paths, `sp_executesql` with string
+  concat, online index builds, fill factor, lock escalation.
+- **`dba-postgres`** — `SERIAL` vs `IDENTITY`, `JSONB` indexing
+  with GIN, partial indexes, `CREATE INDEX CONCURRENTLY`,
+  `ALTER TABLE` lock modes, RLS, `TIMESTAMPTZ` vs `TIMESTAMP`.
+- **`dba-mongodb`** — ESR rule on compound indexes, TTL on
+  log-shaped collections, shard key cardinality and write
+  distribution, `$lookup` foreign-field indexing, multi-doc
+  transactions, schema validators.
+- **`dba-redis`** — `KEYS *` and `FLUSHALL` in production code,
+  `SET` without `EX`, hot counters, unbounded streams, pub/sub
+  vs streams for delivery guarantees, eviction policy mismatch.
+
+### Optional connected mode
+
+Each skill can deepen its analysis when a connection string is
+present in `.env.octopus`:
+
+- `DATABASE_URL` — Postgres
+- `MSSQL_CONNECTION_STRING` — SQL Server
+- `MONGODB_URI` — MongoDB
+- `REDIS_URL` — Redis
+
+Connected mode adds EXPLAIN plans, existing index listings,
+statistics, and memory pressure data. Static mode (no env var)
+still produces useful findings; the skill emits a `QUESTION`
+pointing at the missing env var instead of silently degrading.
+
+## Workflow this enables
+
+A typical DB-touching PR:
+
+1. You change a migration / schema / repository.
+2. Run `/octopus:codereview` (uncommitted) or `/octopus:pr-review`
+   (after opening the PR). The command detects DB files in the
+   diff and dispatches the `dba` role.
+3. `dba` walks the per-engine skills, optionally enriches with
+   runtime data if connection strings are configured, and emits
+   findings:
+   ```
+   | BLOCKING | Postgres | migrations/V42.sql:18 | FK orders.customer_id not indexed — JOINs from customers will full-scan | CREATE INDEX CONCURRENTLY idx_orders_customer_id ON orders(customer_id); |
+   ```
+4. The `architect` role runs in parallel against the same diff
+   for the non-DB concerns.
+5. **Both must approve** for the PR to be considered mergeable
+   on the data-layer dimension — see
+   [`core/pr-workflow.md`](https://github.com/leocosta/octopus/blob/main/core/pr-workflow.md)
+   ("Database Changes — Dual Gate").
+
+## Composes with
+
+- **[quality](/octopus/bundles/quality/)** — pairs naturally.
+  `quality` adds the broad audit gates (security, money,
+  multi-tenant); `dba` adds the data-layer specialist on top.
+- **[backend](/octopus/bundles/backend/)** — most DB-touching code
+  lives in backend repos; the `backend-developer` role and `dba`
+  share territory.
+- **[starter](/octopus/bundles/starter/)** — required foundation.

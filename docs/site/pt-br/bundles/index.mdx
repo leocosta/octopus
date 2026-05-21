@@ -4,7 +4,7 @@ description: Bundles são pacotes opinativos de skills, roles, rules e hooks aju
 sidebar:
   order: 0
 source_hash: "sha256:b6ee6a3ce319fe0b62d82ecbd5943ce6e33b1e182e0f71fa301d80fcec8b2909"
-needs_retranslation: false
+needs_retranslation: true
 ---
 
 Um **bundle** é a unidade que o Octopus usa para entregar fatias
@@ -22,7 +22,7 @@ ou de menos (o Octopus não ajuda). Um pequeno conjunto de bundles
 curados transforma a escolha de "decidir 80 coisas" para "escolher
 o arquétipo mais próximo do seu time".
 
-## Os cinco bundles
+## Os seis bundles
 
 - **[starter](/octopus/bundles/starter/)** — a fundação que todo
   repo deveria ter. Skills do ciclo de vida de docs, os protocolos
@@ -44,6 +44,12 @@ o arquétipo mais próximo do seu time".
 - **[growth](/octopus/bundles/growth/)** — ferramentas de
   lançamento + retenção. Lançamentos de features multi-canal,
   anúncios de release, geração de imagens de conteúdo.
+- **[dba](/octopus/bundles/dba/)** — o gate especialista da camada
+  de dados. Heurísticas de indexação, modelagem, segurança de
+  migrations, retenção, capacidade, segurança de dados e
+  concorrência para MSSQL, Postgres, MongoDB e Redis. Roda como
+  segundo approval ao lado do `architect` em qualquer PR que toca
+  a camada de dados.
 
 ## Como os bundles compõem
 

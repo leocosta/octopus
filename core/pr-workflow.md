@@ -62,6 +62,15 @@ Closes #<issue>
 - Author cannot approve their own PR
 - Re-request review after significant changes
 
+### Database Changes — Dual Gate
+
+PRs that touch the data layer (migrations, repositories/DAOs, `.sql`,
+Mongo schemas, Redis configs, ORM mappings) require approval from
+**both** the `dba` and `architect` roles. The `dba` owns indexing,
+modeling, migration safety, retention, capacity, data security, and
+concurrency for MSSQL/Postgres/MongoDB/Redis; the `architect` owns
+broader codebase concerns. A single approval is not enough on DB PRs.
+
 ## Merge Strategy
 
 - Use **squash merge** to the target branch — keeps history clean with one commit per PR
