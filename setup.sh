@@ -351,7 +351,7 @@ parse_octopus_yml() {
         knowledge_dir)  OCTOPUS_KNOWLEDGE_DIR="$val" ;;
         effortLevel)    OCTOPUS_EFFORT_LEVEL="$val" ;;
         permissionMode) OCTOPUS_PERMISSION_MODE="$val" ;;
-        workspace)      OCTOPUS_WORKSPACE_PATH="$val" ;;
+        workspace)      OCTOPUS_WORKSPACE_PATH="${val/#\~/$HOME}" ;;
         outputStyle)    OCTOPUS_OUTPUT_STYLE="$val" ;;
         scope)
           # Warn when the manifest declares a scope different from the one
