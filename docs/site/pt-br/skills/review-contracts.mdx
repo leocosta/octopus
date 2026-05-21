@@ -1,0 +1,75 @@
+---
+title: review-contracts
+description: Detecta contract drift entre API e frontend em monorepos multi-stack — endpoints, DTOs, enums, status codes, regras de auth, params.
+sidebar:
+  order: 10
+source_hash: "sha256:d9881dcadf0e99e2474b9f2c2b0799b665e964b02f6697ded1a9592566327c71"
+needs_retranslation: false
+---
+
+`review-contracts` é o audit que mira contract drift entre
+camadas em um repo multi-stack. O modo de falha dominante em
+monorepos com frontend e backend é um lado adicionar um campo
+novo ou mudar um status code e o outro lado não perceber — a
+quebra aparece depois, geralmente em produção, às vezes no PR
+de outro time.
+
+## Os seis eixos
+
+1. **Endpoints.** Nova rota no backend → checa se existe um
+   client no frontend que a chama. Rota removida no backend →
+   checa que nenhum client do frontend ainda a chama.
+2. **DTOs.** Mudanças em DTOs de request/response no backend
+   (campo adicionado / removido / renomeado) → checa se o type
+   correspondente no frontend bate. Campos opcionais em um lado
+   precisam ser opcionais no outro.
+3. **Enums.** Valor de enum adicionado no backend → checa se o
+   enum do frontend o lista. Valor de enum removido → checa se o
+   frontend não continua enviando.
+4. **Status codes.** Handler do backend que retorna um novo
+   status code (`429`, `409`, etc.) → checa se o caminho de
+   tratamento de erro no frontend cobre.
+5. **Regras de auth.** Endpoint que era público agora é protegido
+   (ou vice-versa) → checa se o código auth-aware do frontend
+   bate.
+6. **Params.** Novo query parameter obrigatório no backend →
+   checa se o frontend o passa.
+
+## Por que esses seis e não "qualquer drift"
+
+Uma checagem ampla do tipo "ache qualquer diferença" produz
+falsos positivos demais — types de backend e frontend têm
+divergência legítima (por exemplo, o backend armazena `Decimal`,
+o frontend usa `number`). Os seis eixos miram a superfície
+específica de contrato onde divergência quebra comportamento em
+runtime, ignorando divergência que é proposital.
+
+## Análise estática, não runtime
+
+O audit lê o código dos dois lados — não dispara requests nem
+compara com uma API viva. Isso significa que:
+
+- Ele pega drift que está no diff. Se a divergência já existia
+  antes do diff começar, não é sinalizada.
+- Ele depende de convenções (onde os DTOs ficam, como as rotas
+  são declaradas) para encontrar as superfícies a comparar.
+  Projetos que colocam seus types de backend em lugares fora do
+  convencional têm menos cobertura.
+
+## Combinando com `audit-all`
+
+`review-contracts` é um dos quatro audits que o `audit-all`
+compõe em paralelo. A invocação standalone faz sentido quando
+você quer focar especificamente em contratos (por exemplo, o PR
+de um time de frontend que só mexe no client da API; rodar a
+suíte completa de audit é overkill).
+
+## Suporte a stacks
+
+Hoje a skill entende TypeScript no frontend e C# (EF Core /
+ASP.NET) no backend — a stack de referência do Octopus. Outras
+stacks de backend precisam de uma atualização no SKILL.md para
+reconhecer a sintaxe de declaração de rotas e as convenções de
+DTO.
+
+[Fonte: `skills/review-contracts/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/review-contracts/SKILL.md)

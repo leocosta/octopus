@@ -1,0 +1,127 @@
+---
+title: growth
+description: Entregue features e releases como kits de launch multi-canal — landing pages, email, Slack, Discord, banners in-app, posts sociais, imagens de conteúdo, anúncios temáticos de release.
+sidebar:
+  order: 5
+source_hash: "sha256:582d07beef73a1a7de404f97dce65fbeb11e77f48b67af7ae33639eb72913add"
+needs_retranslation: false
+---
+
+`growth` é o bundle para times que **lançam** o seu trabalho. Ele adiciona
+o ferramental de launch multi-canal e geração de imagens ao `starter`,
+transformando uma feature entregue em um rollout coordenado por email,
+superfícies in-app, canais sociais e changelog.
+
+## Por que isso existe
+
+Entregar uma feature é só metade do trabalho. A outra metade — fazer
+usuários existentes notarem, fazer prospects avaliarem, manter o time
+alinhado sobre qual é a mensagem — geralmente é improvisada. Cada canal
+(email, Slack, Discord, banner in-app, thread no X, post no Discord,
+copy da landing page) ganha sua própria rodada bagunçada de copy-paste,
+a mensagem se desvia entre eles, e o launch sai com velocidade menor
+do que deveria.
+
+`growth` codifica o launch como uma única skill que produz
+**payloads nativos de canal** em uma só passada. Uma feature → um
+launch kit → 9 artefatos prontos para colar.
+
+## Arquétipo de time
+
+Isto é para times que:
+
+- Entregam para usuários existentes (foco em retenção) **e** para
+  prospects (foco em aquisição)
+- Coordenam launches em mais de dois canais
+- Escrevem changelogs que usuários de verdade realmente leem
+- Têm uma voz de marca que querem reforçar entre superfícies
+
+Se o seu "launch" é uma commit message e um ping no Slack em um único
+canal, `growth` é exagero. Adicione quando launches viram esforço
+recorrente que ninguém é dono.
+
+## O que inclui
+
+```yaml
+skills:
+  - launch-feature     # acquisition-focused multi-channel launch kit
+  - launch-release    # retention-focused themed release announcement
+  - content-images   # AI-generated images for posts and landings
+roles:
+  - marketer         # social media strategist + copywriter
+```
+
+[Fonte: `bundles/growth.yml`](https://github.com/leocosta/octopus/blob/main/bundles/growth.yml)
+
+### Por que cada um está aqui
+
+- **`launch-feature`** — foco em aquisição. Dada uma feature concluída
+  (número RM, caminho da spec, caminho da research ou PR), produz
+  um launch kit versionado em `docs/marketing/launches/`:
+  posicionamento, posts para X / LinkedIn / WhatsApp / Slack /
+  Discord / corpo de email / copy de landing page / entrada de
+  changelog / script de vídeo opcional. Desenhado para prospects
+  que ainda não conhecem o produto.
+- **`launch-release`** — foco em retenção. Dado um range de tag de
+  release, produz um anúncio de release temático: HTML da landing,
+  email, Slack, Discord, banner in-app, nota na status page, thread
+  no X, WhatsApp, slide deck. Desenhado para *usuários existentes*
+  se atualizando sobre o que mudou. O tom difere do `launch-feature`
+  — assume que quem lê usa o produto.
+- **`content-images`** — skill auxiliar que gera assets de imagem
+  (hero shots, social cards, imagens de banner) atrelados ao tema
+  de um launch. Vive no mesmo bundle para que o payload do launch
+  possa incluir visuais combinando.
+- **role `marketer`** — a persona para quem você delega workflows
+  de publicação com gate de aprovação, estratégia de canal e
+  decisões de campanha. Distinta da role `writer` (que foca em
+  docs internos); `marketer` escreve para audiências externas.
+
+### Por que não incluído
+
+- **Sem skills de engenharia** — `growth` é trabalho pós-merge.
+  Engenharia é `starter` / `backend` / `quality`. Mantenha os
+  bundles com propósito único.
+- **Sem skills que tocam código** — a role `marketer` explicitamente
+  não modifica código de aplicação. O bundle fica na pista de
+  conteúdo / marketing.
+
+## Workflow que isso habilita
+
+Dois formatos distintos de launch:
+
+**Feature launch** (aquisição):
+
+1. Você entrega uma nova feature (RM-095, digamos).
+2. Você roda `/octopus:launch-feature RM-095`. A skill lê a spec,
+   o plano de implementação, o PR, e produz um launch kit
+   versionado em `docs/marketing/launches/2026-05-20-RM-095/`.
+3. O kit tem posicionamento, copy de landing, três posts sociais
+   (X / LinkedIn / WhatsApp), um corpo de email, um anúncio de
+   Slack, um post de Discord e uma entrada de changelog — cada um
+   ajustado ao seu canal.
+4. Você revisa, edita para a voz, entrega à role `marketer` para
+   revisão de prontidão para publicação e então publica.
+
+**Anúncio de release** (retenção):
+
+1. Você corta um release (`octopus release` produz v1.50.0
+   cobrindo 10 RMs).
+2. Você roda `/octopus:launch-release v1.49.0..v1.50.0`. A skill
+   percorre o range do release, escolhe um tema que conecta os
+   itens entregues e produz um kit de anúncio temático.
+3. O kit inclui uma página HTML de landing (o resumo "o que há de
+   novo"), um email, posts específicos por canal, um banner in-app
+   e uma nota de status page. O tom é para *usuários existentes*:
+   assume que conhecem o produto, foca no que é novo e por que
+   importa.
+4. Você agenda o rollout entre os canais.
+
+## Compõe com
+
+- **[starter](/octopus/bundles/starter/)** — fundação obrigatória
+  (fornece `implement` e `debug` que produzem as features sendo
+  lançadas).
+- **[docs](/octopus/bundles/docs/)** — combina naturalmente. PRDs
+  escritos via `doc-prd` viram a fonte de verdade que o
+  `launch-feature` lê para escrever a copy de posicionamento.

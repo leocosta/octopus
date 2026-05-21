@@ -1,0 +1,158 @@
+---
+title: docs
+description: O bundle do ciclo de vida de documentação — RFCs, specs, plans, PRDs, ADRs, a disciplina de interview / grilling, triage, autoria de CLAUDE.md por módulo e autoria de skills.
+sidebar:
+  order: 3
+source_hash: "sha256:1b8e107bf8c4f95437afe88c1e1d7677a10e291e8fd6004a7bac0365ee5228af"
+needs_retranslation: false
+---
+
+`docs` é o bundle para times que **documentam o trabalho que fazem**.
+Ele estende as skills fundamentais `doc-adr` e `doc-lifecycle` do
+`starter` com o ciclo de vida completo dos artefatos de documentação:
+da pesquisa / interview inicial que produz uma definição de
+problema, passando por PRDs e specs, até plans e ADRs, e chegando
+nos arquivos CLAUDE.md por módulo para monorepos e nas meta-skills
+para autoria de outras skills.
+
+## Por que isto existe
+
+Times que levam documentação a sério esbarram nas mesmas lacunas.
+Eles têm um template de RFC, mas nenhuma skill para preenchê-lo.
+Escrevem specs, mas não têm um fluxo para grillar a spec contra o
+código real. Mantêm um `CLAUDE.md` na raiz de um monorepo de 5
+módulos e ele acaba inchado ou genérico. Issues caem no tracker e
+ninguém faz triage com disciplina.
+
+`docs` codifica cada uma dessas situações como uma skill com um
+protocolo documentado. O bundle é opt-in porque nem todo time
+escreve docs nessa profundidade — mas os times que escrevem ganham
+um fluxo coeso do problema até o artefato.
+
+## Arquétipo de time
+
+Isto é para times que:
+
+- Mantêm documentação viva (specs, ADRs, PRDs) como parte do ciclo
+  de desenvolvimento
+- Operam um backlog estruturado com disciplina de triage
+- Trabalham em monorepos onde convenções por módulo importam
+- Escrevem suas próprias skills do Octopus (ou fazem fork do
+  Octopus para uma variante interna)
+
+Se os "docs" do seu time se resumem a um README e uma lista de
+TODO, este bundle é exagero. Fique com o `doc-adr` do `starter`
+para a rara decisão difícil de reverter e reavalie se o volume de
+docs crescer.
+
+## O que está incluído
+
+```yaml
+skills:
+  - doc-lifecycle     # RFC → Spec → ADR → Knowledge → Changelog
+  - doc-plan          # spec → implementation plan
+  - plan-backlog      # plan-directory hygiene audit
+  - continuous-learning # promote recurring patterns to rules
+  - compress-skill    # shrink an existing SKILL.md
+  - interview         # greenfield requirements interview
+  - doc-align         # grill a plan against CONTEXT.md + ADRs
+  - doc-prd           # synthesise conversation into a PRD
+  - doc-subcontext    # per-module CLAUDE.md authoring
+  - triage-issues     # state-machine issue triage
+  - scaffold-skill    # create new Octopus skills + register in bundle
+roles:
+  - writer            # documentation specialist
+```
+
+[Source: `bundles/docs.yml`](https://github.com/leocosta/octopus/blob/main/bundles/docs.yml)
+
+### Por que cada uma está aqui
+
+As skills se agrupam em quatro sub-fluxos:
+
+**Problema → artefato** (do greenfield ao doc publicável):
+
+- **`interview`** — quando ainda não há plan, conduz uma entrevista
+  interativa de requisitos. Uma pergunta por vez, árvore de decisão,
+  produz um resumo de intenção confirmado
+- **`doc-align`** — quando há um plan, mas ele precisa ser testado
+  contra o CONTEXT.md / ADRs existentes. Disciplina de grilling com
+  o triple-gate do ADR
+- **`doc-prd`** — quando as decisões estão fixadas e prontas para um
+  agente AFK, sintetiza a conversa em um PRD pronto para o tracker
+  sem re-entrevistar
+
+**Spec → execução** (do artefato ao código funcionando):
+
+- **`doc-plan`** — transforma uma spec em um plan de implementação
+  com commits de checkpoint
+- **`doc-lifecycle`** — orquestra a cadeia RFC → Spec → ADR →
+  Knowledge → Changelog (também presente no `starter`)
+
+**Manutenção** (mantendo a documentação saudável):
+
+- **`plan-backlog`** — auditoria de higiene no diretório de plans e
+  no roadmap (plans órfãos, entradas obsoletas, links quebrados)
+- **`continuous-learning`** — promove padrões recorrentes observados
+  durante as sessões para o knowledge / rules do projeto
+- **`compress-skill`** — encolhe um SKILL.md existente quando ele
+  cresce além do limite recomendado
+- **`doc-subcontext`** — escreve `CLAUDE.md` por módulo em
+  monorepos (o artigo da Anthropic sobre grandes codebases destaca
+  isso como a principal prática de escala)
+
+**Ciclo de vida de issues**:
+
+- **`triage-issues`** — triage como state machine com disclaimer
+  obrigatório de IA, disciplina de reproduzir-antes-de-grillar,
+  registros de fora de escopo
+
+**Meta**:
+
+- **`scaffold-skill`** — cria novas skills do Octopus de ponta a
+  ponta e registra cada uma em um bundle alvo (nenhuma skill é
+  publicada solta)
+
+### Por que algumas não estão aqui
+
+- **`doc-adr`** — está no `starter`. ADRs são fundamentais, não
+  opcionais.
+- **`doc-spec`, `doc-design`, `doc-rfc`** — são slash commands
+  disponíveis em qualquer repo Octopus, não skills. São instaladas
+  independentemente da escolha de bundle porque são os principais
+  pontos de entrada do ciclo de vida da documentação.
+
+## Workflow que isto habilita
+
+O ciclo de vida completo para uma feature nova:
+
+1. Uma ideia vaga: "deveríamos deixar os pais verem o status da
+   matrícula." Você roda `/octopus:interview` e percorre uma árvore
+   de decisão até a intenção ficar concreta o bastante para ser
+   empacotada.
+2. A interview termina com uma declaração-raiz confirmada mais
+   restrições / atores / trade-offs. Você roda `/octopus:doc-prd`
+   para sintetizar isso em um PRD e publicá-lo no seu tracker com
+   o label `ready-for-agent`.
+3. Um agente AFK pega o ticket. Antes da implementação, a skill
+   roda `doc-align` se for relevante — grillando o PRD contra o
+   CONTEXT.md e os ADRs existentes para expor contradições.
+4. O agente passa para `/octopus:doc-plan` para converter o PRD em
+   um plan de implementação com commits de checkpoint.
+5. Após o merge, a entrada de changelog referencia o ID do PRD e o
+   plan. O `continuous-learning` pode trazer à tona um padrão
+   recorrente da sessão que vale promover a uma rule.
+6. A cada poucos meses, o `plan-backlog` audita o diretório de
+   plans em busca de higiene (plans órfãos, entradas obsoletas,
+   links quebrados).
+
+## Compõe com
+
+- **[starter](/octopus/bundles/starter/)** — base obrigatória
+  (fornece o workflow de implement que os docs eventualmente
+  direcionam).
+- **[quality](/octopus/bundles/quality/)** — combina naturalmente.
+  Auditorias alimentam o knowledge, que o `continuous-learning`
+  promove a rules.
+- **[growth](/octopus/bundles/growth/)** — combina naturalmente.
+  PRDs alimentam lançamentos de feature via `launch-feature`.

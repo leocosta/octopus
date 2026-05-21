@@ -1,0 +1,69 @@
+---
+title: audit-tenant
+description: Auditoria pré-merge da aplicação de escopo de dados multi-tenant — filtros de query, configs de entidades novas, SQL bruto, ownership de controller, endpoints admin.
+sidebar:
+  order: 8
+source_hash: "sha256:0b71036347a54273f7f5568e4144d816cb02f38fcb1f056a490daba0a73af70e"
+needs_retranslation: false
+---
+
+`audit-tenant` verifica as mudanças em busca de vazamentos de escopo de tenant — a
+classe de bug em que os dados de um tenant se tornam visíveis para outro
+porque a query esqueceu uma cláusula `WHERE tenant_id = ?` ou o
+controller pulou a verificação de ownership. Esses bugs raramente
+são pegos por testes (os dados de teste normalmente têm um único tenant) e raramente
+são pegos em review (a cláusula ausente é invisível).
+
+## As cinco verificações
+
+1. **Filtros de query.** Toda query contra uma tabela multi-tenant
+   precisa filtrar pelo escopo do tenant (tipicamente `tenant_id`,
+   `organization_id`, ou seja qual for a convenção do projeto).
+   Queries novas sem o filtro são sinalizadas.
+2. **Configs de entidades novas.** Adicionar uma nova entidade / model / tabela
+   que deva ser multi-tenant precisa incluir a coluna de escopo no
+   schema e um filtro padrão no nível do ORM (por exemplo, global query
+   filter do EF Core, extensão do Prisma, scope do Sequelize). Sem o
+   padrão, queries futuras silenciosamente perdem o filtro.
+3. **SQL bruto.** Qualquer SQL bruto novo (`db.execute(...)`, `EXEC sp_…`)
+   contorna os filtros globais do ORM por definição. Sinalizado
+   incondicionalmente — o autor precisa anotar por que a query bruta é
+   segura (por exemplo, um cron de nível de sistema que cruza tenants
+   intencionalmente).
+4. **Ownership de controller.** Novos endpoints que operam sobre um
+   recurso pertencente a um tenant precisam verificar que o recurso pertence ao
+   tenant do chamador antes de retornar ou modificá-lo. A verificação
+   costuma estar ausente em `GET /resources/:id` — a query faz join por `id`
+   e ignora o tenant.
+5. **Endpoints admin.** Qualquer endpoint marcado como admin / interno /
+   system precisa declarar explicitamente sobre quais tenants ele pode agir
+   (um único, todos, somente sistema). Endpoints admin sem limites são a
+   clássica fonte de incidentes do tipo "nunca pensamos que um admin
+   malicioso pudesse estar no escopo".
+
+## Por que isso importa mais do que parece
+
+Vazamentos multi-tenant têm um blast radius assimétrico. Um bug normal
+afeta um cliente; um vazamento de escopo de tenant afeta a relação de *todo*
+cliente com o seu produto no momento em que é descoberto, mais qualquer
+reporte regulatório que ele dispara. A auditoria é um dos poucos lugares
+onde o custo de rodá-la em cada PR vale a pena sem ambiguidade.
+
+## Combinando com convenções do EF Core / ORM
+
+A auditoria é mais eficaz quando o projeto se compromete com uma
+convenção: uma entidade base que carrega a coluna de escopo, um global
+query filter que a aplica por padrão, e uma regra de que qualquer
+desvio precisa ser explicitamente anotado. A auditoria então aplica
+a convenção; sem a convenção, a auditoria tem que inspecionar
+cada query individualmente e a taxa de falso-positivo sobe.
+
+## Quando a auditoria fica em silêncio
+
+Se os arquivos alterados não referenciam nenhuma entidade multi-tenant, a
+auditoria não reporta nada. O gatilho é heurístico — arquivos sob
+`db/`, `src/entities/`, `src/controllers/`, `src/api/`, mais qualquer
+arquivo que importe um model multi-tenant conhecido. Arquivos fora desses
+padrões são ignorados.
+
+[Fonte: `skills/audit-tenant/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/audit-tenant/SKILL.md)

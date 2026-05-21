@@ -1,0 +1,65 @@
+---
+title: audit-security
+description: Auditoria de segurança pré-merge — secrets hardcoded, vetores de injeção, rotas públicas sem auth, CVEs em dependências.
+sidebar:
+  order: 6
+source_hash: "sha256:4108a33c3b02365d89a7a9ecff00015ec76d1278211e15416f05adc9bddccf23"
+needs_retranslation: false
+---
+
+`audit-security` executa uma checagem em quatro eixos sobre as
+mudanças desde a última tag (ou um intervalo especificado pelo
+usuário). É a auditoria que pega os erros de segurança mais
+prováveis de aparecer em PRs de um time em operação — não modelos
+avançados de ameaça, mas o descuido recorrente que produz
+incidentes reais.
+
+## Os quatro eixos
+
+1. **Secrets.** Mais amplo que o hook `detect-secrets`: escaneia o
+   arquivo modificado inteiro (não só o diff), verifica a working
+   tree em busca de novos arquivos `.env*` que não deveriam estar
+   sob controle de versão, e sinaliza qualquer placeholder que
+   pareça suspeitamente real (por exemplo, uma chave "de teste"
+   com a entropia certa para ser uma chave viva).
+2. **Injection.** Procura concatenação de strings em queries SQL,
+   comandos de shell e saída HTML. Sinaliza qualquer mudança que
+   introduza uma interpolação `${var}` em uma query string ou em
+   um template literal que alimenta `eval` / `Function()`.
+3. **Auth gaps.** Novas rotas adicionadas sob caminhos públicos
+   comuns (`/api/`, `/v1/`) sem decorator de autenticação,
+   middleware ou atributo. Exclui rotas explicitamente marcadas
+   como públicas.
+4. **Dependências.** Cruza alterações em `package.json` /
+   `*.csproj` / `requirements.txt` com CVEs conhecidos. Atualizações
+   patch-level são apenas notadas; atualizações major de pacotes
+   relevantes para segurança são sinalizadas para revisão.
+
+## Por que esses quatro e não mais
+
+A skill faz uma escolha deliberada de ser um *gate*, não um
+*scanner abrangente*. Uma revisão de segurança completa leva
+horas; uma auditoria que leva horas roda uma vez por trimestre,
+não em todo PR. Os quatro eixos cobrem os modos de falha que de
+fato aparecem em PRs de times disciplinados — a cauda longa de
+ameaças avançadas fica para o trabalho de segurança trimestral.
+
+## Combinação com o hook `detect-secrets`
+
+O hook dispara no PreToolUse antes de cada commit; a auditoria
+roda como um gate pré-merge sobre o diff inteiro. Ambos miram
+secrets, mas em pontos diferentes do ciclo de vida. O hook é
+rápido e estreito; a auditoria é mais lenta e mais ampla, pegando
+coisas que o hook deixou passar (por exemplo, um secret adicionado
+antes do hook ter sido instalado neste repo).
+
+## Níveis de severidade e bypass
+
+Os achados são marcados como `⛔ block` (precisa ser corrigido
+antes do merge), `⚠ warn` (deveria ser corrigido, mas não é
+bloqueante) ou `ℹ info` (nota de contexto). Achados de nível block
+exigem um comentário marcador na linha ofensora reconhecendo o
+falso positivo — consulte o próprio relatório para a sintaxe exata
+de cada tipo de achado.
+
+[Source: `skills/audit-security/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/audit-security/SKILL.md)

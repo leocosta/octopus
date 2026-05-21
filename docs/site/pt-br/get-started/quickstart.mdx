@@ -1,0 +1,166 @@
+---
+title: Início Rápido
+description: Um passo a passo de 10 minutos em um repo real — escolha um bundle, gere a configuração do agent e rode sua primeira skill.
+sidebar:
+  order: 3
+source_hash: "sha256:4592fa76e864196bd5ea70d7e7789f13535ea52cf86211bf4f8bb06d6cdc9649"
+needs_retranslation: false
+---
+
+import { Code, Steps } from '@astrojs/starlight/components';
+
+Este passo a passo assume que você já
+[instalou o Octopus](/octopus/get-started/install/) e tem um repo
+real para trabalhar. Leva cerca de dez minutos do início ao fim em
+um repo pequeno, mais tempo em um monorepo grande.
+
+<Steps>
+
+1. ### Configure o Octopus em um repo
+
+   De dentro de qualquer repositório git:
+
+   ```bash
+   cd your-project
+   octopus update
+   ```
+
+   Na primeira execução, isso abre um **assistente de setup**
+   interativo:
+
+   - **Escolha um agent** — Claude Code (padrão), Copilot, Codex,
+     Gemini, OpenCode, ou vários de uma vez.
+   - **Escolha um bundle** — `starter` (padrão) é a base que todo
+     repo precisa. `quality` adiciona skills de auditoria. `docs`
+     adiciona o workflow de spec / ADR / PRD. `backend` adiciona
+     padrões de backend-developer. `growth` adiciona ferramentas
+     de launch / changelog.
+   - **Escolha as rules** — coding-style, testing, security,
+     quality gates. Herdadas do bundle por padrão.
+
+   O assistente escreve `.octopus.yml` na raiz do repo capturando
+   suas escolhas e gera os arquivos de configuração do agent:
+   `.claude/CLAUDE.md` + `.claude/skills/` + `.claude/commands/` +
+   `.claude/agents/` + `.claude/settings.json` se você escolheu
+   Claude Code; layouts similares para os outros agents.
+
+2. ### Inspecione o que foi gerado
+
+   Olhe em três lugares:
+
+   - **`.claude/CLAUDE.md`** — as instruções por sessão que o
+     Claude Code carrega na inicialização. Convenções de código,
+     estilo de commit, workflow de PR, além de referências para as
+     skills às quais ele tem acesso.
+   - **`.claude/skills/`** — um diretório por skill, cada um com
+     um `SKILL.md`. As descrições das skills ficam no frontmatter;
+     é com base nisso que o Claude Code decide quando engajar uma
+     skill.
+   - **`.claude/commands/`** — slash commands como
+     `/octopus:debug`, `/octopus:doc-prd`,
+     `/octopus:context-handoff`. Digite-os no Claude Code para
+     invocar uma skill explicitamente.
+
+   O mesmo conteúdo é gerado em `.github/copilot-instructions.md`
+   para o Copilot, `AGENTS.md` para o Codex, `GEMINI.md` para o
+   Gemini, `.opencode/rules.md` para o OpenCode — o Octopus
+   traduz o formato para cada agent.
+
+3. ### Experimente sua primeira skill
+
+   Abra o Claude Code no seu repo e peça para ele corrigir um bug.
+   Observe a skill `debug` engajando automaticamente — o agent vai
+   percorrer o protocolo de quatro fases (reproduzir → isolar →
+   corrigir com teste de regressão → documentar causa não óbvia)
+   em vez de partir para um chute.
+
+   Ou invoque explicitamente com um slash command:
+
+   ```
+   /octopus:debug the auth-refresh endpoint returns 401 on retry
+   ```
+
+   Outras invocações úteis para começar:
+
+   - `/octopus:doc-prd` — transforma a conversa atual em um PRD e
+     publica no seu issue tracker.
+   - `/octopus:context-handoff` — compacta a sessão atual em um
+     documento de handoff para o próximo agent.
+   - `/octopus:audit-all` — auditoria pré-merge que compõe checks
+     de security, money, tenant e contract.
+
+4. ### Descubra o que mais está instalado
+
+   ```bash
+   octopus skills list      # all skills available in this repo
+   octopus commands list    # all slash commands
+   octopus bundles list     # the bundles you have + the ones available
+   octopus roles list       # delegation personas
+   ```
+
+   Cada entrada tem uma descrição e aponta para o arquivo de
+   origem. Use essas listas para conhecer a superfície sem
+   vasculhar os diretórios.
+
+5. ### Personalize
+
+   Quando os padrões não combinam com o seu time:
+
+   - **Adicione uma rule** — coloque um arquivo markdown em
+     `.octopus/rules/typescript/local.md`. Ele é incluído na
+     configuração gerada do agent no próximo `octopus update`.
+   - **Sobrescreva uma skill** — copie uma skill de
+     `~/.octopus-cli/v<version>/skills/<name>/` para
+     `.octopus/skills/<name>/` no seu repo. A cópia local vence.
+   - **Fixe a versão de um bundle** — defina
+     `bundles: [starter@v1.45.0]` em `.octopus.yml` para congelar
+     a definição do bundle até você fazer o bump explicitamente.
+
+   Rode `octopus update` novamente após cada mudança.
+
+6. ### Configure o daemon (opcional)
+
+   Para workflows multi-agent de longa duração, inicie a TUI de
+   controle do Octopus:
+
+   ```bash
+   octopus control
+   ```
+
+   Isso abre uma interface de terminal com:
+
+   - Uma fila de invocações de agent pendentes e em execução.
+   - Streaming de logs por tarefa com scroll-back.
+   - Atalhos de teclado para cancelar, repetir ou responder a
+     qualquer tarefa.
+   - Um painel de agendamento para tarefas recorrentes.
+
+   Útil quando você está orquestrando várias roles em paralelo
+   via `/octopus:delegate @backend-developer …` e
+   `/octopus:delegate @writer …`.
+
+</Steps>
+
+## O que fazer a seguir
+
+Agora que o setup está funcionando, mergulhe na camada que mais
+importa para o seu time:
+
+- **Você escreve muitas features** → comece pela
+  [skill `implement`](/octopus/skills/implement/) e pela
+  [skill `debug`](/octopus/skills/debug/). Depois veja
+  `test-tdd` e
+  [`prototype`](/octopus/skills/prototype/).
+- **Você passa tempo em review / auditoria** → veja
+  [`review-pr`](/octopus/commands/pr-comments/),
+  [`audit-all`](/octopus/skills/audit-all/) e as quatro
+  auditorias que ela compõe.
+- **Você escreve muitos docs / specs / PRDs** → comece pelo
+  [bundle de docs](/octopus/bundles/docs/) e percorra a
+  [família doc-*](/octopus/skills/#docs).
+- **Você está escalando configuração entre repos** → leia o
+  [modelo mental](/octopus/get-started/mental-model/) e a
+  [visão geral dos bundles](/octopus/bundles/).
+
+Se você travar, a [visão geral da Architecture](/octopus/architecture/)
+cobre como as peças se encaixam.

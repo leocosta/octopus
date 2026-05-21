@@ -1,0 +1,76 @@
+---
+title: Architecture
+description: Como o Octopus funciona por dentro — geração orientada por manifest, a matriz de capacidades dos agents, composição de bundles e como as camadas de runtime (rules, skills, hooks, commands, roles) se compõem.
+sidebar:
+  order: 1
+source_hash: "sha256:205443cc1cd966a8cb88c271384ad5e8e1b87e276f8716fcee925a1a9674333b"
+needs_retranslation: false
+---
+
+O Octopus tem um trabalho só: pegar um manifest de projeto (`.octopus.yml`)
+e emitir a configuração correta para cada AI coding agent que o time
+usa. Cada agent tem capacidades diferentes — Claude Code suporta
+hooks e slash commands nativamente, Copilot espera tudo
+inline em um único arquivo, Codex fica no meio do caminho. A arquitetura é
+o conjunto de escolhas que faz isso funcionar sem que o manifest
+precise saber sobre cada agent.
+
+## O formato
+
+```
+.octopus.yml                            (the manifest — the only file you edit)
+   │
+   ▼
+octopus setup                           (the renderer — reads the manifest)
+   │
+   ├── reads core/ rules/ skills/       (universal content)
+   ├── reads bundles/<name>.yml         (expands bundle membership)
+   ├── reads agents/<name>/manifest.yml (per-agent capabilities)
+   │
+   ▼
+generated configuration per agent       (.claude/, .github/, AGENTS.md, …)
+```
+
+Três propriedades são inegociáveis nesta arquitetura:
+
+- **O manifest é a única fonte da verdade.** Arquivos gerados
+  são derivados do `.octopus.yml` e nunca editados diretamente. Se
+  você precisa mudar comportamento, você muda o manifest.
+- **Agents são consumidores intercambiáveis.** Adicionar suporte para um
+  novo agent (Gemini Flash, um bot interno customizado) é uma mudança
+  no manifest em `agents/<name>/`, nunca uma mudança no `setup.sh`.
+- **Bundles são a unidade de opinião.** Skills e
+  rules individuais são primitivos técnicos; bundles os agrupam em
+  um *formato de workflow* (`starter`, `quality`, `docs`, `growth`,
+  …) para que os usuários componham por intenção.
+
+## Os quatro primitivos
+
+| Primitivo | O que é | Sempre carregado? |
+|---|---|---|
+| **Rule** | Uma instrução permanente — coding style, security, patterns. | Sim — toda conversa tem as rules ativas em contexto. |
+| **Skill** | Uma capacidade sob demanda — acionada quando a intenção do usuário corresponde à sua descrição. | Não — carregada quando relevante. |
+| **Hook** | Uma guarda em runtime — dispara em um evento do ciclo de vida do Claude Code. | N/A — dispara deterministicamente, não é carregado por contexto. |
+| **Command** | Um slash command que encapsula uma skill ou subcomando da CLI. | N/A — invocado pelo usuário. |
+
+Mais dois primitivos compostos:
+
+| Composto | O que é |
+|---|---|
+| **Bundle** | Um pacote de skills + roles + rules curado por intenção. O wizard do modo Quick escolhe bundles por você. |
+| **Role** | Uma persona com seu próprio modelo, allowlist de tools e viés de skills (`@architect`, `@writer`, `@backend-developer`). |
+
+## Páginas nesta seção
+
+- [Geração orientada por manifest](./manifest/) — como o `.octopus.yml`
+  se torna configuração gerada, por que o manifest é renderizado por template
+  em vez de copiado.
+- [Matriz de capacidades dos agents](./agents/) — o que cada agent suporta
+  nativamente e como o Octopus traduz as capacidades faltantes.
+- [Composição de bundles](./bundles/) — como bundles se expandem em skills
+  e rules, como dependências transitivas são resolvidas.
+- [Estrutura do projeto](./layout/) — o que vive onde no
+  repositório do Octopus e como navegar por ele.
+
+[Source: agent manifests](https://github.com/leocosta/octopus/tree/main/agents) ·
+[Source: bundles](https://github.com/leocosta/octopus/tree/main/bundles)

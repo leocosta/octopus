@@ -1,0 +1,122 @@
+---
+title: quality
+description: Gates de auditoria pré-merge — security, money-logic, escopo multi-tenant, contratos cross-stack, refactoring de profundidade arquitetural e atualização de configuração.
+sidebar:
+  order: 2
+source_hash: "sha256:3575adaa8cfdf99c8182ce0b1c3dbb1e2bd37d2e7cd808b7101eb8de3c5989c3"
+needs_retranslation: false
+---
+
+`quality` é o bundle para times que enviam código para produção. Ele adiciona
+**gates de auditoria pré-merge** sobre o workflow de implementação do `starter`:
+auditorias separadas para security, money handling, escopo multi-tenant,
+contratos cross-stack, profundidade arquitetural e atualização de configuração —
+compostas em paralelo pelo `audit-all`.
+
+## Por que isso existe
+
+O `starter` codifica como escrever bom código. O `quality` codifica como
+verificar se o código está seguro para o merge. As duas coisas são preocupações
+diferentes: implementação é um *workflow*, auditorias são *gates*. Misturar tudo
+em um único bundle significaria que times que não precisam de auditorias (um
+projeto hobby, um repo de prototipagem) pagariam o custo do ruído mesmo assim;
+times que de fato precisam delas perderiam a visibilidade que vem de tê-las
+como add-ons deliberados.
+
+As auditorias deste bundle miram modos de falha específicos com custo real em
+produção: um cálculo monetário que arredonda para o lado errado, uma query
+multi-tenant sem o filtro de tenant, um contrato de API que diverge entre
+frontend e backend.
+
+## Arquétipo de time
+
+Isto é para times que:
+
+- enviam para usuários pagantes (money-handling, billing, subscriptions)
+- rodam um SaaS multi-tenant (regras de data-scope, filtros de ownership)
+- têm separação entre frontend e backend (contratos de API, alinhamento de DTOs)
+- têm superfície de segurança não-trivial (auth, secrets, endpoints
+  públicos)
+- querem higiene trimestral sobre a própria configuração do agent
+
+Se seu repo é uma ferramenta single-tenant sem money / auth / contratos de API,
+o `quality` é, em grande parte, exagero. Fique com o `starter` e adicione o
+`quality` depois, se a superfície crescer.
+
+## O que inclui
+
+```yaml
+skills:
+  - audit-all         # parallel composer of the four audits
+  - review-contracts  # API-vs-frontend contract drift
+  - refactor-deepen   # find shallow modules, propose deepening
+  - audit-config      # configuration freshness (rules, skills, hooks)
+roles:
+  - architect         # senior reviewer with BLOCKING/ADVISORY/QUESTION discipline
+```
+
+Mais as skills de auditoria que o `audit-all` compõe — `audit-security`,
+`audit-money`, `audit-tenant`, `review-contracts` — que são instaladas como
+dependências transitivas.
+
+[Fonte: `bundles/quality.yml`](https://github.com/leocosta/octopus/blob/main/bundles/quality.yml)
+
+### Por que cada uma está aqui
+
+- **`audit-all`** — o composer que roda as quatro auditorias em paralelo contra
+  uma branch ou PR, produzindo um relatório consolidado com severidades em
+  camadas e hotspots cross-audit. É o ponto de entrada que a maioria dos times
+  usa.
+- **`review-contracts`** — separada do `audit-all` porque atua em um escopo
+  diferente (drift de contrato cross-stack detectado no diff, não auditorias
+  de conteúdo de arquivo).
+- **`refactor-deepen`** — auditorias de profundidade arquitetural não se
+  encaixam no formato de gate pré-merge, mas pertencem à mesma preocupação de
+  "esse código está limpo?" das auditorias de security e money. A skill
+  encontra oportunidades de aprofundamento de módulos rasos via teste de
+  deleção e um vocabulário canônico.
+- **`audit-config`** — adicionada na v1.50.0 para capturar o problema de
+  drift de configuração apontado no artigo da Anthropic sobre large-codebases:
+  rules calibradas para modelos mais antigos podem limitar modelos mais novos.
+  Audita `rules/`, `skills/`, `hooks/`, `commands/`, `bundles/` em busca de
+  datas obsoletas, skills fantasmas e referências a paths deprecados.
+- **role `architect`** — o `quality` inclui a persona de senior-reviewer porque
+  achados de auditoria muitas vezes precisam de uma classificação de nível
+  humano: blocking vs advisory vs needs-discussion. A role formaliza isso.
+
+### Por que algumas coisas não estão aqui
+
+- **`debug`, `implement`, `review-pr`** — estão no `starter`. O `quality`
+  audita *resultados*; o `starter` os produz.
+- **`audit-pii`** — caberia, mas ainda não existe como skill. Uma adição futura
+  potencial se o tratamento de PII virar um alvo de auditoria frequente.
+
+## Workflow que isso habilita
+
+Um PR típico pronto para merge:
+
+1. Você termina uma feature e dá push na sua branch.
+2. Antes de abrir o PR, você roda `/octopus:audit-all` localmente. A skill
+   dispara as quatro auditorias em paralelo contra o diff e então produz um
+   relatório consolidado com severidades: `⛔ block`, `⚠ warn`, `ℹ info`.
+   Hotspots cross-audit (arquivos que dispararam achados em múltiplas
+   auditorias) são destacados.
+3. Se a mudança toca contratos de API, o `review-contracts` inspeciona o diff
+   em busca de drift de DTO / endpoint / enum / status-code entre o backend e
+   o frontend, indo além do que as auditorias por stack cobrem.
+4. Periodicamente (trimestralmente), você roda `/octopus:audit-config` para
+   capturar drift de configuração — suposições de modelo obsoletas, skills
+   fantasmas, paths deprecados.
+5. Quando a superfície de auditoria exigir julgamento humano, você usa
+   `/octopus:delegate @architect` para percorrer os achados e classificá-los.
+
+## Compõe com
+
+- **[starter](/octopus/bundles/starter/)** — fundação obrigatória (provê
+  `implement`, `debug`, `review-pr` que produzem o código a ser auditado).
+- **[docs](/octopus/bundles/docs/)** — combina naturalmente. Achados de
+  auditoria muitas vezes viram ADRs (decisões registradas para a próxima vez)
+  ou itens de backlog.
+- **[backend](/octopus/bundles/backend/)** — combina naturalmente. A maior
+  parte do código auditável (money, multi-tenant, auth) vive em repos de
+  backend.

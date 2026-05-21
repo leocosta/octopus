@@ -1,0 +1,78 @@
+---
+title: doc-subcontext
+description: CLAUDE.md por módulo em monorepos — herda da cadeia pai, captura convenções exclusivas do subdiretório, com alvo de 50–100 linhas para não deslocar o pai.
+sidebar:
+  order: 15
+source_hash: "sha256:61015f9ae05a558c8000927d635d4d164ec2b346485f88f923331c478639dda4"
+needs_retranslation: false
+---
+
+`doc-subcontext` (RM-085) é a skill que resolve o problema de
+escala apontado pela Anthropic em *"How Claude Code Works in
+Large Codebases"*: um único `CLAUDE.md` no topo não carrega
+contexto suficiente para um monorepo grande, mas copiar o
+contexto inteiro em cada subdiretório produz N cópias que vão
+divergindo.
+
+A skill escreve um *sub-context* — um pequeno `CLAUDE.md` dentro
+de um subdiretório específico que **herda da cadeia pai** e
+captura apenas o que é único ao seu escopo.
+
+## Por que herdar em vez de duplicar
+
+Um `CLAUDE.md` por módulo, feito de forma ingênua, repete
+convenções de projeto (estratégia de testes, nomenclatura de
+branch, formato de commit) em cada diretório. Assim que uma
+dessas convenções muda, os sub-contexts divergem — alguns são
+atualizados, outros não, e o agent acaba recebendo orientações
+conflitantes dependendo do caminho em que está trabalhando.
+
+Herdar resolve isso: cada sub-context começa com "herda de
+`../CLAUDE.md`" como um ponteiro explícito, e inclui apenas o
+que é único ao diretório. Quando uma convenção do projeto muda,
+o pai é atualizado; os sub-contexts não precisam saber.
+
+## A disciplina da skill
+
+Quando invocada para um subdiretório, a skill:
+
+1. Lê a cadeia pai (este diretório → pai → … → `CLAUDE.md`
+   raiz) e mostra ao usuário o que já está herdado.
+2. Pergunta apenas sobre convenções *únicas deste subdiretório*.
+   Se a resposta de uma pergunta é a mesma do pai, ela não é
+   feita.
+3. Escreve o sub-context com uma seção `## Inherits from` no
+   topo apontando para `../CLAUDE.md`, seguida de um pequeno
+   conjunto de seções específicas do subdiretório.
+4. Mira em 50–100 linhas. Se o sub-context crescer além disso,
+   a skill sugere dividir mais ou empurrar conteúdo comum para
+   o pai.
+
+## O que entra em um sub-context
+
+Bons candidatos:
+
+- O vocabulário de domínio deste módulo (quando difere do
+  vocabulário mais amplo do projeto)
+- Arquivos que um agent deve sempre abrir primeiro ao trabalhar
+  neste diretório
+- Anti-padrões específicos do módulo ("não acesse
+  `../../core/` diretamente — use a API pública em
+  `../core/index.ts`")
+- Convenções de teste por módulo, se divergirem das do projeto
+
+Maus candidatos (estes pertencem ao `CLAUDE.md` raiz):
+
+- Estilo de código do projeto inteiro
+- Convenções de commit
+- Qualquer coisa que se aplique a mais de um módulo
+
+## Quando NÃO escrever um sub-context
+
+Se tudo o que o agent precisa saber sobre um diretório já está
+no pai, não escreva um sub-context — o arquivo vazio é pior do
+que nenhum arquivo, porque sugere que existe algo específico do
+diretório quando não existe. A skill se recusa a escrever um
+sub-context que consistiria apenas em "herda do pai".
+
+[Fonte: `skills/doc-subcontext/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/doc-subcontext/SKILL.md)

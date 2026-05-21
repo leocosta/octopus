@@ -1,0 +1,118 @@
+---
+title: Bundles
+description: Bundles são pacotes opinativos de skills, roles, rules e hooks ajustados a um arquétipo de time — a forma como você escolhe quanto o Octopus aparece num repo.
+sidebar:
+  order: 0
+source_hash: "sha256:b6ee6a3ce319fe0b62d82ecbd5943ce6e33b1e182e0f71fa301d80fcec8b2909"
+needs_retranslation: false
+---
+
+Um **bundle** é a unidade que o Octopus usa para entregar fatias
+coerentes de configuração. Quando você roda `octopus update` num
+repo e escolhe um bundle, a CLI instala os skills, roles, rules e
+hooks que pertencem a ele — e para por aí. Escolher o bundle certo
+é como você controla quanto o Octopus aparece num determinado
+codebase.
+
+Bundles existem porque a alternativa é pior. Sem eles, cada time
+teria que percorrer uma lista de 34 skills, 37 commands e 15 hooks
+e decidir cada um individualmente. Essa escolha é feita errado sob
+pressão de tempo, e as pessoas acabam ou instalando demais (ruído)
+ou de menos (o Octopus não ajuda). Um pequeno conjunto de bundles
+curados transforma a escolha de "decidir 80 coisas" para "escolher
+o arquétipo mais próximo do seu time".
+
+## Os cinco bundles
+
+- **[starter](/octopus/bundles/starter/)** — a fundação que todo
+  repo deveria ter. Skills do ciclo de vida de docs, os protocolos
+  `implement` e `debug`, o loop de TDD, a disciplina de
+  prototipação, os skills de session-handoff e review-feedback, e
+  os hooks de ciclo de vida que os aplicam.
+- **[quality](/octopus/bundles/quality/)** — o compositor de
+  auditorias. Segurança, dinheiro, escopo multi-tenant, contratos
+  cross-stack, atualidade de configuração, refatorações de
+  profundidade arquitetural. Cobre o que o `starter` não cobre
+  para auditorias pre-merge.
+- **[docs](/octopus/bundles/docs/)** — o ciclo de vida da
+  documentação. Specs, ADRs, plans, PRDs, a disciplina de
+  entrevista / grilling, triagem, autoria de CLAUDE.md por módulo
+  e autoria de skills.
+- **[backend](/octopus/bundles/backend/)** — padrões específicos
+  de backend e convenções de testes end-to-end. Casa com a role
+  `backend-developer`.
+- **[growth](/octopus/bundles/growth/)** — ferramentas de
+  lançamento + retenção. Lançamentos de features multi-canal,
+  anúncios de release, geração de imagens de conteúdo.
+
+## Como os bundles compõem
+
+Bundles são projetados para **empilhar**. A maioria dos times
+opera com um ou dois:
+
+- **Só `starter`** — times solo ou de duas pessoas que querem a
+  fundação sem o overhead de auditorias.
+- **`starter` + `docs`** — times que mantêm documentação viva
+  (cultura de RFC / Spec / ADR / PRD).
+- **`starter` + `quality`** — times entregando em produção com
+  gates de auditoria pre-merge (segurança, billing, multi-tenant).
+- **`starter` + `backend`** — repos só de backend com padrões
+  profundos de framework.
+- **`starter` + `quality` + `docs` + `growth`** — um time de
+  produto totalmente equipado em todo o espectro.
+
+As combinações não são impostas — você pode empilhar quaisquer
+bundles que quiser no `.octopus.yml`. As recomendações acima são
+pontos de partida, não regras.
+
+## O que vive numa definição de bundle
+
+Cada bundle é um único arquivo YAML em `bundles/<name>.yml` com:
+
+```yaml
+name: starter
+description: <one sentence — shows in the setup wizard>
+category: foundation        # foundation | intent | stack
+persona_question: <only on intent/stack bundles>
+persona_default: false
+skills: [...]
+roles: [...]
+rules: []
+mcp: []
+hooks: null
+```
+
+O campo `category` tem peso:
+
+- Bundles **`foundation`** (atualmente só `starter`) instalam por
+  padrão — o setup wizard os oferece como "a baseline".
+- Bundles **`intent`** instalam quando o usuário opta por um
+  workflow (`docs`, `quality`, `growth`). Cada um carrega uma
+  `persona_question` que o wizard faz.
+- Bundles **`stack`** instalam quando o usuário identifica uma
+  stack (`backend`). Mesmo padrão de `persona_question`.
+
+## Quando criar um novo bundle
+
+Provavelmente você não deveria. Os cinco bundles existentes cobrem
+os arquétipos de time mais claros, e adicionar mais dilui o modelo
+mental de "escolha o arquétipo mais próximo" que torna os bundles
+úteis.
+
+Motivos para adicionar um bundle mesmo assim:
+
+- Um workflow coerente envolve 4+ skills que não cabem no
+  arquétipo de nenhum bundle existente
+- Os skills compõem uma atividade de time reconhecível (não só um
+  agrupamento aleatório)
+- A persona question do bundle ajudaria de fato os usuários a
+  decidir
+
+Se você está tentado a adicionar um bundle por um ou dois skills,
+o movimento melhor é adicioná-los a um bundle existente.
+
+## Referência
+
+As definições de bundle vivem em [`bundles/`](https://github.com/leocosta/octopus/tree/main/bundles)
+no repo de origem. Cada arquivo é curto — o rationale por bundle
+vive nas páginas linkadas acima.

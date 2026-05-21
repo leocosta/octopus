@@ -1,0 +1,91 @@
+---
+title: doc-plan
+description: Transforma uma spec aprovada em um plano de implementação enxuto, no estilo TDD, em docs/plans/<slug>.md — cada tarefa pequena o suficiente para um agent entregar de forma independente com um teste passando.
+sidebar:
+  order: 14
+source_hash: "sha256:7686333ff95e895d196c8f9024170295e94f36d3174ba69f84978a7fa7ea622f"
+needs_retranslation: false
+---
+
+`doc-plan` lê uma spec aprovada e produz um plano de
+implementação: uma lista de tarefas pequenas o suficiente para que
+cada uma seja um único loop TDD red/green/refactor com um commit
+limpo. A saída é salva em `docs/plans/<slug>.md` e consumida pelo
+`octopus run` para despachar tarefas a agents em paralelo.
+
+## Por que plans, e não só specs
+
+Uma spec descreve *o que construir*. Um plano de implementação
+descreve *como construir incrementalmente* — qual é o primeiro
+teste, qual é o menor commit que o faz passar, o que depende do
+quê para que tarefas possam rodar em paralelo. As duas peças têm
+formatos diferentes e exigem artefatos diferentes.
+
+Specs sem plans tendem a ser implementadas como um pull request
+gigante. Plans sem specs perdem a noção de por que o trabalho está
+sendo feito. A sequência spec-depois-plan entrega as duas coisas
+— o porquê e o como-em-pedaços.
+
+## Formato da tarefa
+
+Cada tarefa do plan tem:
+
+- Um título curto
+- Uma descrição do comportamento sendo adicionado
+- O teste falhando que prova que o comportamento está ausente
+- A implementação mínima que faz o teste passar
+- O tipo de agent mais adequado (`backend-developer`,
+  `frontend-developer`, etc.)
+- Uma lista `depends_on:` de outras tarefas que precisam terminar antes
+
+Tarefas sem dependências compartilhadas rodam em paralelo quando
+consumidas pelo `octopus run`. O DAG de dependências é o
+agendamento.
+
+## Frontmatter enriquecido do plan
+
+O plan é um checklist Markdown com um bloco de frontmatter YAML
+que máquinas leem:
+
+```yaml
+---
+slug: user-auth
+pipeline:
+  review_skill: octopus:codereview
+  pr_on_success: true
+tasks:
+  - id: t1
+    agent: backend-developer
+    depends_on: []
+  - id: t2
+    agent: backend-developer
+    depends_on: [t1]
+  - id: t3
+    agent: frontend-developer
+    depends_on: [t1]
+---
+
+- [ ] **t1** — Create users table and migration
+- [ ] **t2** — Implement auth endpoints
+- [ ] **t3** — Login screen and registration form
+```
+
+Os checkboxes são marcados no arquivo conforme as tarefas
+terminam. Se uma tarefa falha, o runner pausa e oferece
+`[r]etry  [s]kip  [a]bort`.
+
+## Tarefas no tamanho de TDD, não no tamanho de feature
+
+A disciplina que faz o plan funcionar é manter as tarefas
+pequenas. "Implementar auth" é uma feature, não uma tarefa — é
+grande demais para um loop red/green/refactor. "Implementar
+POST /login que retorna um JWT para credenciais válidas, com um
+teste para o happy path" é uma tarefa. O plan quebra features em
+tarefas nesse grão.
+
+Quando a spec está vaga a ponto de o plan não conseguir definir
+tarefas no tamanho de TDD, esse é um sinal de que a spec precisa
+de mais detalhe antes do planejamento. Volte à spec, preencha a
+lacuna, volte ao plan.
+
+[Source: `skills/doc-plan/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/doc-plan/SKILL.md)

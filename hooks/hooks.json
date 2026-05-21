@@ -84,6 +84,17 @@
           "stacks": ["typescript", "python"]
         }
       ]
+    },
+    {
+      "matcher": "Write|Edit",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "octopus/hooks/post-tool-use/mark-stale-translation.sh",
+          "id": "mark-stale-translation",
+          "timeout": 5000
+        }
+      ]
     }
   ],
   "PreCompact": [

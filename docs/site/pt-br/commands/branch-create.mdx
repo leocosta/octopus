@@ -1,0 +1,45 @@
+---
+title: branch-create
+description: Cria uma branch de desenvolvimento seguindo os prefixos de Conventional Commits — infere um nome a partir do contexto, valida o formato e recusa underscores ou camelCase.
+sidebar:
+  order: 2
+source_hash: "sha256:725a15c177d39d9d27a14a901713c8fa68abac5dae873b2b2136dba0e71d83ae"
+needs_retranslation: false
+---
+
+`/octopus:branch-create` cria uma feature branch a partir da base
+atual, seguindo a convenção de nomenclatura de branches do projeto:
+`<type>/<short-description>`, onde `type` é um dos tipos de
+Conventional Commits (`feat`, `fix`, `refactor`, `docs`, `test`,
+`chore`, `style`, `perf`, `ci`).
+
+Quando invocado sem argumento, o agent infere o nome da branch a
+partir do contexto recente — tarefa atual, última mensagem do
+usuário, arquivos abertos, git status — e o propõe para confirmação
+antes de criar.
+
+## Por que um comando e não apenas `git checkout -b`
+
+Três pequenas decisões somam atrito suficiente para justificar
+codificá-las em um comando:
+
+- **Disciplina de prefixo.** O prefixo da branch ancora a automação
+  downstream: `pr-open` deriva o emoji do título do pull request a
+  partir dele, `release` deriva o bump de versão (feat → minor,
+  fix → patch). Um nome de branch ad-hoc quebra essa cadeia.
+- **Validação de formato.** Minúsculas com hífens, sem underscores,
+  sem camelCase, sem barras além do prefixo. O CLI recusa nomes
+  malformados para que a convenção permaneça consistente entre
+  contribuidores e bots.
+- **Escolha da base branch.** Padrão é `main`, ou a branch
+  `release/*` ativa se o time usa releases no estilo GitFlow. Sem
+  commits silenciosos na base errada.
+
+## Combinando com outros comandos
+
+O sucessor natural é `/octopus:commit` após a primeira edição, e
+depois `/octopus:pr-open` quando a branch estiver pronta. A sequência
+completa é uma única invocação de `/octopus:dev-flow` se você quiser
+orquestração com pausas entre as fases.
+
+[Fonte: `commands/branch-create.md`](https://github.com/leocosta/octopus/blob/main/commands/branch-create.md)

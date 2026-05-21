@@ -33,9 +33,11 @@ mkdir -p "$content_dir"
 # scratch (gitignored). Use a content-changes file watcher in dev
 # if you need hot reload.
 if command -v rsync >/dev/null 2>&1; then
-  rsync -a --delete "$project_root/docs/site/" "$content_dir/"
+  rsync -a --delete --exclude '.*' "$project_root/docs/site/" "$content_dir/"
 else
   cp -R "$project_root/docs/site/." "$content_dir/"
+  # Strip dotfiles that cp -R would have copied (e.g., .translation-glossary.md).
+  find "$content_dir" -maxdepth 2 -name '.*' -not -name '.' -not -name '..' -delete 2>/dev/null || true
 fi
 
 # Copy the brand assets.

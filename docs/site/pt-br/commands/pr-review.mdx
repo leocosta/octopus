@@ -1,0 +1,75 @@
+---
+title: pr-review
+description: Faz a auto-revisão do diff de um PR usando o checklist de correctness / design / readability / edge cases / security / tests e, em seguida, atribui os revisores humanos definidos em .octopus.yml.
+sidebar:
+  order: 5
+source_hash: "sha256:5776f7d607dac0ee65044fc99d8bb1abc20936a2f7ea72139326510675620d66"
+needs_retranslation: false
+---
+
+`/octopus:pr-review` é o passo de auto-revisão do agent sobre um PR
+que ele mesmo abriu (ou ajudou a abrir). Roda depois do `pr-open`
+e antes da revisão humana: puxa o diff, percorre um checklist de
+seis eixos, reporta os achados para o autor e — assim que
+qualquer issue bloqueante for resolvida — atribui os revisores
+humanos configurados em `.octopus.yml`.
+
+## Por que fazer auto-revisão antes de atribuir revisores
+
+As correções mais baratas são aquelas que os revisores nunca
+chegam a ver. O checklist de seis eixos pega as classes óbvias de
+erro antes que elas consumam atenção do revisor:
+
+- **Correctness** — o código faz o que a descrição do PR diz que
+  faz?
+- **Design** — a mudança se encaixa na arquitetura existente ou
+  introduz um padrão novo?
+- **Readability** — um revisor que não escreveu este código
+  consegue entendê-lo na primeira leitura?
+- **Edge cases** — checagens de null, entradas vazias, race
+  conditions, limites off-by-one.
+- **Security** — injection, bypass de auth, secrets, exposição de
+  dados.
+- **Tests** — as coisas certas estão sendo testadas, no nível
+  certo?
+
+A auto-revisão não é adversarial — é o mesmo passo que um
+contribuidor disciplinado faria antes de marcar "Ready for
+review". Codificar isso como comando garante que aconteça de
+forma consistente, em vez de ser pulado sob pressão de tempo.
+
+## O que o `pr-review` não é
+
+O escopo é menor que o do `/octopus:codereview`. O `codereview` é
+uma revisão abrangente de segurança e qualidade de mudanças ainda
+não commitadas — com escopo mais amplo (audita secrets, procura
+debug statements esquecidos, verifica se os tests rodam) e é
+pensado para ser invocado deliberadamente antes do push.
+
+O `pr-review` é mais rápido e focado em PR — é a disciplina que
+roda toda vez, em todo PR, sem pular.
+
+## Atribuição de revisores
+
+Os revisores vêm do `.octopus.yml`:
+
+```yaml
+reviewers:
+  - alice
+  - bob
+```
+
+Se a lista estiver vazia, o comando deixa o PR sem atribuição e
+avisa o usuário. Rotação de revisores (round-robin, expertise por
+área, etc.) está fora de escopo — o manifest é a superfície de
+configuração.
+
+## Combinação com outros comandos
+
+`/octopus:pr-comments` é a próxima parada quando o feedback
+chegar — ele percorre a disciplina de *receber* code review
+(verificar a crítica, pedir evidência em comentários genéricos,
+separar feedback fundamentado de preferência, nunca fazer
+mudanças performáticas).
+
+[Source: `commands/pr-review.md`](https://github.com/leocosta/octopus/blob/main/commands/pr-review.md)

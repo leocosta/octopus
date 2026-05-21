@@ -1,0 +1,74 @@
+---
+title: audit-all
+description: Composer paralelo para auditorias de segurança, dinheiro, multi-tenant e contratos — descoberta compartilhada de arquivos, relatório único com severidade, hotspots cruzados.
+sidebar:
+  order: 5
+source_hash: "sha256:35ceb1e02f1ca3f41abe9b5e211b8564701ff57ec978e2d1f1b2545f0f0d1637"
+needs_retranslation: false
+---
+
+`audit-all` é o composer que roda as quatro auditorias pre-merge
+em paralelo contra um ref. É o default certo para qualquer PR
+não-trivial em um codebase SaaS multi-tenant — em vez de lembrar
+de rodar `audit-security`, `audit-money`, `audit-tenant` e
+`review-contracts` separadamente, você roda `audit-all` uma vez e
+recebe um relatório consolidado.
+
+## Por que um composer em vez de uma auditoria única
+
+As quatro auditorias miram modos de falha diferentes — secrets e
+injection vs. arredondamento e idempotência vs. tenant-scope e
+filtros SQL vs. drift de DTO entre frontend/backend. Combiná-las
+em uma auditoria monolítica perderia duas propriedades que
+importam:
+
+- **Severidade por auditoria.** Cada auditoria classifica seus
+  próprios findings; colapsá-las em uma severidade global dilui o
+  sinal ("tudo é severidade média" é inútil).
+- **Opt-out independente.** Times que não lidam com dinheiro
+  podem desabilitar `audit-money` sem perder as outras; um
+  monolito forçaria tudo-ou-nada.
+
+O composer as mantém como quatro skills independentes coordenadas
+por descoberta compartilhada de arquivos (a lista de arquivos
+alterados é computada uma vez e entregue para cada auditoria),
+para que elas não percorram o diff cada uma por si.
+
+## O que `audit-all` adiciona além de rodá-las em série
+
+- **Execução paralela.** As quatro auditorias rodam
+  concorrentemente. Em um diff típico de PR, isso é um speedup de
+  3–4× sobre a forma sequencial.
+- **Descoberta compartilhada de arquivos.** Um único walk de
+  `git diff` em vez de quatro.
+- **Relatório consolidado.** Findings das quatro são mesclados em
+  uma tabela única ordenada por severidade, com uma seção de
+  hotspots cruzados que destaca arquivos sinalizados por mais de
+  uma auditoria (geralmente o primeiro lugar para olhar).
+
+## O que ele não audita
+
+As quatro são afinadas para modos de falha típicos de SaaS.
+Auditorias especializadas vivem em suas próprias skills e não são
+incluídas por default:
+
+- Regressões de performance → use uma suíte de benchmark
+  dedicada, não uma auditoria estática.
+- Acessibilidade → ainda não é uma skill; cai de volta nas regras
+  de frontend em `rules/frontend.md`.
+- Compliance (GDPR, evidências de SOC2) → específico demais de
+  domínio para generalizar — registre uma skill específica do
+  projeto se precisar.
+
+## Invocação
+
+```bash
+/octopus:audit-all                  # against the current diff
+/octopus:audit-all main..HEAD       # against a specific range
+```
+
+O marcador de bypass para falsos positivos fica nos findings
+individuais de cada auditoria, não em `audit-all` como um todo —
+veja a página de cada auditoria para a sintaxe.
+
+[Source: `skills/audit-all/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/audit-all/SKILL.md)

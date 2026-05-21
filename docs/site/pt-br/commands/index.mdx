@@ -1,0 +1,125 @@
+---
+title: Commands
+description: Slash commands que encapsulam skills do Octopus e subcomandos da CLI em invocações de uma tecla — ciclo branch / commit / PR / merge, ciclo de vida de docs, auditorias, delegação e release.
+sidebar:
+  order: 1
+source_hash: "sha256:7f1e903271e5a151aec7cf996f18bf822cad2c7239127f4f15aafb230464b7ed"
+needs_retranslation: false
+---
+
+Commands são os removedores de fricção. Cada command nesta seção
+é um wrapper fino que invoca uma skill com os argumentos certos,
+executa um subcomando do `octopus.sh`, ou costura vários dos dois
+em um único fluxo orquestrado. Eles são instalados como slash
+commands do agente durante o `octopus setup`: digite
+`/octopus:commit` e o agente executa a skill de commit contra o
+diff staged.
+
+## Por que commands existem se skills também existem
+
+Uma skill é *como o agente pensa sobre uma tarefa*. Um command é
+*a tecla que inicia a tarefa*. A separação importa por duas
+razões:
+
+- **Descobribilidade.** Digitar `/` mostra o catálogo de coisas
+  que o usuário pode pedir. Skills são invisíveis até o agente
+  decidir engajar uma; commands as trazem à superfície.
+- **Wrapping.** Alguns fluxos não são apenas uma skill — `dev-flow`
+  conduz o agente por branch / commit / PR / review / merge, com
+  pausas para input humano. O command é o orquestrador que
+  mantém o estado; as skills são os passos.
+
+Conforme a regra do docs-site, commands que *apenas* invocam uma
+skill ganham uma linha na tabela aqui — o rationale fica na
+página da skill. Commands com decisões de design próprias ganham
+uma página de detalhe.
+
+## Ciclo de vida do PR
+
+O loop completo do PR, desenhado para ser invocável passo a passo
+ou de ponta a ponta via `/octopus:dev-flow`.
+
+| Command | O que faz | Detalhe |
+|---|---|---|
+| `/octopus:branch-create` | Cria uma branch seguindo os prefixos do Conventional Commits; infere um nome a partir do contexto. | [→](./branch-create/) |
+| `/octopus:commit` | Sugere uma mensagem Conventional Commits a partir do diff staged; faz commit após confirmação; adiciona o trailer AI co-authored quando aplicável. | [→](./commit/) |
+| `/octopus:pr-open` | Abre um PR com título + body escritos pelo agente seguindo as convenções de PR do Octopus; faz push da branch se necessário. | [→](./pr-open/) |
+| `/octopus:pr-review` | Faz self-review do diff do PR contra o checklist do projeto de correctness/design/readability/edge-case/security/tests, e então atribui reviewers humanos. | [→](./pr-review/) |
+| `/octopus:pr-comments` | Aplica a disciplina de receiving-code-review ao feedback do PR — verificar, pedir evidências, separar argumentos fundamentados de preferência, nunca performativo, esclarecer ambiguidades. | [→](./pr-comments/) |
+| `/octopus:pr-merge` | Faz merge de um PR aprovado com squash; deleta a branch; recusa se não estiver aprovado ou se os checks estiverem falhando. | [→](./pr-merge/) |
+| `/octopus:dev-flow` | O ciclo de vida completo em um único command, com pausas humanas entre as fases. | [→](./dev-flow/) |
+| `/octopus:codereview` | Review abrangente de segurança + qualidade das mudanças não commitadas. Escopo mais amplo que `pr-review`. | — |
+
+## Ciclo de vida da documentação
+
+A cadeia completa RFC → Spec → ADR → Knowledge. Cada command
+invoca sua skill homônima; o rationale vive nas páginas das skills
+([doc-lifecycle](/octopus/skills/doc-lifecycle/) é o guia geral).
+
+| Command | Mapeia para a skill |
+|---|---|
+| `/octopus:doc-research` | `doc-research` — brainstorming interativo → research doc + RM do roadmap | [→](./doc-research/) |
+| `/octopus:doc-rfc` | `doc-rfc` — rascunho de Request for Comments |
+| `/octopus:doc-spec` | `doc-spec` — novo spec de feature a partir de template |
+| `/octopus:doc-design` | `doc-design` — preenchimento interativo de design para um spec existente |
+| `/octopus:doc-plan` | `doc-plan` — plan de implementação bite-sized, estilo TDD, a partir de um spec |
+| `/octopus:doc-prd` | `doc-prd` — PRD publicado no issue tracker do projeto |
+| `/octopus:doc-adr` | `doc-adr` — Architecture Decision Record a partir de template |
+| `/octopus:doc-subcontext` | `doc-subcontext` — `CLAUDE.md` por módulo para monorepos |
+
+## Auditorias
+
+Todas as auditorias encapsulam suas respectivas skills. Execute
+`audit-all` para disparar as relevantes em paralelo.
+
+| Command | O que audita |
+|---|---|
+| `/octopus:audit-all` | Dispara `audit-security`, `audit-money`, `audit-tenant` e `cross-stack-contract` em paralelo; consolida achados com níveis de severidade. |
+| `/octopus:audit-money` | Código que toca dinheiro — tipos, arredondamento, testes em centavos, drift de env, idempotência, assinaturas de webhook. |
+| `/octopus:audit-tenant` | Enforcement de escopo de dados multi-tenant — query filters, SQL bruto, ownership de controllers. |
+| `/octopus:audit-config` | Frescor da configuração do agente — premissas de modelo, datas vencidas, skills fantasma, paths deprecados. |
+
+## Implementação & debugging
+
+| Command | Mapeia para a skill |
+|---|---|
+| `/octopus:implement` | `implement` — o workflow TDD / plan / verify / simplify / commit. |
+| `/octopus:debug` | `debug` — reproduzir → isolar → regression-test → documentar. |
+| `/octopus:prototype` | `prototype` — protótipos descartáveis para amadurecer um design antes de se comprometer com ele. |
+| `/octopus:review-contracts` | `cross-stack-contract` — detecção de drift de contrato frontend/backend. |
+| `/octopus:review-pr` | `receiving-code-review` — disciplina para lidar com feedback de PR. |
+
+## Orquestração
+
+| Command | O que faz | Detalhe |
+|---|---|---|
+| `/octopus:delegate` | Despacha uma tarefa (ou pipeline multi-etapa) para um ou mais roles do Octopus; suporta dispatch paralelo, aliases de role e gates entre passos. | [→](./delegate/) |
+| `/octopus:context-handoff` | Compacta a conversa atual em um doc de handoff para outro agente continuar. | — |
+| `/octopus:interview` | Grelha o usuário sobre um plan ou design até que cada ramo da árvore de decisão se resolva. | — |
+| `/octopus:triage-issues` | Conduz bugs e feature requests recebidos pela máquina de estados de triagem. | — |
+| `/octopus:review-proposals` | Revisa candidatos em `.octopus/proposals/<ts>.md` vindos do Stop hook de knowledge-update; promote / partial / archive / discard. | [→](./review-proposals/) |
+
+## Lançamentos & releases
+
+| Command | O que produz |
+|---|---|
+| `/octopus:launch-feature` | Kit de lançamento multi-canal a partir de uma feature concluída (RM / spec / PR). |
+| `/octopus:launch-release` | Kit temático de anúncio de release para usuários existentes — landing page, email, Slack, Discord, banner, thread no X, deck. |
+| `/octopus:release` | Release versionado com entrada no CHANGELOG, sync de versão no README, git tag e GitHub Release. | [→](./release/) |
+
+## Autoria de skills
+
+| Command | O que faz | Detalhe |
+|---|---|---|
+| `/octopus:scaffold-skill` | Cria uma nova skill de ponta a ponta — frontmatter, SKILL.md, REFERENCE.md opcional, registro em bundle para que nenhuma skill seja entregue solta. | [→](./scaffold-skill/) |
+| `/octopus:compress-skill` | Encolhe um SKILL.md sem alterar a semântica — limpeza determinística + rewrite opcional por LLM. |
+| `/octopus:plan-backlog` | Varre diretórios de planning + roadmap em busca de plans órfãos, concluídos-mas-não-arquivados, duplicados, links quebrados. |
+| `/octopus:map-system` | Gera um mapa de sistema do codebase atual para agentes AFK e onboarding. |
+
+## Meta
+
+| Command | O que faz |
+|---|---|
+| `/octopus:update` | Atualiza a CLI do Octopus para o release mais recente; fixa a versão no lockfile com `--pin`. |
+
+[Fonte: `commands/`](https://github.com/leocosta/octopus/tree/main/commands)

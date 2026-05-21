@@ -1,0 +1,73 @@
+---
+title: review-proposals
+description: Revise as propostas geradas pelo Stop hook propose-knowledge-update em .octopus/proposals/ — promova, promova parcialmente, arquive ou descarte cada candidata.
+sidebar:
+  order: 13
+source_hash: "sha256:f28d855678c9f0651e69591569a575c8df0c22bb514368b8b9cc0cb14e3f1cf7"
+needs_retranslation: false
+---
+
+`/octopus:review-proposals` é a superfície de revisão humana para as
+propostas que o Stop hook [propose-knowledge-update](/octopus/hooks/propose-knowledge-update/)
+deixa em `.octopus/proposals/<timestamp>.md`. Ele carrega a
+proposta mais recente ainda não revisada, percorre cada seção e
+encaminha a decisão do usuário pela skill responsável, para que a
+promoção continue disciplinada.
+
+## Por que propostas precisam de uma superfície de revisão separada
+
+O Stop hook gera sinais brutos: "o usuário corrigiu o agent três
+vezes sobre X", "o agent leu o arquivo Y oito vezes", "o mesmo
+grep rodou quatro vezes". Esses são *sintomas*. Transformar um
+sintoma em uma atualização útil de conhecimento é trabalho
+editorial — fraseado, decisão de onde a regra mora, escolha do
+que deixar de fora.
+
+O comando de revisão é onde esse trabalho editorial acontece. Ele
+nunca promove automaticamente; toda proposta precisa de uma
+decisão humana antes que qualquer coisa na árvore do projeto
+mude.
+
+## As quatro decisões
+
+Para cada seção da proposta o usuário escolhe uma:
+
+- **promote** — o achado é real e o fraseado do draft do agent
+  está bom. Encaminha pela skill responsável (`continuous-learning`
+  para feedback comportamental, `doc-adr` para decisões,
+  `doc-subcontext` para fatos específicos de módulo), que escreve
+  no alvo apropriado (`CLAUDE.md`, `knowledge/`, `rules/`,
+  `CLAUDE.md` por módulo).
+- **partial** — o achado é real mas o fraseado precisa de ajuste.
+  O usuário edita inline; o roteamento então promove a versão
+  editada.
+- **archive** — mantém a proposta como registro (algo aconteceu),
+  mas não muda o conhecimento do projeto. Move para
+  `.octopus/proposals/archive/`.
+- **discard** — falso positivo ou caso isolado. O arquivo da
+  proposta é deletado.
+
+## Por que rotear a promoção pelas skills
+
+Cada alvo de promoção tem suas próprias convenções: `CLAUDE.md` é
+conciso e direto, arquivos em `knowledge/` têm seções
+estruturadas, ADRs seguem o formato Context / Decision /
+Consequences. Despejar o texto bruto da proposta em qualquer um
+desses quebra a convenção.
+
+Rotear pela skill responsável faz com que a promoção respeite o
+formato do alvo — a skill `continuous-learning` sabe como
+escrever uma entrada `feedback_`, a skill `doc-adr` sabe como
+escrever um ADR. O texto da proposta vira insumo para a skill,
+não a saída final.
+
+## Cadência
+
+O Stop hook dispara ao final de toda sessão, mas a maioria das
+sessões não gera proposta — o hook só escreve uma quando algum
+sinal cruza o limite. Na prática, você revisa propostas quando
+lembra de checar `.octopus/proposals/`, ou depois de uma sessão
+particularmente frustrante em que você sabia que algo estava
+errado.
+
+[Fonte: `commands/review-proposals.md`](https://github.com/leocosta/octopus/blob/main/commands/review-proposals.md)

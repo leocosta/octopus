@@ -1,0 +1,69 @@
+---
+title: prototype
+description: Construa um protótipo descartável para amadurecer um design antes de assumir o compromisso — terminal app para questões de estado/lógica de negócio, ou várias variações de UI alternáveis a partir de uma única rota.
+sidebar:
+  order: 4
+source_hash: "sha256:d82c89b9369daaab67361bc7266b9e808d8d53daa3537c4650274c5e550ba5cb"
+needs_retranslation: false
+---
+
+`prototype` entra em ação quando você quer *experimentar algo* antes
+de decidir o que construir. A saída é intencionalmente descartável —
+não é código de produção, não é um ponto de partida, não é algo
+para "arrumar depois". O objetivo é tomar uma decisão; uma vez
+tomada, o protótipo é deletado.
+
+## Por que é uma skill separada de `implement`
+
+`implement` é para código que você pretende manter. Protótipos são
+para código que você pretende jogar fora. Os dois têm incentivos
+opostos:
+
+- `implement` se preocupa com testes, tipos, tratamento de erros, nomes.
+- `prototype` se preocupa em *tornar a pergunta concreta* — como
+  essa state machine realmente se comporta na prática? Esse elemento
+  de UI comunica o que eu acho que comunica?
+
+Se você aplicasse a disciplina do `implement` a um protótipo,
+gastaria horas deixando código descartável limpo — isso é esforço
+desperdiçado. Se você aplicasse a permissividade do `prototype` a
+código permanente, entregaria uma bagunça. A separação entre as
+skills mantém os dois modos honestos.
+
+## Dois caminhos pelos quais a skill roteia
+
+A skill escolhe um com base no formato da pergunta.
+
+**Terminal app** — para perguntas sobre estado, lógica de negócio ou
+formato de dados. Exemplo: "esse cálculo de desconto produz o
+resultado certo quando promoções são empilhadas?" O protótipo é um
+único arquivo que recebe entrada, executa a lógica e imprime a
+saída. Zero UI; a pergunta não precisa disso.
+
+**Variações de UI** — para perguntas sobre apresentação ou interação.
+Exemplo: "o editor de plano de aula deve ser um formulário único e
+longo, um wizard ou um layout split-pane?" O protótipo são várias
+implementações radicalmente diferentes, alternáveis a partir de uma
+única rota (`/proto/v1`, `/proto/v2`, `/proto/v3`), de modo que as
+respostas possam ser comparadas lado a lado.
+
+## O que "descartável" significa de fato
+
+A skill escreve o protótipo em `prototypes/<topic>/` (ou caminho
+similar — depende do projeto) e adiciona o diretório ao
+`.gitignore`. Quando a decisão é tomada e a implementação real
+chega, o diretório do protótipo é deletado no mesmo commit da
+implementação. A justificativa da decisão vai para o spec, ADR ou
+descrição do PR — o código em si não precisa sobreviver.
+
+## Quando NÃO prototipar
+
+- A pergunta pode ser respondida lendo código existente (não
+  precisa construir nada — basta olhar).
+- A pergunta é sobre um sistema externo que o time não controla
+  (prototipe do lado do sistema externo, não do seu).
+- A decisão é reversível com baixo custo (pule o protótipo e
+  escolha uma opção — você vai aprender mais rápido a partir da
+  implementação real).
+
+[Fonte: `skills/prototype/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/prototype/SKILL.md)

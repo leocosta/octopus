@@ -1,0 +1,68 @@
+---
+title: plan-backlog
+description: Verifica os diretórios de planejamento e o roadmap em busca de problemas de higiene — plans órfãos, plans de RMs já concluídos ainda fora de archive/, duplicatas, links quebrados, entradas do roadmap sem plan e plans obsoletos.
+sidebar:
+  order: 16
+source_hash: "sha256:a36d3365d35c94878af82a4e04a53b7e3285fb3ff8d9437b712830e2be502003"
+needs_retranslation: false
+---
+
+`plan-backlog` é a auditoria de higiene da camada de planejamento
+do projeto — `docs/roadmap.md`, `docs/specs/`, `docs/plans/` e o
+diretório de archive abaixo deles. Por padrão, roda em modo
+read-only e produz uma lista de descobertas de drift; com `--fix`,
+aplica movimentações reversíveis para `plans/archive/`.
+
+## O que a auditoria detecta
+
+| Descoberta | O que significa |
+|---|---|
+| **Plan órfão** | Um arquivo de plan sem RM no roadmap e sem spec — trabalho que alguém começou a planejar sem passar pelo caminho normal de entrada. |
+| **Concluído-não-arquivado** | Um plan para um RM que já está `shipped (vX.Y.Z)`, mas o arquivo do plan continua em `docs/plans/` em vez de `docs/plans/archive/`. |
+| **Duplicata** | Mais de um arquivo de plan para o mesmo RM. Geralmente resultado de alguém começar um plan novo em vez de editar o existente. |
+| **Links internos quebrados** | Um plan ou spec apontando para um caminho de arquivo que não existe mais (ou nunca existiu). |
+| **Órfão do roadmap** | Uma entrada de RM em `docs/roadmap.md` sem plan, spec ou doc de research vinculado. A ideia existe, mas o trabalho para avançá-la sumiu. |
+| **Plan obsoleto** | Um arquivo de plan sem alterações no `git log` nos últimos 90 dias. Ou está morto, ou está sendo ativamente ignorado. |
+
+## Por que esta skill em vez de "só limpar manualmente"
+
+A camada de planejamento é o tipo de superfície que acumula
+entropia mais rápido do que é percebido. Cada drift individual é
+pequeno (um plan obsoleto, um link quebrado); o efeito cumulativo
+é que ninguém confia que o roadmap esteja correto, o que faz com
+que novo trabalho passe ao lado dele em vez de por dentro.
+
+A auditoria torna o drift visível. Uma vez que vira uma lista,
+corrigir é mecânico — e a flag `--fix` faz as movimentações
+reversíveis automaticamente (arquiva plans concluídos, não apaga
+duplicatas nem órfãos).
+
+## Por que `--fix` só faz arquivamento
+
+O movimento de archive é reversível (o arquivo continua existindo,
+só em um diretório diferente) e o critério é inequívoco (o RM
+vinculado foi shipped). As outras descobertas exigem julgamento
+humano:
+
+- Um **plan órfão** pode ser trabalho desejado que passou por fora
+  do processo — arquivar pode perder contexto.
+- Uma **duplicata** precisa de revisão para escolher qual é a
+  autoritativa.
+- Um **link quebrado** pode ser um typo ou pode ser uma referência
+  real a um arquivo movido — a correção é diferente em cada caso.
+- Um **órfão do roadmap** pode ser uma ideia aguardando
+  priorização — arquivar é destrutivo.
+- Um **plan obsoleto** pode estar dormente, mas ainda relevante.
+
+Então `--fix` é conservador: limpa o caso inequívoco e deixa os
+julgamentos para o humano.
+
+## Cadência
+
+A auditoria é barata o suficiente para rodar como gatilho
+`pre-push-audit-suggest` quando o diff toca `docs/roadmap.md` ou
+`docs/plans/`. Uma revisão trimestral do relatório completo
+(independente do diff) pega a acumulação lenta que as execuções
+por push deixam passar.
+
+[Fonte: `skills/plan-backlog/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/plan-backlog/SKILL.md)

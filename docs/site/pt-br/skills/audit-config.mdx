@@ -1,0 +1,78 @@
+---
+title: audit-config
+description: Auditoria trimestral de frescor da superfície de configuração do agent — premissas sobre modelo, datas obsoletas, phantom skills, hooks travados em mudanças de família de modelo, caminhos depreciados.
+sidebar:
+  order: 9
+source_hash: "sha256:60f4fa3d669553e169b2644aac33672a4e07d4b4c43788442ec167663ecbdcfb"
+needs_retranslation: false
+---
+
+`audit-config` (RM-087) é a auditoria que pega o drift de
+configuração — o descompasso entre o que as rules / skills / hooks /
+commands / bundles afirmam e o que de fato está atual. Roda em modo
+read-only, produz um relatório com severidade em camadas e se
+recusa a aplicar fixes automáticos — configuração é sensível e
+mudanças devem ser deliberadas.
+
+## Por que uma auditoria de config é separada de uma auditoria de código
+
+Auditorias de código procuram modos de falha no diff que está sendo
+mergeado. Auditorias de config procuram modos de falha na *própria
+configuração do agent* — aquilo que diz ao agent como pensar. Esses
+modos de falha são diferentes:
+
+- Uma descrição de skill que menciona "Opus 3" quando o projeto
+  agora usa Opus 4.7 (drift de premissa sobre modelo).
+- Uma rule citando um prazo de nove meses atrás que todo mundo já
+  esqueceu (datas obsoletas).
+- Uma skill listada em um bundle mas que nunca é engajada porque o
+  campo `description:` é vago demais para casar com a intenção do
+  usuário (phantom skill).
+- Um hook editado pela última vez quando o Claude 3.5 era o atual;
+  o runtime de hoje se comporta de forma diferente (hooks travados
+  em mudanças de família de modelo).
+- Um command referenciando um caminho que foi renomeado duas
+  releases atrás (caminhos depreciados).
+
+Esses pontos são diferentes de "o código está correto?" e precisam
+da sua própria lente de auditoria.
+
+## As cinco verificações
+
+1. **Premissas específicas de modelo.** Faz grep por "Claude 3",
+   "Opus 3", "Sonnet 3.5" e referências de versão similares em
+   rules / skills / hooks. Sinaliza para revisão, a menos que seja
+   explicitamente intencional.
+2. **Referências de datas obsoletas.** Datas com mais de 9 meses
+   sem uma referência sucessora (uma data de follow-up ou um marker
+   de "completed"). O limite de 9 meses casa com o turnover típico
+   de família de modelo.
+3. **Phantom skills.** Skills sem frontmatter `triggers:` e com um
+   `description:` vago que não inclui uma pista de roteamento. Elas
+   existem no catálogo, mas o agent nunca as engaja porque nada
+   casa.
+4. **Hooks travados em mudanças de família de modelo.** Hooks cujo
+   timestamp `last-modified` é anterior à última grande mudança de
+   família de modelo. Heurística — sinalizado para revisão, não
+   reprovado automaticamente.
+5. **Referências a caminhos depreciados.** Commands / skills
+   referenciando caminhos que não existem na árvore atual. O
+   exemplo canônico é a migração `docs/superpowers/plans/` →
+   `docs/plans/` na v1.49.x — qualquer coisa ainda apontando para
+   o caminho antigo está morta.
+
+## Cadência
+
+Rode trimestralmente, ou após qualquer mudança grande de família de
+modelo. O próprio hook `pre-push-audit-suggest` do projeto vai
+sugerir a auditoria quando o diff tocar em `rules/`, `skills/`,
+`hooks/`, `commands/` ou `bundles/`.
+
+## Por que não tem auto-fix
+
+Mudanças de configuração são o tipo de mudança que deve ser
+revisado em um PR — "a auditoria mandou" não é uma mensagem de
+commit suficiente. A auditoria produz a lista; um humano escreve os
+fixes como commits separados, com o rationale.
+
+[Source: `skills/audit-config/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/audit-config/SKILL.md)

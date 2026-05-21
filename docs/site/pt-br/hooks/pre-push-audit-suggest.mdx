@@ -1,0 +1,75 @@
+---
+title: Pre-push audit suggest
+description: Hook git pre-push em modo advisory que inspeciona o diff e imprime quais audit skills do Octopus são relevantes — nunca bloqueia o push, nunca executa as audits, nunca toca a rede.
+sidebar:
+  order: 6
+source_hash: "sha256:4272e23582a0a6f1cfc73ae56f5798c510814c6938ca0321f5998b0ec9257e9f"
+needs_retranslation: false
+---
+
+`pre-push-audit-suggest` é o único hook da suíte que se conecta
+a um evento nativo do ciclo de vida do git em vez do runtime do
+agente. Ele roda a cada `git push`, inspeciona o diff contra a
+branch upstream e imprime uma ou duas linhas:
+
+```
+Octopus suggests running:
+  /octopus:audit-money   — touched 3 files under src/billing/
+  /octopus:audit-tenant  — added new entity in src/db/schema.ts
+```
+
+Só isso. Nenhuma audit é executada. Nenhuma chamada de rede.
+Nenhum exit code que bloquearia o push.
+
+## Por que advisory, não blocking
+
+As audits são pesadas — leem o diff, cruzam padrões pelo
+codebase, às vezes disparam sub-agents. Rodá-las a cada push
+adicionaria 30–90 segundos de espera antes do push sair da
+máquina do desenvolvedor, o que torna o hook de push hostil e
+acende o `--no-verify` como workaround constante.
+
+O modelo advisory também é mais honesto: uma audit pode encontrar
+um problema real, ou não, e forçá-la a cada push assume que o
+custo vale a pena toda vez. Imprimindo a sugestão, o hook deixa a
+decisão com o desenvolvedor — ele pode rodar
+`/octopus:audit-money` se mexeu em código de pagamento, ou
+empurrar o push e tratar os achados na review do PR.
+
+A mesma escolha de design aparece em outros hooks (por exemplo,
+`auto-format` sai com 0 em erros, `typecheck` não bloqueia tool
+calls). A regra compartilhada: hooks que trazem conselho rodam em
+modo advisory; hooks que previnem dano rodam em modo blocking.
+
+## Como a relevância é calculada
+
+O hook examina o diff com um pequeno conjunto de padrões de
+path/conteúdo:
+
+| Audit | Gatilho |
+|---|---|
+| `audit-money` | Arquivos tocados em `src/billing/`, `src/payments/`, ou qualquer coisa que case com `money\|price\|cents\|fee\|discount\|invoice` |
+| `audit-tenant` | Novas linhas `class … : DbContext`, novos entity configs, SQL raw sem filtro `WHERE` em colunas de tenant |
+| `audit-security` | Mudanças em código de auth, middleware, carregamento de env-var, handlers de rotas públicas |
+| `cross-stack-contract` | Arquivos tocados em ambos os lados de um split frontend/backend (`api/` + `web/`, etc.) |
+| `audit-config` | Edições em `rules/`, `skills/`, `hooks/`, `commands/` ou `bundles/` |
+
+Os padrões são intencionalmente conservadores — melhor não
+sugerir nada do que sugerir algo irrelevante. Adicionar um novo
+padrão de audit é uma mudança de uma linha no script.
+
+## Como optar por não usar
+
+Defina a env var para pular o hook no push atual:
+
+```bash
+OCTOPUS_SKIP_AUDIT_HOOK=1 git push
+```
+
+Opt-out permanente é via o próprio arquivo do hook — o hook se
+instala como `.git/hooks/pre-push` (encadeado com qualquer coisa
+que já estivesse lá). Removê-lo exige editar o arquivo instalado;
+o manifest não expõe um toggle porque o hook é tão barato que
+optar por pular push a push tem sido suficiente na prática.
+
+[Fonte: `hooks/git/pre-push-audit-suggest.sh`](https://github.com/leocosta/octopus/blob/main/hooks/git/pre-push-audit-suggest.sh)

@@ -1,0 +1,105 @@
+---
+title: Guard de ações destrutivas
+description: Hook PreToolUse que bloqueia comandos Bash irreversíveis — rm -rf, git push --force, DROP TABLE, DELETE FROM sem WHERE — com um marcador de bypass visível.
+sidebar:
+  order: 2
+source_hash: "sha256:9784e6c864aa0fdcf681774ab602d637f80af6f4f128dc309662609f7f56e683"
+needs_retranslation: false
+---
+
+`destructive-guard` é o hook que pega a classe de erro de agente
+por descuido: um `rm -rf node_modules` digitado sem pensar, um
+`git push --force` que sobrescreve commits de outra pessoa, um
+`DELETE FROM users;` sem cláusula `WHERE`. Ele roda como hook
+PreToolUse em chamadas Bash, sai com código 2 para bloquear e
+imprime uma única linha explicando o motivo.
+
+## Por que isso existe
+
+O system prompt do Claude Code avisa o agente sobre ações
+destrutivas, mas o aviso é um prompt — pode ser sobrescrito,
+perdido em compactação ou simplesmente ignorado em
+`--permission-mode=bypassPermissions`. Outros agentes (Copilot,
+Codex, Gemini, OpenCode) não trazem nenhum aviso equivalente.
+
+O guard é a camada abaixo de tudo isso: uma porta regex
+incondicional. O agente não consegue convencer o runtime a aceitar
+a chamada. Essa assimetria — conselho de prompt vs. recusa em
+runtime — é todo o propósito de ter uma camada de hooks.
+
+## Padrões bloqueados
+
+| Padrão | Por quê |
+|---|---|
+| `rm -rf` | Delete recursivo forçado |
+| `git push --force` / `-f` | Reescreve histórico remoto |
+| `git reset --hard` | Descarta mudanças locais |
+| `git checkout --` | Descarta edições não commitadas |
+| `git clean -f` | Remove arquivos untracked de forma irreversível |
+| `DROP TABLE` / `DROP DATABASE` / `TRUNCATE` | Perda de schema ou dados |
+| `DELETE FROM ... ;` sem `WHERE` | Apaga todas as linhas |
+| `chmod -R 777` | Recursão world-writable |
+| `find ... -delete` | Deleção em massa a partir de resultados do find |
+| `npm uninstall -g` | Remove pacote instalado globalmente |
+| `curl ... \| bash` | Executa script remoto não verificado |
+
+Um `DELETE FROM sessions WHERE expired_at < now();` legítimo **não**
+é bloqueado — o regex exige especificamente uma cláusula `WHERE`
+ausente para `DELETE`. O objetivo é pegar descuidos, não tornar
+SQL válido impossível.
+
+## Como fazer bypass
+
+Quando a ação destrutiva é genuinamente intencional, adicione o
+marcador inline:
+
+```bash
+rm -rf node_modules  # destructive-guard-ok: regenerated from package.json
+```
+
+O motivo precisa ser não vazio. Por que um marcador inline em vez
+de uma variável de ambiente ou um toggle de configuração?
+
+- **Visibilidade.** O marcador aparece na conversa, no histórico
+  de comandos e em qualquer diff de PR que inclua a mudança.
+  Overrides silenciosos escondem o momento perigoso.
+- **Por comando.** Desabilitar globalmente não protegeria nada
+  pelo resto da sessão; por comando mantém o guard armado para
+  tudo o mais.
+- **Amigável para auditoria.** Um revisor lendo o transcript ou
+  log vê a ação e a justificativa juntas.
+
+## Como desabilitar
+
+Para repos com proteções out-of-band mais fortes (produção
+read-only, sandboxes efêmeros, branch protection que já proíbe
+force-push), opte por sair em `.octopus.yml`:
+
+```yaml
+hooks: true
+destructiveGuard: false
+```
+
+Desabilitar o guard não afeta nenhum outro hook.
+
+## Limites conhecidos
+
+O guard é um regex sobre a string de comando do Bash. Agentes que
+ofuscam — codificando o comando em base64, passando por `eval`,
+construindo a string destrutiva a partir de variáveis, chamando um
+one-liner em Python — passam por cima dele. Essa é uma limitação
+conhecida; derrotar um adversário determinado é tarefa do sandbox,
+não do hook. O valor do hook é parar o caso comum de descuido, que
+é de longe o modo de falha dominante na prática.
+
+## Estendendo
+
+Cada padrão é um regex em `hooks/pre-tool-use/destructive-guard.sh`,
+armazenado como um array. Adicionar um padrão é uma mudança de
+duas linhas: append no array, adicione um caso de teste em
+`tests/test_destructive_guard.sh`. Prefira padrões mais estreitos
+que casem precisamente com a forma perigosa em vez de padrões
+amplos que pegam matches incidentais — falsos positivos corroem a
+confiança no guard e levam os times a desabilitá-lo por completo.
+
+[Fonte: `hooks/pre-tool-use/destructive-guard.sh`](https://github.com/leocosta/octopus/blob/main/hooks/pre-tool-use/destructive-guard.sh)

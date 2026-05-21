@@ -1,0 +1,61 @@
+---
+title: pr-comments
+description: Aplica a disciplina do receiving-code-review aos comentários de PR — verifica a crítica, pede evidências quando o comentário é genérico, separa feedback fundamentado de preferência e nunca faz mudanças performáticas.
+sidebar:
+  order: 6
+source_hash: "sha256:b1ecc61eae09cd54c720dcba50fb7a0336bbc88d4574931f2d29ceb408260510"
+needs_retranslation: false
+---
+
+`/octopus:pr-comments` é o comando que roda toda vez que chega
+feedback de PR. Ele carrega os comentários via `gh` e então aplica
+a skill receiving-code-review a cada um — verificando a crítica,
+pedindo evidências quando o comentário é genérico e separando
+feedback fundamentado de preferência.
+
+## Por que esse comando existe
+
+Feedback de code review tem dois modos de falha quando vai direto
+para um agent:
+
+- **Conformidade performática.** O agent concorda com tudo o que o
+  revisor disse e muda o código, mesmo quando o comentário é
+  obscuro, tecnicamente errado ou questão de preferência estilística.
+  O PR vai derivando para o lado de quem gritou mais alto.
+- **Resistência defensiva.** O agent rebate todo comentário por
+  reflexo, esgotando a paciência do revisor e enterrando os
+  comentários que de fato tinham razão.
+
+A skill receiving-code-review é o caminho do meio: para cada
+comentário, o agent ou faz a mudança *com entendimento*, pede a
+evidência que justificaria a mudança, ou discorda de forma
+explícita e fundamentada. Nada de edições silenciosas para
+agradar.
+
+## O que ele faz
+
+1. Puxa os comentários via `gh pr view <pr> --comments` e os
+   agrupa por arquivo/linha.
+2. Para cada comentário, o agent o classifica:
+   - **Bug ou correção** → verifica e, em seguida, corrige ou
+     rebate.
+   - **Design ou legibilidade** → entra no trade-off e propõe uma
+     alternativa se o comentário não couber.
+   - **Preferência / estilo** → respeita a convenção já existente
+     no projeto; pede ao revisor que aponte uma regra se quiser
+     codificar uma nova.
+   - **Pergunta** → responde na thread, sem editar o código.
+3. Faz as mudanças que passam pela classificação em um novo commit
+   na mesma branch. Nunca faz amend em commits existentes a menos
+   que o revisor tenha pedido explicitamente.
+4. Responde na thread em cada comentário — inclusive nos que não
+   resultaram em mudança de código, para que os revisores vejam
+   que foram ouvidos.
+
+## Pareamento
+
+O outro lado da equação é `/octopus:pr-review` — a auto-revisão do
+agent contra o checklist do projeto, que captura os comentários
+óbvios antes que os revisores precisem escrevê-los.
+
+[Fonte: `commands/pr-comments.md`](https://github.com/leocosta/octopus/blob/main/commands/pr-comments.md)
