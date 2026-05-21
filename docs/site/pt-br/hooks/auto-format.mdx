@@ -1,0 +1,98 @@
+---
+title: Auto-format e typecheck
+description: Hooks PostToolUse que executam o formatter e o type checker do projeto após cada Write/Edit, para que o próximo prompt do agente veja o estado corrigido — nunca falhe o hook em erros de ferramenta.
+sidebar:
+  order: 4
+source_hash: "sha256:0009150a5c1c5717ccc45c6842fd8dfd3c850e5c98d922e3ba4a4bc5f7a399f8"
+needs_retranslation: false
+---
+
+`auto-format` e `typecheck` são os dois hooks PostToolUse que
+mantêm a working tree em um estado limpo e com tipos verificados
+após cada edição do agent. Eles rodam a cada `Write` ou `Edit`
+bem-sucedido e devolvem o resultado para o contexto do agent no
+próximo turno.
+
+## Por que post-tool, e não pre-tool
+
+O reflexo natural é impor formatação e tipos como um gate
+PreToolUse — recusar a edição a menos que ela esteja correta.
+Acontece que esse é o formato errado:
+
+- Agents raciocinam em iterações. Bloquear uma edição em
+  andamento porque ela temporariamente quebra o grafo de tipos
+  apenas força o agent a fazer uma edição maior e menos
+  revisável de uma só vez.
+- Formatters em sua maioria normalizam; eles não rejeitam.
+  Rodá-los *depois* da edição é mais próximo de como uma IDE
+  humana funciona.
+
+Então a política é: deixar a edição entrar, normalizá-la e
+expor erros de tipo no próximo turno para que o agent consiga
+corrigi-los.
+
+## Auto-format
+
+O formatter é escolhido pela extensão do arquivo:
+
+| Extensão | Formatter |
+|---|---|
+| `.ts`, `.tsx`, `.js`, `.jsx`, `.json`, `.md` | `biome` se presente, senão `prettier` |
+| `.cs` | `dotnet format` |
+| `.py` | `ruff format` se presente, senão `black` |
+| `.sh` | `shfmt` se presente (pulado silenciosamente caso contrário) |
+| `.go` | `gofmt` |
+| `.rs` | `rustfmt` |
+
+O hook **nunca falha em um erro do formatter**. Se o `biome`
+estiver quebrado ou ausente, o diff que entrou permanece como
+está — o hook imprime o erro no stderr e sai com 0. Falhar o
+hook bloquearia toda chamada de ferramenta subsequente até o
+usuário consertar a configuração do formatter, o que é hostil
+ao tipo de exploração em repo novo que este projeto tenta
+viabilizar.
+
+O formatter precisa ser **idempotente**: executá-lo duas vezes
+no mesmo arquivo deve produzir o mesmo resultado. Todos os
+formatters acima satisfazem isso; se um formatter custom no
+futuro não satisfizer, o hook vai gerar um diff a cada save e o
+contexto do agent vai ficar cheio de ruído.
+
+## Typecheck
+
+Executa o type checker do projeto após edições em arquivos de
+código-fonte:
+
+| Stack | Comando |
+|---|---|
+| TypeScript | `tsc --noEmit` |
+| C# | `dotnet build --no-restore` |
+| Python | `pyright` se presente, senão `mypy` |
+
+Erros de tipo são reportados no próximo turno do agent — eles
+não bloqueiam a chamada da ferramenta. Isso mantém o agent
+capaz de fazer uma série de edições relacionadas que só passam
+no type-check no final, que é o modo normal como refactors
+acontecem.
+
+O hook de typecheck é sensível ao custo de cold-start: na
+primeira edição de uma sessão pode levar mais de 10 segundos
+(especialmente TypeScript). Edições subsequentes aproveitam o
+cache de build incremental. Se o custo for intolerável em um
+repo específico, desabilite-o pontualmente com
+`hooks: { typecheck: false }`.
+
+## Quando o auto-format está errado
+
+Há um caso que a política não lida bem: um agent que edita um
+arquivo e o formatter então "conserta" de maneiras que o agent
+não pretendia (por exemplo, reordenando imports através de uma
+fronteira de módulo que o agent estava deliberadamente mantendo
+separada). O formatter vence, a intenção do agent se perde, e o
+próximo turno precisa redescobrir o motivo. A mitigação é uma
+configuração enxuta do formatter — não habilite regras
+agressivas (ordenação de imports entre pacotes, remoção de
+ponto-e-vírgula, conversão para aspas simples) a menos que o
+time concorde com elas.
+
+[Source: `hooks/post-tool-use/auto-format.sh`](https://github.com/leocosta/octopus/blob/main/hooks/post-tool-use/auto-format.sh)

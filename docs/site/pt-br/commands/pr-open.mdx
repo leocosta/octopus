@@ -1,0 +1,74 @@
+---
+title: pr-open
+description: Abre um PR com título e corpo escritos pelo agente — o agente escreve o texto, e a CLI cuida da mecânica de push da branch + gh pr create.
+sidebar:
+  order: 4
+source_hash: "sha256:54eb7c66591f2d0a2033ac3d525c5b79cfb38203d13014402fd22f3fdf728eac"
+needs_retranslation: false
+---
+
+`/octopus:pr-open` percorre o diff contra a base branch, escreve
+um título de PR (um único emoji + formato Conventional Commits) e um corpo
+(Summary / Related Issues / How to Test / Screenshots) seguindo
+as convenções de PR do Octopus, e então roda `gh pr create`. Se a branch
+não tiver sido enviada, ela é enviada primeiro.
+
+## Por que o agente escreve o texto e a CLI faz o push
+
+A divisão é deliberada. O agente tem todo o contexto que faz
+um bom corpo de PR — o que mudou, o que foi tentado e não deu certo,
+quais decisões merecem atenção do reviewer. A CLI não tem nada
+disso; está apenas executando comandos de shell. Combinar os dois em um
+único script bash que "escreve um corpo de PR" ou produziria
+saída genérica baseada em template (ruim) ou duplicaria o raciocínio do agente
+no lado do bash (pior).
+
+Então o comando tem duas metades: escrita do texto no contexto do
+agente, mecânica em `octopus.sh pr-open`. O agente nunca
+invoca shell para o corpo; a CLI nunca tenta resumir um diff.
+
+## Formato do título
+
+Um emoji no início, derivado do prefixo da branch (ou, se
+ambíguo, do tipo de commit dominante na branch):
+
+| Tipo | Emoji | Tipo | Emoji |
+|---|---|---|---|
+| feat | ✨ | docs | 📝 |
+| fix | 🐛 | test | 🧪 |
+| refactor | ♻️ | chore | 🔧 |
+| perf | ⚡ | style | 🎨 |
+| ci | 🚀 | revert | ⏪ |
+
+Em seguida, o formato Conventional Commits: `type(scope): description`, mantido
+abaixo de 70 caracteres para não ser truncado na lista de PRs do GitHub.
+
+## Template do corpo
+
+```markdown
+## Summary
+- <what changed, in 1-3 bullets>
+
+## Related Issues
+Closes #<issue>
+
+## How to Test
+1. <step>
+2. <step>
+
+## Screenshots (if applicable)
+```
+
+O agente preenche o corpo a partir do diff e do contexto da
+conversa. Se a conversa referenciou uma issue, a linha `Related
+Issues` a captura. Se o diff inclui mudanças de UI, o
+agente sinaliza que screenshots são esperados antes do merge.
+
+## Pareamento
+
+O próximo passo após `pr-open` é `/octopus:pr-review` — o agente
+faz self-review do diff do PR contra o checklist de correção/design/legibilidade
+e então atribui reviewers humanos. `pr-comments` roda após
+o feedback chegar; `pr-merge` roda após a aprovação.
+
+[Fonte: `commands/pr-open.md`](https://github.com/leocosta/octopus/blob/main/commands/pr-open.md)

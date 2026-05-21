@@ -1,0 +1,95 @@
+---
+title: Propose knowledge update
+description: Stop hook que minera o transcript da sessão em busca de correções, re-leituras e re-greps — escreve uma proposta em .octopus/proposals/ para revisão manual e promoção.
+sidebar:
+  order: 5
+source_hash: "sha256:51aee87afad1799991417761e4cf926defb6c4a5ed92d0277a878650ec669d05"
+needs_retranslation: false
+---
+
+`propose-knowledge-update` é o Stop hook que transforma a fricção
+de uma sessão no conhecimento da próxima. Quando a conversa
+termina, o hook lê o transcript completo e procura três sinais
+que sugerem que algo está faltando no contexto persistente do
+projeto — `CLAUDE.md`, `knowledge/`, `rules/`, ou um sub-contexto
+por módulo. Se qualquer sinal ultrapassar seu limiar, o hook
+escreve uma proposta em `.octopus/proposals/<timestamp>.md` para
+que um humano revise e promova via `/octopus:review-proposals`.
+
+O hook nunca edita a árvore do projeto diretamente. Ele lê o
+transcript, escreve um arquivo em `.octopus/proposals/`
+(gitignored) e sai. Toda promoção acontece sob revisão humana.
+
+## Os três sinais
+
+### Correções do usuário
+
+Mensagens do usuário que começam com um marcador de correção —
+`no`, `não`, `don't`, `stop`, `wrong`, `actually`, `instead`,
+`remove`. A correspondência é estrita (apenas início de mensagem,
+em minúsculas) porque os marcadores são ruidosos no meio de
+frases. Uma contagem alta de correções em uma única sessão
+geralmente significa que o agent continuou cometendo o mesmo
+erro; a proposta extrai o comportamento corrigido em um candidato
+`feedback_<topic>.md`.
+
+### Re-leitura do mesmo arquivo
+
+Quando o mesmo arquivo é lido 3 ou mais vezes em uma sessão.
+Limiar de 3 — não 2 — porque o ciclo normal de edição é *ler →
+editar → revisar*, que legitimamente lê o mesmo arquivo três
+vezes em rápida sucessão. Além de 3, o agent geralmente está
+re-descobrindo algo que poderia ter sido capturado.
+
+### Re-grep do mesmo padrão
+
+Quando o mesmo padrão de grep roda 3 ou mais vezes. Greps
+recorrentes significam "eu continuo precisando encontrar isso" —
+a resposta frequentemente pertence a uma descrição de skill (para
+que o agent saiba onde olhar sem precisar buscar) ou ao
+`CONTEXT.md` (para que já esteja carregado).
+
+## Por que três sinais, não um
+
+Cada sinal captura um modo de falha diferente:
+
+- **Correções** capturam conhecimento *comportamental* — como o
+  time quer que o trabalho seja feito.
+- **Re-leituras** capturam conhecimento *estrutural* — onde as
+  coisas vivem na base de código.
+- **Re-greps** capturam conhecimento de *terminologia* — quais
+  conceitos atendem por quais nomes.
+
+Combiná-los em uma única "métrica de frustração" colapsaria
+informações que vale a pena manter separadas. O arquivo de
+proposta mostra cada sinal sob seu próprio heading para que o
+revisor possa promover só a parte que vale a pena manter.
+
+## Por que propostas, não auto-updates
+
+O hook deliberadamente para antes de editar `CLAUDE.md`,
+`knowledge/` ou `rules/` diretamente. Três razões:
+
+- **Controle de qualidade.** Um sinal que dispara na sessão pode
+  representar um contexto pontual (uma feature mal nomeada, um
+  grep obsoleto) que não deveria virar conhecimento permanente
+  do projeto.
+- **Voz.** A memória do projeto é curada em tom — texto
+  auto-gerado a partir de sinais do transcript não combina com o
+  estilo de escrita do projeto.
+- **Roteamento.** Achados diferentes pertencem a lugares
+  diferentes: feedback comportamental → `CLAUDE.md` ou
+  `continuous-learning`, fatos estruturais → `knowledge/` ou
+  `doc-subcontext`, decisões → um ADR. O hook não consegue tomar
+  essa decisão; `/octopus:review-proposals` consegue.
+
+## Degradação graciosa
+
+O hook depende de `jq` e do campo `transcript_path` do Claude
+Code no payload do Stop-hook. Ambos podem estar ausentes: um
+Claude Code mais antigo sem `transcript_path`, um runtime de
+agent diferente, ou um sistema sem `jq` instalado. Em todos esses
+casos o hook sai com 0 silenciosamente. Pular é sempre melhor do
+que bloquear o fim da sessão.
+
+[Fonte: `hooks/stop/propose-knowledge-update.sh`](https://github.com/leocosta/octopus/blob/main/hooks/stop/propose-knowledge-update.sh)

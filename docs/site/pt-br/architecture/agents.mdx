@@ -1,0 +1,108 @@
+---
+title: Matriz de capacidades dos agents
+description: O que cada agent de codificação com IA suporta nativamente e como o Octopus traduz as capacidades ausentes — a tabela que orienta o pipeline de geração.
+sidebar:
+  order: 3
+source_hash: "sha256:fd767da1d43fa8c0f28afafec492544af7cab4506c1ca7da1e33847569c1165e"
+needs_retranslation: false
+---
+
+A matriz de capacidades é a tabela que orienta como o Octopus emite
+configuração. Cada agent tem sua própria resposta para "esse agent
+suporta hooks nativamente?", "ele tem um formato de arquivo para skills?",
+"como ele encontra slash commands?" — e o gerador roteia
+o conteúdo de acordo, para que você não precise pensar nisso.
+
+## A matriz
+
+| Capacidade | Claude Code | Copilot | Codex | Gemini | OpenCode |
+|---|---|---|---|---|---|
+| **Arquivo de saída** | `.claude/CLAUDE.md` | `.github/copilot-instructions.md` | `AGENTS.md` | `GEMINI.md` | `.opencode/rules.md` |
+| **Modo de conteúdo** | Template | Concatenar | Concatenar | Concatenar | Concatenar |
+| **Rules** | Symlinks por arquivo em `.claude/rules/` | Inline | Inline | Inline | Inline |
+| **Skills** | Symlink para `.claude/skills/` | Inline | Inline | Inline | Inline |
+| **Hooks** | Hooks de ciclo de vida em `settings.json` | Rules de qualidade inline | Rules de qualidade inline | Rules de qualidade inline | Rules de qualidade inline |
+| **Commands** | Slash commands em `.claude/commands/` | Seção inline | Seção inline | Seção inline | Seção inline |
+| **Roles** | Agents nativos em `.claude/agents/` | Seção inline | Seção inline | Seção inline | Seção inline |
+| **Knowledge** | Symlink para `.claude/knowledge/` | Inline nos roles | Inline nos roles | Inline nos roles | Inline nos roles |
+| **MCP servers** | mcpServers em `settings.json` | `.vscode/mcp.json` + `~/.copilot/mcp-config.json` | CLI `codex mcp add` | — | — |
+
+## Lendo a matriz
+
+Três padrões se repetem em cada linha.
+
+**Suporte nativo → entrega via arquivo.** Onde o agent tem um lugar
+nativo para uma capacidade, o Octopus entrega um arquivo (ou um symlink). O
+agent o lê pelo mecanismo de descoberta que ele já usa normalmente — sem
+código específico do Octopus do lado do agent.
+
+**Sem suporte nativo → inline no arquivo principal.** Onde o
+agent não tem um arquivo separado para uma capacidade (skills, commands,
+roles), o Octopus concatena o conteúdo no arquivo principal de
+instruções do agent. O agent então enxerga a capacidade como parte
+do contexto permanente, apenas formatada de forma diferente de um arquivo
+nativo de skill.
+
+**Sem suporte nativo, fallback impossível → rules de qualidade.** Hooks
+são o exemplo canônico. Só o Claude Code consegue recusar uma chamada de tool
+em runtime; os outros agents não têm equivalente. Para esses agents,
+o Octopus inline a *intenção* de cada hook como uma rule de codificação
+(`rules/common/quality.md`, `rules/common/security.md`) — uma aplicação
+mais fraca (o agent pode ser convencido a não seguir a rule),
+mas com a mesma orientação.
+
+## Por que o Claude Code é o alvo de referência
+
+O Claude Code tem a superfície de capacidades mais rica — hooks nativos,
+slash commands nativos, sub-agents nativos, MCP servers nativos,
+modo template para o arquivo principal. Isso o torna o agent contra o qual
+o Octopus desenha novas features: uma feature funciona primeiro no Claude
+Code, e então o Octopus descobre como entregá-la para os
+outros agents via inlining ou fallback.
+
+Isso não é um endosso ao Claude Code — é uma escolha pragmática
+sobre onde a superfície de design é mais ampla. Se um agent futuro
+expuser uma capacidade mais rica que a do Claude Code (suporte mais profundo a MCP,
+gating de tools mais granular), a referência mudaria.
+
+## O que "inline" significa na prática
+
+Quando uma capacidade é colocada inline no arquivo principal, o agent vê:
+
+```markdown
+## Skills
+
+### audit-security
+
+Pre-merge security audit — hardcoded secrets, injection vectors,
+public-route auth gaps, dependency CVEs.
+
+Use when: about to merge a PR with non-trivial code changes.
+
+[full skill body]
+
+### audit-money
+...
+```
+
+O orçamento de contexto do agent paga por cada skill inlined, então
+projetos que miram agents que não são o Claude tendem a ser mais conservadores
+quanto à quantidade de skills incluídas. A composição dos bundles importa
+mais nesses projetos do que em projetos só com Claude, onde skills extras
+ficam em `.claude/skills/` e só carregam quando acionadas.
+
+## Adicionando um novo agent
+
+Conforme o design baseado em manifest, adicionar suporte a um agent é uma adição
+de diretório dentro de `agents/`:
+
+1. `agents/<name>/manifest.yml` declarando as capacidades
+2. `agents/<name>/header.md` com instruções específicas do agent
+   (limitações, formato preferido)
+3. Adicione `- <name>` à lista de agents em `.octopus.yml`
+4. Rode `octopus setup`
+
+Sem mudanças em `setup.sh`. As declarações de capacidade orientam toda
+decisão de roteamento.
+
+[Fonte: `agents/`](https://github.com/leocosta/octopus/tree/main/agents)

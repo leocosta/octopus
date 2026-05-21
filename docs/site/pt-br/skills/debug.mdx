@@ -1,0 +1,68 @@
+---
+title: debug
+description: Loop disciplinado de diagnóstico para bugs difíceis e regressões de performance — reproduzir, minimizar, hipotetizar, instrumentar, corrigir, regression-test.
+sidebar:
+  order: 3
+source_hash: "sha256:27ea28ab8b42d914415fe39dbc9caf6e84441dce7acfc1d7cd9a0563ff5339c2"
+needs_retranslation: false
+---
+
+`debug` é a skill que entra em ação quando o usuário reporta um bug,
+uma falha de teste ou comportamento inesperado. Ela substitui o
+padrão "ler o código e adivinhar" por um loop de seis passos que
+chega à causa raiz em vez de remendar sintomas.
+
+## O loop
+
+1. **Reproduzir.** Faça o bug acontecer de forma confiável sob
+   condições conhecidas. Sem reprodução, todo passo seguinte é
+   chute. Se a reprodução está difícil, resolva isso primeiro —
+   capture um teste que falha ou um conjunto de inputs
+   determinístico.
+2. **Minimizar.** Tire tudo que não é necessário para o bug
+   acontecer. Um caso de teste reduzido isola a causa do barulho
+   ao redor.
+3. **Hipotetizar.** Diga explicitamente o que você acha que está
+   quebrado, *antes* de olhar o código que poderia provar. Escrever
+   a hipótese força uma afirmação falsificável em vez de um
+   palpite.
+4. **Instrumentar.** Adicione logging, breakpoints, asserts ou
+   sondas de teste que confirmariam ou refutariam a hipótese. Se a
+   instrumentação encontra a causa, o próximo passo é o fix. Se
+   não, a hipótese estava errada — volte ao passo 3 com a nova
+   informação.
+5. **Corrigir.** Faça a mudança mínima que resolve a causa raiz.
+   Resista à tentação de também "dar uma limpada já que estou
+   aqui" — o bugfix e a limpeza são commits diferentes.
+6. **Regression-test.** Adicione um teste que falha no
+   comportamento antigo e passa no novo. Regressões futuras nessa
+   área agora têm uma rede de segurança.
+
+## Por que estrutura supera intuição
+
+O anti-padrão dominante de debugging é "mudei X e agora funciona"
+sem entender por quê. O fix pode ter funcionado por coincidência,
+mascarado o bug real ou movido ele para outro lugar. Pular o passo
+da hipótese é o que faz isso acontecer — o agent vai direto do
+sintoma para "tenta isso", e mesmo que funcione, a causa não foi
+entendida.
+
+O loop estruturado custa mais tempo no debugging inicial mas se
+paga quando a mesma área quebra de novo — o regression test pega,
+e a causa raiz capturada está na mensagem do commit.
+
+## Quando pular passos
+
+O loop completo é exagero para bugs triviais (um typo, um null
+check faltando). A skill entra em ação com sinais de que o bug é
+difícil:
+
+- O usuário diz "não consigo entender por que X acontece"
+- A falha de teste é intermitente
+- A performance regrediu e a causa não é óbvia
+- A mesma área foi editada várias vezes sem que a correção pegue
+
+Para fixes óbvios de uma linha, o agent vai direto para a
+correção; a skill fica fora do caminho.
+
+[Fonte: `skills/debug/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/debug/SKILL.md)

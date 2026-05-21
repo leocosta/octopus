@@ -1,0 +1,81 @@
+---
+title: delegate
+description: Despache uma tarefa para um role Octopus nomeado ou para um pipeline multi-step — sequencial, em paralelo, com aliases de role e gates de confirmação entre etapas.
+sidebar:
+  order: 9
+source_hash: "sha256:2d2e74829d5c9b698432cea1786682e16745d16e7629f148f4d5935ead62158a"
+needs_retranslation: false
+---
+
+`/octopus:delegate` é o comando que entrega uma tarefa a um role
+Octopus específico (`@architect`, `@backend-developer`, `@writer`, …)
+e devolve o resultado inline com atribuição. É a superfície de
+slash command para o mesmo mecanismo de dispatch que `octopus ask`
+e `octopus control` usam a partir do terminal.
+
+## Por que delegar se o agent já pode fazer o trabalho
+
+O agent atual tem uma única persona — normalmente um generalista
+ajustado pelas skills e regras carregadas. Roles estreitam essa
+persona: um `@architect` revisa com disciplina BLOCKING/ADVISORY/QUESTION
+e usa Opus; um `@product-manager` trabalha problem-first, sem
+encostar em código; um `@marketer` tem modificação de código
+proibida pela allowlist de tools.
+
+Trocar de persona no meio da conversa é o que a delegação compra.
+O agent permanece na conversa; a chamada específica do role sai e
+volta com seu resultado atribuído, pronto para ser reagido.
+
+## Dispatch para um único role
+
+```
+/octopus:delegate @backend-developer add POST /invoices endpoint to the API
+```
+
+O role roda em um sub-contexto com seu próprio modelo, allowlist
+de tools e viés de skills. O resultado é devolvido inline,
+prefixado com `» backend-developer respondeu:` para que o
+histórico da conversa distinga a saída do role da do orquestrador.
+
+## Pipelines multi-step
+
+A linguagem de sequenciamento permite encadear roles em uma única
+invocação:
+
+```
+@tech-writer: create a spec for lesson plan management.
+After documenting, have @product-manager review it.
+Once validated, delegate implementation to @frontend-developer and @backend-developer.
+Finally, have @architect do the code review.
+```
+
+O comando interpreta a sequência como um DAG: roles unidos por "and"
+disparam em paralelo; "after" / "once" / "then" criam arestas
+sequenciais; a saída do step anterior flui como contexto para o
+próximo.
+
+Após cada step o comando pausa para confirmação:
+
+```
+» Step 2/4 done — product-manager replied (1284 chars)
+Next: Step 3/4 — parallel: @frontend-developer + @backend-developer
+Continue? [y/s · auto · n · skip]
+```
+
+Adicione `--auto` para pular toda confirmação e rodar o pipeline
+inteiro de ponta a ponta.
+
+## Aliases de role
+
+Abreviações comuns são resolvidas automaticamente — sem precisar
+lembrar o nome completo do role:
+
+| Alias | Resolve para |
+|---|---|
+| `@pm` | `@product-manager` |
+| `@staff-engineer`, `@staff` | `@architect` |
+| `@frontend`, `@fe`, `@frontend-specialist` | `@frontend-developer` |
+| `@backend`, `@be`, `@backend-specialist` | `@backend-developer` |
+| `@writer`, `@tech-writer` | `@tech-writer` |
+
+[Fonte: `commands/delegate.md`](https://github.com/leocosta/octopus/blob/main/commands/delegate.md)

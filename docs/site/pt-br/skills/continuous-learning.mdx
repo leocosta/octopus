@@ -1,0 +1,72 @@
+---
+title: continuous-learning
+description: Capture insights, teste hipóteses e promova padrões confirmados para o conhecimento do projeto — pronto para multi-agente, projetado para sobreviver entre sessões de Claude, Kilo Code, Copilot e Codex.
+sidebar:
+  order: 17
+source_hash: "sha256:9b1246cf3e78ce499d9993b4f6ac0a96de41580cf34a7dc20221118021df16d4"
+needs_retranslation: false
+---
+
+`continuous-learning` é a skill que transforma as descobertas de
+uma sessão no conhecimento da próxima. É a contraparte editorial
+do hook `propose-knowledge-update`: o hook captura sinais
+automaticamente, e essa skill é o que o usuário (ou o fluxo
+`/octopus:review-proposals`) usa para rascunhar, testar e
+promovê-los.
+
+## Por que ter um sistema de aprendizado
+
+Sem ele, cada sessão redescobre as mesmas coisas — o mesmo
+arquivo surpreendente, a mesma convenção de nomenclatura, a mesma
+pegadinha específica do projeto. O agent não tem memória entre
+sessões, e o humano não tem paciência para reexplicar o mesmo
+contexto duas vezes.
+
+Um sistema de aprendizado é a memória em nível de projeto: rules
+em `rules/common/`, fatos estruturais em `knowledge/`,
+preferências comportamentais em `CLAUDE.md`. O trabalho da skill
+é popular essas casas deliberadamente, em vez de deixá-las
+crescer de forma ad hoc.
+
+## O ciclo de vida de um aprendizado
+
+1. **Captura.** Algo aconteceu que parece valer a pena guardar. O
+   hook captura isso automaticamente (correções, re-leituras,
+   re-greps); o usuário também pode trazer um aprendizado
+   manualmente ("lembre-se de que sempre usamos X para Y").
+2. **Rascunho.** A skill escreve uma entrada candidata no gênero
+   apropriado — uma rule para "sempre faça X", um arquivo de
+   knowledge para "veja como Y funciona", uma linha no
+   `CLAUDE.md` para "o usuário prefere Z".
+3. **Hipótese.** O rascunho inclui a previsão: *se isso virar uma
+   rule, o agent vai parar de fazer W da próxima vez*. A previsão
+   é testável.
+4. **Teste.** A próxima sessão que atingir o contexto relevante
+   ou segue a rule ou não. A skill ajuda o usuário a perceber
+   qual dos dois aconteceu.
+5. **Promover ou aposentar.** Padrões confirmados se tornam
+   rules / knowledge / linhas de `CLAUDE.md` de verdade. Padrões
+   que não se confirmaram são arquivados sem constrangimento —
+   metade do sinal capturado acaba sendo contexto pontual, e
+   fingir o contrário só polui a base de conhecimento.
+
+## O que ela não faz
+
+- Não edita automaticamente. Toda promoção é uma decisão humana.
+- Não sintetiza entre sessões. Cada sinal capturado é avaliado
+  por si só; a skill não infere "você disse X três vezes" sem um
+  prompt explícito.
+- Não escreve conselhos genéricos. "Use bons nomes de variáveis"
+  vai numa rule de coding-style, não num aprendizado —
+  aprendizados são específicos do projeto.
+
+## Por que pronto para multi-agente
+
+Conhecimento capturado sob o Claude também deve fluir para
+Copilot, Codex, Gemini e OpenCode. A skill escreve nos locais
+canônicos do Octopus (`rules/`, `knowledge/`, equivalentes a
+`CLAUDE.md` por agent) para que a geração do manifest a nível de
+projeto consiga absorvê-los. Um aprendizado não fica preso na
+memória de sessão de um único agent.
+
+[Source: `skills/continuous-learning/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/continuous-learning/SKILL.md)

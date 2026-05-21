@@ -1,0 +1,78 @@
+---
+title: doc-adr
+description: Crie e gerencie Architecture Decision Records — captura o contexto, a decisão e as consequências de decisões técnicas significativas em docs/adr/.
+sidebar:
+  order: 13
+source_hash: "sha256:bb4d135bdbd1f6f2064f257fbae85473a8c40e40c6eee71da5c0efcf0a353fcd"
+needs_retranslation: false
+---
+
+`doc-adr` escreve um novo Architecture Decision Record a partir do
+template de ADR do projeto — o formato Contexto / Decisão /
+Consequências que captura *por que* uma decisão foi tomada, e não
+apenas *o que* foi decidido. ADRs ficam em `docs/adr/` com um
+prefixo numérico (`0042-jwt-auth.md`) e são append-only: uma vez
+que um ADR é aceito, ele não é editado; decisões que o substituem
+criam novos ADRs que referenciam o antigo.
+
+## Quando ADR vs Spec
+
+Os dois são fáceis de confundir. A divisão:
+
+- **Spec** responde "o que vamos construir?" É implementável —
+  alguém pode pegar e começar a escrever código. Specs têm
+  formato de feature.
+- **ADR** responde "por que escolhemos essa abordagem em vez das
+  alternativas?" Não é implementável. ADRs têm formato de
+  decisão.
+
+Uma sequência típica: a spec descreve a feature, o ADR captura a
+escolha arquitetural-chave da qual a spec depende. A spec passa
+pela revisão e vira um plan; o ADR fica como o racional que
+leitores futuros consultam quando a escolha volta à tona.
+
+## A estrutura
+
+O template tem quatro seções:
+
+- **Contexto.** Que problema ou restrição motivou a decisão?
+  Qual era a situação quando o time precisou escolher?
+- **Decisão.** O que o time decidiu?
+- **Racional.** Por que essa opção em vez das alternativas? Quais
+  eram as alternativas, e por que foram rejeitadas?
+- **Consequências.** Que efeitos colaterais essa decisão tem?
+  Tanto positivos (o que se torna mais fácil) quanto negativos (o
+  que se torna mais difícil ou o que agora está restrito).
+
+A seção Consequências é frequentemente a mais subvalorizada — é o
+que leitores futuros realmente querem quando voltam perguntando
+"por que isso é assim?". A decisão em si geralmente é óbvia a
+partir do código; as consequências explicam os trade-offs que
+fizeram dela a escolha certa.
+
+## Quando escrever o ADR
+
+Dois momentos válidos:
+
+- **Logo antes de decidir** — o ato de escrever o ADR força as
+  alternativas para o papel, muitas vezes revelando uma que não
+  havia sido considerada. O ADR rascunha o que o time vai
+  discutir.
+- **Logo depois de decidir** — capture a decisão enquanto o
+  racional está fresco. Espere uma semana e as alternativas se
+  borram em "acho que escolhemos isso porque…".
+
+Não escreva o ADR muito depois disso. ADRs escritos seis meses
+depois do fato tendem a retroajustar o racional e perdem os
+trade-offs reais.
+
+## Numeração e supersessão
+
+ADRs são numerados sequencialmente. Quando uma decisão é
+substituída, o novo ADR inclui um cabeçalho "Supersedes:
+ADR-NNNN" e o ADR antigo recebe um marcador "Superseded-by:
+ADR-MMMM" sem editar o corpo original. O histórico continua
+legível; o estado atual é sempre o último ADR não substituído na
+cadeia.
+
+[Fonte: `skills/doc-adr/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/doc-adr/SKILL.md)

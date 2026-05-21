@@ -1,0 +1,106 @@
+---
+title: Geração orientada por manifesto
+description: Como o .octopus.yml vira configuração gerada por agente — renderização de template, concatenação, e a regra de que o manifesto é o único arquivo que você edita.
+sidebar:
+  order: 2
+source_hash: "sha256:845db8691c75e042927337cf14423deb2fdca1a6e73e9e4f7275c19eeb2138ec"
+needs_retranslation: false
+---
+
+Todo repo gerenciado pelo Octopus tem um arquivo que o humano edita:
+`.octopus.yml`. Todo o resto sob `.claude/`, `.github/`,
+`AGENTS.md`, `GEMINI.md` e `.opencode/` é gerado. A
+geração é o mecanismo central da arquitetura.
+
+## Por que geração em vez de templates
+
+A alternativa ingênua é cada projeto partir de um
+repo template e editar diretamente o arquivo de config de cada agente. Isso
+quebra rapidamente:
+
+- Um time que usa três agents tem três arquivos para manter em sincronia
+  a cada mudança de política.
+- O lançamento de um novo agent significa que cada repo precisa ser tocado
+  manualmente para adicionar suporte.
+- Skills customizadas entram como uma edição por repo em vez de um artefato
+  compartilhado.
+
+A geração colapsa os três: a política vive uma vez no
+manifesto, a geração sabe como entregá-la a cada agent
+e adicionar um agent é uma mudança apenas no gerador.
+
+## Os dois modos de conteúdo
+
+Agents diferentes esperam formatos diferentes. O Octopus suporta dois:
+
+**Modo template** — a saída do agent é um único arquivo com
+placeholders que o gerador preenche. O Claude Code usa isso no
+seu `CLAUDE.md`: há um template `agents/claude/CLAUDE.md` com
+marcadores `{{rules}}`, `{{skills}}`, `{{commands}}`, etc., e o
+gerador substitui pelo conteúdo que o manifesto selecionou. Esse
+modo é apropriado quando o arquivo tem uma estrutura fixa que o usuário quer
+ver.
+
+**Modo concatenate** — a saída do agent é montada por
+concatenação de seções ordenadas: header + core + rules + skills +
+commands + roles. Copilot, Codex, Gemini e OpenCode todos usam
+esse modo. A ordem de concatenação é fixa; o conteúdo de cada
+seção vem do manifesto.
+
+A escolha entre os modos é por agent, definida em
+`agents/<name>/manifest.yml`. O gerador lê o modo e
+executa o pipeline correto.
+
+## O pipeline de geração
+
+```
+.octopus.yml
+   │
+   │  1. Validate manifest schema
+   │  2. Expand bundles → flat list of skills + roles + rules
+   │  3. Resolve transitive dependencies (e.g., audit-all pulls audit-security)
+   │  4. For each agent in `agents:`:
+   │     a. Load agents/<name>/manifest.yml (capabilities)
+   │     b. Pick template or concatenate mode
+   │     c. Deliver each capability (symlink, inline, file copy)
+   │  5. Update .gitignore with generated paths
+   │  6. Write .env.octopus.example for any MCP servers selected
+   ▼
+.claude/CLAUDE.md, .claude/settings.json, .claude/rules/, .claude/skills/, .claude/agents/, .claude/commands/
+.github/copilot-instructions.md
+AGENTS.md
+GEMINI.md
+.opencode/rules.md, .opencode/commands/, .opencode/skills/, .opencode/agents/, .opencode/settings.json
+```
+
+## Por que o manifesto nunca é editado automaticamente
+
+`octopus setup` escreve arquivos gerados; nunca escreve de volta no
+`.octopus.yml`. A direção contrária seria um efeito colateral
+oculto — o usuário perderia a noção de quais linhas escreveu e
+quais a ferramenta decidiu. Manter o manifesto exclusivamente humano significa que o
+modelo mental fica limpo: edite o manifesto, rode o setup, inspecione
+o diff.
+
+A única exceção é `octopus update`, que pode atualizar a versão
+fixada no `.octopus.yml` para corresponder à CLI recém-instalada. Essa é a
+única linha que a ferramenta escreve; o resto do manifesto permanece sob
+posse do humano.
+
+## Como os agents descobrem a config gerada
+
+Cada agent tem sua própria convenção de descoberta:
+
+- **Claude Code** lê `.claude/CLAUDE.md`, mais `settings.json`
+  para hooks e MCP servers, mais a árvore de arquivos sob
+  `.claude/skills/`, `.claude/commands/`, `.claude/agents/`.
+- **Copilot** lê `.github/copilot-instructions.md`.
+- **Codex** lê `AGENTS.md`.
+- **Gemini** lê `GEMINI.md`.
+- **OpenCode** lê `.opencode/rules.md` + a árvore de arquivos sob
+  `.opencode/`.
+
+O gerador respeita a convenção de cada agent — nenhum agent precisa
+conhecer o Octopus para consumir sua saída.
+
+[Fonte: `setup.sh`](https://github.com/leocosta/octopus/blob/main/setup.sh)

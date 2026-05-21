@@ -1,0 +1,74 @@
+---
+title: refactor-deepen
+description: Encontre oportunidades de aprofundamento em uma base de código — módulos rasos com acoplamento forte que deveriam ser consolidados, identificados a partir da linguagem de domínio do CONTEXT.md e das decisões dos ADRs.
+sidebar:
+  order: 11
+source_hash: "sha256:1211f86c78da16c6dea772f4d714acd227b10e7c97d2818eec5026d07955e8b0"
+needs_retranslation: false
+---
+
+`refactor-deepen` é a skill que busca o oposto do alvo usual de
+refatoração. O instinto dominante de refatoração é "dividir esse
+arquivo grande em arquivos menores"; a oportunidade dominante de
+*qualidade* em bases de código maduras é o inverso — *consolidar
+módulos rasos que ficaram acoplados o suficiente para serem uma
+coisa só*.
+
+## O que "raso" significa aqui
+
+Um módulo raso é pequeno (frequentemente um único arquivo ou
+função), tem uma superfície pública fina, mas está intimamente
+acoplado a um ou dois callers que sempre o usam juntos. A divisão
+parecia limpa na época, mas produziu o pior dos dois mundos: uma
+fronteira de abstração sem valor de abstração, mais duas unidades
+que mudam juntas e são revisadas juntas.
+
+Os sinais reveladores:
+
+- O nome do módulo é estrutural (`helpers`, `utils`, `formatter`)
+  em vez de domínio (`InvoiceTotal`, `LessonSchedule`).
+- Toda mudança em um caller também muda o módulo.
+- O módulo tem um ou dois callers, não muitos.
+- Os testes do módulo majoritariamente fazem mock do caller, ou
+  vice-versa.
+
+## Por que aprofundar ajuda a navegação por IA
+
+Octopus otimiza para bases de código navegáveis por IA. Três
+módulos profundos são mais fáceis de um agent carregar no contexto
+e raciocinar sobre do que quinze rasos — há menos arquivos para
+enumerar, menos fronteiras para perseguir e o vocabulário de
+domínio fica concentrado onde ele de fato vive. Módulos
+fortemente acoplados mas divididos são o pior caso: o agent lê
+cada arquivo, não encontra a resposta, e precisa montar o quadro a
+partir de fragmentos.
+
+## As fontes de sinal da skill
+
+A skill não chuta. Ela puxa de dois lugares:
+
+- **Linguagem de domínio do CONTEXT.md.** O vocabulário que o time
+  usa para descrever o que o sistema faz. Módulos cujos nomes
+  combinam com termos do domínio normalmente são profundos o
+  suficiente; módulos cujos nomes não combinam são candidatos.
+- **Decisões em ADRs.** Decisões passadas que introduziram uma
+  fronteira por uma razão que talvez não se aplique mais. A skill
+  sinaliza fronteiras criadas explicitamente por um ADR que agora
+  tem cinco anos e foi superado.
+
+## O que ela produz
+
+Um relatório listando candidatos com:
+
+- O módulo raso e seus callers
+- O sinal que o sinalizou (nome estrutural, acoplamento de
+  mudança, contagem de callers, idade do ADR)
+- Uma proposta de consolidação (qual módulo se funde em qual) —
+  não um patch de refatoração, apenas a proposta
+
+Assim como `audit-config`, a skill nunca corrige automaticamente.
+A consolidação é uma decisão humana porque muda fronteiras de
+módulos — significativa o suficiente para code review de formas
+que a auditoria não consegue julgar.
+
+[Fonte: `skills/refactor-deepen/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/refactor-deepen/SKILL.md)

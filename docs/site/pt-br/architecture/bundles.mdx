@@ -1,0 +1,125 @@
+---
+title: Composição de bundles
+description: Como bundles expandem para listas planas de skills + roles + rules, como dependências transitivas são resolvidas, e a regra de que todo skill deve pertencer a pelo menos um bundle.
+sidebar:
+  order: 4
+source_hash: "sha256:760bbc3efc9ba0b293f432db344f2c1eee6a2d2d68981f1cd82e6c8a508d79f1"
+needs_retranslation: false
+---
+
+Bundles são a resposta arquitetural para "usuários não querem
+compor 35 skills na mão". Um bundle é um pacote curado de
+skills + roles + rules + (opcionalmente) hooks, escopado a um
+arquétipo de time — `starter` para a fundação, `quality` para times
+que entregam para usuários pagantes, `docs` para times que investem em
+documentação, etc. O wizard do Quick mode mapeia algumas respostas
+sim/não para bundles; usuários nunca precisam memorizar o catálogo de skills.
+
+## O que tem em um arquivo de bundle
+
+```yaml
+# bundles/quality.yml
+name: quality
+description: Pre-merge audit gates + senior-reviewer discipline
+skills:
+  - audit-all
+  - review-contracts
+  - refactor-deepen
+  - audit-config
+roles:
+  - architect
+rules: []
+```
+
+É isso. Bundles são pura composição — eles referenciam primitivos
+pelo nome, não adicionam conteúdo novo próprio. A composição
+é o valor.
+
+## Expansão para listas planas
+
+Quando `octopus setup` lê `.octopus.yml` e vê
+`bundles: [starter, quality]`, ele expande cada bundle e faz a união
+dos resultados:
+
+```
+starter:    skills: [implement, debug, ...] roles: [...] rules: [common]
+quality:    skills: [audit-all, review-contracts, ...] roles: [architect]
+                            │
+                            ▼ union (dedup by name)
+effective:  skills: [implement, debug, audit-all, ...] roles: [...] rules: [common]
+```
+
+A expansão produz uma única lista plana por categoria. Referências
+duplicadas (o mesmo skill em dois bundles) colapsam para uma entrada.
+O manifest do usuário também pode adicionar skills individuais por cima,
+que se unem na mesma lista.
+
+## Dependências transitivas
+
+Alguns skills declaram dependências de outros skills via frontmatter:
+
+```yaml
+# skills/audit-all/SKILL.md
+---
+name: audit-all
+depends_on:
+  - audit-security
+  - audit-money
+  - audit-tenant
+  - review-contracts
+---
+```
+
+Quando `audit-all` acaba na lista efetiva (via qualquer bundle ou
+seleção explícita), o resolvedor de dependências adiciona as quatro
+auditorias também. Isso mantém bundles pequenos: `quality.yml` lista
+apenas `audit-all` porque o frontmatter de `audit-all` puxa as quatro
+auditorias automaticamente.
+
+Ciclos são proibidos — o resolvedor falha no momento do setup com um
+erro claro em vez de entrar em loop silenciosamente.
+
+## A regra "sem skills soltos"
+
+Todo skill novo deve pertencer a pelo menos um bundle. A regra
+existe porque skills que não estão em nenhum bundle são efetivamente
+inalcançáveis via `octopus setup` — eles estão no catálogo, mas
+ninguém os recebe. O comando `scaffold-skill` aplica a regra
+no momento da criação, recusando-se a scaffoldar um skill sem escolher
+um bundle (ou propor um novo).
+
+A regra é uma disciplina contra skills órfãos, não contra
+especialização. Se um skill não se encaixa em nenhum bundle atual, a
+resposta certa geralmente é um novo bundle (ou um pequeno como
+`growth`); a resposta errada é um skill que ninguém encontra.
+
+## Compondo múltiplos bundles
+
+O setup padrão do Octopus usa vários bundles juntos:
+
+```yaml
+bundles:
+  - starter        # the foundation
+  - quality        # audits for SaaS
+  - docs           # documentation lifecycle
+  - dotnet-api     # stack-specific
+```
+
+A composição é associativa — a ordem não importa para a
+lista efetiva. A ordem importa para `rules/`, onde entradas
+posteriores sobrescrevem as anteriores (é assim que `language.local.md`
+funciona para overrides de rules por projeto), mas isso é um detalhe
+de carregamento de rules, não uma questão de composição de bundles.
+
+## Quick mode vs Full mode
+
+`octopus setup` usa o Quick mode por padrão: 4–6 perguntas sim/não mapeiam
+para bundles ("Você está em um SaaS com billing?" → sim adiciona `quality`,
+"Esse é um projeto com muita documentação?" → sim adiciona `docs`). O wizard
+esconde o catálogo de bundles inteiramente.
+
+O Full mode é para usuários que querem controle por componente — escolher
+skills específicos, excluir membros de bundle, conjuntos de rules customizados. O Full
+mode raramente é necessário; bundles cobrem as formas comuns.
+
+[Fonte: `bundles/`](https://github.com/leocosta/octopus/tree/main/bundles)

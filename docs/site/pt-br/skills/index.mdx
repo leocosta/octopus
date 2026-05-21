@@ -1,0 +1,122 @@
+---
+title: Skills
+description: Capacidades reutilizáveis de IA organizadas por intenção — audits, workflows, ciclo de vida de docs, refactoring, lançamentos, gestão de conhecimento e autoria de skills.
+sidebar:
+  order: 1
+source_hash: "sha256:ea7a6c655ab5a7bb941762965faeb7da8b880e0a5b5c63aeca3a69780751e991"
+needs_retranslation: false
+---
+
+Skills são como o Octopus diz ao agent *o que fazer* e *como fazer
+com disciplina*. Cada skill é um pequeno arquivo Markdown com
+frontmatter que dispara o engajamento conforme a intenção do
+usuário — uma descrição que diz "use quando X", `triggers:`
+opcionais para auto-engajamento em padrões específicos de arquivo,
+e um corpo que conduz o agent pela sequência correta de passos.
+
+## Por que skills, e não só rules
+
+Rules descrevem *como é um bom código* (coding style, security,
+patterns) — são carregadas em toda conversa como contexto
+permanente. Skills descrevem *como executar uma tarefa* — são
+carregadas sob demanda quando a intenção do usuário casa com a
+descrição da skill.
+
+Essa divisão mantém o contexto ativo enxuto: uma rule sobre
+Conventional Commits está sempre carregada, mas toda a disciplina
+de PR-feedback só carrega quando você está de fato recebendo
+feedback em um PR. Skills são a camada "engaja quando preciso".
+
+## Granularidade
+
+Conforme a rule do docs-site, apenas skills com decisões de design
+não-triviais ganham uma página de detalhe. Padrões específicos de
+stack, wrappers finos e utilitários de uma única função ficam
+listados nas tabelas de visão geral, sem página própria.
+
+## Audits
+
+Gates de auditoria pré-merge. Cada um roda read-only e produz um
+relatório por severidade (`⛔ block` / `⚠ warn` / `ℹ info`). O
+compositor `audit-all` executa os relevantes em paralelo.
+
+| Skill | Audita | Detalhe |
+|---|---|---|
+| `audit-all` | Compositor para os quatro audits abaixo — descoberta de arquivos compartilhada, execução paralela, relatório consolidado. | [→](./audit-all/) |
+| `audit-security` | Segredos hardcoded, riscos de injection, lacunas de auth em rotas públicas, CVEs de dependências. | [→](./audit-security/) |
+| `audit-money` | Tipos monetários, arredondamento, testes com centavos não-redondos, consistência de env-vars, idempotência de pagamentos, verificação de assinatura de webhooks, acoplamento de fee-disclosure. | [→](./audit-money/) |
+| `audit-tenant` | Enforcement de escopo de dados multi-tenant — filtros de query, raw SQL, configs de novas entities, ownership em controllers, endpoints administrativos. | [→](./audit-tenant/) |
+| `audit-config` | Atualidade da configuração do agent — premissas específicas de modelo, datas obsoletas, skills fantasmas, paths depreciados. | [→](./audit-config/) |
+| `review-contracts` | Drift de contrato entre frontend/backend — endpoints, DTOs, enums, status codes, regras de auth, parâmetros. | [→](./review-contracts/) |
+
+## Workflows de implementação
+
+| Skill | Engaja quando | Detalhe |
+|---|---|---|
+| `implement` | Qualquer tarefa de edição de código — default em toda implementação. | [→](./implement/) |
+| `debug` | O usuário reporta um bug, falha de teste ou comportamento inesperado. | [→](./debug/) |
+| `prototype` | O usuário quer destravar um design antes de assumir compromisso — código descartável a serviço de decisões. | [→](./prototype/) |
+| `test-tdd` | Implementando uma nova feature com loop explícito de red/green/refactor. | — |
+| `test-e2e` | Adicionando um teste end-to-end que bate em serviços reais. | — |
+| `backend-patterns` | Trabalho de implementação no backend — camadas conscientes da stack. | — |
+
+## Refactoring
+
+| Skill | Engaja quando | Detalhe |
+|---|---|---|
+| `refactor-deepen` | O codebase tem módulos rasos que deveriam ser consolidados. | [→](./refactor-deepen/) |
+
+## Ciclo de vida de docs
+
+A cadeia completa RFC → Spec → ADR → Knowledge. Cada etapa é uma
+skill que o comando correspondente invoca.
+
+| Skill | Saída | Detalhe |
+|---|---|---|
+| `doc-lifecycle` | Roteia entre RFC / Spec / ADR / Knowledge conforme escopo e risco — a skill de entrada para trabalho de documentação. | [→](./doc-lifecycle/) |
+| `doc-adr` | Um novo Architecture Decision Record em `docs/adr/`. | [→](./doc-adr/) |
+| `doc-plan` | Um plan de implementação em estilo TDD, fatiado em pedaços pequenos, a partir de uma spec aprovada. | [→](./doc-plan/) |
+| `doc-subcontext` | `CLAUDE.md` por módulo para monorepos — herda do parent. | [→](./doc-subcontext/) |
+| `doc-align` | Reconcilia o drift entre código e docs. | — |
+| `doc-prd` | PRD publicado no issue tracker do projeto. | — |
+
+## Conhecimento & planejamento
+
+| Skill | Engaja quando | Detalhe |
+|---|---|---|
+| `continuous-learning` | Capturando insights que valem a pena guardar entre sessões. | [→](./continuous-learning/) |
+| `plan-backlog` | Auditando o roadmap e os plans em busca de itens obsoletos, órfãos e links quebrados. | [→](./plan-backlog/) |
+| `context-budget` | A conversa está pesada em tokens e precisa de poda. | — |
+| `context-handoff` | Passando a sessão atual para outro agent. | — |
+| `map-system` | Gerando um mapa do sistema para onboarding ou para agents AFK. | — |
+| `interview` | Stress-testando um plan via grilling. | — |
+| `triage-issues` | Roteando issues recebidas por uma máquina de estados. | — |
+
+## Lançamentos
+
+| Skill | Saída | Detalhe |
+|---|---|---|
+| `launch-feature` | Kit de lançamento multi-canal a partir de uma feature concluída (RM / spec / PR). | [→](./launch-feature/) |
+| `launch-release` | Kit temático de anúncio de release para usuários atuais — landing page, e-mail, Slack, Discord, banner, thread no X, deck. | [→](./launch-release/) |
+
+## Autoria de skills (meta)
+
+| Skill | Engaja quando | Detalhe |
+|---|---|---|
+| `scaffold-skill` | Criando uma nova skill de ponta a ponta. | Coberto em [/commands/scaffold-skill/](/octopus/commands/scaffold-skill/) |
+| `compress-skill` | Encolhendo um SKILL.md sem mudar a semântica. | — |
+| `delegate` | Roteando uma tarefa para uma role específica. | — |
+
+## Padrões de stack
+
+| Skill | O que adiciona |
+|---|---|
+| `dotnet` | Orientação específica da stack .NET / C# — async/await, EF Core, naming, estrutura de arquivos. |
+
+## Recebendo code review
+
+| Skill | Engaja quando | Detalhe |
+|---|---|---|
+| `review-pr` | Recebendo feedback em um PR — a triagem verify / ask-for-evidence / disagree-with-reasoning. | Coberto em [/commands/pr-comments/](/octopus/commands/pr-comments/) |
+
+[Fonte: `skills/`](https://github.com/leocosta/octopus/tree/main/skills)

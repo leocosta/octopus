@@ -1,0 +1,67 @@
+---
+title: audit-money
+description: Auditoria pré-merge de código que manipula dinheiro — tipos numéricos, arredondamento, testes com centavos não-redondos, consistência de env-vars, idempotência de pagamentos, verificação de assinatura de webhook, acoplamento de divulgação de tarifas.
+sidebar:
+  order: 7
+source_hash: "sha256:396065a8f0f8edc35844dfe2085e3ce649a4b1e6d62ecdb9d9c15eaf04ebb9d7"
+needs_retranslation: false
+---
+
+`audit-money` verifica as mudanças em busca da classe específica de modos de falha
+que vivem em billing, pagamentos e qualquer outro código que
+computa valores monetários. As falhas são estereotipadas — elas
+se repetem entre codebases — o que torna uma auditoria estática barata e
+de alto valor.
+
+## As sete verificações
+
+1. **Tipos numéricos.** Todo valor monetário está em um tipo exato
+   (centavos como inteiro, ou `Decimal` / `BigDecimal` com precisão
+   explícita) — nunca um `number` de JS ou um `double` de C#. Aritmética
+   de ponto flutuante com dinheiro é a fonte mais comum de erros de
+   arredondamento visíveis ao cliente.
+2. **Arredondamento.** Toda divisão ou cálculo de porcentagem tem um
+   modo de arredondamento explícito (`ROUND_HALF_EVEN`, `ROUND_DOWN`, etc.).
+   Arredondamento implícito é sinalizado porque runtimes diferentes escolhem
+   modos diferentes por padrão.
+3. **Testes com centavos não-redondos.** Todo cálculo monetário tem ao menos
+   um caso de teste com um valor que não divide de forma exata. Testes
+   que só verificam `100 / 2 == 50` perdem toda a superfície de erros de
+   arredondamento.
+4. **Consistência de env-vars.** Se o diff adiciona ou altera uma variável de
+   ambiente do Stripe / SendGrid / etc., a auditoria verifica que a
+   mesma variável existe em `.env.example`, `.env.sandbox` e
+   `.env.production` com o placeholder apropriado. Drift aqui
+   produz falhas do tipo "funciona em staging, quebra em prod".
+5. **Idempotência de pagamentos.** Qualquer nova chamada de criação de pagamento deve
+   passar uma idempotency key. Requisições HTTP retentadas sem ela já
+   produziram o clássico incidente "cliente cobrado duas vezes".
+6. **Verificação de assinatura de webhook.** Qualquer novo handler de webhook
+   de um provedor de pagamentos deve verificar a assinatura antes de
+   ler o body. Sem verificação, o endpoint aceita
+   webhooks forjados alegando qualquer status de pagamento.
+7. **Acoplamento de divulgação de tarifas.** Se o diff altera como uma tarifa é
+   calculada, a auditoria verifica que a divulgação voltada ao cliente
+   (texto de UI, template de e-mail, item de linha da invoice) foi
+   atualizada no mesmo PR. Mudanças de tarifa desacopladas chegam como
+   surpresas.
+
+## Por que isso se repete entre codebases
+
+Dinheiro é a área em que o comportamento padrão do runtime é
+*quase certo* — `100 / 3 == 33.333...` para matemática, mas para dinheiro
+o merchant precisa de `33.33` ou `33.34` dependendo da política de
+arredondamento. Os defaults fazem o código parecer correto até ele entrar em produção e
+o contador reclamar. A auditoria codifica as verificações que transformam
+"parece certo" em "é comprovadamente certo".
+
+## Quando a auditoria fica em silêncio
+
+Se o diff não toca em código que manipula dinheiro, `audit-money`
+não reporta nada e sai limpo. O trigger é heurístico — caminhos
+sob `src/billing/`, `src/payments/`, ou qualquer arquivo que case com
+`money|price|cents|fee|discount|invoice`. Arquivos fora desses
+padrões não são auditados mesmo que por acaso manipulem dinheiro;
+expandir a heurística por projeto é uma mudança de configuração de uma linha.
+
+[Fonte: `skills/audit-money/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/audit-money/SKILL.md)

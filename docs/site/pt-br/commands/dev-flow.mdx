@@ -1,0 +1,62 @@
+---
+title: dev-flow
+description: O ciclo de vida completo do PR em um comando orquestrado — branch / commit / pr-open / pr-review / pr-comments / pr-merge com pausas humanas explícitas entre as fases.
+sidebar:
+  order: 8
+source_hash: "sha256:a4c29523c1f1bd7cbc37998e60a95f9ce624704e28a01ab963cafd97741b8e7c"
+needs_retranslation: false
+---
+
+`/octopus:dev-flow` é o orquestrador que costura os comandos
+individuais do ciclo de vida do PR em um único fluxo guiado. Ele
+não é um daemon — não executa tudo de forma autônoma. Ele conduz o
+agent por cada fase, pausando para input humano entre elas para
+que o desenvolvedor permaneça no controle.
+
+## Por que orquestrar quando cada passo é seu próprio comando
+
+Os comandos individuais (`branch-create`, `commit`, `pr-open`,
+`pr-review`, `pr-comments`, `pr-merge`) foram projetados para
+serem úteis por conta própria — você pode entrar no meio de um
+fluxo que iniciou manualmente. Mas rodar o ciclo de vida completo
+na mão significa lembrar da ordem, lembrar de fazer push, lembrar
+de atribuir revisores, lembrar de fazer merge. O `dev-flow`
+elimina essa burocracia ao manter o estado entre as fases.
+
+As pausas importam tanto quanto os passos. Sem elas, o agent
+correria alegremente da criação do branch até o merge em um único
+turno, o que é exatamente o formato errado — humanos precisam de
+janelas para desenvolver a feature, reagir ao feedback da review e
+decidir quando o PR está pronto.
+
+## As fases
+
+| Fase | Comando | Pausa? |
+|---|---|---|
+| 1 | `/octopus:branch-create` | Depois: desenvolva a feature, então diga "continue" |
+| 2 | `/octopus:pr-open` | Depois: revise o corpo do PR |
+| 3 | `/octopus:pr-review` | Depois: corrija os achados da self-review, faça push |
+| 4 | (atribuir revisores) | Depois: aguarde a review |
+| 5 | `/octopus:pr-comments` | Execute a cada rodada de feedback; faça loop até aprovação |
+| 6 | `/octopus:pr-merge` | Final |
+
+O agent solicita o usuário em cada fronteira de pausa com uma
+frase como *"continue when ready"* — handoff explícito de volta
+para o humano. O usuário retoma dizendo "continue" ou invocando
+diretamente o comando da próxima fase (pulando a orquestração do
+`dev-flow` se preferir).
+
+## Quando não usar
+
+Três casos em que os comandos individuais são uma escolha melhor:
+
+- **Hotfix ou mudança trivial.** O overhead da orquestração não
+  compensa. `commit` → `pr-open` → `pr-merge` direto.
+- **PRs empilhados (stacked).** O `dev-flow` assume um único
+  branch da base até o merge. Para trabalho stacked, rode os
+  comandos individuais por branch.
+- **Recuperação no meio do fluxo.** Se você abriu o PR
+  manualmente e quer apenas self-review + merge, rode `pr-review`
+  e depois `pr-merge`.
+
+[Fonte: `commands/dev-flow.md`](https://github.com/leocosta/octopus/blob/main/commands/dev-flow.md)

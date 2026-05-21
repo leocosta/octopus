@@ -1,0 +1,124 @@
+---
+title: backend
+description: Padrões específicos de backend e convenções de testes end-to-end. Anda junto com o role backend-developer para implementação consciente da stack.
+sidebar:
+  order: 4
+source_hash: "sha256:a86cc8243daead8e1c1dd0be9235e6071a3b005d2ba3b5287049272785438842"
+needs_retranslation: false
+---
+
+`backend` é um bundle pequeno. Ele adiciona duas skills e um role
+em cima do `starter`, focados em padrões específicos de backend e
+testes end-to-end. O bundle existe para dar aos times de backend um
+ponto de extensão coerente sem inflar o `starter` para repos que
+não são de backend.
+
+## Por que isso existe
+
+As skills do `starter` são agnósticas de stack. `debug` não se
+importa se você está debugando Python ou C#; `implement` não traz
+opiniões específicas de framework. Mas trabalho de backend tem
+padrões com forma de framework que as skills agnósticas de stack
+não conseguem carregar: como as camadas de Repository e Service se
+compõem, como é uma idempotency key na fronteira da API, qual a
+forma de um teste end-to-end contra um servidor HTTP real com um
+banco de dados real.
+
+Colocar esses padrões no `starter` forçaria todo repo a carregá-los,
+mesmo os puramente de frontend ou de tooling. `backend` os mantém
+opt-in.
+
+## Arquétipo de time
+
+Isso é para times cujo trabalho principal é em uma API ou serviço
+server-side:
+
+- APIs REST ou gRPC servindo um frontend ou outros serviços
+- Workers em background, filas, batch jobs
+- Código pesado em banco de dados (migrations, ORMs, SQL puro)
+- Webhook handlers e adapters de integração
+
+Se o seu repo é um frontend, uma CLI, uma biblioteca ou um projeto
+de tooling, `backend` é a forma errada. Fique com `starter` (e
+adicione `quality` para auditorias se você lida com dinheiro / auth
+/ multi-tenant).
+
+## O que inclui
+
+```yaml
+skills:
+  - backend-patterns  # framework-shaped patterns for backend code
+  - test-e2e          # end-to-end testing protocol (real DB, real HTTP)
+roles:
+  - backend-developer # senior backend persona for /octopus:delegate
+```
+
+[Fonte: `bundles/backend.yml`](https://github.com/leocosta/octopus/blob/main/bundles/backend.yml)
+
+### Por que cada item está aqui
+
+- **`backend-patterns`** — codifica as formas comuns que código de
+  backend assume: repository pattern (encapsular acesso a dados
+  atrás de uma interface uniforme), service layer (orquestrar
+  lógica de negócio entre repositories e serviços externos),
+  envelope de erro (`{ data, error, metadata }`), idempotência na
+  fronteira da API, queries parametrizadas sempre. A skill entra em
+  ação quando o agent está trabalhando em código de backend e
+  direciona a implementação através desses padrões.
+- **`test-e2e`** — a disciplina de testes end-to-end. Distinta do
+  `test-tdd` (que vive na fronteira unit / integration).
+  `test-e2e` cobre rodar testes contra um servidor HTTP real, um
+  banco de dados real (frequentemente via testcontainers), e
+  asserções sobre comportamento observável em vez de estado
+  interno.
+- **role `backend-developer`** — a persona para quem você delega
+  quando a tarefa é inequivocamente de backend. O arquivo do role
+  força detecção de stack (.NET / Scala / Node / Python) e aplica
+  as convenções da stack detectada. Útil quando um frontend
+  developer está despachando trabalho de backend e quer o agent no
+  modelo mental certo.
+
+### Por que não está incluído
+
+- **`backend-developer` está aqui, mas nenhuma outra persona** —
+  intencional. O bundle é focado em backend; incluir outros roles
+  fugiria do tema.
+- **`audit-money`, `audit-tenant`, `audit-security`** — esses
+  vivem em `quality` porque a forma da auditoria deles se aplica
+  independentemente da stack. Um repo de backend que vai para
+  produção quase sempre quer `backend + quality`.
+- **Skills específicas de framework como `dotnet`, `node`, etc.** —
+  a skill `dotnet` existe como uma instalação separada e opcional.
+  Ela não vem no bundle `backend` porque nem todo backend é .NET.
+  Skills específicas de stack futuras seguem o mesmo padrão.
+
+## Workflow que isso habilita
+
+Tarefas com forma de backend ficam roteadas:
+
+1. Uma tarefa chega: "adicionar idempotência ao endpoint
+   `/charges`."
+2. O agent reconhece o sinal de backend (o path, `Program.cs` na
+   árvore, ou seu explícito `/octopus:delegate @backend-developer
+   …`) e entra no modo `backend-developer`.
+3. `backend-patterns` informa a implementação: idempotency keys
+   vão no header da requisição, são checadas contra um store antes
+   do side effect acontecer, e a resposta é cacheada para retries
+   subsequentes com a mesma key.
+4. Os testes seguem `test-e2e`: sobem a API contra um DB real via
+   testcontainer, fazem uma requisição com uma idempotency key,
+   repetem a mesma requisição, asseguram que a segunda retorna a
+   resposta cacheada sem cobrar o cliente de novo.
+5. Se a mudança toca em dinheiro ou em escopo de tenant (provável
+   para `/charges`), as auditorias do bundle `quality` rodam
+   pre-merge.
+
+## Compõe com
+
+- **[starter](/octopus/bundles/starter/)** — fundação obrigatória.
+- **[quality](/octopus/bundles/quality/)** — quase sempre pareado.
+  A maior parte do código de backend que vai para produção quer as
+  auditorias.
+- **[docs](/octopus/bundles/docs/)** — combina naturalmente.
+  Mudanças de backend frequentemente justificam ADRs (formato de
+  idempotency key, política de retry) e PRDs para novos endpoints.

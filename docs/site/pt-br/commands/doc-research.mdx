@@ -1,0 +1,67 @@
+---
+title: doc-research
+description: Sessão interativa de brainstorming que produz um documento de pesquisa em docs/research/ e uma nova entrada RM no roadmap.
+sidebar:
+  order: 12
+source_hash: "sha256:75341cd0852049f06e4dcea252658ee9bac32266b5666b49de50c034c39d5c64"
+needs_retranslation: false
+---
+
+`/octopus:doc-research` é o ponto de entrada assíncrono no
+ciclo de planejamento do projeto. Ele conduz uma entrevista
+estruturada de brainstorming, captura o resultado como um documento
+de pesquisa em `docs/research/<slug>.md` e adiciona a ideia como
+uma nova entrada RM em `docs/roadmap.md` para que ela deixe de
+existir só na cabeça de alguém.
+
+## Por que isso existe
+
+O roadmap tem dois caminhos de entrada válidos:
+
+- **Roadmap-first** — para ideias que se beneficiam de um
+  brainstorm assíncrono ou de validação do time antes de virarem
+  um spec. A saída é um doc de pesquisa + uma entrada RM; o
+  trabalho não começa até que a RM evolua para um Spec ou RFC.
+- **Spec-first** — para trabalhos que já saíram de um brainstorm
+  síncrono com rationale e escopo claros. Crie o spec diretamente
+  via `/octopus:doc-spec`; não precisa de RM.
+
+`doc-research` é o caminho roadmap-first. A entrevista é o
+substituto assíncrono de uma reunião de brainstorming: ela
+expõe o problema, as restrições, as alternativas e o rationale
+antes que qualquer código ou spec seja escrito.
+
+## O formato da entrevista
+
+O brainstorm segue aproximadamente esta sequência — não-linear,
+se adapta à conversa:
+
+1. **Enquadramento do problema.** O que está quebrado ou faltando?
+   Quem é afetado? Como é o sucesso?
+2. **Estado atual.** Como o time contorna isso hoje? Quais custos
+   do workaround estão visíveis? O que está invisível?
+3. **Alternativas.** Que outros formatos foram considerados? Por
+   que *este* formato é o certo?
+4. **Riscos e incógnitas.** O que poderia impedir isso de chegar
+   em produção? Qual é a lista do "ainda não sabemos"?
+5. **Próximos passos.** Isso precisa de um RFC para input de
+   stakeholders, ou pode evoluir direto para um Spec quando o
+   trabalho começar?
+
+A saída é um doc de pesquisa com cada seção preenchida. A entrada
+RM no roadmap é um ponteiro de uma linha de volta ao doc de
+pesquisa, com `status: proposed` até o trabalho começar.
+
+## Ciclo de vida da RM
+
+O status da entrada no roadmap transita conforme a ideia avança:
+
+- `proposed` — pesquisa concluída, aguardando decisão de iniciar
+- `in progress` — evoluiu para Spec ou RFC; o trabalho começou
+- `shipped (vX.Y.Z)` — entregue em um release
+
+A skill `plan-backlog` audita o roadmap em busca de itens
+desatualizados e propõe correções de status quando os PRs ou
+commits vinculados não correspondem ao que a RM afirma.
+
+[Source: `commands/doc-research.md`](https://github.com/leocosta/octopus/blob/main/commands/doc-research.md)

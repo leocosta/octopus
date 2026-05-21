@@ -1,0 +1,73 @@
+---
+title: commit
+description: Sugere uma mensagem em Conventional Commits a partir do diff staged e faz o commit após confirmação — cuida da escolha de idioma, inferência de scope e trailers de co-autoria de AI.
+sidebar:
+  order: 3
+source_hash: "sha256:17a845c8027e0564a559207bed8d87d04d9e3150df0a159f35eced179d5de6e5"
+needs_retranslation: false
+---
+
+`/octopus:commit` lê o diff staged, redige uma mensagem em
+Conventional Commits (`type(scope): description` + corpo
+explicando o *porquê*), mostra para confirmação e executa
+`git commit` quando aprovado. Ele cuida das etapas em volta do
+commit que são fáceis de esquecer: detectar o idioma em que
+escrever, escolher o type certo, anexar trailers de co-autoria
+de AI e recusar `--no-verify`.
+
+## Por que isso existe
+
+Conventional Commits é um formato pequeno com impacto
+desproporcional — o fluxo de release lê os types dos commits
+para sugerir bumps de semver, o título do pull request deriva do
+type dominante no branch e o CHANGELOG agrupa entradas por
+emoji de type. Uma mensagem em formato livre quebra tudo isso.
+
+O custo de lembrar o formato manualmente não é trivial na
+prática (especialmente no meio de um debug). Delegar para um
+comando que lê o diff e propõe uma mensagem remove esse atrito
+sem abrir mão da estrutura.
+
+## Resolução de idioma
+
+O idioma da mensagem de commit **não** é o mesmo idioma da
+conversa. O comando resolve nesta ordem:
+
+1. `.octopus/rules/common/language.local.md` se presente
+2. Valor `language.code:` em `.octopus.yml`
+3. Detecção a partir de `git log --oneline -20` — bate com o
+   idioma dominante já presente no histórico do projeto
+4. Default: **English**
+
+Isso importa porque o projeto pode ter um time que fala
+português e documenta em pt-BR, mas faz commits em inglês (um
+padrão comum em projetos com pegada open source). O comando
+separa os dois canais de propósito.
+
+## Trailers de co-autoria de AI
+
+Quando o assistente gerou ou modificou substancialmente o
+código, o comando anexa o trailer correspondente ao corpo do
+commit:
+
+```
+Co-authored-by: claude <claude@anthropic.com>
+Co-authored-by: octopus[bot] <octopus[bot]@users.noreply.github.com>
+```
+
+O humano permanece como autor do commit; o assistente fica como
+co-autor. Trailers não são adicionados em casos de assistência
+apenas com sugestões. O trailer `octopus[bot]` é automático para
+qualquer mensagem de commit que tenha passado por este comando —
+ele marca a participação da ferramenta, o que é separado da
+autoria de AI.
+
+## O que ele recusa
+
+- Staging area vazia sem instrução clara para fazer staging
+- `--no-verify` — pre-commit hooks existem por um motivo
+- Commit de arquivos que parecem secrets (.env, credentials.json)
+- Misturar múltiplas mudanças lógicas em um commit quando o diff
+  cobre áreas não relacionadas (propõe dividir em vez disso)
+
+[Fonte: `commands/commit.md`](https://github.com/leocosta/octopus/blob/main/commands/commit.md)

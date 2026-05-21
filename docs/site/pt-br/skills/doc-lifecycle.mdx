@@ -1,0 +1,66 @@
+---
+title: doc-lifecycle
+description: Encaminha entre RFC / Spec / ADR / Knowledge conforme escopo e risco — a skill de entrada para qualquer trabalho de documentação que ainda não tenha um destino óbvio.
+sidebar:
+  order: 12
+source_hash: "sha256:f8d83a880107c898d117e59a849da0730fbcc3fe63c851ead93ab392f1611a2e"
+needs_retranslation: false
+---
+
+`doc-lifecycle` é a skill de roteamento para trabalhos de
+documentação. Ela responde "que tipo de documento eu devo
+criar?" dado o trabalho em andamento — RFC para coletar input
+de stakeholders, Spec para descrição de feature pronta para
+implementação, ADR para capturar uma decisão após o fato,
+Knowledge para fatos específicos de módulo que valem preservar.
+
+## Por que rotear em vez de "só criar um doc"
+
+O anti-pattern dominante em documentação é criar um doc no
+gênero errado. Uma spec escrita como RFC é vaga demais para
+implementar a partir dela; um RFC escrito como spec é
+prescritivo demais para coletar input real; um ADR escrito como
+spec perde o momento da decisão. Cada tipo de documento carrega
+expectativas diferentes de audiência e de ciclo de vida, e
+errar o gênero desperdiça o tempo de quem escreve e de quem lê.
+
+A lógica de roteamento é o valor: a skill faz duas perguntas
+sobre o trabalho e então escolhe o documento certo.
+
+## A rota de duas perguntas
+
+1. **A decisão já foi tomada, ou ainda está sendo tomada?**
+   - Ainda sendo tomada → RFC (coleta input de stakeholders)
+   - Tomada, aguardando captura → ADR (registra a decisão)
+   - Tomada, virando trabalho → Spec (pronta para implementação)
+2. **O escopo é uma feature, uma mudança arquitetural ou um fato?**
+   - Feature → Spec
+   - Mudança arquitetural com múltiplos stakeholders → RFC, depois
+     ADR quando decidida
+   - Fato sobre um módulo ou domínio → Knowledge ou `CLAUDE.md`
+     por módulo (via `doc-subcontext`)
+
+A skill conduz o usuário pelas duas perguntas e invoca a
+sub-skill correspondente (`doc-rfc`, `doc-spec`, `doc-adr`,
+`doc-subcontext`).
+
+## A cadeia completa
+
+| Estágio | Saída | Skill |
+|---|---|---|
+| Início — coletando input | RFC | `doc-rfc` |
+| Decisão tomada | ADR | `doc-adr` |
+| Feature pronta para construir | Spec | `doc-spec` |
+| Spec pronta, plan a escrever | Plan | `doc-plan` |
+| Fato específico de módulo | Sub-context | `doc-subcontext` |
+| Aprendizado entre sessões | CLAUDE.md / rule | `continuous-learning` |
+| PRD para o issue tracker | PRD | `doc-prd` |
+
+## Quando pular o roteamento
+
+Se você já sabe o tipo de documento, invoque a skill diretamente
+(`/octopus:doc-adr` para um ADR, etc.). `doc-lifecycle` é o
+ponto de entrada para "tenho algo para documentar mas não sei
+qual é o gênero".
+
+[Fonte: `skills/doc-lifecycle/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/doc-lifecycle/SKILL.md)

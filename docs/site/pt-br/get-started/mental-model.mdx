@@ -1,0 +1,193 @@
+---
+title: Modelo Mental
+description: Os cinco primitivos — Bundle, Skill, Command, Hook, Role — e como eles se compõem em um workflow coerente.
+sidebar:
+  order: 4
+source_hash: "sha256:02be561f4513371d6f37c75b5656474a520cf2a8aa79618de7b2b2d42e1a3fd8"
+needs_retranslation: false
+---
+
+O Octopus tem cinco primitivos. Cada um faz uma coisa. Eles se compõem
+nos workflows que formam o dia a dia de um time. Depois que você viu os
+cinco, o resto da documentação cai no lugar.
+
+## Os cinco primitivos
+
+### Bundle
+
+Um **bundle** é um pacote curado de skills + roles + rules + hooks
+afinado para um arquétipo de time. Você escolhe um bundle (ou vários)
+ao rodar `octopus update` e o bundle decide o que é instalado.
+
+Os bundles que existem hoje:
+
+- **`starter`** — a fundação que todo time quer. Rules de coding-style,
+  as skills `debug` e `implement`, os hooks de ciclo de vida (format on
+  save, bloquear git destrutivo, propor knowledge updates), as skills
+  de doc-lifecycle e context-*.
+- **`quality`** — composição de auditoria. Security, money, tenant,
+  cross-stack contracts, refactor-deepen, audit-config.
+- **`docs`** — a família doc-*. Fluxos de spec, ADR, PRD, plan,
+  research. Mais interview, doc-align, triage-issues, scaffold-skill.
+- **`backend`** — role backend-developer + skill backend-patterns.
+- **`growth`** — tooling de launch / changelog / release-announce para
+  entregar features aos usuários.
+
+O trabalho de um bundle é tornar tratável a escolha "o que eu instalo?".
+Sem bundles, todo time teria que rolar uma lista de 34 skills e decidir
+individualmente.
+
+[Veja todos os bundles →](/octopus/bundles/)
+
+### Skill
+
+Uma **skill** é um protocolo que o agent segue quando a descrição dela
+casa com a tarefa atual — ou quando você a invoca explicitamente. Cada
+skill vive em `skills/<name>/SKILL.md`: frontmatter com `name`,
+`description` e (opcionalmente) `triggers`; corpo com `Overview`,
+`When to Engage`, `Protocol`, `Anti-Patterns` e `Integration with Other
+Skills`.
+
+Skills são como o Octopus codifica processo. O loop de TDD, o protocolo
+de debugging, a disciplina de PR-review, o fluxo de síntese de PRD, o
+vocabulário de refactoring — cada um vive como uma skill com um
+protocolo documentado que o agent segue.
+
+Skills vêm em dois sabores:
+
+- **Auto-engaged**: o agent casa a descrição / triggers da skill com a
+  tarefa e engaja sem ser pedido. A maioria das skills funciona assim.
+  `debug` engaja quando há um bug report; `audit-money` engaja quando
+  você edita arquivos adjacentes a billing.
+- **Manual-only**: a skill é explícita, invocada pelo usuário com um
+  slash command. `map-system` é o exemplo canônico — está marcada como
+  manual-invocation para o agent não dar zoom out por iniciativa
+  própria.
+
+[Veja todas as skills →](/octopus/skills/)
+
+### Command
+
+Um **slash command** é um entry point tipado que fixa uma skill
+específica a uma frase específica. `/octopus:debug` invoca a skill
+`debug`. `/octopus:doc-prd` invoca `doc-prd`. O mapeamento é um command
+por skill (na maioria), e o corpo do command é fino — ele aponta para
+a skill e a skill é dona do protocolo.
+
+Por que ter os dois? Duas razões:
+
+- **Descoberta**: digitar `/octopus:` e ver a lista de autocomplete é
+  uma superfície mais rápida do que ler descrições de skills.
+- **Previsibilidade**: quando você invoca um command explicitamente, o
+  agent engaja a skill nomeada *com certeza*. Description matching é
+  fuzzy; slash commands não são.
+
+Nem toda skill tem um command. Skills sem um momento claro de "quero
+fazer isso agora" — `compress-skill`, `continuous-learning`,
+`scaffold-skill` — permanecem só no engine. Skills com momentos
+explícitos de entry-point — `debug`, `prototype`, `triage-issues`,
+`context-handoff`, `interview` — ganham um command.
+
+[Veja todos os commands →](/octopus/commands/)
+
+### Hook
+
+Um **hook** é um script de ciclo de vida que roda automaticamente em
+um de sete momentos: antes de uma chamada de tool, depois de uma
+chamada de tool, no session start, antes da compactação de contexto,
+depois da compactação de contexto, no stop, no session end. Hooks
+impõem disciplina sem precisar promptar o agent.
+
+Exemplos:
+
+- **`auto-format.sh`** (PostToolUse em Write/Edit) — roda o formatter
+  do projeto depois de cada edição de arquivo. O agent não precisa
+  lembrar de formatar.
+- **`block-no-verify.sh`** (PreToolUse em Bash) — se recusa a rodar
+  `git commit --no-verify`. Pre-commit hooks existem por uma razão.
+- **`detect-secrets.sh`** (PreToolUse em Bash) — escaneia secrets em
+  arquivos rastreados antes de eles serem enviados.
+- **`propose-knowledge-update.sh`** (Stop) — escaneia o transcript da
+  sessão por correções, relê, re-greps e escreve uma proposta em
+  `.octopus/proposals/` para revisão humana.
+
+O princípio: qualquer coisa determinística que *precisa* acontecer em
+toda sessão vai num hook, não num prompt. Prompts podem ser ignorados;
+hooks não.
+
+[Veja todos os hooks →](/octopus/hooks/)
+
+### Role
+
+Uma **role** é uma persona à qual você pode delegar. `@architect`
+revisa designs e expõe smells arquiteturais. `@backend-developer`
+implementa trabalho do lado da API. `@writer` produz copy de marketing
+ou documentação. `@product-manager` pensa nos trade-offs voltados ao
+usuário. Roles permitem que você se dirija a um agent com um escopo
+específico em mente:
+
+```
+/octopus:delegate @backend-developer add idempotency-key support to /charges
+```
+
+O arquivo de persona da role (`roles/<name>.md`) delimita o
+comportamento do agent para aquela tarefa: o que ele é dono, o que não
+é, quais skills ele tipicamente ativa, que tom adota no output.
+
+[Veja todas as roles →](/octopus/roles/)
+
+## Como elas se compõem
+
+Um workflow típico usa os cinco:
+
+1. **Você escolhe um bundle** ao montar o repo (`starter` + `quality`
+   para a maioria dos times).
+2. O bundle instala **skills**, **commands**, **hooks** e as **roles**
+   que ele considera parte da sua superfície.
+3. Você trabalha no Claude Code. O agent casa sua tarefa contra as
+   descrições das skills e engaja a certa automaticamente.
+4. Quando você quer ser explícito, digita um **slash command** para
+   invocar uma skill específica.
+5. **Hooks** rodam silenciosamente em background, impondo format /
+   typecheck / no-verify-blocking / knowledge-proposal.
+6. Quando você tem uma tarefa com escopo específico, delega a uma
+   **role** em vez do agent default.
+
+Os primitivos são deliberadamente pequenos. A maioria dos times não
+escreve novos — eles escolhem um bundle, customizam uma rule ou outra
+e vivem no workflow que o bundle define. O framework existe para que
+os *autores* de bundles e skills os escrevam uma vez e os tenham
+funcionando consistentemente em todo repo consumidor e em todo agent
+suportado.
+
+## O que *não* é um primitivo
+
+Algumas coisas parecem primitivos mas não são:
+
+- **Rules** — arquivos markdown que são inlineados na config de agent
+  gerada. São configuração, não comportamento. Rules dizem "use
+  TypeScript" ou "prefira testes de integração"; skills dizem "rode
+  este protocolo".
+- **Knowledge** — fatos com escopo de domínio que o agent aprende ao
+  longo do tempo via `continuous-learning`. Knowledge é *dado*; skills
+  são *comportamento*.
+- **MCP servers** — integrações externas (GitHub, Notion, Postgres)
+  que o agent pode chamar. MCP é um protocolo definido pela Anthropic;
+  o Octopus entrega templates mas não define novos primitivos em cima.
+- **Bundles de bundles** — não existe "meta-bundle". Se você quer
+  `starter + quality + docs`, lista os três no seu `.octopus.yml`. Sem
+  aninhamento.
+
+Isso mantém o modelo plano e a documentação tratável.
+
+## Para onde ir agora
+
+- [Bundles](/octopus/bundles/) — escolha o que casa com o formato do
+  seu time.
+- [Skills](/octopus/skills/) — navegue por família (`doc-*`,
+  `audit-*`, `test-*`, etc).
+- [Commands](/octopus/commands/) — referência de slash-commands com
+  rationale por command.
+- [Hooks](/octopus/hooks/) — documentação de cenário-de-falha por hook.
+- [Roles](/octopus/roles/) — quando delegar vs. quando ficar no agent
+  default.

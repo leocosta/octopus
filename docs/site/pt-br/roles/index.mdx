@@ -1,0 +1,124 @@
+---
+title: Roles
+description: Personas para as quais você pode delegar via /octopus:delegate. Cada role limita o comportamento de um agent para uma tarefa — architect, backend, frontend, marketer, product-manager, writer.
+sidebar:
+  order: 0
+source_hash: "sha256:d2a96c9964c3f79d4cb79d5f1dbf0479d4ec9b3254a780f96837ffcfb4e4f71e"
+needs_retranslation: false
+---
+
+Um **role** é uma persona pela qual você pode endereçar um agent.
+Quando você roda `/octopus:delegate @architect …`, o agent carrega
+o arquivo do role architect antes de responder — adotando o escopo,
+os princípios e o formato de saída daquela persona pela duração da
+tarefa.
+
+Roles existem porque nem toda tarefa deve ser tratada do mesmo
+jeito. Um code review pede uma mentalidade de senior reviewer que
+classifica achados como blocking / advisory / question. Uma
+implementação de backend pede detecção de stack e um workflow de
+execução em camadas. Um post de marketing pede approval gates e
+copy nativa da plataforma. A persona padrão do agent é generalista;
+roles dão alternativas direcionadas.
+
+## Os seis roles
+
+- **[architect](/octopus/roles/architect/)** — senior reviewer e
+  gate de qualidade de código. Valida qualidade técnica,
+  integridade arquitetural e conformidade com ADRs antes do merge.
+  Usa a disciplina BLOCKING / ADVISORY / QUESTION.
+- **[backend-developer](/octopus/roles/backend-developer/)** —
+  implementa código de backend seguindo plans. Stack-aware (.NET,
+  Scala, Node, Python). Modifica código.
+- **[frontend-developer](/octopus/roles/frontend-developer/)** —
+  implementa código de frontend com foco em UX e acessibilidade.
+  Modifica código.
+- **[marketer](/octopus/roles/marketer/)** — estrategista de redes
+  sociais e copywriter. Workflows de publicação com approval gates.
+  NÃO modifica código.
+- **[product-manager](/octopus/roles/product-manager/)** —
+  estratégia de produto, priorização, análise de métricas SaaS,
+  design de experimentos. NÃO modifica código.
+- **[writer](/octopus/roles/writer/)** — especialista em
+  documentação para specs, ADRs, release notes, captura de
+  conhecimento. Modifica docs (e apenas docs).
+
+## Como um role difere de uma skill
+
+Skills são **protocolos**: passos numerados para lidar com uma
+classe de tarefa. Roles são **personas**: quem o agent está sendo
+enquanto aplica skills.
+
+Uma interação típica:
+
+```
+/octopus:delegate @backend-developer add idempotency to /charges
+```
+
+O agent carrega o role backend-developer, detecta a stack, engaja a
+skill `implement` (que aplica padrões stack-aware de
+`backend-patterns`), roda o loop de TDD e reporta de volta — tudo
+sob as restrições da persona do role.
+
+Skills podem ser engajadas automaticamente por match de descrição.
+Roles só são engajados por delegação explícita via
+`/octopus:delegate @<role> <task>` ou pelo padrão de menção
+`@role:`.
+
+## Anatomia de um role
+
+Todo role vive em `roles/<name>.md` com frontmatter:
+
+```yaml
+---
+name: <role>
+description: <one sentence>
+model: opus | sonnet | haiku    # which Claude model fits the task
+color: "#hex"                    # UI color for the role in TUI
+tools: [Read, Write, ...]        # optional tool allowlist
+---
+```
+
+O corpo é a definição completa da persona do role: missão,
+princípios operacionais, fases do workflow, formato de saída. Roles
+maiores (writer, marketer, product-manager) chegam a 200–300 linhas
+porque a persona precisa de regras de escopo precisas para se
+comportar de forma consistente.
+
+## Quando delegar vs ficar no agent padrão
+
+Delegue quando:
+
+- A tarefa está inequivocamente na pista de um role (uma feature de
+  backend, um code review, um post de lançamento, um PRD)
+- Você quer que o agent aplique restrições específicas do role (o
+  role marketer se recusa a modificar código; o role architect se
+  recusa a escrever código)
+- Você quer atribuição clara na saída (`» <role> respondeu:`)
+- Você está orquestrando múltiplos roles em paralelo via
+  `octopus control` e quer que apareçam visivelmente atribuídos
+
+Fique no agent padrão quando:
+
+- A tarefa é pequena e atravessa pistas (um bugfix que toca três
+  camadas)
+- Você está iterando rápido e o overhead do role interromperia o
+  fluxo
+- A tarefa é exploratória e uma persona estrita seria prematura
+
+## Compõe com
+
+- **[delegate command](/octopus/commands/delegate/)** — o mecanismo
+  de despacho. Vive em `starter` porque a primitiva é fundamental
+  mesmo que nenhum role venha em `starter`.
+- **Bundles trazem seus próprios roles** — `quality` traz
+  `architect`; `docs` traz `writer`; `backend` traz
+  `backend-developer`; `growth` traz `marketer`. `product-manager`
+  e `frontend-developer` estão disponíveis standalone.
+
+## Referência
+
+As definições de roles vivem em [`roles/`](https://github.com/leocosta/octopus/tree/main/roles)
+no repo de origem. A base compartilhada vive em `roles/_base.md`
+(convenções de markdown estruturado, formato de referência a
+arquivos).

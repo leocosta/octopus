@@ -1,0 +1,118 @@
+---
+title: O que é o Octopus
+description: Octopus é a camada centralizada de configuração para AI coding agents — uma única fonte de verdade que compila para os formatos que cada agent espera.
+sidebar:
+  order: 1
+source_hash: "sha256:a5d6599a37d006b90fb9b64c113df1f160bd0894b400e33f6e1fb3ed651de69c"
+needs_retranslation: false
+---
+
+import { Code } from '@astrojs/starlight/components';
+
+Octopus é uma CLI que transforma a configuração de AI agents de um time — as
+convenções de código, os guardrails de segurança, os playbooks de on-call,
+os rituais de post-mortem — em uma **única fonte de verdade** que
+compila para os formatos que cada agent espera.
+
+Você aponta o Octopus para um repo, escolhe um bundle que combina com o
+formato do seu time, e ele gera: um template `.claude/CLAUDE.md` para o Claude
+Code, um `.github/copilot-instructions.md` para o Copilot, um
+`AGENTS.md` para o Codex, um `GEMINI.md` para o Gemini, e `.opencode/rules.md`
+para o OpenCode — tudo a partir da mesma configuração do Octopus.
+Skills, hooks, slash commands, registros de servidores MCP e personas de roles
+são instalados no local que cada agent lê.
+
+## O problema que o Octopus resolve
+
+Se você adotou um AI coding agent em um time real, já viu o
+drift lento. O arquivo `CLAUDE.md` na raiz do repo começa com 30 linhas
+e passa de 300 em um trimestre. Metade é genérica ("use
+TypeScript", "prefira pure functions") e metade é tribal ("a gente nunca
+mexe no módulo `legacy/payments/` sem chamar o Alex"). Pessoas recém-contratadas
+absorvem a metade tribal sendo corrigidas três vezes. Agents novos
+— quando você eventualmente adiciona Copilot ou Gemini — começam do zero
+porque ninguém quer manter três cópias das mesmas regras.
+
+O mesmo padrão aparece para slash commands, hooks, skills e
+playbooks. Todo time reinventa o mesmo `/release`, o mesmo
+"formatar ao salvar", o mesmo "bloquear push direto na main". Todo time
+deixa pela metade.
+
+Octopus existe para tornar esse trabalho compartilhado e durável. Skills, hooks,
+commands e regras ficam versionados em um repo (o próprio do Octopus, ou
+seu fork dele) e são puxados para a árvore do seu projeto via `octopus
+update`. Quando o upstream muda, você roda o comando de novo e o
+delta cai no seu `.claude/`, `.github/`, `AGENTS.md`, `GEMINI.md`,
+`.opencode/` — em quaisquer agents que você esteja usando.
+
+## O que você recebe de um `octopus update` recém-rodado
+
+Escolhendo o bundle padrão `starter` em um repo novinho, você recebe:
+
+- Um **`CLAUDE.md`** para o Claude Code com convenções de código
+  abrangentes ao projeto, convenções de commit, workflow de PR, e um ponteiro para
+  o resto da árvore do Octopus.
+- **Skills** em `.claude/skills/` para os
+  [onze comportamentos fundacionais](/octopus/bundles/starter/) que o
+  bundle entrega — `debug`, `implement`, `test-tdd`, `review-pr`,
+  `context-handoff`, `prototype`, `map-system`, mais as
+  skills do ciclo de vida de documentação.
+- **Hooks** em `.claude/settings.json` com entradas de ciclo de vida:
+  formatar ao salvar, typecheck após edição, bloquear `--no-verify`, avisar
+  em operações git destrutivas, propor atualizações no CLAUDE.md ao final da sessão.
+- **Slash commands** em `.claude/commands/` — `/octopus:debug`,
+  `/octopus:doc-prd`, `/octopus:context-handoff`, e o resto do
+  conjunto de pontos de entrada.
+- **Templates de conhecimento** em `.claude/knowledge/` prontos para serem
+  preenchidos com fatos específicos do projeto que a skill
+  [`continuous-learning`](/octopus/skills/continuous-learning/)
+  descobre ao longo do tempo.
+
+Mudando para outro agent? Rode `octopus update --agent codex`
+e o mesmo conteúdo aparece em `AGENTS.md` e nos locais que o Codex
+lê.
+
+## O que o Octopus *não* é
+
+- **Não é um LLM.** O Octopus produz configuração; ele não roda
+  o agent. Você ainda usa Claude Code, Codex, Copilot, etc — e
+  paga as contas deles.
+- **Não é um marketplace.** O Octopus entrega um conjunto curado de skills
+  e bundles. Forks podem estender, mas não existe um registry de plugins para
+  publicar.
+- **Não é RAG.** O Octopus não indexa nem faz embedding do seu código. Cada
+  agent trabalha a partir do código vivo, com o Octopus fornecendo a
+  camada de contexto (regras, skills, arquivos de conhecimento) que o agent carrega
+  por sessão.
+- **Não é um editor.** O Octopus roda no terminal. O trabalho ainda
+  acontece dentro do Claude Code, Codex, etc. O Octopus é a ferramenta que você
+  roda *antes* e *entre* sessões, não durante.
+
+## Para quem o Octopus é
+
+O encaixe claro:
+
+- Times rodando um AI coding agent em uma codebase não-trivial, esbarrando
+  na dor de "sprawl do CLAUDE.md" ou de "todo repo reinventa as regras".
+- Tech leads que querem convenções compartilhadas e versionadas, garantidas por
+  hooks em vez de por code review.
+- Monorepos multi-stack (API + app + landing) onde cada módulo
+  tem suas próprias convenções mas o time quer uma única toolchain.
+
+O encaixe duvidoso:
+
+- Desenvolvedores solo em um único repo — o Octopus compensa quando a configuração
+  é compartilhada entre múltiplos projetos ou múltiplos agents. Se você
+  usa um agent em um repo, um `CLAUDE.md` feito à mão tá ok.
+- Times que não usam Claude Code, Codex, Copilot, Gemini ou OpenCode —
+  os templates do Octopus miram especificamente nesses agents.
+
+## Para onde ir agora
+
+- [Instalar o Octopus](/octopus/get-started/install/) — one-liner para
+  macOS / Linux / Windows.
+- [Quick Start](/octopus/get-started/quickstart/) — walkthrough de primeira vez
+  em um repo real.
+- [Modelo mental](/octopus/get-started/mental-model/) — como os cinco
+  primitivos (Bundle / Skill / Command / Hook / Role) se compõem em
+  um workflow.

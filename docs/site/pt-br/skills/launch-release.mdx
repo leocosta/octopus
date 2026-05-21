@@ -1,0 +1,85 @@
+---
+title: launch-release
+description: Kit de anúncio de release temático — landing page, email, Slack, Discord, banner in-app, status page, thread no X, WhatsApp, slide deck. Presets e síntese de tema customizado sob demanda.
+sidebar:
+  order: 19
+source_hash: "sha256:e0e8d76bfcf7e50a543cb0cdc7d4fab4274621a8f66baf0917b724ebcd758408"
+needs_retranslation: false
+---
+
+`launch-release` é a contraparte em nível de release do
+`launch-feature`. Dado um release (uma única tag, um intervalo de
+tags, ou um ou mais RM IDs), ele gera o kit de anúncio para
+usuários existentes: os canais que fazem sentido para um release
+versionado em vez de uma única feature.
+
+## O que vai no kit de release
+
+| Artefato | Canal |
+|---|---|
+| HTML da landing page | Anúncio público do release |
+| Release notes em texto puro | Pronto para email, sem formatação |
+| Snapshot do tema | O tema visual escolhido para este release |
+| `email.md` | Newsletter para clientes existentes |
+| `slack.md` / `discord.md` | Canais de comunidade / clientes |
+| `banner.html` | Banner de anúncio in-app (snippet HTML) |
+| `status-page.md` | Entrada de manutenção / feature na status page |
+| `x.md` | Thread no X / Twitter |
+| `whatsapp.md` | Texto para broadcast no WhatsApp |
+| `deck.md` | Outline de slide deck (5–7 slides) para demo interna |
+
+O time escolhe quais canais vão ao ar; a skill produz todos eles.
+
+## Temas
+
+Anúncios de release se beneficiam de um fio condutor que amarra o
+kit — um tema visual + de copy que faz o release parecer um
+evento em vez de uma lista de entradas no CHANGELOG.
+
+A skill vem com um pequeno conjunto de temas predefinidos (ex.:
+"speed", "quality", "developer-experience") e pode sintetizar um
+tema customizado sob demanda via a skill frontend-design. O tema
+define:
+
+- Um nome e uma tagline para o release
+- Um estilo visual (paleta de cores, direção de ilustração) que o
+  banner e a landing page utilizam
+- Um registro de voz para a copy em todos os canais
+
+O mesmo tema atravessa cada artefato para que o release chegue
+como uma mensagem coesa em vez de nove posts desconexos.
+
+## Fonte da verdade
+
+O kit é gerado a partir de:
+
+- As mensagens de commit e entradas do CHANGELOG dentro do
+  intervalo do release
+- Os RMs e specs vinculados às features incluídas
+- Os anúncios de release anteriores do time (para continuidade de
+  voz)
+
+O agent não inventa features — se uma entrada do CHANGELOG for
+vaga, a redação do kit vai refletir isso. Entradas precisas no
+CHANGELOG produzem anúncios afiados.
+
+## Quando NÃO usar
+
+- Releases de hotfix. O kit é exagero — uma única entrada na
+  status page é suficiente.
+- Releases pré-1.0. A audiência costuma ser o próprio time; um
+  post no Slack e um outline de deck bastam.
+- Releases sem nada visível ao usuário. Releases internos
+  (refactors, infraestrutura) não precisam de anúncio —
+  invocar `launch-release` em um desses vai produzir um kit
+  enxuto que sinaliza a ausência de mudanças voltadas ao
+  usuário.
+
+## Gated por aprovação
+
+Como o `launch-feature`, a skill rascunha; ela não publica. O
+time revisa e dispara através de quaisquer ferramentas de
+publicação que já usa. O role marketer tem `tools:` proibindo
+APIs de publicação — a disciplina está embutida no role.
+
+[Fonte: `skills/launch-release/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/launch-release/SKILL.md)

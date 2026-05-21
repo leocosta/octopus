@@ -1,0 +1,72 @@
+---
+title: implement
+description: O workflow de implementação do Octopus — loop de TDD, gate de plan-before-code, verification-before-completion, passe de simplify, cadência de commits. Ativo por padrão em toda tarefa de código.
+sidebar:
+  order: 2
+source_hash: "sha256:da1eec0ac594b1081f2b1a0ecc7b707377bd1b4f72f01809ccbd07348ef7ad9e"
+needs_retranslation: false
+---
+
+`implement` é a skill fundamental de implementação — aquela que
+entra em ação em toda tarefa de edição de código, tenha o usuário
+pedido ou não. Ela codifica cinco práticas que, em conjunto,
+separam uma implementação disciplinada de "só escrever o código".
+
+## As cinco práticas
+
+1. **Loop de TDD.** Escreva primeiro o teste que falha, depois a
+   implementação mínima, depois refatore e depois faça o commit. A
+   disciplina não é sobre cobertura de testes como métrica — é
+   sobre forçar a decisão de design da interface a acontecer antes
+   da implementação.
+2. **Gate de plan-before-code.** Em qualquer tarefa não trivial
+   (mais de um arquivo, mais de ~50 linhas, qualquer decisão de
+   arquitetura), o agent apresenta um plan curto e espera
+   aprovação antes de editar. O custo de escrever o plan é muito
+   menor do que o custo de editar na direção errada.
+3. **Verification-before-completion.** Rode os testes, o
+   typechecker e o formatter do projeto antes de declarar o
+   trabalho concluído. Inclua a saída na resposta — evidência
+   antes de afirmações.
+4. **Passe de simplify.** Releia a mudança com a lente do
+   simplificador (duplicação, código morto, abstração prematura,
+   nomes pouco claros, tratamento de erro para estados
+   impossíveis) antes de commitar.
+5. **Cadência de commits.** Um commit por passo lógico, cada um
+   passando nos pre-commit hooks do projeto. Nunca `--no-verify`.
+
+## Por que uma skill default em vez de uma regra
+
+Regras descrevem *como o código deve parecer*. Implementação é
+*como o agent deve chegar a esse código* — um processo, não uma
+propriedade. Codificar o processo como uma skill o torna explícito
+e ajustável por projeto; codificá-lo como uma regra de system
+prompt o enterraria debaixo de toda outra instrução de prompt e
+faria perder visibilidade.
+
+A skill está ativa por padrão no bundle `starter`, que é a
+fundação que todo mundo recebe. Optar por sair exige a remoção
+explícita do `.octopus.yml`, o que força o time a reconhecer que
+está desabilitando disciplina em vez de descartá-la silenciosamente.
+
+## Quando a skill fica fora do caminho
+
+`implement` não entra em ação para:
+
+- Tarefas de análise read-only (o usuário faz uma pergunta, sem edição)
+- Mudanças puramente de documentação
+- Planejamento conversacional antes de a tarefa ter de fato começado
+
+O gatilho é *o agent está prestes a escrever ou editar código* —
+quando isso acontece, o workflow é ligado; caso contrário, a skill
+fica em silêncio.
+
+## Pareamento com `simplify`
+
+O passe de simplify no passo 4 tem sua própria skill: `simplify`. A
+skill `implement` a invoca no momento certo em vez de duplicar a
+lente. Duas skills, uma para o workflow, outra para o passe de
+revisão — separáveis para que um usuário possa rodar `/simplify`
+sozinho contra uma mudança já mergeada.
+
+[Fonte: `skills/implement/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/implement/SKILL.md)

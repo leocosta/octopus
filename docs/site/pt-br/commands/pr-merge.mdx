@@ -1,0 +1,54 @@
+---
+title: pr-merge
+description: Faz merge de um PR aprovado com estratégia squash, deleta a branch — recusa PRs não aprovados e checks falhando.
+sidebar:
+  order: 7
+source_hash: "sha256:10cec367c77ce3df7688d7fe510261116c3057b1c124a8fb7eba4722f6a80952"
+needs_retranslation: false
+---
+
+`/octopus:pr-merge` encerra o ciclo de vida do PR: verifica se o PR
+está aprovado e se o CI está verde, depois faz merge com squash e
+deleta a branch. Se qualquer uma das condições for falsa, o comando
+reporta o status atual e para — sem flags de override.
+
+## Por que squash por padrão
+
+O PR é a unidade de review. Fazer merge com squash colapsa os
+commits do PR em uma única entrada na branch de destino, o que
+mantém `git log --oneline main` legível e torna a mensagem de
+commit autoritativa para a mudança.
+
+Merge commits e estratégias de rebase também têm seu lugar, mas
+deslocam a unidade de mudança para longe do PR — merges adicionam
+ruído ao histórico, rebases perdem a fronteira do PR. Squash mantém
+os dois alinhados: um PR, um commit na main.
+
+A mensagem do squash commit segue o formato Conventional Commits
+(retirada do título do PR) e inclui o corpo do PR como corpo do
+commit, de modo que `git show <sha>` na main conta a história
+completa sem precisar do GitHub.
+
+## Recusas
+
+O comando recusa fazer merge se:
+
+- O PR não tem nenhum review de aprovação
+- Algum check obrigatório está falhando ou em progresso
+- A branch de destino é `main` e o título do PR é `chore(release):`
+  mas o version bump não corresponde ao que está em `CHANGELOG.md`
+  (pega um erro recorrente)
+
+Não existe flag `--force`. Se você realmente precisa fazer merge
+contra os checks (uma queda de CI, por exemplo), use a UI do
+GitHub diretamente — o passo manual é a trilha de auditoria.
+
+## Limpeza de branch
+
+A branch do PR é deletada no remote após um merge bem-sucedido. A
+limpeza da branch local é responsabilidade do desenvolvedor: `git
+fetch --prune` para descartar a referência stale de remote-tracking,
+`git branch -d <branch>` quando a branch local já tiver sido
+mergeada.
+
+[Fonte: `commands/pr-merge.md`](https://github.com/leocosta/octopus/blob/main/commands/pr-merge.md)

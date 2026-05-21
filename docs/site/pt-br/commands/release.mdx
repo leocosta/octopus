@@ -1,0 +1,88 @@
+---
+title: release
+description: Crie um release versionado de ponta a ponta — sugestão de semver a partir dos commits, entrada narrativa no CHANGELOG, sync do badge do README, git tag anotada, GitHub Release.
+sidebar:
+  order: 10
+source_hash: "sha256:96165eda939c8358867afab855daa19d86b61566e44522057669eb2fbb6574c2"
+needs_retranslation: false
+---
+
+`/octopus:release` é o comando que dispara quando um lote de
+commits está pronto para ir ao ar. Ele percorre toda a sequência
+de release: sugerir uma versão, redigir uma entrada no CHANGELOG,
+sincronizar os badges de versão do README, commitar, taggear,
+fazer push e criar um GitHub Release.
+
+## Por que agrupar tudo isso em um único comando
+
+A sequência de release tem seis passos. Pular ou trocar a ordem
+de qualquer um deles produz drift:
+
+- Taggear antes da entrada do CHANGELOG entrar significa que
+  `git show v1.2.3` não inclui as notas do release.
+- Atualizar o CHANGELOG sem subir o badge do README deixa o
+  README afirmando uma versão antiga.
+- Criar o GitHub Release sem dar push na tag primeiro retorna
+  404.
+
+Agrupar a sequência em um único comando garante que a ordem é
+respeitada e que cada passo recebe os inputs corretos do
+anterior.
+
+## Sugestão de semver
+
+`octopus release suggest-version` lê os commits desde a última
+tag e propõe um bump:
+
+- Qualquer commit `feat:` → minor bump (1.2.0 → 1.3.0)
+- Caso contrário → patch bump (1.2.0 → 1.2.1)
+- `BREAKING CHANGE:` no footer de um commit → major bump
+  (1.2.0 → 2.0.0)
+
+Você pode sobrescrever a sugestão se a heurística deixou algo
+passar (um release só de documentação que na verdade é major
+porque os docs explicam uma quebra dura, por exemplo).
+
+## Estilo narrativo do CHANGELOG
+
+O CHANGELOG não é uma lista de bullets de commits. É um parágrafo
+escrito à mão — o que mudou, por quê, quais tradeoffs foram
+considerados — usando emojis inline para marcar o tipo (`✨` feat,
+`🐛` fix, `🔧` chore, `📝` docs, `🧪` test, `🎨` style, `⚡` perf,
+`🚀` ci, `⏪` revert).
+
+O agent redige a entrada a partir das mensagens de commit e do
+diff, mostra para aprovação e a prepende ao `CHANGELOG.md` uma
+vez confirmada. A voz narrativa — a mesma do site de docs —
+combina com as entradas existentes do projeto: tech-dev com
+intenção de produto, rationale curado por release.
+
+## Sync do badge do README
+
+O badge de versão em `README.md` é reescrito para a nova versão.
+O pin no one-liner de instalação (`bash -s -- --version v1.x.y`)
+também é reescrito. Ambos são edits determinísticos baseados em
+padrões regex; se qualquer um deles estiver ausente do
+`README.md`, o comando pula silenciosamente e continua.
+
+## Tag + GitHub Release
+
+A tag é anotada com o resumo das notas de release (uma
+condensação de 2–3 frases da entrada do CHANGELOG). O mesmo
+resumo vira o corpo do GitHub Release. O push roda `git push &&
+git push --tags`; o GitHub Release é criado via `gh release
+create`.
+
+## O que ele não faz
+
+- Não decide *quando* fazer o release. Isso continua sendo uma
+  decisão humana.
+- Não publica em um package registry. Octopus é uma ferramenta de
+  shell instalada a partir de GitHub Releases; não há etapa de
+  npm/pypi.
+- Não escreve anúncios de release para usuários finais. Isso é
+  responsabilidade do `/octopus:launch-release` (ou do
+  `/octopus:feature-to-market` para lançamentos no nível de
+  feature).
+
+[Source: `commands/release.md`](https://github.com/leocosta/octopus/blob/main/commands/release.md)

@@ -1,0 +1,133 @@
+---
+title: Estrutura do projeto
+description: O que mora onde no repositório do Octopus — a árvore de arquivos que sustenta cada conceito (rules, skills, hooks, commands, roles, bundles, agents).
+sidebar:
+  order: 5
+source_hash: "sha256:276fd69a3b2445093c1a5eb1402c0012ef4418e39d1d97214e59c1a7f934dd7b"
+needs_retranslation: false
+---
+
+O repo do Octopus é o catálogo de primitivas mais a
+maquinaria de geração que as entrega. A árvore de arquivos é a
+arquitetura — cada diretório de nível superior é uma categoria
+de conteúdo configurável.
+
+## A árvore
+
+```
+octopus/
+├── agents/                 # Per-agent capability manifests
+│   ├── claude/             # manifest.yml + CLAUDE.md template + settings.json template
+│   ├── copilot/            # manifest.yml + header.md
+│   ├── codex/              # manifest.yml + header.md
+│   ├── gemini/             # manifest.yml + header.md
+│   └── opencode/           # manifest.yml + header.md
+│
+├── bundles/                # Curated bundle definitions
+│   ├── starter.yml         # The foundation — always recommended
+│   ├── quality.yml         # Pre-merge audit gates
+│   ├── docs.yml            # Full doc lifecycle
+│   ├── backend.yml         # Stack-aware backend patterns
+│   └── growth.yml          # Multi-channel launch kits
+│
+├── core/                   # Universal standards (no opt-out)
+│   ├── guidelines.md
+│   ├── architecture.md
+│   ├── commit-conventions.md
+│   ├── pr-workflow.md
+│   └── task-management.md
+│
+├── rules/                  # Language and topic rules
+│   ├── common/             # Always loaded — coding-style, patterns, security, testing, quality, language
+│   ├── csharp/
+│   ├── typescript/
+│   └── python/
+│
+├── skills/                 # 35 reusable capabilities
+│   ├── implement/          # SKILL.md + optional REFERENCE.md + tests/
+│   ├── debug/
+│   ├── audit-all/
+│   └── ...
+│
+├── hooks/                  # Claude Code lifecycle hooks
+│   ├── pre-tool-use/       # destructive-guard, detect-secrets, …
+│   ├── post-tool-use/      # auto-format, typecheck, console-log-warn
+│   ├── session-start/      # load-context
+│   ├── stop/               # propose-knowledge-update
+│   └── hooks.json          # Hook registration manifest
+│
+├── commands/               # 40 slash command definitions
+│   ├── commit.md
+│   ├── pr-open.md
+│   ├── release.md
+│   └── ...
+│
+├── roles/                  # 6 agent personas
+│   ├── _base.md            # Shared role frontmatter
+│   ├── architect.md
+│   ├── backend-developer.md
+│   ├── frontend-developer.md
+│   ├── product-manager.md
+│   ├── tech-writer.md
+│   └── marketer.md
+│
+├── knowledge/              # Modular domain knowledge templates
+│   ├── _template/          # Empty bootstrap shape
+│   └── _examples/          # Reference examples
+│
+├── mcp/                    # MCP server configurations
+│   ├── notion.json
+│   ├── github.json
+│   ├── slack.json
+│   └── postgres.json
+│
+├── templates/              # Document templates (RFC, Spec, ADR)
+├── cli/                    # CLI sources (bash + Python)
+├── bin/                    # Compiled / global CLI shims
+├── docs/                   # Project documentation (this site's source)
+├── tests/                  # Bash test suite
+├── setup.sh                # The generator
+└── .octopus.example.yml    # Sample manifest
+```
+
+## Lendo a árvore
+
+Três regras tornam a árvore navegável:
+
+- **Um diretório por primitiva.** `skills/`, `commands/`, `hooks/`,
+  `roles/`, `rules/`, `bundles/`. A categoria está no path.
+- **Um subdiretório por instância.** Cada skill é `skills/<name>/`
+  com seu próprio `SKILL.md`. Cada bundle é um YAML. Cada hook é
+  um shell script sob o diretório de fase correto. O nome da
+  instância está no path.
+- **Sem arquivos cruzando categorias.** Uma skill nunca mora em
+  `commands/`, um hook nunca mora em `skills/`. A fronteira da
+  categoria é imposta por onde o arquivo está, não pelo seu conteúdo.
+
+## O que mora fora da árvore (nos projetos dos usuários)
+
+O repo do Octopus é o catálogo. Projetos de usuário consomem o
+catálogo referenciando-o a partir do seu `.octopus.yml`. Após
+rodar `octopus setup`, o projeto do usuário recebe:
+
+```
+user-project/
+├── .octopus.yml                            # The only file the user edits
+├── .octopus/                               # Runtime state (gitignored)
+├── .claude/CLAUDE.md                       # Generated
+├── .claude/settings.json                   # Generated
+├── .claude/rules/                          # Generated (symlinks to Octopus)
+├── .claude/skills/                         # Generated (symlinks to Octopus)
+├── .claude/commands/                       # Generated (symlinks to Octopus)
+├── .claude/agents/                         # Generated (roles, symlinked)
+├── .github/copilot-instructions.md         # Generated
+├── AGENTS.md                               # Generated for Codex
+├── GEMINI.md                               # Generated for Gemini
+└── .opencode/                              # Generated for OpenCode
+```
+
+Todos os arquivos gerados estão no gitignore — a fonte da verdade
+é o `.octopus.yml` mais a versão do catálogo do Octopus. Regere
+a qualquer momento com `octopus setup`.
+
+[Fonte: árvore do repo](https://github.com/leocosta/octopus)

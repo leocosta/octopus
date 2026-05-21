@@ -1,0 +1,85 @@
+---
+title: scaffold-skill
+description: Crie uma nova skill do Octopus de ponta a ponta — frontmatter, SKILL.md, REFERENCE.md opcional e registro em bundle para que nenhuma skill saia solta.
+sidebar:
+  order: 11
+source_hash: "sha256:a0169338c1f2f90864c652b5a4d7955d9bea250ebc2d4a60c888af4eba810511"
+needs_retranslation: false
+---
+
+`/octopus:scaffold-skill` é o comando da meta-disciplina: ele
+cria o layout de arquivos de uma nova skill, preenche o
+frontmatter, rascunha o SKILL.md a partir da intenção do usuário
+e registra a skill em pelo menos um bundle para que ela não saia
+órfã.
+
+## Por que scaffold, e não freeform
+
+Três coisas precisam estar certas para uma skill engajar
+corretamente:
+
+- **`description` do frontmatter.** O agent compara a intenção do
+  usuário com as descriptions para escolher uma skill. Uma
+  description vaga faz a skill nunca disparar quando deveria; uma
+  ampla demais dispara nas tarefas erradas.
+- **`triggers:` para auto-engajamento.** Skills que devem ativar
+  em padrões específicos (edições de arquivo, saídas de comando)
+  precisam de condições de trigger explícitas, não "engaje quando
+  for relevante".
+- **Pertencimento a bundle.** Uma skill que não está listada em
+  nenhum bundle fica inacessível pelo caminho normal do
+  `octopus setup`. Ela existe no catálogo, mas ninguém a recebe.
+
+O comando de scaffold garante os três. O resultado é uma skill
+já conectada a um bundle desde o primeiro dia — nunca um arquivo
+solto sob `skills/`.
+
+## O que ele produz
+
+```
+skills/<slug>/
+  SKILL.md              # required — the agent-facing instructions
+  REFERENCE.md          # optional — long-form rationale or examples
+  tests/                # optional — fixtures for verifying the skill
+```
+
+Mais uma entrada adicionada a um dos bundles em
+`bundles/<name>.yml`. O usuário escolhe qual bundle no momento do
+scaffold; a sugestão padrão é baseada no que a skill faz.
+
+## Regra de atribuição de bundle
+
+Conforme a regra do projeto, toda nova skill do Octopus precisa
+mapear para um bundle existente ou propor um novo. O comando se
+recusa a criar uma skill sem um bundle de destino. Se a nova
+skill não encaixa em nenhum bundle atual, o scaffolder pede uma
+proposta de novo bundle — a criação de bundle é um workflow
+separado, mas a intenção é capturada no momento da criação da
+skill para não se perder.
+
+## Cobertura do frontmatter
+
+O frontmatter que o scaffold preenche:
+
+```yaml
+---
+name: <slug>
+description: <one-line agent-routing hint>
+model: <opus | sonnet | haiku — defaults to inheritance>
+triggers: [<optional auto-engagement conditions>]
+tools: [<optional allowlist>]
+---
+```
+
+A description é a única parte em que o scaffolder gasta tempo de
+verdade — ele entrevista o usuário sobre *quando* a skill deve
+engajar para produzir uma description enxuta, e então rascunha o
+corpo do SKILL.md em torno dessa intenção.
+
+## Combinação
+
+`/octopus:compress-skill` é a contraparte de manutenção — ela
+encolhe um SKILL.md sem mudar a semântica quando a skill já está
+madura e inchada.
+
+[Fonte: `commands/scaffold-skill.md`](https://github.com/leocosta/octopus/blob/main/commands/scaffold-skill.md)
