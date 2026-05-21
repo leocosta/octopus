@@ -33,7 +33,7 @@
 - **God objects/functions** — doing too many things in one place
 - **Premature optimization** — measure before optimizing
 - **Magic numbers/strings** — use named constants
-- **Catch-and-ignore** — swallowing exceptions silently
+- **Catch-and-ignore** — swallowing exceptions silently (see `exceptions.md` for the full antipattern set and creation gates)
 - **Copy-paste programming** — duplicating instead of abstracting
 - **Over-engineering** — abstraction layers for problems that don't exist yet
 - **Boolean parameters** — prefer options objects or separate functions
