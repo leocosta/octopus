@@ -1,0 +1,18 @@
+name: guardrails
+description: Deterministic enforcement against code-assistant drift — pairs Octopus default hooks (loop-level) with pre-commit (git-level) and IDE configs (editor-level). Pre-merge surface is closed by the qualityWorkflow CI template (set qualityWorkflow:true in .octopus.yml).
+category: intent
+persona_question: "Does your team want deterministic enforcement so that code assistants (Claude, Copilot) cannot drift on formatter, linter, commit message, or guideline conformance?"
+persona_default: false
+skills:
+  - enforce-precommit
+  - enforce-ide
+roles: []
+rules: []
+mcp: []
+hooks: null
+# Note: this bundle assumes `hooks: true` at the manifest root to activate the
+# loop-level guardrails (auto-format, typecheck, block-no-verify, etc).
+# `setup.sh` warns if `guardrails` is selected without `hooks: true`.
+#
+# For CI-level enforcement, set `qualityWorkflow: true` in .octopus.yml to
+# materialize templates/github-actions/quality.yml.
