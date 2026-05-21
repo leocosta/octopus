@@ -46,7 +46,7 @@ skills:
   - context-budget    # monitor token overhead
   - implement         # the Octopus implementation workflow (TDD, plan-gate, simplify)
   - debug             # 4-phase bug protocol (reproduce, isolate, fix, document)
-  - review-pr         # PR-feedback discipline
+  - respond-to-review         # PR-feedback discipline
   - delegate          # @role: dispatch with attribution
   - test-tdd          # standalone red-green-refactor loop
   - map-system        # higher-level codebase map (manual-only)
@@ -69,7 +69,7 @@ skills:
   every team uses, even minimally. ADRs capture hard-to-reverse
   decisions; `doc-lifecycle` orchestrates the doc chain (RFC →
   Spec → ADR → Knowledge → Changelog).
-- **`review-pr`** — PR-feedback discipline is foundational: verify
+- **`respond-to-review`** — PR-feedback discipline is foundational: verify
   the critique, ask for evidence on generic comments, never make
   performative changes. Without this, agents agree with every
   suggestion in review.
@@ -113,7 +113,7 @@ A typical day inside a `starter`-only repo:
    [`debug`](/octopus/skills/debug/) instead — reproduces first,
    isolates, writes a regression test before fixing.
 3. A teammate's PR review surfaces feedback. The agent applies
-   [`review-pr`](/octopus/commands/pr-comments/) discipline —
+   [`respond-to-review`](/octopus/commands/pr-comments/) discipline —
    verifies each comment against evidence, asks for clarification
    on the vague ones, never agrees performatively.
 4. You hit the context limit before finishing. You run

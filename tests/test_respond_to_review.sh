@@ -4,9 +4,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 echo "Test 1: SKILL.md exists with valid frontmatter"
-SKILL_FILE="$SCRIPT_DIR/skills/review-pr/SKILL.md"
+SKILL_FILE="$SCRIPT_DIR/skills/respond-to-review/SKILL.md"
 [[ -f "$SKILL_FILE" ]] || { echo "FAIL: $SKILL_FILE not found"; exit 1; }
-head -n 5 "$SKILL_FILE" | grep -q "^name: review-pr$" \
+head -n 5 "$SKILL_FILE" | grep -q "^name: respond-to-review$" \
   || { echo "FAIL: frontmatter 'name' missing"; exit 1; }
 head -n 10 "$SKILL_FILE" | grep -q "^description:" \
   || { echo "FAIL: frontmatter 'description' missing"; exit 1; }
@@ -46,23 +46,23 @@ done
 echo "PASS: routing + integration + anti-patterns documented"
 
 echo "Test 7: slash command file"
-CMD="$SCRIPT_DIR/commands/review-pr.md"
+CMD="$SCRIPT_DIR/commands/respond-to-review.md"
 [[ -f "$CMD" ]] || { echo "FAIL: command file missing"; exit 1; }
-head -n 5 "$CMD" | grep -q "^name: review-pr$" \
+head -n 5 "$CMD" | grep -q "^name: respond-to-review$" \
   || { echo "FAIL: command frontmatter 'name' missing"; exit 1; }
 echo "PASS: command file valid"
 
-echo "Test 8: starter bundle includes review-pr"
+echo "Test 8: starter bundle includes respond-to-review"
 BUNDLE="$SCRIPT_DIR/bundles/starter.yml"
-grep -q -- "- review-pr" "$BUNDLE" \
-  || { echo "FAIL: review-pr missing from starter bundle"; exit 1; }
-echo "PASS: starter bundle lists review-pr"
+grep -q -- "- respond-to-review" "$BUNDLE" \
+  || { echo "FAIL: respond-to-review missing from starter bundle"; exit 1; }
+echo "PASS: starter bundle lists respond-to-review"
 
-echo "Test 9: README + skills.md list review-pr + tutorial exists"
-grep -q "review-pr" "$SCRIPT_DIR/README.md" \
-  || { echo "FAIL: README missing 'review-pr'"; exit 1; }
-grep -q "| \`review-pr\` |" "$SCRIPT_DIR/docs/features/skills.md" \
-  || { echo "FAIL: skills.md missing review-pr row"; exit 1; }
-TUTORIAL="$SCRIPT_DIR/docs/features/review-pr.md"
+echo "Test 9: README + skills.md list respond-to-review + tutorial exists"
+grep -q "respond-to-review" "$SCRIPT_DIR/README.md" \
+  || { echo "FAIL: README missing 'respond-to-review'"; exit 1; }
+grep -q "| \`respond-to-review\` |" "$SCRIPT_DIR/docs/features/skills.md" \
+  || { echo "FAIL: skills.md missing respond-to-review row"; exit 1; }
+TUTORIAL="$SCRIPT_DIR/docs/features/respond-to-review.md"
 [[ -f "$TUTORIAL" ]] || { echo "FAIL: tutorial $TUTORIAL missing"; exit 1; }
 echo "PASS: README + skills.md + tutorial wired"

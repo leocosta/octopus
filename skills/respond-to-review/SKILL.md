@@ -1,5 +1,5 @@
 ---
-name: review-pr
+name: respond-to-review
 description: >
   The Octopus PR-feedback discipline — verify the critique, ask
   for evidence on generic comments, separate reasoned feedback
@@ -9,7 +9,7 @@ description: >
   resumes implement/debug for the actual code changes.
 ---
 
-# Receiving-Code-Review Protocol
+# Respond-to-Review Protocol
 
 ## Overview
 
@@ -19,14 +19,14 @@ thread, iterating comments); this skill owns the protocol for
 what an agent does with each comment before acting on it.
 
 `implement` covers writing new code; `debug` covers fixing
-broken code; `review-pr` covers responding to
+broken code; `respond-to-review` covers responding to
 feedback on code that exists. The three form the `starter`
 bundle's workflow trio — one skill per common working state.
 
 The skill is stack-neutral. It describes a five-rule protocol,
 not a specific tool or review platform. It never duplicates
 `rules/common/*`. When the `superpowers:*` plugin is installed,
-its `review-pr` skill wins per rule on the practices
+its `receiving-code-review` skill wins per rule on the practices
 it already covers; this skill still owns Octopus-native
 integration with `pr-comments` and the hand-offs to `implement`
 and `debug`.
@@ -49,7 +49,7 @@ response. Do not engage for:
 Engagement is implicit — Claude Code discovers this skill from
 `.claude/skills/` and applies it automatically when the
 description matches the task. Users who want explicit control
-can invoke `/octopus:review-pr <ref>` for a
+can invoke `/octopus:respond-to-review <ref>` for a
 single-comment walk.
 
 ## The Five Rules
@@ -170,7 +170,7 @@ checklist, not a switch statement.
 |---|---|
 | Trigger is a **new feature** or **refactor** (not a reported bug or review comment) | Stay in `implement` |
 | Trigger is a **bug report**, **failing test**, **stack trace**, or **regression** | Hand off to `debug` (Phase 3 uses `implement`'s TDD loop for the fix) |
-| Trigger is a **PR review comment** | Hand off to `review-pr` (Rule 1 verifies, then handoff back to `implement` or `debug` per the comment's intent) |
+| Trigger is a **PR review comment** | Hand off to `respond-to-review` (Rule 1 verifies, then handoff back to `implement` or `debug` per the comment's intent) |
 | Task involves both docs and code | Compose with `doc-lifecycle` for docs (RFC / Spec / ADR), use the appropriate workflow skill for the code |
 
 **Risk-profile signals**
@@ -214,7 +214,7 @@ would have provided — point at the gap and move on.
   Rule 1 (verify the critique) before the handoff.
 - **`rules/common/*`** — always-on static rules. This skill
   never re-states rule content; reference only.
-- **`superpowers:review-pr`** — when the
+- **`superpowers:receiving-code-review`** — when the
   superpowers plugin is installed, that skill wins per rule on
   the practices it covers. This skill still owns Octopus-native
   integration with `pr-comments` and the handoffs to

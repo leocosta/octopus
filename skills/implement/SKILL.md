@@ -169,7 +169,7 @@ checklist, not a switch statement.
 |---|---|
 | Trigger is a **new feature** or **refactor** (not a reported bug or review comment) | Stay in `implement` |
 | Trigger is a **bug report**, **failing test**, **stack trace**, or **regression** | Hand off to `debug` (Phase 3 uses `implement`'s TDD loop for the fix) |
-| Trigger is a **PR review comment** | Hand off to `review-pr` (Rule 1 verifies, then handoff back to `implement` or `debug` per the comment's intent) |
+| Trigger is a **PR review comment** | Hand off to `respond-to-review` (Rule 1 verifies, then handoff back to `implement` or `debug` per the comment's intent) |
 | Task involves both docs and code | Compose with `doc-lifecycle` for docs (RFC / Spec / ADR), use the appropriate workflow skill for the code |
 
 **Risk-profile signals**
@@ -205,7 +205,7 @@ would have provided — point at the gap and move on.
   bug report or a failing test, delegate to `debug` for the
   reproduce → isolate → fix → regression flow. The TDD loop in
   this skill still applies to the fix itself.
-- **`review-pr` (RM-032, future)** — PR feedback
+- **`respond-to-review`** — PR feedback
   loops go through that skill; `implement` resumes for each
   implementation step the reviewer asks for.
 - **Audit skills** (`audit-security`, `audit-money`,
@@ -233,8 +233,7 @@ This skill forbids, by name:
 - Declaring success ("it works", "tests pass", "done") without
   attaching verification evidence.
 - Editing code in response to critique without understanding the
-  critique. Defer to `review-pr` (RM-032) when it
-  ships.
+  critique. Defer to `respond-to-review`.
 - Premature abstraction — interfaces, options bags, or factory
   functions without a second caller.
 - Duplicating content from `rules/common/*` into this skill body.

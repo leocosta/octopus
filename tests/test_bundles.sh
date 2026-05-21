@@ -65,10 +65,10 @@ OCTOPUS_MCP=()
 
 _load_bundle "starter"
 
-# starter contributes doc-adr, doc-lifecycle, context-budget, implement, debug, review-pr, delegate,
+# starter contributes doc-adr, doc-lifecycle, context-budget, implement, debug, respond-to-review, delegate,
 # test-tdd, map-system, prototype, context-handoff (Cluster 14 — RM-076, RM-078, RM-081, RM-082)
 printf '%s\n' "${OCTOPUS_SKILLS[@]}" | sort > /tmp/got_skills.$$
-printf '%s\n' doc-adr doc-lifecycle context-budget implement debug review-pr delegate test-tdd map-system prototype context-handoff | sort > /tmp/exp_skills.$$
+printf '%s\n' doc-adr doc-lifecycle context-budget implement debug respond-to-review delegate test-tdd map-system prototype context-handoff | sort > /tmp/exp_skills.$$
 diff -q /tmp/got_skills.$$ /tmp/exp_skills.$$ >/dev/null \
   || { echo "FAIL: starter did not populate skills correctly"; exit 1; }
 rm -f /tmp/got_skills.$$ /tmp/exp_skills.$$
@@ -96,7 +96,7 @@ OCTOPUS_BUNDLES=("starter" "quality")
 
 expand_bundles
 
-expected_skills=(doc-adr doc-lifecycle context-budget implement debug review-pr delegate test-tdd map-system prototype context-handoff audit-all audit-security audit-money audit-tenant review-contracts refactor-deepen audit-config)
+expected_skills=(doc-adr doc-lifecycle context-budget implement debug respond-to-review delegate test-tdd map-system prototype context-handoff audit-all audit-security audit-money audit-tenant review-contracts refactor-deepen audit-config)
 printf '%s\n' "${OCTOPUS_SKILLS[@]}" | sort -u > /tmp/got.$$
 printf '%s\n' "${expected_skills[@]}" | sort -u > /tmp/exp.$$
 diff -q /tmp/got.$$ /tmp/exp.$$ >/dev/null \
@@ -303,7 +303,7 @@ rm -rf "$FAKE"
 echo "PASS: skills without depends_on are untouched"
 
 echo "Test: renamed skill dirs exist"
-for skill in doc-adr doc-lifecycle audit-money audit-security audit-tenant review-pr review-contracts launch-feature launch-release debug plan-backlog test-e2e; do
+for skill in doc-adr doc-lifecycle audit-money audit-security audit-tenant respond-to-review review-contracts launch-feature launch-release debug plan-backlog test-e2e; do
   [[ -d "skills/${skill}" ]] \
     || { echo "FAIL: skills/${skill}/ not found"; exit 1; }
 done
