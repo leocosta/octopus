@@ -26,3 +26,10 @@
 .sl-markdown-content h3 {
   margin-top: 1.5rem;
 }
+
+/* Language switcher — widen the select so the flag-prefixed labels
+   (e.g. 🇧🇷 PT-BR) are not truncated. Starlight sets --sl-select-width
+   as an inline style on the label, so the override needs !important. */
+starlight-lang-select label {
+  --sl-select-width: 9em !important;
+}

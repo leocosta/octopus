@@ -16,8 +16,8 @@ export default defineConfig({
         'Centralized AI agent configuration for multi-repo teams — skills, bundles, hooks, roles, and continuous learning for Claude Code and friends.',
       defaultLocale: 'root',
       locales: {
-        root: { label: 'English', lang: 'en' },
-        'pt-br': { label: 'Português (Brasil)', lang: 'pt-BR' },
+        root: { label: '🇺🇸 EN', lang: 'en' },
+        'pt-br': { label: '🇧🇷 PT-BR', lang: 'pt-BR' },
       },
       logo: {
         light: './public/logo-light.png',

@@ -1,0 +1,144 @@
+---
+import { Code } from '@astrojs/starlight/components';
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+
+const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, '');
+const coverUrl = `${baseUrl}/cover.png`;
+---
+
+<StarlightPage
+  frontmatter={{
+    title: 'Octopus',
+    description:
+      'Configuração centralizada de AI coding agents para times multi-repo — skills, bundles, hooks, roles e continuous learning.',
+    template: 'splash',
+    hero: {
+      tagline:
+        'Configuração centralizada de AI coding agents para times multi-repo. Skills, bundles, hooks, roles e continuous learning — uma única fonte de verdade que atende Claude Code, Codex, Copilot, Gemini e OpenCode.',
+      image: {
+        html: `<img src="${coverUrl}" alt="Octopus — configuração centralizada de AI agents" style="max-width: 380px;" />`,
+      },
+      actions: [
+        { text: 'Instalar', link: '/octopus/pt-br/get-started/install/', icon: 'rocket', variant: 'primary' },
+        { text: 'O que é o Octopus', link: '/octopus/pt-br/get-started/what-is-octopus/', icon: 'document', variant: 'secondary' },
+        { text: 'GitHub', link: 'https://github.com/leocosta/octopus', icon: 'github', variant: 'minimal' },
+      ],
+    },
+  }}
+>
+  <section class="not-content">
+    <h2>O problema</h2>
+    <p>
+      Todo time que adota um AI coding agent em escala acaba escrevendo
+      o mesmo tipo de configuração várias vezes: as convenções de código
+      do projeto, as convenções de commit do time, os guardrails de
+      segurança, os playbooks de on-call, os rituais de post-mortem.
+      Essa config vira tribal: um <code>CLAUDE.md</code> longo, uma
+      pasta de <code>.cursor/rules/*</code>, um
+      <code>copilot-instructions.md</code> pela metade. Cada agent fala
+      um dialeto diferente da mesma ideia.
+    </p>
+    <p>
+      O Octopus é a camada de configuração que fica acima de todos eles.
+      Uma única fonte de verdade — bundles, skills, hooks, roles,
+      knowledge — que compila para o formato que cada agent espera.
+      Adicionar um agent novo, mudar uma coding rule, lançar um audit
+      novo: uma edição só, todas as superfícies atualizadas.
+    </p>
+  </section>
+
+  <section class="not-content">
+    <h2>Os cinco primitivos</h2>
+    <ul>
+      <li>
+        <strong><a href="/octopus/pt-br/bundles/">Bundles</a></strong> —
+        pacotes opinados de skills + roles + rules afinados para um
+        arquétipo de time (<code>starter</code>, <code>quality</code>,
+        <code>docs</code>, <code>backend</code>, <code>growth</code>).
+      </li>
+      <li>
+        <strong><a href="/octopus/pt-br/skills/">Skills</a></strong> —
+        protocolos que o agent engaja por match de descrição ou
+        invocação explícita (<code>debug</code>, <code>doc-prd</code>,
+        <code>refactor-deepen</code>, <code>audit-config</code>, mais 30+).
+      </li>
+      <li>
+        <strong><a href="/octopus/pt-br/get-started/mental-model/">Commands</a></strong>
+        — slash commands que fixam uma skill específica em uma invocação
+        tipada (<code>/octopus:debug</code>,
+        <code>/octopus:context-handoff</code>, …).
+      </li>
+      <li>
+        <strong><a href="/octopus/pt-br/hooks/">Hooks</a></strong> —
+        scripts de ciclo de vida que reforçam disciplina automaticamente:
+        formatar ao salvar, bloquear git destrutivo, propor updates no
+        CLAUDE.md no fim da sessão.
+      </li>
+      <li>
+        <strong><a href="/octopus/pt-br/roles/">Roles</a></strong> —
+        personas para as quais o usuário pode delegar
+        (<code>@architect</code>, <code>@backend-developer</code>,
+        <code>@writer</code>, …) que escopam o comportamento do agent
+        para uma tarefa.
+      </li>
+    </ul>
+  </section>
+
+  <section class="not-content">
+    <h2>Instalar</h2>
+    <h3>macOS / Linux</h3>
+    <Code code="curl -fsSL https://github.com/leocosta/octopus/releases/latest/download/install.sh | bash" lang="bash" />
+    <h3>Windows (PowerShell)</h3>
+    <Code code="irm https://github.com/leocosta/octopus/releases/latest/download/install.ps1 | iex" lang="powershell" />
+    <p>
+      Depois rode <code>octopus update</code> dentro de qualquer repo
+      para gerar os arquivos de configuração dos agents. Walkthrough
+      completo na página de
+      <a href="/octopus/pt-br/get-started/quickstart/">Início Rápido</a>.
+    </p>
+  </section>
+
+  <section class="not-content">
+    <h2>Workflows em destaque</h2>
+    <ul>
+      <li>
+        <a href="/octopus/pt-br/skills/test-tdd/">TDD em uma nova feature</a>
+        — fatias verticais tracer-bullet, testes de integração, banimento
+        explícito de slicing horizontal.
+      </li>
+      <li>
+        <a href="/octopus/pt-br/skills/audit-all/">Audit pré-merge em mudança de billing</a>
+         — compõe auditorias de security + money + tenant + cross-stack
+         contract em paralelo.
+      </li>
+      <li>
+        <a href="/octopus/pt-br/skills/context-handoff/">Handoff de uma sessão</a>
+        — compacta a conversa em um doc tmp com sugestões prescritivas
+        de próximas skills para o agent sucessor.
+      </li>
+    </ul>
+  </section>
+</StarlightPage>
+
+<style>
+  section.not-content {
+    max-width: 64ch;
+    margin: 2.5rem auto;
+    padding: 0 1rem;
+    line-height: 1.6;
+  }
+  section.not-content h2 {
+    margin-top: 0;
+    font-size: 1.5rem;
+  }
+  section.not-content h3 {
+    font-size: 1.1rem;
+    margin-top: 1.5rem;
+  }
+  section.not-content code {
+    background: var(--sl-color-gray-6);
+    padding: 0.1em 0.3em;
+    border-radius: 4px;
+    font-size: 0.95em;
+  }
+</style>
