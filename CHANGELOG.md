@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.63.2] - 2026-05-21
+
+🐛 The bundles index page (`docs/site/bundles/index.mdx` + pt-br) had a heading reading "The six bundles" / "Os seis bundles" with only five bullets — `guardrails` (shipped v1.59.0) was never added to either index when the bundle landed. The mismatch became visible after v1.63.1 cleaned out the dba bullet, dropping the visible count to 5. Added the missing guardrails bullet in both languages, positioned right after `quality` (both are enforcement-shaped bundles), with a description matching the tone of the existing bullets — covers the bundle's two skills (`enforce-precommit`, `enforce-ide`) and the value angle (coding style, commit-msg lint, and formatter become git-level gates instead of PR review nits).
+
 ## [1.63.1] - 2026-05-21
 
 🐛 The v1.63.0 release moved the dba role and dba-* skills into `bundles/backend.yml` and deleted `bundles/dba.yml`, but the docs site still rendered a `dba` bundle page at https://leocosta.github.io/octopus/bundles/dba/ because the canonical sources at `docs/site/bundles/dba.mdx` and `docs/site/pt-br/bundles/dba.mdx` weren't removed in that commit. The synced output under `site/src/content/docs/` is gitignored and regenerated from `docs/site/` by `site/scripts/sync-content.sh`, so changes have to land in the canonical tree. Both dba bundle pages deleted; the `dba` bullet and the intent-bundle list entry in `bundles/index.mdx` (EN + pt-br) cleaned out; `backend.mdx` (EN + pt-br) updated to reflect the new shape — 6 skills (`backend-patterns`, `test-e2e`, `dba-mssql`, `dba-postgres`, `dba-mongodb`, `dba-redis`) and 2 roles (`backend-developer`, `dba`) — with a "Why each one is in" section covering the four engine-specific failure modes (Postgres FK columns without indexes, MSSQL `ALTER COLUMN NOT NULL` on hot tables, Mongo ESR-rule violations, Redis `KEYS *` and missing TTLs) and the dba role's dual-gate orchestration with `architect`. `needs_retranslation: true` flipped on the pt-br backend page so the translation pipeline picks it up.
