@@ -39,11 +39,6 @@ the closest archetype to your team".
 - **[growth](/octopus/bundles/growth/)** — launch + retention
   tooling. Multi-channel feature launches, release announcements,
   content image generation.
-- **[dba](/octopus/bundles/dba/)** — the data-layer specialist
-  gate. Indexing, modeling, migration safety, retention, capacity,
-  data security, and concurrency heuristics for MSSQL, Postgres,
-  MongoDB, and Redis. Runs as a second approval alongside
-  `architect` on any PR touching the data layer.
 
 ## How bundles compose
 
@@ -86,7 +81,7 @@ The `category` field carries weight:
 - **`foundation`** bundles (currently just `starter`) install by
   default — the setup wizard offers them as "the baseline".
 - **`intent`** bundles install when the user opts in to a workflow
-  (`docs`, `quality`, `growth`, `dba`). Each carries a
+  (`docs`, `quality`, `growth`). Each carries a
   `persona_question` the wizard asks.
 - **`stack`** bundles install when the user identifies a stack
   (`backend`). Same `persona_question` pattern.

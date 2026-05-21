@@ -1,17 +1,19 @@
 ---
 title: backend
-description: Padrões específicos de backend e convenções de testes end-to-end. Anda junto com o role backend-developer para implementação consciente da stack.
+description: Padrões específicos de backend, convenções de testes end-to-end e um gate per-engine de review da camada de dados. Anda junto com os roles backend-developer e dba para implementação consciente da stack e review pre-merge da camada de dados.
 sidebar:
   order: 4
 source_hash: "sha256:a86cc8243daead8e1c1dd0be9235e6071a3b005d2ba3b5287049272785438842"
-needs_retranslation: false
+needs_retranslation: true
 ---
 
-`backend` é um bundle pequeno. Ele adiciona duas skills e um role
-em cima do `starter`, focados em padrões específicos de backend e
-testes end-to-end. O bundle existe para dar aos times de backend um
-ponto de extensão coerente sem inflar o `starter` para repos que
-não são de backend.
+`backend` adiciona skills específicas de backend e dois roles em
+cima do `starter` — cobrindo tanto implementação de API/serviço (a
+trilha `backend-developer`) quanto review pre-merge da camada de
+dados (a trilha `dba`, um segundo approval ao lado do `architect`
+em qualquer PR que toca a camada de dados). O bundle existe para
+dar aos times de backend um ponto de extensão coerente sem inflar o
+`starter` para repos que não são de backend.
 
 ## Por que isso existe
 
@@ -47,10 +49,15 @@ adicione `quality` para auditorias se você lida com dinheiro / auth
 
 ```yaml
 skills:
-  - backend-patterns  # framework-shaped patterns for backend code
-  - test-e2e          # end-to-end testing protocol (real DB, real HTTP)
+  - backend-patterns  # padrões com forma de framework para código backend
+  - test-e2e          # protocolo de teste end-to-end (DB real, HTTP real)
+  - dba-mssql         # review de SQL Server (indexação, segurança de migration…)
+  - dba-postgres      # review de Postgres (índices concorrentes, ESR, etc)
+  - dba-mongodb       # review de MongoDB (indexação, modelagem, regra ESR)
+  - dba-redis         # review de Redis (TTLs, KEYS *, padrões de uso)
 roles:
-  - backend-developer # senior backend persona for /octopus:delegate
+  - backend-developer # persona sênior de backend para /octopus:delegate
+  - dba               # gate pre-merge pareado com architect em PRs de DB
 ```
 
 [Fonte: `bundles/backend.yml`](https://github.com/leocosta/octopus/blob/main/bundles/backend.yml)

@@ -1,13 +1,15 @@
 ---
 title: backend
-description: Backend-specific patterns and end-to-end test conventions. Pairs with the backend-developer role for stack-aware implementation.
+description: Backend-specific patterns, end-to-end test conventions, and a per-engine data layer review gate. Pairs with the backend-developer and dba roles for stack-aware implementation and pre-merge data-layer review.
 sidebar:
   order: 4
 ---
 
-`backend` is a small bundle. It adds two skills and one role on top
-of `starter`, focused on backend-specific patterns and end-to-end
-testing. The bundle exists to give backend teams a coherent
+`backend` adds backend-specific skills and two roles on top of
+`starter` — covering both API/service implementation (the
+`backend-developer` track) and pre-merge data layer review (the `dba`
+track, a second approval alongside `architect` on any PR touching
+the data layer). The bundle exists to give backend teams a coherent
 extension point without bloating `starter` for non-backend repos.
 
 ## Why this exists
@@ -44,8 +46,13 @@ add `quality` for audits if you handle money / auth / multi-tenant).
 skills:
   - backend-patterns  # framework-shaped patterns for backend code
   - test-e2e          # end-to-end testing protocol (real DB, real HTTP)
+  - dba-mssql         # SQL Server review (indexing, migration safety…)
+  - dba-postgres      # Postgres review (concurrent indexes, ESR, etc)
+  - dba-mongodb       # MongoDB review (indexing, modeling, ESR rule)
+  - dba-redis         # Redis review (TTLs, KEYS *, pattern usage)
 roles:
   - backend-developer # senior backend persona for /octopus:delegate
+  - dba               # pre-merge gate paired with architect on DB PRs
 ```
 
 [Source: `bundles/backend.yml`](https://github.com/leocosta/octopus/blob/main/bundles/backend.yml)
@@ -71,20 +78,38 @@ roles:
   detected stack's conventions. Useful when a frontend developer
   is dispatching backend work and wants the agent in the right
   mental model.
+- **`dba-mssql`, `dba-postgres`, `dba-mongodb`, `dba-redis`** — per-engine
+  review skills that catch the data-layer failure modes that page
+  on-call at 3am: FK columns without indexes (Postgres), ALTER COLUMN
+  NOT NULL on hot tables (MSSQL), compound-index ESR-rule violations
+  (Mongo), `KEYS *` in production code or missing TTLs (Redis). Each
+  skill emits severity-tagged findings (BLOCKING / ADVISORY / QUESTION)
+  with ready-to-apply fixes — `CREATE INDEX CONCURRENTLY ...` for the
+  missing Postgres FK index, a split add-nullable→backfill→set-not-null
+  migration plan for the MSSQL hot table, etc. Each skill enriches its
+  findings with EXPLAIN plans and existing-index listings when the
+  matching connection string is present in `.env.octopus`.
+- **`dba` role** — the persona that orchestrates the four engine
+  skills as a second pre-merge approval gate alongside `architect`,
+  documented in `core/pr-workflow.md`. The role detects engines
+  touched by the diff (via `db/mssql/**`, `db/postgres/**`,
+  `db/mongo/**`, `redis/**` paths plus content sniffing for
+  `IDENTITY`, `SERIAL`, `db.collection`, Redis client usage) and
+  dispatches the matching skills in parallel.
 
 ### Why not included
 
-- **`backend-developer` is here, but no other persona** —
-  intentional. The bundle is backend-focused; including other
-  roles would be off-theme.
-- **`audit-money`, `audit-tenant`, `audit-security`** — those
-  live in `quality` because their audit shape applies regardless
-  of stack. A backend repo that ships to production almost always
-  wants `backend + quality`.
+- **No other implementer persona** — bundle stays backend-focused;
+  including frontend or marketing roles would be off-theme.
+- **`audit-money`, `audit-tenant`, `audit-security`** — those live in
+  `quality` because their audit shape applies regardless of stack. A
+  backend repo that ships to production almost always wants
+  `backend + quality` (and `quality` is what brings the
+  `architect` role that pairs with `dba`).
 - **Framework-specific skills like `dotnet`, `node`, etc.** — the
   `dotnet` skill exists as a separate, optional install. It's not
-  bundled into `backend` because not every backend is .NET.
-  Future stack-specific skills follow the same pattern.
+  bundled into `backend` because not every backend is .NET. Future
+  stack-specific skills follow the same pattern.
 
 ## Workflow this enables
 
