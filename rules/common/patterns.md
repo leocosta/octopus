@@ -32,7 +32,7 @@
 
 ## Error Handling Patterns
 
-- **Result pattern** — return success/failure instead of throwing for expected errors
+- **Result pattern** — return success/failure instead of throwing for expected errors (see `exceptions.md` for when a custom exception is justified vs forbidden)
 - **Guard clauses** — validate preconditions at function entry, return/throw early
 - **Null Object** — use default implementations instead of null checks
 - **Retry with backoff** — for transient failures in external calls
