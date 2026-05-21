@@ -178,33 +178,33 @@ _picker_run_fzf() {
     feature_lines+=("feature:${prefix}${fname}  ${_PICKER_FEATURE_DESCS[$i]}")
   done
 
-  # Section labels prepended as header lines (non-selectable in fzf --header-lines).
-  # Layout is reverse so they appear above their respective items when rendered.
+  # Section labels inserted between groups as visual separators. They sit in
+  # the same list as the selectable rows (fzf has no native "non-selectable
+  # middle line"), but the toggle binds further down guard against marking
+  # them with ✓ — see the `transform:` binds for SPACE/TAB/BTAB.
   local all_lines=()
   all_lines+=("  ── Features ─────────────────────────────────────────────────")
   all_lines+=("${feature_lines[@]}")
-  all_lines+=("  ── Bundle ───────────────────────────────────────────────────")
+  all_lines+=("  ── Bundles ──────────────────────────────────────────────────")
   all_lines+=("${bundle_lines[@]}")
 
   # Build pre-selection bind: for each bundle currently in .octopus.yml, and
   # each feature currently on, compute its 1-based position in all_lines and
-  # toggle it on load. Positions count from line 1, headers included (fzf's
-  # pos() targets all rows, not only selectable ones — but with --header-lines
-  # the headers are excluded from positioning, so we count only data lines).
+  # toggle it on load. Positions count every row in all_lines (separators
+  # included), so feature[0] is at row 2 (after the Features separator) and
+  # bundle[0] is at row N+3 (after Features separator + N features + Bundle
+  # separator). Separator rows themselves are guarded against toggle below.
   local preselect_positions=()
-  local pos=0
-  # The header line for Features is index 0 in all_lines; feature rows follow.
-  # Position counter for fzf (--header-lines=2 excludes the two label rows).
   local feat_pos
   for (( i=0; i<${#_PICKER_FEATURES[@]}; i++ )); do
     fname="${_PICKER_FEATURES[$i]}"
     effective="$(_picker_effective_default "$fname" "$i")"
-    feat_pos=$((i + 1))  # 1-based position among selectable rows
+    feat_pos=$((i + 2))  # +1 for 1-based, +1 for Features separator above
     if [[ "$effective" == "true" && ( "$fname" == "hooks" || "$fname" == "workflow" || "$fname" == "mcp" ) ]]; then
       preselect_positions+=("$feat_pos")
     fi
   done
-  local bundle_pos_start=$(( ${#_PICKER_FEATURES[@]} + 1 ))
+  local bundle_pos_start=$(( ${#_PICKER_FEATURES[@]} + 3 ))  # +1 base, +2 separators
   for (( i=0; i<${#_PICKER_BUNDLES[@]}; i++ )); do
     if _picker_array_contains "${_PICKER_BUNDLES[$i]}" "${_CURRENT_BUNDLES[@]}"; then
       preselect_positions+=("$(( bundle_pos_start + i ))")
@@ -238,9 +238,17 @@ _picker_run_fzf() {
     --prompt="  Octopus Setup › "
     --pointer="▶"
     --marker="✓"
-    --bind="space:toggle"
-    --bind="tab:toggle+down"
-    --bind="btab:toggle+up"
+    # Guard toggle on separator rows ("── Features ──" / "── Bundles ──"):
+    # fzf's `transform:` action (fzf >= 0.52) lets us conditionally choose
+    # the action per current line. On separator rows we substitute `ignore`
+    # (or a plain `down`/`up` for tab/btab) so SPACE/TAB no longer mark
+    # them with ✓. Older fzf treats `transform:` as unknown and falls back
+    # to no-op; the separators stay visually toggleable but are still
+    # filtered post-selection (see `grep "^bundle:"` / `grep "^feature:"`
+    # parsing below).
+    --bind='space:transform:[[ {} == *──* ]] && echo "ignore" || echo "toggle"'
+    --bind='tab:transform:[[ {} == *──* ]] && echo "down" || echo "toggle+down"'
+    --bind='btab:transform:[[ {} == *──* ]] && echo "up" || echo "toggle+up"'
   )
   [[ -n "$load_bind" ]] && fzf_args+=(--bind="load:$load_bind")
 
