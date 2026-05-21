@@ -30,6 +30,12 @@ the closest archetype to your team".
   Security, money, multi-tenant scope, cross-stack contracts,
   configuration freshness, architecture-depth refactors. Picks up
   what `starter` doesn't cover for pre-merge audits.
+- **[guardrails](/octopus/bundles/guardrails/)** — deterministic
+  enforcement against code-assistant drift. Adds `enforce-precommit`
+  and `enforce-ide` skills that ship pre-commit hooks and editor
+  configs alongside the loop-level Octopus hooks, so coding style,
+  commit-msg lint, and formatter behaviour become git-level gates
+  instead of PR review nits.
 - **[docs](/octopus/bundles/docs/)** — the documentation lifecycle.
   Specs, ADRs, plans, PRDs, the interview / grilling discipline,
   triage, per-module CLAUDE.md authoring, and skill authoring.

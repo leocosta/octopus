@@ -34,6 +34,12 @@ o arquétipo mais próximo do seu time".
   cross-stack, atualidade de configuração, refatorações de
   profundidade arquitetural. Cobre o que o `starter` não cobre
   para auditorias pre-merge.
+- **[guardrails](/octopus/bundles/guardrails/)** — enforcement
+  determinístico contra drift de code assistants. Adiciona as skills
+  `enforce-precommit` e `enforce-ide`, que materializam hooks de
+  pre-commit e configs de editor ao lado dos hooks do loop do
+  Octopus — coding style, lint de commit-msg e formatter viram gates
+  no nível do git em vez de nit em review de PR.
 - **[docs](/octopus/bundles/docs/)** — o ciclo de vida da
   documentação. Specs, ADRs, plans, PRDs, a disciplina de
   entrevista / grilling, triagem, autoria de CLAUDE.md por módulo
