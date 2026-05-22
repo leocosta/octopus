@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.65.0] - 2026-05-21
+
+✨ The `templates/dotnet/editorconfig` baseline now ships a richer style preset on top of the auto-format hook scaffolding introduced in v1.63.4. New defaults cover file-scoped namespaces (`csharp_style_namespace_declarations = file_scoped:warning`), using-directive placement and System-first sorting, `var` preferences across built-in/apparent/elsewhere, expression-bodied members for methods/properties/accessors, and Allman brace placement (`csharp_new_line_before_open_brace = all` plus `else`/`catch`/`finally`). Indent-size overrides for `.csproj`/`.props`/`.targets`/`.json`/`.jsonc`/`.yml`/`.yaml` are consolidated into a single block alongside the existing TypeScript and Makefile sections, so projects that adopt the template get a coherent .NET style baseline without layering their own preferences on top.
+
 ## [1.64.0] - 2026-05-21
 
 ✨ `octopus setup` now auto-delivers the `templates/dotnet/editorconfig` baseline whenever a .NET project is detected, closing the loop on the v1.63.4 auto-format hook fix — that release shipped the template file but left installation to the user, defeating the "octopus does the work" expectation. Targeting follows the canonical .NET convention: scan for `.sln` files (max-depth 5, excluding `node_modules`/`.git`/`bin`/`obj`) and deliver one `.editorconfig` per solution directory; if no `.sln` is present, fall back to the common ancestor of all `.csproj` files. This makes the delivery work in monorepo layouts whose solution lives in a subdirectory with a nested `root = true` editorconfig — placing the file at the install root would be shadowed by the nested config and provide no value. Idempotent: an existing `.editorconfig` at any target directory is never overwritten, so projects that already chose their own conventions stay intact. Verified against four scenarios: single `.sln` in a subdir delivers next to it; multiple `.csproj` with no solution collapse to their common ancestor; existing editorconfig at a target dir is left alone; non-.NET repos are silently skipped.
