@@ -4,9 +4,12 @@ description: >
   The Octopus PR-feedback discipline — verify the critique, ask
   for evidence on generic comments, separate reasoned feedback
   from preference, never make performative changes, ask for
-  clarification on ambiguity. Active by default on every PR
-  feedback loop; pairs with /octopus:pr-comments (mechanics) and
-  resumes implement/debug for the actual code changes.
+  clarification on ambiguity. After the fixes are applied, runs
+  the post-fix loop (commit, conditional push, hybrid inline
+  replies, resolve threads) in a single confirmation turn — the
+  skill is end-to-end and does not require a separate
+  /octopus:pr-comments invocation. Active by default on every PR
+  feedback loop.
 ---
 
 # Respond-to-Review Protocol
@@ -137,6 +140,67 @@ Acting on your best guess creates a second round of feedback
 and wastes the reviewer's time. One clarifying question saves
 that.
 
+## Post-Fix Loop
+
+The five rules end when the *right* change has been applied to
+each comment. The skill does **not** end there. After the last
+fix lands, the agent opens a single **post-fix turn** that
+proposes the four closing actions in one consolidated menu:
+
+1. **Commit** — one batch commit covering all review-driven
+   edits, with a proposed message
+   (`fix(<scope>): address review feedback on #<pr>` or
+   equivalent derived from the touched scopes). The user may
+   approve, edit, or skip.
+2. **Push** — automatic if the branch already has an upstream
+   tracking ref (`git rev-parse --abbrev-ref --symbolic-full-name
+   @{u}` succeeds). If not, the menu surfaces it as an explicit
+   confirmation (`git push -u origin HEAD`). Never push `-u`
+   silently.
+3. **Reply inline on each thread** — hybrid strategy:
+   - **Canned** `Addressed in <sha>.` for threads that ended in
+     a direct fix.
+   - **Contextual** for threads that ended in push-back or
+     partial action — restate the reason briefly:
+     `Renamed to <X> as suggested — <sha>.`
+     `Kept current behavior because <reason>. — <sha>.`
+   The agent composes the contextual variant from the Rule 3
+   verdict it already produced; it does not re-derive it.
+4. **Mark threads resolved** — close threads that the agent
+   considers settled from its side:
+   - Threads with a fix applied → resolve.
+   - Threads with push-back/refutation where the agent posted a
+     reasoned counter-argument → resolve.
+   - Threads pending clarification (Rule 5) → **leave open**;
+     they wait on reviewer input.
+   Uses the GitHub GraphQL `resolveReviewThread` mutation; the
+   thread IDs are collected at the start of the flow alongside
+   the comment payload.
+
+### Menu shape
+
+The post-fix turn is a single block, defaults pre-filled,
+approve-edit-skip in one round-trip. Keep it tight — one line
+per action plus the proposed commit message and the
+classification counts (e.g. `Resolve: 3 fix + 1 push-back, 1
+clarification stays open`).
+
+The user can:
+
+- Approve the whole block in one word.
+- Edit any line in place (commit message, which threads to
+  resolve, reply text on a specific thread).
+- Skip individual items; the skill ends reporting what was done
+  and what was left so the user can finish manually.
+
+### Failure handling
+
+If the commit succeeds but a later step fails (push rejected,
+GraphQL mutation errors), report the partial state explicitly:
+which threads got replies, which got resolved, which did not.
+Do **not** roll back the commit. Do **not** silently retry — the
+user decides whether to re-run the failed step.
+
 ## Task Routing
 
 <!-- BEGIN task-routing -->
@@ -195,12 +259,12 @@ would have provided — point at the gap and move on.
 
 ## Integration with Other Skills
 
-- **`/octopus:pr-comments`** — the command that drives the
-  feedback loop. Mechanics (list comments, iterate, open
-  threads) are in that command; discipline (how to process
-  each comment) is in this skill. The two compose —
-  `pr-comments` runs the loop, this skill governs each
-  iteration.
+- **`/octopus:pr-comments`** — alternative entry point that
+  walks a PR's review threads from scratch (useful when you
+  want to triage a PR you have not opened yet). This skill is
+  end-to-end on its own (five rules + post-fix loop); use
+  `pr-comments` when you want the older iterate-one-thread-at-
+  a-time mechanics instead of the batch post-fix turn.
 - **`/octopus:pr-review`** — writes a review for someone
   else's PR. Different role, different skill; this skill never
   engages on that flow.
@@ -238,6 +302,16 @@ This skill forbids, by name:
   (the opposite failure from blind deference).
 - Deleting a reviewer's comment thread without resolving or
   acknowledging it.
-- Batching a fix for one comment with unrelated changes — each
-  comment's response gets its own commit so the reviewer can
-  re-review atomically.
+- Mixing review-driven edits with unrelated work in the same
+  commit — the post-fix batch commit covers *only* the changes
+  that answer review comments. Unrelated cleanup goes in its
+  own commit.
+- Ending the skill after the last fix lands without running the
+  post-fix loop — leaving the user to invoke commit / reply /
+  resolve as separate manual steps is the regression this skill
+  exists to prevent.
+- Pushing `-u` to a new remote branch silently — the post-fix
+  loop must surface that as an explicit confirmation, not bury
+  it in the automatic path.
+- Auto-resolving a thread that ended in a Rule 5 clarification
+  request — those wait on reviewer input by definition.
