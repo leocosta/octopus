@@ -22,6 +22,16 @@ run_formatter() {
     first=$(printf '%s\n' "$out" | awk 'NF{print;exit}')
     echo "[auto-format] $tool failed on $file_path (exit $rc): ${first:-<no output>}" >&2
   fi
+  # Surface fix-failure messages that the formatter reports without raising the
+  # exit code — e.g. `dotnet format` prints "Unable to fix IDE1006. Code fix
+  # NamingStyleCodeFixProvider doesn't support Fix All in Solution." and exits
+  # 0, which would otherwise let style violations slip through silently.
+  local unfixed
+  unfixed=$(printf '%s\n' "$out" | grep -E '^(Unable to fix |.*: warning IDE[0-9]+|.*: warning CA[0-9]+)' || true)
+  if [[ -n "$unfixed" ]]; then
+    echo "[auto-format] $tool left fix-failures on $file_path:" >&2
+    printf '%s\n' "$unfixed" | sed 's/^/  /' >&2
+  fi
   return 0
 }
 
@@ -53,7 +63,12 @@ case "$ext" in
       [[ "$proj_dir" == "/" ]] && proj_dir=$(dirname "$file_path")
       # --include requires a path relative to the project root; absolute paths are silently ignored
       rel_path="${file_path#"$proj_dir"/}"
-      run_formatter "dotnet format" bash -c "cd $(printf '%q' "$proj_dir") && dotnet format --include $(printf '%q' "$rel_path") --no-restore"
+      # --severity info: apply fixes for analyzers configured at :suggestion / :info in
+      # the project's .editorconfig (e.g. IDE0011 add-braces, IDE0040 accessibility,
+      # IDE0044 make-readonly). Default severity is :warn, which lets common code-style
+      # violations slip through even when the project has them enabled. Rules left at
+      # :silent stay untouched — the .editorconfig remains authoritative.
+      run_formatter "dotnet format" bash -c "cd $(printf '%q' "$proj_dir") && dotnet format --include $(printf '%q' "$rel_path") --no-restore --severity info"
     fi
     ;;
   py)

@@ -1,0 +1,59 @@
+# Octopus baseline .editorconfig for .NET projects.
+#
+# Copy to your project's root as `.editorconfig` (or merge into an existing
+# one). This is the minimum opinionated set that makes the Octopus
+# post-tool-use `auto-format` hook actually fix style violations — without it,
+# `dotnet format` has no rules to enforce and most analyzers stay at :silent.
+#
+# Layer project-specific rules on top in the same file.
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+# -- Code style (auto-fixed by `dotnet format --severity info`) --
+
+[*.cs]
+
+# IDE0011 — add braces to all control-flow statements. Single-line
+# `if (cond) action;` becomes multi-line braced form.
+csharp_prefer_braces = true:suggestion
+
+# IDE0040 — require explicit accessibility modifiers on members.
+dotnet_style_require_accessibility_modifiers = always:suggestion
+
+# IDE0044 — make field readonly when only assigned in the ctor.
+dotnet_style_readonly_field = true:suggestion
+
+# IDE0005 — remove unused `using` directives.
+dotnet_diagnostic.IDE0005.severity = suggestion
+
+# -- Naming (Roslyn surfaces violations but cannot batch-fix them; the
+# auto-format hook's fix-failure detection makes them visible at write time
+# instead of in PR review). --
+
+# Private fields: `_camelCase` prefix.
+dotnet_naming_rule.private_fields_camel_case.severity = warning
+dotnet_naming_rule.private_fields_camel_case.symbols = private_fields
+dotnet_naming_rule.private_fields_camel_case.style = camel_case_underscore_prefix
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_style.camel_case_underscore_prefix.required_prefix = _
+dotnet_naming_style.camel_case_underscore_prefix.capitalization = camel_case
+
+# -- Web stack defaults --
+
+[*.{ts,tsx,js,jsx,mjs,cjs}]
+indent_size = 2
+
+[*.{yml,yaml,json,jsonc}]
+indent_size = 2
+
+[Makefile]
+indent_style = tab
