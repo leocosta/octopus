@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.66.1] - 2026-05-22
+
+🐛 The `session-start/load-context.sh` hook no longer breaks session startup on projects whose `.octopus.yml` omits the `knowledge_dir:` key. The previous `grep | awk | head -1 || true` chain was fragile under `set -o pipefail` (SIGPIPE on early `head` close, silent failure on quoted values or trailing comments). It is replaced by a pure-bash regex parse that reads the file line-by-line, tolerates surrounding single/double quotes and `# comment` suffixes on the value, and keeps the `knowledge` default intact when the key is absent. Verified against four scenarios: missing key, plain value, quoted value with trailing comment, and missing `.octopus.yml` — all return exit 0.
+
 ## [1.66.0] - 2026-05-22
 
 ✨ `respond-to-review` is now end-to-end: after the five rules apply the right change to each comment, the skill runs a single post-fix turn that proposes the four closing actions in one consolidated menu — a batch commit covering the review-driven edits with a suggested message, push (automatic when the branch already tracks an upstream, explicit confirmation when `-u` is needed), hybrid inline replies (canned `Addressed in <sha>.` for direct fixes, contextual phrasing for push-back or partial action), and thread resolution (closes threads that ended in a fix or a reasoned push-back, leaves Rule 5 clarifications open by design). This closes the gap where the agent stopped after applying fixes and forced the user to drive commit / reply / resolve manually or via a separate `/octopus:pr-comments` invocation. The relationship to `pr-comments` is reframed accordingly: it remains a valid alternative entry point for walking a PR's threads from scratch, but `respond-to-review` no longer depends on it. Anti-patterns updated to forbid ending the skill before the post-fix loop, silent `push -u` to a new remote branch, and auto-resolving threads that ended in a clarification request.
