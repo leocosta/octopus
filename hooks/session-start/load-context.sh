@@ -18,8 +18,16 @@ fi
 # Read knowledge_dir from .octopus.yml if configured, else default to "knowledge"
 knowledge_dir="knowledge"
 if [[ -f ".octopus.yml" ]]; then
-  _kd=$(grep -E '^knowledge_dir:[[:space:]]+' .octopus.yml 2>/dev/null | awk '{print $2}' | head -1 || true)
-  [[ -n "$_kd" ]] && knowledge_dir="$_kd"
+  while IFS= read -r _line || [[ -n "$_line" ]]; do
+    if [[ "$_line" =~ ^knowledge_dir:[[:space:]]+([^[:space:]#]+) ]]; then
+      _kd="${BASH_REMATCH[1]}"
+      # strip surrounding quotes if present
+      _kd="${_kd%\"}"; _kd="${_kd#\"}"
+      _kd="${_kd%\'}"; _kd="${_kd#\'}"
+      [[ -n "$_kd" ]] && knowledge_dir="$_kd"
+      break
+    fi
+  done < .octopus.yml
 fi
 if [[ -d "$knowledge_dir" && -f "$knowledge_dir/INDEX.md" ]]; then
   echo "Knowledge modules available:" >&2
