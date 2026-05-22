@@ -17,9 +17,41 @@ trim_trailing_whitespace = true
 indent_style = space
 indent_size = 4
 
+[*.{csproj,props,targets,json,jsonc,yml,yaml}]
+indent_size = 2
+
+[*.{ts,tsx,js,jsx,mjs,cjs}]
+indent_size = 2
+
+[Makefile]
+indent_style = tab
+
 # -- Code style (auto-fixed by `dotnet format --severity info`) --
 
 [*.cs]
+
+# Namespace preferences — prefer file-scoped namespaces.
+csharp_style_namespace_declarations = file_scoped:warning
+
+# Using directives — sort System.* first and keep usings outside the namespace.
+dotnet_sort_system_directives_first = true
+csharp_using_directive_placement = outside_namespace:warning
+
+# var preferences — use `var` when the type is obvious from the right-hand side.
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = true:suggestion
+
+# Expression-bodied members — favour them when they fit on a single line.
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion
+csharp_style_expression_bodied_properties = true:suggestion
+csharp_style_expression_bodied_accessors = true:suggestion
+
+# New line preferences — Allman braces.
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
 
 # IDE0011 — add braces to all control-flow statements. Single-line
 # `if (cond) action;` becomes multi-line braced form.
@@ -46,14 +78,3 @@ dotnet_naming_symbols.private_fields.applicable_kinds = field
 dotnet_naming_symbols.private_fields.applicable_accessibilities = private
 dotnet_naming_style.camel_case_underscore_prefix.required_prefix = _
 dotnet_naming_style.camel_case_underscore_prefix.capitalization = camel_case
-
-# -- Web stack defaults --
-
-[*.{ts,tsx,js,jsx,mjs,cjs}]
-indent_size = 2
-
-[*.{yml,yaml,json,jsonc}]
-indent_size = 2
-
-[Makefile]
-indent_style = tab
