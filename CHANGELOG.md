@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.66.0] - 2026-05-22
+
+✨ `respond-to-review` is now end-to-end: after the five rules apply the right change to each comment, the skill runs a single post-fix turn that proposes the four closing actions in one consolidated menu — a batch commit covering the review-driven edits with a suggested message, push (automatic when the branch already tracks an upstream, explicit confirmation when `-u` is needed), hybrid inline replies (canned `Addressed in <sha>.` for direct fixes, contextual phrasing for push-back or partial action), and thread resolution (closes threads that ended in a fix or a reasoned push-back, leaves Rule 5 clarifications open by design). This closes the gap where the agent stopped after applying fixes and forced the user to drive commit / reply / resolve manually or via a separate `/octopus:pr-comments` invocation. The relationship to `pr-comments` is reframed accordingly: it remains a valid alternative entry point for walking a PR's threads from scratch, but `respond-to-review` no longer depends on it. Anti-patterns updated to forbid ending the skill before the post-fix loop, silent `push -u` to a new remote branch, and auto-resolving threads that ended in a clarification request.
+
 ## [1.65.0] - 2026-05-21
 
 ✨ The `templates/dotnet/editorconfig` baseline now ships a richer style preset on top of the auto-format hook scaffolding introduced in v1.63.4. New defaults cover file-scoped namespaces (`csharp_style_namespace_declarations = file_scoped:warning`), using-directive placement and System-first sorting, `var` preferences across built-in/apparent/elsewhere, expression-bodied members for methods/properties/accessors, and Allman brace placement (`csharp_new_line_before_open_brace = all` plus `else`/`catch`/`finally`). Indent-size overrides for `.csproj`/`.props`/`.targets`/`.json`/`.jsonc`/`.yml`/`.yaml` are consolidated into a single block alongside the existing TypeScript and Makefile sections, so projects that adopt the template get a coherent .NET style baseline without layering their own preferences on top.
