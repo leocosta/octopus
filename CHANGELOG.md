@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.63.3] - 2026-05-21
+
+🐛 The `octopus setup` fzf picker rendered the "── Features ──" and "── Bundles ──" section labels as selectable rows because `--header-lines=0` made every input line a data row — users could move the cursor onto a separator and mark it with ✓ via SPACE/TAB, even though the post-selection grep filters discarded anything that didn't start with `bundle:` or `feature:`, leaving the visual selection without any effect on the parsed output. `transform:` binds (fzf >= 0.52) now substitute the toggle action with `ignore` (SPACE) or a plain `down`/`up` (TAB/BTAB) when the current line contains the `──` box-drawing pattern; older fzf treats `transform:` as unknown and falls back to the previous no-op-but-visually-toggleable behaviour. The pre-select position math is also corrected — positions count every row in the list (separators included), so `feature[0]` sits at row 2 and `bundle[0]` at row N+3, not row 1 and row N+1 as the old code assumed; the "Bundle" label is renamed to "Bundles" to match its multi-select nature.
+
 ## [1.63.2] - 2026-05-21
 
 🐛 The bundles index page (`docs/site/bundles/index.mdx` + pt-br) had a heading reading "The six bundles" / "Os seis bundles" with only five bullets — `guardrails` (shipped v1.59.0) was never added to either index when the bundle landed. The mismatch became visible after v1.63.1 cleaned out the dba bullet, dropping the visible count to 5. Added the missing guardrails bullet in both languages, positioned right after `quality` (both are enforcement-shaped bundles), with a description matching the tone of the existing bullets — covers the bundle's two skills (`enforce-precommit`, `enforce-ide`) and the value angle (coding style, commit-msg lint, and formatter become git-level gates instead of PR review nits).
