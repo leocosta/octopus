@@ -1698,6 +1698,108 @@ deliver_github_action() {
   echo "  → .github/workflows/claude.yml scaffolded (RM-016)"
 }
 
+# Auto-deliver the `.editorconfig` baseline for .NET projects so the
+# post-tool-use auto-format hook actually has rules to enforce.
+#
+# Targeting follows the canonical .NET convention: place the file next to
+# the solution (or, if no .sln exists, at the common ancestor of all
+# .csproj). This makes the delivery work in monorepos where the solution
+# lives in a subdirectory and a nested `root = true` editorconfig would
+# otherwise shadow a repo-root file.
+#
+# Conservative by design:
+#   - skips if the repo has no .csproj / .sln (not a .NET project)
+#   - skips silently for any target dir that already has .editorconfig
+#   - never edits an existing file
+deliver_dotnet_editorconfig() {
+  local agent="$1"
+  # Run once per setup — pick the first agent in the pipeline.
+  if [[ "$agent" != "claude" ]]; then return; fi
+
+  local install_root="$(_install_root)"
+  local template="$OCTOPUS_DIR/templates/dotnet/editorconfig"
+
+  if [[ ! -f "$template" ]]; then
+    return  # template missing — nothing to deliver
+  fi
+
+  # Common find exclusions for .NET tree walks.
+  local find_excludes=(
+    -not -path "*/node_modules/*"
+    -not -path "*/.git/*"
+    -not -path "*/bin/*"
+    -not -path "*/obj/*"
+  )
+
+  # 1. Locate solution dirs (preferred targets).
+  local -a target_dirs=()
+  while IFS= read -r sln; do
+    [[ -n "$sln" ]] && target_dirs+=("$(dirname "$sln")")
+  done < <(find "$install_root" -maxdepth 5 -type f -name "*.sln" "${find_excludes[@]}" 2>/dev/null | sort -u)
+
+  # 2. No .sln? Fall back to .csproj — single project goes next to it,
+  #    multiple projects collapse to their common ancestor.
+  if [[ ${#target_dirs[@]} -eq 0 ]]; then
+    local -a csproj_files=()
+    while IFS= read -r csproj; do
+      [[ -n "$csproj" ]] && csproj_files+=("$csproj")
+    done < <(find "$install_root" -maxdepth 5 -type f -name "*.csproj" "${find_excludes[@]}" 2>/dev/null)
+
+    if [[ ${#csproj_files[@]} -eq 0 ]]; then
+      return  # not a .NET project
+    elif [[ ${#csproj_files[@]} -eq 1 ]]; then
+      target_dirs=("$(dirname "${csproj_files[0]}")")
+    else
+      # Common ancestor of all .csproj dirs.
+      local common ancestor candidate
+      common="$(dirname "${csproj_files[0]}")"
+      for f in "${csproj_files[@]:1}"; do
+        candidate="$(dirname "$f")"
+        # Shrink `common` until it's a prefix of `candidate`.
+        while [[ "${candidate#"$common"/}" == "$candidate" && "$candidate" != "$common" ]]; do
+          ancestor="$(dirname "$common")"
+          [[ "$ancestor" == "$common" ]] && break  # hit filesystem root
+          common="$ancestor"
+        done
+      done
+      target_dirs=("$common")
+    fi
+  fi
+
+  # Deduplicate target dirs.
+  local -A seen=()
+  local -a unique=()
+  for d in "${target_dirs[@]}"; do
+    if [[ -z "${seen[$d]:-}" ]]; then
+      seen[$d]=1
+      unique+=("$d")
+    fi
+  done
+
+  # 3. Deliver to each target dir.
+  for dir in "${unique[@]}"; do
+    local target="$dir/.editorconfig"
+    local rel="${dir#"$install_root"/}"
+    [[ "$rel" == "$dir" ]] && rel="."
+
+    if [[ "${OCTOPUS_DRY_RUN:-}" == "true" ]]; then
+      if [[ -f "$target" ]]; then
+        _dry_run_log "would skip $rel/.editorconfig (already present)"
+      else
+        _dry_run_log "would scaffold $rel/.editorconfig (Octopus baseline for .NET)"
+      fi
+      continue
+    fi
+
+    if [[ -f "$target" ]]; then
+      continue  # project already has one — leave intact
+    fi
+
+    cp "$template" "$target"
+    echo "  → $rel/.editorconfig scaffolded (Octopus baseline for .NET)"
+  done
+}
+
 # Core files in fixed concatenation order
 CORE_FILES=(
   "core/guidelines.md"
@@ -2485,6 +2587,7 @@ _run_agent_pipeline() {
   deliver_boris_settings "$agent"
   deliver_dream_subagent "$agent"
   deliver_github_action "$agent"
+  deliver_dotnet_editorconfig "$agent"
   collect_gitignore_entries "$agent"
 }
 
