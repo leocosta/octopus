@@ -24,22 +24,25 @@ use `/octopus:pr-review`.
 | Signal in the diff | Dispatch |
 |---|---|
 | `migrations/**`, `db/**`, `**/*.sql`, Mongo schemas, Redis configs, ORM mappings | role `dba` |
-| Auth, JWT, OAuth, secret/token handling, `.env*`, password/credential paths | skill `audit-security` |
+| Auth, JWT, OAuth, secret/token handling, `.env*`, password/credential paths | role `security` |
 | `billing/`, `payment/`, money-touching code (`Decimal`, `cents`, fee/invoice/subscription) | skill `audit-money` |
 | New `DbSet<X>`, multi-tenant queries, `IgnoreQueryFilters()`, `tenant`/`org`/`workspace` predicates | skill `audit-tenant` |
 | Both `api/` and `app/`/`lp/` in same diff; DTO/endpoint/enum changes | skill `review-contracts` |
 | Any non-trivial production code change | role `architect` (always) |
 
 If the diff touches the data layer, **both** `dba` and `architect`
-must approve (dual gate — see `core/pr-workflow.md`).
+must approve (dual gate — see `core/pr-workflow.md`). Likewise, if the
+diff touches auth/secrets, **both** `security` and `architect` must
+approve. The `security` role runs the `audit-security` checklist as its
+baseline and adds threat modeling over the diff.
 
 ## Phase 2 — Dispatch in Parallel
 
 Invoke the matching skills and roles **concurrently** — they do
 not depend on each other. Pass each one the same diff context.
-Roles (`architect`, `dba`) emit findings in the format defined by
-their own role files; skills emit per their `audit-*` Output
-Format.
+Roles (`architect`, `dba`, `security`) emit findings in the format
+defined by their own role files; skills emit per their `audit-*`
+Output Format.
 
 ## Phase 3 — Fallback Checklist
 
@@ -76,7 +79,7 @@ Diff: <N> files changed
 BLOCKING (n)
   [origin: dba]        ...
   [origin: architect]  ...
-  [origin: audit-security] ...
+  [origin: security]   ...
 
 ADVISORY (n)
   [origin: review-contracts] ...
