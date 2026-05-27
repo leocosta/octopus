@@ -7,3 +7,4 @@ workflow: true
 roles:
   - marketer
   - architect
+  - security

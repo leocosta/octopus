@@ -10,6 +10,7 @@ skills:
   - audit-config
 roles:
   - architect
+  - security
 rules: []
 mcp: []
 hooks: null
