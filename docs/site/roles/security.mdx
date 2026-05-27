@@ -1,0 +1,154 @@
+---
+title: security
+description: Staff Security Engineer — runs the audit-security checklist and adds threat modeling over the diff (attack surface, auth/data flows) before merge. Uses BLOCKING / ADVISORY / QUESTION discipline.
+sidebar:
+  order: 1
+---
+
+`security` is the security-specialist reviewer role. You delegate to
+it when you want a code change validated for secrets, auth/authz
+weakening, injection, and the attack surface it introduces — before
+merge.
+
+**The role does not write code.** It reviews, questions, and
+approves (or refuses).
+
+## Persona
+
+A Staff Security Engineer responsible for ensuring shipped changes
+do not introduce attack vectors, leak secrets, or weaken
+authentication and authorization. They run the `audit-security`
+checklist as a baseline and then reason about the surface the diff
+*reveals* — entry points, reachable actors, exposed assets, abuse
+cases. Approval means *"I would stake my name on this not being the
+entry point of the next incident"* — anything less is "request
+changes" or "escalate".
+
+## Frontmatter
+
+```yaml
+name: security
+description: Security specialist — audit-security checklist + threat modeling
+model: opus
+color: "#16a34a"   # green — visible in octopus control TUI
+```
+
+Note the model: **opus**, not sonnet. Threat modeling is reasoning
+work where the larger model's stronger inference pays for itself —
+the same call made for `architect` and `dba`.
+
+## Scope and boundaries
+
+**What the security role owns:**
+
+- Secrets and credentials — nothing hardcoded, nothing entering
+  history, env-var loading verified
+- Authentication and authorization — rules not removed, bypassed,
+  or weakened; new routes protected by default
+- Input validation and injection — parameterized queries, escaped
+  output, validated file paths, no `eval` of external input
+- The AI-agent configuration surface — MCP server scope, tool
+  permissions, hook input handling
+- Threat modeling over the diff — entry points, actors, assets,
+  abuse cases, trust assumptions
+
+**What the security role does NOT own:**
+
+- Broad architecture and design review (delegate to `architect`)
+- Data-layer modeling, indexing, migrations (delegate to `dba`)
+- Implementation (delegate to `backend-developer` /
+  `frontend-developer`)
+- Documentation (delegate to `writer`)
+
+The security role is an **additional gate** alongside `architect`:
+the architect reviews the change as a whole, the security role
+reviews its security surface. When a diff touches auth or secrets,
+both approve.
+
+## How the role behaves differently from the default agent
+
+- **Checklist first, then reasoning** — it runs `audit-security`
+  before forming an opinion, so the baseline is never skipped; the
+  default agent tends to reason ad hoc.
+- **Exploit-scenario discipline** — every `BLOCKING` finding ships
+  with how it is exploited *and* the fix. "This could be insecure"
+  is not allowed; "user-supplied `id` is concatenated into SQL —
+  injection" is.
+- **A secret is always blocking** — even a "just a test key" lands
+  as `BLOCKING`, because secrets in history cannot be un-leaked.
+- **Separates real vectors from theoretical** — it says which a
+  finding is, instead of inflating severity for unreachable paths.
+
+## Workflow
+
+Four-phase review (from the role file):
+
+1. **Phase 0: Context** — read the spec / RFC, check the roadmap
+   entry. Understand intent before reading the diff.
+2. **Phase 1: Run the checklist** — invoke `audit-security` over the
+   diff for the secrets / agent-config / MCP / hooks / dependency
+   baseline. This is the floor, not the ceiling.
+3. **Phase 2: Threat modeling** — reason about entry points,
+   reachable actors, exposed assets, abuse cases (auth bypass,
+   IDOR, injection, SSRF, privilege escalation, exfiltration), and
+   the trust assumptions an attacker can violate.
+4. **Phase 3: Classify findings** — every issue gets a tag:
+   `BLOCKING` (leaked secret, auth bypass, injection, exposed PII),
+   `ADVISORY` (defense-in-depth hardening), `QUESTION` (cannot tell
+   if a path is reachable).
+5. **Phase 4: Decision** — Approve / Request changes / Escalate.
+
+## Output format
+
+The role's reports follow a fixed structure:
+
+```
+## Summary
+One paragraph: what the change does, the surface it adds, your decision.
+
+## Findings
+| Classification | Location | Issue | Suggested Fix |
+|---|---|---|---|
+| BLOCKING | src/users/repo.ts:40 | User id concatenated into SQL — injection | Parameterized query |
+| ADVISORY | package.json | lodash advisory | Bump to patched version |
+| QUESTION | src/api/export.ts:12 | Is /export meant to be unauthenticated? | Add guard if not public |
+
+## Decision
+Approved / Request Changes / Escalate
+```
+
+The shape mirrors `architect` so the `codereview` report
+consolidates both roles' findings cleanly.
+
+## When to delegate to security
+
+- Before merging any diff touching auth, JWT/OAuth, secrets,
+  `.env*`, or password/credential handling
+- When you want a threat-model pass on a new endpoint or trust
+  boundary
+- After running `audit-security` to walk its findings and add the
+  reasoning a checklist cannot
+- When the `codereview` router flags the diff as security-sensitive
+  (it dispatches this role automatically)
+
+## When NOT to delegate to security
+
+- Broad architecture questions (use `architect`)
+- Data-layer review (use `dba`)
+- Implementation or doc tasks (use the implementer roles / `writer`)
+
+## Composes with
+
+- **[audit-security skill](/octopus/skills/audit-all/)** — the
+  checklist the role runs at Phase 1 as its baseline.
+- **[architect role](/octopus/roles/architect/)** — the parallel
+  gate. On auth/secret diffs, both approve (dual gate), the same
+  pattern `dba` follows on data-layer diffs.
+- **[codereview command](/octopus/commands/codereview/)** — the
+  router that dispatches this role when the diff touches auth or
+  secrets.
+
+## Reference
+
+[Source: `roles/security.md`](https://github.com/leocosta/octopus/blob/main/roles/security.md)
+— 152 lines, full persona definition.

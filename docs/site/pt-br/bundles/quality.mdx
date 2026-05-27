@@ -3,7 +3,7 @@ title: quality
 description: Gates de auditoria pré-merge — security, money-logic, escopo multi-tenant, contratos cross-stack, refactoring de profundidade arquitetural e atualização de configuração.
 sidebar:
   order: 2
-source_hash: "sha256:3575adaa8cfdf99c8182ce0b1c3dbb1e2bd37d2e7cd808b7101eb8de3c5989c3"
+source_hash: "sha256:95c8ff2ea4a950119b431106a02748573be3caf0d7b771b6614c41b42f156194"
 needs_retranslation: false
 ---
 
@@ -53,6 +53,7 @@ skills:
   - audit-config      # configuration freshness (rules, skills, hooks)
 roles:
   - architect         # senior reviewer with BLOCKING/ADVISORY/QUESTION discipline
+  - security          # security specialist — audit-security checklist + threat modeling
 ```
 
 Mais as skills de auditoria que o `audit-all` compõe — `audit-security`,
@@ -83,6 +84,11 @@ dependências transitivas.
 - **role `architect`** — o `quality` inclui a persona de senior-reviewer porque
   achados de auditoria muitas vezes precisam de uma classificação de nível
   humano: blocking vs advisory vs needs-discussion. A role formaliza isso.
+- **role `security`** — a persona especialista em segurança. Roda o checklist
+  `audit-security` como baseline e adiciona threat modeling sobre o diff
+  (superfície de ataque, fluxos de auth/dados). O router do `codereview` a
+  despacha em diffs de auth/secret, em dual gate com o `architect` — o mesmo
+  padrão que o `dba` segue em diffs da camada de dados.
 
 ### Por que algumas coisas não estão aqui
 
@@ -108,7 +114,9 @@ Um PR típico pronto para merge:
    capturar drift de configuração — suposições de modelo obsoletas, skills
    fantasmas, paths deprecados.
 5. Quando a superfície de auditoria exigir julgamento humano, você usa
-   `/octopus:delegate @architect` para percorrer os achados e classificá-los.
+   `/octopus:delegate @architect` para percorrer os achados e classificá-los —
+   ou `/octopus:delegate @security` para um passe de threat model quando o diff
+   toca auth ou secrets.
 
 ## Compõe com
 

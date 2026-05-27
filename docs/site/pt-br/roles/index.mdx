@@ -3,7 +3,7 @@ title: Roles
 description: Personas para as quais você pode delegar via /octopus:delegate. Cada role limita o comportamento de um agent para uma tarefa — architect, backend, frontend, marketer, product-manager, writer.
 sidebar:
   order: 0
-source_hash: "sha256:d2a96c9964c3f79d4cb79d5f1dbf0479d4ec9b3254a780f96837ffcfb4e4f71e"
+source_hash: "sha256:4bcbab7b218334896b3cb28cb733c984ff67f369598091559ffe07014ec66d1e"
 needs_retranslation: false
 ---
 
@@ -21,12 +21,16 @@ execução em camadas. Um post de marketing pede approval gates e
 copy nativa da plataforma. A persona padrão do agent é generalista;
 roles dão alternativas direcionadas.
 
-## Os seis roles
+## Os sete roles
 
 - **[architect](/octopus/roles/architect/)** — senior reviewer e
   gate de qualidade de código. Valida qualidade técnica,
   integridade arquitetural e conformidade com ADRs antes do merge.
   Usa a disciplina BLOCKING / ADVISORY / QUESTION.
+- **[security](/octopus/roles/security/)** — revisor especialista
+  em segurança. Roda o checklist audit-security e adiciona threat
+  modeling sobre o diff (superfície de ataque, fluxos de auth/dados)
+  antes do merge. NÃO modifica código.
 - **[backend-developer](/octopus/roles/backend-developer/)** —
   implementa código de backend seguindo plans. Stack-aware (.NET,
   Scala, Node, Python). Modifica código.
@@ -112,9 +116,10 @@ Fique no agent padrão quando:
   de despacho. Vive em `starter` porque a primitiva é fundamental
   mesmo que nenhum role venha em `starter`.
 - **Bundles trazem seus próprios roles** — `quality` traz
-  `architect`; `docs` traz `writer`; `backend` traz
-  `backend-developer`; `growth` traz `marketer`. `product-manager`
-  e `frontend-developer` estão disponíveis standalone.
+  `architect` e `security`; `docs` traz `writer`; `backend` traz
+  `backend-developer` (e `dba`); `growth` traz `marketer`.
+  `product-manager` e `frontend-developer` estão disponíveis
+  standalone.
 
 ## Referência
 

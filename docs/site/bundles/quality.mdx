@@ -51,6 +51,7 @@ skills:
   - audit-config      # configuration freshness (rules, skills, hooks)
 roles:
   - architect         # senior reviewer with BLOCKING/ADVISORY/QUESTION discipline
+  - security          # security specialist — audit-security checklist + threat modeling
 ```
 
 Plus the audit skills `audit-all` composes — `audit-security`,
@@ -83,6 +84,12 @@ as transitive dependencies.
   persona because audit findings often need a human-grade
   classification: blocking vs advisory vs needs-discussion. The
   role formalises that.
+- **`security` role** — the security specialist persona. It runs
+  the `audit-security` checklist as a baseline and adds threat
+  modeling over the diff (attack surface, auth/data flows). The
+  `codereview` router dispatches it on auth/secret diffs, dual-gated
+  with `architect` — the same pattern `dba` follows on data-layer
+  diffs.
 
 ### Why not included
 
@@ -111,7 +118,8 @@ A typical PR ready to merge:
    skills, deprecated paths.
 5. When the audit surface needs human judgement, you
    `/octopus:delegate @architect` to walk the findings and
-   classify them.
+   classify them — or `/octopus:delegate @security` for a
+   threat-model pass when the diff touches auth or secrets.
 
 ## Composes with
 

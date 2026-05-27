@@ -18,12 +18,16 @@ workflow. A marketing post wants approval gates and platform-native
 copy. The default agent persona is a generalist; roles give you
 targeted alternatives.
 
-## The six roles
+## The seven roles
 
 - **[architect](/octopus/roles/architect/)** — senior reviewer and
   code-quality gate. Validates technical quality, architectural
   integrity, and ADR compliance before merge. Uses BLOCKING /
   ADVISORY / QUESTION discipline.
+- **[security](/octopus/roles/security/)** — security specialist
+  reviewer. Runs the audit-security checklist and adds threat
+  modeling over the diff (attack surface, auth/data flows) before
+  merge. Does NOT modify code.
 - **[backend-developer](/octopus/roles/backend-developer/)** —
   implements backend code following plans. Stack-aware (.NET,
   Scala, Node, Python). Modifies code.
@@ -106,10 +110,11 @@ Stay in the default agent when:
 - **[delegate command](/octopus/commands/delegate/)** — the dispatch
   mechanism. Lives in `starter` because the primitive is
   foundational even if no roles ship in `starter` itself.
-- **Bundles ship their own roles** — `quality` ships `architect`;
-  `docs` ships `writer`; `backend` ships `backend-developer`;
-  `growth` ships `marketer`. `product-manager` and
-  `frontend-developer` are available standalone.
+- **Bundles ship their own roles** — `quality` ships `architect`
+  and `security`; `docs` ships `writer`; `backend` ships
+  `backend-developer` (and `dba`); `growth` ships `marketer`.
+  `product-manager` and `frontend-developer` are available
+  standalone.
 
 ## Reference
 
