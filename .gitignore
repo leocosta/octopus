@@ -1,5 +1,6 @@
 .env.octopus
 /docs/superpowers
+/docs/plans/
 /.superpowers/
 # octopus (auto-generated)
 .claude/CLAUDE.md
