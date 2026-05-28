@@ -1,0 +1,14 @@
+name: frontend
+description: Frontend development — component patterns, styling/accessibility conventions, component testing (RTL), and end-to-end tests. Pairs with the frontend-developer role.
+category: intent
+persona_question: "Does your team build user-facing UIs (React/Vue/Next/Astro components, design systems)?"
+persona_default: false
+skills:
+  - frontend-patterns
+  - test-component
+  - test-e2e
+roles:
+  - frontend-developer
+rules: []
+mcp: []
+hooks: null
