@@ -261,11 +261,18 @@ All seven ergonomics gaps shipped in v1.31.0: per-task logs, cancel/retry keybin
 
 ### Cluster 12 — Frontend and fullstack bundles
 
+_RM-065 and RM-066 complete. Cluster 12 has no open items._
+
+Both bundles shipped together: two new frontend skills (`frontend-patterns`,
+`test-component`) reuse the existing `test-e2e`, wiring the `frontend-developer`
+role into a `frontend` bundle; `fullstack` unions `backend` + `frontend` +
+`review-contracts` for monorepos. Bilingual site docs (EN + pt-br) added for both.
+
 #### RM-065 — `frontend` bundle
 
 - **Priority:** 🟡 Medium
 - **Effort:** medium
-- **Status:** proposed
+- **Status:** shipped
 - **Added:** 2026-05-12
 
 Define frontend-specific skills and wire the existing `frontend-developer` role into a
@@ -275,13 +282,18 @@ frontend patterns (component design, accessibility, CSS conventions, testing wit
 **Rationale:** The setup UX rewrite reorganized bundles by intent. `frontend` was excluded
 because skills don't exist yet — this item tracks their creation.
 
+**Shipped as:** `skills/frontend-patterns` (component design, state, styling,
+accessibility) + `skills/test-component` (RTL/Testing Library); `bundles/frontend.yml`
+(frontend-patterns + test-component + test-e2e + `frontend-developer` role). Playwright
+testing reuses the existing `test-e2e` skill.
+
 ---
 
 #### RM-066 — `fullstack` bundle
 
 - **Priority:** 🟡 Medium
 - **Effort:** low
-- **Status:** proposed
+- **Status:** shipped
 - **Added:** 2026-05-12
 - **Blocked by:** RM-065
 
@@ -289,6 +301,10 @@ Combine `backend` + `frontend` bundles with `review-contracts` into a `fullstack
 for monorepos that contain both an API and a separate frontend.
 
 **Rationale:** Depends on RM-065 so both developer roles and their skills are available.
+
+**Shipped as:** `bundles/fullstack.yml` — `backend` ∪ `frontend` ∪ `review-contracts`,
+enumerated explicitly (bundles do not reference other bundles); `test-e2e` de-duplicated
+by the bundle expander. Roles: backend-developer, dba, frontend-developer.
 
 ---
 
@@ -783,3 +799,5 @@ availability)._
 | RM-072 | Atualizar manifesto do Codex para `native_rules: true` — rules now symlinked to `.codex/rules/` | completed | 2026-05-16 |
 | RM-073 | Setup auto-configura todos os assistentes para apontar para as rules — `concatenate_from_manifest` injects a "## Coding Rules" section with rule paths when `native_rules: true` | completed | 2026-05-16 |
 | RM-074 | Bundle-aware formatter hooks — `deliver_hooks` filters by `stacks` field; `.octopus/hooks/hooks.local.json` overrides defaults; `auto-format.sh` dotnet fix | completed | 2026-05-16 |
+| RM-065 | `frontend` bundle — `frontend-patterns` + `test-component` skills (reusing `test-e2e`) wired with the `frontend-developer` role; bilingual site docs | completed | 2026-05-27 |
+| RM-066 | `fullstack` bundle — `backend` ∪ `frontend` ∪ `review-contracts` for monorepos; `test-e2e` de-duplicated by the expander | completed | 2026-05-27 |

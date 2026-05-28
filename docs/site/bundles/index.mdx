@@ -12,14 +12,14 @@ belong to it — and stops there. Picking the right bundle is how you
 control how much Octopus shows up in a given codebase.
 
 Bundles exist because the alternative is worse. Without them, every
-team would have to scroll a list of 34 skills, 37 commands, and 15
+team would have to scroll a list of 36 skills, 37 commands, and 15
 hooks and decide each one individually. That choice gets made wrong
 under time pressure, and people end up either installing too much
 (noise) or too little (Octopus doesn't help). A small set of
 curated bundles takes the choice from "decide 80 things" to "pick
 the closest archetype to your team".
 
-## The six bundles
+## The eight bundles
 
 - **[starter](/octopus/bundles/starter/)** — the foundation every
   repo should have. Doc lifecycle skills, the `implement` and
@@ -45,6 +45,13 @@ the closest archetype to your team".
 - **[growth](/octopus/bundles/growth/)** — launch + retention
   tooling. Multi-channel feature launches, release announcements,
   content image generation.
+- **[frontend](/octopus/bundles/frontend/)** — frontend-specific
+  component patterns, component-level tests (RTL), and end-to-end
+  conventions. Pairs with the `frontend-developer` role. The mirror
+  of `backend` for UI repos.
+- **[fullstack](/octopus/bundles/fullstack/)** — for monorepos that
+  hold both an API and a frontend: `backend` ∪ `frontend` plus
+  cross-stack contract drift detection (`review-contracts`).
 
 ## How bundles compose
 
@@ -94,7 +101,7 @@ The `category` field carries weight:
 
 ## When to author a new bundle
 
-You probably shouldn't. The five existing bundles cover the
+You probably shouldn't. The eight existing bundles cover the
 clearest team archetypes, and adding more dilutes the "pick the
 closest archetype" mental model that makes bundles useful.
 

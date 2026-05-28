@@ -15,14 +15,14 @@ hooks que pertencem a ele — e para por aí. Escolher o bundle certo
 codebase.
 
 Bundles existem porque a alternativa é pior. Sem eles, cada time
-teria que percorrer uma lista de 34 skills, 37 commands e 15 hooks
+teria que percorrer uma lista de 36 skills, 37 commands e 15 hooks
 e decidir cada um individualmente. Essa escolha é feita errado sob
 pressão de tempo, e as pessoas acabam ou instalando demais (ruído)
 ou de menos (o Octopus não ajuda). Um pequeno conjunto de bundles
 curados transforma a escolha de "decidir 80 coisas" para "escolher
 o arquétipo mais próximo do seu time".
 
-## Os seis bundles
+## Os oito bundles
 
 - **[starter](/octopus/bundles/starter/)** — a fundação que todo
   repo deveria ter. Skills do ciclo de vida de docs, os protocolos
@@ -50,6 +50,13 @@ o arquétipo mais próximo do seu time".
 - **[growth](/octopus/bundles/growth/)** — ferramentas de
   lançamento + retenção. Lançamentos de features multi-canal,
   anúncios de release, geração de imagens de conteúdo.
+- **[frontend](/octopus/pt-br/bundles/frontend/)** — padrões de
+  componente específicos de frontend, testes em nível de componente
+  (RTL) e convenções end-to-end. Casa com a role `frontend-developer`.
+  O espelho do `backend` para repos de UI.
+- **[fullstack](/octopus/pt-br/bundles/fullstack/)** — para monorepos
+  que têm tanto uma API quanto um frontend: `backend` ∪ `frontend`
+  mais detecção de drift de contrato cross-stack (`review-contracts`).
 
 ## Como os bundles compõem
 
@@ -100,7 +107,7 @@ O campo `category` tem peso:
 
 ## Quando criar um novo bundle
 
-Provavelmente você não deveria. Os cinco bundles existentes cobrem
+Provavelmente você não deveria. Os oito bundles existentes cobrem
 os arquétipos de time mais claros, e adicionar mais dilui o modelo
 mental de "escolha o arquétipo mais próximo" que torna os bundles
 úteis.

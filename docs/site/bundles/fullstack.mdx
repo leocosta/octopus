@@ -1,0 +1,118 @@
+---
+title: fullstack
+description: One bundle for repos that hold both an API and a frontend — backend patterns plus data-layer review, frontend patterns plus component and e2e tests, and cross-stack contract drift detection.
+sidebar:
+  order: 7
+---
+
+`fullstack` is for the monorepo that holds both halves of the
+product: a backend API and a separate frontend. Rather than hand-stack
+`backend` and `frontend` and remember to add `review-contracts`, this
+bundle unions all three into one pick — including the cross-stack
+contract gate that only makes sense when both sides live in the same
+repo.
+
+## Why this exists
+
+`backend` and `frontend` are deliberately narrow — each stays in its
+lane so a single-stack repo isn't forced to load the other half.
+But a real monorepo crosses that line constantly: an endpoint changes
+shape, and the frontend's DTO drifts; an enum gains a variant the UI
+doesn't render. The failure mode of a full-stack repo is the **seam
+between the stacks**, not either stack alone.
+
+`fullstack` exists to make that seam a first-class concern. It carries
+everything `backend` and `frontend` do, plus `review-contracts` — the
+skill that catches API ↔ frontend drift before it ships.
+
+## Team archetype
+
+This is for teams who own both stacks in one repo:
+
+- A Next.js / React frontend and a Node / .NET / Python API in the
+  same monorepo
+- A small product team where the same people touch both halves
+- Coupled stacks where an API change and its UI change land in one PR
+
+If your repo is a single stack, prefer the narrower bundle: `backend`
+for an API-only service, `frontend` for a UI-only app. `fullstack` on
+a single-stack repo just loads skills you'll never trigger.
+
+## What it includes
+
+```yaml
+skills:
+  - backend-patterns  # server-side layering patterns
+  - test-e2e          # end-to-end testing (shared by both stacks)
+  - dba-mssql         # SQL Server review
+  - dba-postgres      # Postgres review
+  - dba-mongodb       # MongoDB review
+  - dba-redis         # Redis review
+  - frontend-patterns # component design, state, a11y
+  - test-component    # component-level tests (RTL)
+  - review-contracts  # API ↔ frontend contract drift detection
+roles:
+  - backend-developer
+  - dba
+  - frontend-developer
+```
+
+[Source: `bundles/fullstack.yml`](https://github.com/leocosta/octopus/blob/main/bundles/fullstack.yml)
+
+This is `backend` ∪ `frontend` ∪ `review-contracts`. `test-e2e` belongs
+to both stacks; the bundle expander de-duplicates it to a single entry.
+
+### Why each one is in
+
+- **All of `backend`** — `backend-patterns`, `test-e2e`, and the four
+  `dba-*` data-layer review skills, plus the `backend-developer` and
+  `dba` roles. The API half of the repo gets the same patterns and
+  pre-merge data-layer gate it would get from the standalone bundle.
+  (The `dba` role still pairs with `architect`, which `quality` brings.)
+- **All of `frontend`** — `frontend-patterns`, `test-component`, and
+  the `frontend-developer` role. The UI half gets its component
+  patterns and the component-test layer.
+- **`review-contracts`** — the reason `fullstack` is more than the sum
+  of its parts. It detects drift between what the API returns and what
+  the frontend expects: endpoints, DTO shapes, enum variants, status
+  codes, auth rules. In a single-stack repo this skill has nothing to
+  compare; in a monorepo it guards the seam.
+
+### Why not included
+
+- **The `quality` audits** (`audit-money`, `audit-tenant`,
+  `audit-security`) and the `architect`/`security` roles — those are
+  stack-agnostic and apply regardless of repo shape. A production
+  full-stack repo almost always wants `fullstack + quality`; keeping
+  them separate avoids forcing the audit overhead on every full-stack
+  repo and keeps `quality` as the single home for audit gates.
+- **Framework-specific skills** (`dotnet`, a hypothetical `nextjs`) —
+  installed separately, never bundled, since not every full-stack repo
+  shares the same frameworks.
+
+## Workflow this enables
+
+A change that crosses the seam stays coherent in one PR:
+
+1. A task comes in: "add a `status` field to the order API and surface
+   it in the order list UI."
+2. `backend-developer` + `backend-patterns` shape the endpoint change;
+   the `dba` skills review the migration that adds the column.
+3. `frontend-developer` + `frontend-patterns` add the column to the UI,
+   with the loading/empty/error states handled.
+4. `test-component` covers the new cell's render states; `test-e2e`
+   covers the assembled "view order list" journey.
+5. `review-contracts` runs pre-merge and confirms the frontend's
+   `Order` DTO matches the API's new shape — no silent drift.
+
+## Composes with
+
+- **[starter](/octopus/bundles/starter/)** — required foundation.
+- **[quality](/octopus/bundles/quality/)** — almost always paired for
+  production. Brings the audit gates and the `architect` role that
+  pairs with `dba` on data-layer PRs.
+- **[docs](/octopus/bundles/docs/)** — full-stack features often
+  warrant ADRs and PRDs spanning both halves.
+
+If you find yourself picking `backend` *and* `frontend` together,
+`fullstack` is the bundle you actually want.
