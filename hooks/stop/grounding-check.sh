@@ -13,11 +13,9 @@
 
 set -euo pipefail
 
-# Project root: prefer git toplevel, fall back to cwd.
-project_root=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
-
-# Soft-skip outside a git repo — nothing to diff against.
-git -C "$project_root" rev-parse --git-dir >/dev/null 2>&1 || exit 0
+# This hook diffs the working tree, so it only makes sense inside a git
+# repo. Soft-skip (exit 0) when we are not in one.
+project_root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
 
 # Collect the working diff (staged + unstaged). Soft-skip when clean.
 changed_files=$(git -C "$project_root" diff --name-only HEAD 2>/dev/null || true)
