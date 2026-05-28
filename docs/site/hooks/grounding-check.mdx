@@ -1,0 +1,59 @@
+---
+title: Grounding check
+description: Stop hook that fires at task end with an uncommitted diff — queues a signal-only grounding review (invented conventions, unsupported domain facts) against the source of truth.
+sidebar:
+  order: 7
+---
+
+`grounding-check` is the Stop hook that closes the gap between
+"the code is well-formed" and "the code matches what the team
+decided." When an agent task ends with an uncommitted diff, the hook
+queues a grounding review: it writes a proposal to
+`.octopus/proposals/<timestamp>-grounding.md` asking for an
+[`audit-grounding`](/octopus/skills/audit-grounding/) pass over the
+diff, then exits. A human picks it up via `/octopus:review-proposals`.
+
+It is the deterministic *trigger* for a probabilistic *judgment*. The
+hook fires every time — no one has to remember to run the audit — but
+the semantic verdict is the skill's job, and it is **signal-only**: the
+hook always exits 0 and never blocks task end.
+
+## What it catches (via the audit it queues)
+
+The two semantic hallucinations a formatter and type checker are blind
+to:
+
+- **invented-convention** — a naming, folder, field, or structural
+  pattern not grounded in `CONTEXT.md` or an ADR.
+- **unsupported-domain-fact** — a domain claim that contradicts or is
+  absent from `docs/adr/` and `knowledge/`.
+
+## Why a Stop hook, not a pre-commit hook
+
+The syntactic guardrails — formatter, type check, secret scan — belong
+at `pre-tool-use` and `pre-commit`, where they *block* before bad code
+is written or committed. Semantic grounding is different: the verdict
+is probabilistic, so it must not block, and it only makes sense once a
+unit of work is finished and there is a coherent diff to judge. The end
+of a task is exactly that moment. Firing per-edit would be noise; firing
+at task end gives the audit a complete change to reason about.
+
+## Why it queues a proposal instead of judging inline
+
+A Stop hook is a bash script — it can detect the diff deterministically,
+but it cannot perform the LLM reading that distinguishes an invented
+convention from a legitimate new one. So the hook does the part bash is
+good at (fire reliably, scope the diff, enqueue) and defers the part
+that needs a model to `audit-grounding`, reviewed under
+`/octopus:review-proposals`. This mirrors
+[`propose-knowledge-update`](/octopus/hooks/propose-knowledge-update/),
+which uses the same `.octopus/proposals/` queue for a different signal.
+
+## Graceful degradation
+
+The hook only makes sense inside a git repository, since it diffs the
+working tree. Outside a repo, or when the tree is clean, it exits 0
+without writing anything. The `.octopus/proposals/` directory is
+gitignored, so queued reviews never leak into a commit.
+
+[Source: `hooks/stop/grounding-check.sh`](https://github.com/leocosta/octopus/blob/main/hooks/stop/grounding-check.sh)

@@ -1,0 +1,89 @@
+---
+title: audit-grounding
+description: Auditoria signal-only que confronta o diff de trabalho com a fonte de verdade do projeto — sinaliza convenções inventadas e fatos de domínio sem suporte que o formatter e o type checker não enxergam.
+sidebar:
+  order: 11
+source_hash: "sha256:c6637b3694f322ebdc77fa04d2afaad13baa73ac030ddf11547189f635c0b572"
+needs_retranslation: false
+---
+
+`audit-grounding` (RM-088) é a auditoria para o modo de falha que
+nenhum formatter, linter ou type checker pega: um agent (ou um humano
+apressado) que inventa uma convenção do time que ninguém combinou, ou
+afirma um fato de domínio que não é verdade. O código compila, formata
+e passa no linter — e mesmo assim está errado quanto ao que o time
+decidiu. A única coisa capaz de julgar isso é um leitor segurando a
+fonte de verdade do projeto em uma mão e o diff na outra.
+
+A auditoria é **signal-only**. Ela nunca bloqueia um commit, uma
+tarefa ou um merge. Ela reporta divergências e deixa a decisão com o
+humano.
+
+## Por que grounding semântico precisa da sua própria auditoria
+
+As outras auditorias — `audit-security`, `audit-money`, `audit-tenant`
+— procuram modos de falha que têm uma assinatura sintática: um filtro
+de tenant faltando, um float onde deviam ser centavos, um webhook não
+assinado. `audit-grounding` procura falhas que **não têm** assinatura
+sintática nenhuma:
+
+- Um novo enum de status chamado `archived` quando todos os models
+  existentes e o glossário chamam esse estado de `inactive` — uma
+  *convenção inventada*.
+- Um comentário afirmando "reembolsos liquidam em 24h" quando o ADR
+  relevante registra 72h — um *fato de domínio sem suporte*.
+
+Nenhum dos dois dispara um linter. Ambos são exatamente o tipo de
+drift plausível que um LLM produz quando preenche uma lacuna em vez de
+consultar o que o time já escreveu.
+
+## Os dois findings
+
+1. **`invented-convention`** — um padrão de nomenclatura, pasta, campo
+   ou estrutura que o diff introduz e que **não** está ancorado no
+   `CONTEXT.md` nem em um ADR, e nunca foi combinado. O finding cita a
+   localização no diff e a fonte que ele deveria ter casado.
+2. **`unsupported-domain-fact`** — uma afirmação sobre o domínio ou o
+   negócio (em código, comentários ou docs tocadas) que **contradiz**
+   ou está **ausente** das decisões de registro.
+
+## A fonte de verdade
+
+A auditoria lê, nesta ordem, e degrada graciosamente quando um
+artefato está ausente:
+
+1. **`CONTEXT.md`** — o glossário de domínio e o vocabulário do time;
+   a referência primária para convenções inventadas.
+2. **`docs/adr/`** — decisões de registro; a referência primária para
+   fatos de domínio sem suporte.
+3. **`knowledge/`** — fatos acumulados que o time escolheu preservar.
+4. **`CLAUDE.md` por módulo** — convenções locais aos diretórios que o
+   diff toca.
+
+Quando o `CONTEXT.md` está ausente, a auditoria recorre aos ADRs e à
+base de knowledge e reporta o grounding parcial como uma nota
+`ℹ info` — para o time saber que a verificação rodou em terreno
+incompleto, em vez de assumir que não tinha nada a dizer.
+
+## Por que signal-only, nunca bloqueia
+
+O veredito vem de uma leitura probabilística de documentos em prosa,
+não de uma regra determinística. Um gate que bloqueia, construído
+sobre um veredito não confiável, é pior que o problema que resolve —
+ele treina as pessoas a burlá-lo. Então `audit-grounding` limita suas
+severidades a `⚠ warn` / `ℹ info` e não emite tier de bloqueio. A
+camada determinística e *bloqueante* — formatter, type check, secret
+scan — já vem no bundle [`guardrails`](/octopus/pt-br/bundles/) e roda
+no commit. Esta auditoria é o complemento semântico daquele piso
+sintático.
+
+## Como ela roda
+
+Por padrão, o Stop hook `grounding-check` a dispara ao fim de toda
+tarefa do agent com um diff não commitado e roteia a revisão para a
+fila `.octopus/proposals/` para o `/octopus:review-proposals`. O
+gatilho é determinístico — dispara sempre, ninguém precisa lembrar —
+enquanto o julgamento permanece probabilístico e não-bloqueante. Um
+revisor também pode invocar a auditoria diretamente antes do merge.
+
+[Source: `skills/audit-grounding/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/audit-grounding/SKILL.md)

@@ -60,6 +60,7 @@ in the table). The rest are listed for completeness.
 | `console-log-check` | stop | Final sweep for debug statements left behind. | — |
 | `mcp-health` | post-tool-use-failure | Detects MCP server outages and prints a one-line diagnosis instead of letting the agent retry blindly. | — |
 | `propose-knowledge-update` | stop | Scans the session transcript for corrections, re-reads, re-greps; writes a proposal to `.octopus/proposals/<ts>.md` for human review. | [→](./propose-knowledge-update/) |
+| `grounding-check` | stop | Fires at task end with an uncommitted diff; queues a signal-only grounding review (invented conventions, unsupported domain facts) to `.octopus/proposals/`. | [→](./grounding-check/) |
 | `load-context` | session-start | Loads `~/.octopus/state/pre-compact.yml` and surfaces it as initial context. | — |
 | `save-state` | pre-compact | Captures session metadata before compaction so the next session starts informed. | — |
 | `reload-context` | post-compact | Reattaches relevant state after compaction discards mid-turn buffers. | — |

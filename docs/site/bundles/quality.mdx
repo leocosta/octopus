@@ -49,6 +49,7 @@ skills:
   - review-contracts  # API-vs-frontend contract drift
   - refactor-deepen   # find shallow modules, propose deepening
   - audit-config      # configuration freshness (rules, skills, hooks)
+  - audit-grounding   # signal-only divergence from the source of truth
 roles:
   - architect         # senior reviewer with BLOCKING/ADVISORY/QUESTION discipline
   - security          # security specialist — audit-security checklist + threat modeling
@@ -80,6 +81,12 @@ as transitive dependencies.
   constrain newer ones. Audits `rules/`, `skills/`, `hooks/`,
   `commands/`, `bundles/` for stale dates, phantom skills, and
   deprecated path references.
+- **`audit-grounding`** — added in v1.69.0 to catch the *semantic*
+  failure mode the other audits miss: an agent inventing a team
+  convention or asserting a domain fact that contradicts the source
+  of truth (`CONTEXT.md`, `docs/adr/`, `knowledge/`). Signal-only —
+  it reports divergences and leaves the call to a human. Its
+  `grounding-check` Stop hook fires it at every task end with a diff.
 - **`architect` role** — `quality` includes the senior-reviewer
   persona because audit findings often need a human-grade
   classification: blocking vs advisory vs needs-discussion. The

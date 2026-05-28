@@ -1,0 +1,84 @@
+---
+title: audit-grounding
+description: Signal-only audit that confronts the working diff against the project's source of truth — flags invented conventions and unsupported domain facts the formatter and type checker can't see.
+sidebar:
+  order: 11
+---
+
+`audit-grounding` (RM-088) is the audit for the failure mode no
+formatter, linter, or type checker can catch: an agent (or a hurried
+human) that invents a team convention nobody agreed on, or asserts a
+domain fact that isn't true. The code compiles, formats, and passes
+the linter — and is still wrong about what the team decided. The only
+thing that can judge that is a reader holding the project's source of
+truth in one hand and the diff in the other.
+
+The audit is **signal-only**. It never blocks a commit, a task, or a
+merge. It reports divergences and leaves the call to a human.
+
+## Why semantic grounding needs its own audit
+
+The other audits — `audit-security`, `audit-money`, `audit-tenant` —
+look for failure modes that have a syntactic fingerprint: a missing
+tenant filter, a float where cents should be, an unsigned webhook.
+`audit-grounding` looks for failures that have **no** syntactic
+fingerprint at all:
+
+- A new status enum named `archived` when every existing model and
+  the glossary call that state `inactive` — an *invented convention*.
+- A comment that states "refunds settle in 24h" when the relevant ADR
+  records 72h — an *unsupported domain fact*.
+
+Neither trips a linter. Both are exactly the kind of plausible-looking
+drift an LLM produces when it fills a gap instead of consulting what
+the team already wrote down.
+
+## The two findings
+
+1. **`invented-convention`** — a naming, folder, field, or structural
+   pattern the diff introduces that is **not** grounded in `CONTEXT.md`
+   or an ADR, and was never agreed. The finding cites the diff location
+   and the source it should have matched.
+2. **`unsupported-domain-fact`** — a claim about the domain or business
+   (in code, comments, or touched docs) that **contradicts** or is
+   **absent from** the decisions of record.
+
+## The source of truth
+
+The audit reads, in order, and degrades gracefully when an artifact is
+absent:
+
+1. **`CONTEXT.md`** — the domain glossary and the team's vocabulary;
+   the primary reference for invented conventions.
+2. **`docs/adr/`** — decisions of record; the primary reference for
+   unsupported domain facts.
+3. **`knowledge/`** — accumulated facts the team chose to preserve.
+4. **Module-scoped `CLAUDE.md`** — conventions local to the directories
+   the diff touches.
+
+When `CONTEXT.md` is missing, the audit falls back to the ADRs and the
+knowledge base and reports the partial grounding as an `ℹ info` note —
+so the team knows the check ran on incomplete ground, rather than
+assuming it had nothing to say.
+
+## Why signal-only, never block
+
+The verdict comes from a probabilistic reading of prose documents, not
+a deterministic rule. A blocking gate built on an unreliable verdict
+is worse than the problem it solves — it trains people to bypass it.
+So `audit-grounding` caps its severities at `⚠ warn` / `ℹ info` and
+emits no blocking tier. The deterministic, *blocking* layer — formatter,
+type check, secret scan — already ships in the
+[`guardrails`](/octopus/bundles/) bundle and runs at commit time. This
+audit is the semantic complement to that syntactic floor.
+
+## How it runs
+
+By default, the `grounding-check` Stop hook fires it at the end of
+every agent task with an uncommitted diff and routes the review to the
+`.octopus/proposals/` queue for `/octopus:review-proposals`. The trigger
+is deterministic — it fires every time, no one has to remember it — while
+the judgment stays probabilistic and non-blocking. A reviewer can also
+invoke the audit directly before merge.
+
+[Source: `skills/audit-grounding/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/audit-grounding/SKILL.md)

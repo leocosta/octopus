@@ -1,0 +1,63 @@
+---
+title: Grounding check
+description: Stop hook que dispara ao fim da tarefa com um diff não commitado — enfileira uma revisão de grounding signal-only (convenções inventadas, fatos de domínio sem suporte) contra a fonte de verdade.
+sidebar:
+  order: 7
+source_hash: "sha256:3865dcfeef6a952ad201519e57ad0b28dd82970c9d9562f69c994ab88ee54e84"
+needs_retranslation: false
+---
+
+`grounding-check` é o Stop hook que fecha a lacuna entre "o código
+está bem formado" e "o código casa com o que o time decidiu". Quando
+uma tarefa do agent termina com um diff não commitado, o hook enfileira
+uma revisão de grounding: escreve uma proposta em
+`.octopus/proposals/<timestamp>-grounding.md` pedindo uma passada de
+[`audit-grounding`](/octopus/pt-br/skills/audit-grounding/) sobre o
+diff, e então sai. Um humano pega isso via `/octopus:review-proposals`.
+
+Ele é o *gatilho* determinístico para um *julgamento* probabilístico. O
+hook dispara sempre — ninguém precisa lembrar de rodar a auditoria —
+mas o veredito semântico é trabalho da skill, e ele é **signal-only**: o
+hook sempre sai com 0 e nunca bloqueia o fim da tarefa.
+
+## O que ele pega (via a auditoria que enfileira)
+
+As duas alucinações semânticas para as quais o formatter e o type
+checker são cegos:
+
+- **invented-convention** — um padrão de nomenclatura, pasta, campo ou
+  estrutura não ancorado no `CONTEXT.md` nem em um ADR.
+- **unsupported-domain-fact** — uma afirmação de domínio que contradiz
+  ou está ausente de `docs/adr/` e `knowledge/`.
+
+## Por que um Stop hook, não um pre-commit hook
+
+Os guardrails sintáticos — formatter, type check, secret scan —
+pertencem ao `pre-tool-use` e ao `pre-commit`, onde *bloqueiam* antes
+de o código ruim ser escrito ou commitado. Grounding semântico é
+diferente: o veredito é probabilístico, então não pode bloquear, e só
+faz sentido depois que uma unidade de trabalho está pronta e existe um
+diff coerente para julgar. O fim de uma tarefa é exatamente esse
+momento. Disparar por edição seria ruído; disparar no fim da tarefa dá
+à auditoria uma mudança completa para raciocinar.
+
+## Por que enfileira uma proposta em vez de julgar inline
+
+Um Stop hook é um script bash — ele detecta o diff de forma
+determinística, mas não consegue fazer a leitura de LLM que distingue
+uma convenção inventada de uma legítima e nova. Então o hook faz a
+parte em que o bash é bom (disparar de forma confiável, escopar o diff,
+enfileirar) e delega a parte que precisa de um modelo ao
+`audit-grounding`, revisado sob `/octopus:review-proposals`. Isso
+espelha o
+[`propose-knowledge-update`](/octopus/pt-br/hooks/propose-knowledge-update/),
+que usa a mesma fila `.octopus/proposals/` para um sinal diferente.
+
+## Degradação graciosa
+
+O hook só faz sentido dentro de um repositório git, já que ele faz o
+diff da working tree. Fora de um repo, ou quando a árvore está limpa,
+ele sai com 0 sem escrever nada. O diretório `.octopus/proposals/` é
+gitignored, então revisões enfileiradas nunca vazam para um commit.
+
+[Source: `hooks/stop/grounding-check.sh`](https://github.com/leocosta/octopus/blob/main/hooks/stop/grounding-check.sh)

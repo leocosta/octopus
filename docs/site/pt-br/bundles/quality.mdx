@@ -51,6 +51,7 @@ skills:
   - review-contracts  # API-vs-frontend contract drift
   - refactor-deepen   # find shallow modules, propose deepening
   - audit-config      # configuration freshness (rules, skills, hooks)
+  - audit-grounding   # signal-only divergence from the source of truth
 roles:
   - architect         # senior reviewer with BLOCKING/ADVISORY/QUESTION discipline
   - security          # security specialist — audit-security checklist + threat modeling
@@ -81,6 +82,12 @@ dependências transitivas.
   rules calibradas para modelos mais antigos podem limitar modelos mais novos.
   Audita `rules/`, `skills/`, `hooks/`, `commands/`, `bundles/` em busca de
   datas obsoletas, skills fantasmas e referências a paths deprecados.
+- **`audit-grounding`** — adicionada na v1.69.0 para pegar o modo de falha
+  *semântico* que as outras auditorias não veem: um agent inventando uma
+  convenção do time ou afirmando um fato de domínio que contradiz a fonte de
+  verdade (`CONTEXT.md`, `docs/adr/`, `knowledge/`). Signal-only — reporta
+  divergências e deixa a decisão com o humano. Seu Stop hook `grounding-check`
+  a dispara ao fim de toda tarefa com um diff.
 - **role `architect`** — o `quality` inclui a persona de senior-reviewer porque
   achados de auditoria muitas vezes precisam de uma classificação de nível
   humano: blocking vs advisory vs needs-discussion. A role formaliza isso.
