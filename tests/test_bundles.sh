@@ -96,7 +96,7 @@ OCTOPUS_BUNDLES=("starter" "quality")
 
 expand_bundles
 
-expected_skills=(doc-adr doc-lifecycle context-budget implement debug respond-to-review delegate test-tdd map-system prototype context-handoff audit-all audit-security audit-money audit-tenant review-contracts refactor-deepen audit-config)
+expected_skills=(doc-adr doc-lifecycle context-budget implement debug respond-to-review delegate test-tdd map-system prototype context-handoff audit-all audit-security audit-money audit-tenant review-contracts refactor-deepen audit-config audit-grounding)
 printf '%s\n' "${OCTOPUS_SKILLS[@]}" | sort -u > /tmp/got.$$
 printf '%s\n' "${expected_skills[@]}" | sort -u > /tmp/exp.$$
 diff -q /tmp/got.$$ /tmp/exp.$$ >/dev/null \
@@ -151,9 +151,9 @@ OCTOPUS_RULES=()
 parse_octopus_yml "$TMPDIR/.octopus.yml"
 expand_bundles
 
-# starter (11 skills) + quality (audit-all + 4 deps + review-contracts + refactor-deepen + audit-config = 7 unique skills) = 18 distinct skills
-[[ ${#OCTOPUS_SKILLS[@]} -eq 18 ]] \
-  || { echo "FAIL: expected 18 skills after bundle expansion, got ${#OCTOPUS_SKILLS[@]}"; exit 1; }
+# starter (11 skills) + quality (audit-all + 4 deps + review-contracts + refactor-deepen + audit-config + audit-grounding = 8 unique skills) = 19 distinct skills
+[[ ${#OCTOPUS_SKILLS[@]} -eq 19 ]] \
+  || { echo "FAIL: expected 19 skills after bundle expansion, got ${#OCTOPUS_SKILLS[@]}"; exit 1; }
 
 printf '%s\n' "${OCTOPUS_ROLES[@]}" | grep -q "^architect$" \
   || { echo "FAIL: architect role missing after expansion"; exit 1; }
