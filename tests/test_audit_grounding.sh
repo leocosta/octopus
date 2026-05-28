@@ -25,6 +25,10 @@ check "emits invented-convention finding" grep -q "invented-convention" "$SKILL"
 check "emits unsupported-domain-fact finding" grep -q "unsupported-domain-fact" "$SKILL"
 check "is signal-only (never blocks)" grep -qiE "signal-only|does not block|never block" "$SKILL"
 
+# --- Task 3: bundle registration ----------------------------------------
+QBUNDLE="$OCTOPUS_DIR/bundles/quality.yml"
+check "audit-grounding listed in quality bundle" grep -q "audit-grounding" "$QBUNDLE"
+
 # --- Task 2: the stop-hook trigger --------------------------------------
 HOOK="$OCTOPUS_DIR/hooks/stop/grounding-check.sh"
 check "stop hook exists" test -f "$HOOK"
