@@ -1,13 +1,13 @@
 ---
 title: pr-comments
-description: Walk the receiving-code-review discipline against PR feedback — verify the critique, ask for evidence on generic comments, separate reasoned feedback from preference, never make performative changes.
+description: Walk the respond-to-review discipline against PR feedback — verify the critique, ask for evidence on generic comments, separate reasoned feedback from preference, never make performative changes.
 sidebar:
   order: 6
 ---
 
 `/octopus:pr-comments` is the command that runs every time PR
 feedback arrives. It loads the comments via `gh`, then walks the
-receiving-code-review skill against each one — verifying the
+respond-to-review skill against each one — verifying the
 critique, asking for evidence when a comment is generic, and
 separating reasoned feedback from preference.
 
@@ -24,7 +24,7 @@ agent:
   a reflex, exhausting reviewer patience and burying the comments
   that did have a real point.
 
-The receiving-code-review skill is the middle path: for each
+The respond-to-review skill is the middle path: for each
 comment, the agent either makes the change *with understanding*,
 asks for the evidence that would justify the change, or
 explicitly disagrees with reasoning. No silent edits to placate.

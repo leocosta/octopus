@@ -1,6 +1,6 @@
 # Cross-Stack Contract Patterns (default)
 
-> Embedded default. Override at `docs/cross-stack-contract/patterns.md`.
+> Embedded default. Override at `docs/review-contracts/patterns.md`.
 > Overrides append; they do not replace the defaults.
 
 ## API endpoint detection

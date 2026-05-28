@@ -3,11 +3,6 @@ name: doc-research
 description: (Octopus) Conduct an interactive brainstorming session on an area (auth, performance, etc) and capture results as a research document + multiple roadmap items. For scoping one specific feature or problem, use /octopus:interview.
 ---
 
----
-description: (Octopus) Conduct an interactive brainstorming session on an area (auth, performance, etc) and capture results as a research document + multiple roadmap items. For scoping one specific feature or problem, use /octopus:interview.
-agent: code
----
-
 # /octopus:doc-research
 
 ## Purpose

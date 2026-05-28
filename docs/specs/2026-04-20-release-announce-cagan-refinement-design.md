@@ -1,12 +1,12 @@
-# release-announce — Cagan-style refinement (language, branding, communication)
+# launch-release — Cagan-style refinement (language, branding, communication)
 
 **Date:** 2026-04-20
 **Status:** Design approved, pending implementation plan
-**Target skill:** `skills/release-announce/`
+**Target skill:** `skills/launch-release/`
 
 ## Context
 
-The current `release-announce` skill resolves refs → highlights → theme → templates → channel outputs. It ships 9 presets and generates 8 paste-ready channel messages. Themes expose aesthetic enums (`voice.tone`, `voice.persona`) and each channel template renders independently from raw highlights.
+The current `launch-release` skill resolves refs → highlights → theme → templates → channel outputs. It ships 9 presets and generates 8 paste-ready channel messages. Themes expose aesthetic enums (`voice.tone`, `voice.persona`) and each channel template renders independently from raw highlights.
 
 Reviewed through Marty Cagan's product premises (outcomes over outputs, customer obsession, missionaries not mercenaries), three gaps surfaced:
 
@@ -167,7 +167,7 @@ FBE expansion happens before theme is loaded so it's theme-agnostic; narrative s
 
   Signatures default to a neutral `"— the {{product}} team"` which consumer repos override.
 
-- **Third-party themes** under `docs/release-announce/themes/` missing the new fields: load with hard-coded defaults (`intent: retaining`, `cta_style: informative`, `hero_pattern: product-led`, `signature: ""`) and emit a warning suggesting the repo add them.
+- **Third-party themes** under `docs/launch-release/themes/` missing the new fields: load with hard-coded defaults (`intent: retaining`, `cta_style: informative`, `hero_pattern: product-led`, `signature: ""`) and emit a warning suggesting the repo add them.
 
 - **CLI surface** unchanged. No new flags.
 
@@ -175,17 +175,17 @@ FBE expansion happens before theme is loaded so it's theme-agnostic; narrative s
 
 ### 6. File changes
 
-- `skills/release-announce/SKILL.md` — new sections "Highlight Structure (FBE)", "Narrative", "Brand Kit"; updated "Theme Schema", "Output", "Generation pipeline".
-- `skills/release-announce/templates/themes/*.yml` — add `intent` and `brand` to all 9 presets.
-- `skills/release-announce/templates/channels/*.tmpl` — refactor each channel template to read `narrative` and project highlights by `intent` priority.
-- `skills/release-announce/templates/readme.md.tmpl` — link to `narrative.yml` in the generated index.
-- `skills/release-announce/templates/narrative.yml.tmpl` — **new**; scaffold for narrative synthesis.
+- `skills/launch-release/SKILL.md` — new sections "Highlight Structure (FBE)", "Narrative", "Brand Kit"; updated "Theme Schema", "Output", "Generation pipeline".
+- `skills/launch-release/templates/themes/*.yml` — add `intent` and `brand` to all 9 presets.
+- `skills/launch-release/templates/channels/*.tmpl` — refactor each channel template to read `narrative` and project highlights by `intent` priority.
+- `skills/launch-release/templates/readme.md.tmpl` — link to `narrative.yml` in the generated index.
+- `skills/launch-release/templates/narrative.yml.tmpl` — **new**; scaffold for narrative synthesis.
 
 ## Testing
 
 - **Unit-ish (template level):** snapshot tests for each of the 9 presets × 4 intents rendering the same fixture highlight set, asserting that (a) `narrative.yml` is byte-identical across channels of the same run, (b) in-app-banner contains only `headline` + `cta`, (c) email contains `signature`.
 - **Validation:** feeding an old theme YAML (without `intent`/`brand`) triggers the warning and applies defaults; `--design-from` output missing `intent` fails fast.
-- **Fixture release:** run `/octopus:release-announce v1.6.0..v1.7.0` against the Octopus repo itself; manually inspect that all 8 channels share the same headline and CTA.
+- **Fixture release:** run `/octopus:launch-release v1.6.0..v1.7.0` against the Octopus repo itself; manually inspect that all 8 channels share the same headline and CTA.
 
 ## Open questions (to resolve during implementation)
 

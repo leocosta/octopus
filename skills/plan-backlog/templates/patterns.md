@@ -1,6 +1,6 @@
 # Plan-Backlog-Hygiene Patterns (default)
 
-> Embedded default. Override at `docs/plan-backlog-hygiene/patterns.md`.
+> Embedded default. Override at `docs/plan-backlog/patterns.md`.
 > Overrides append; they do not replace the defaults.
 
 ## Roadmap identifiers

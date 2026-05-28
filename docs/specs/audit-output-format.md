@@ -5,8 +5,8 @@
 
 ## Problem
 
-Three pre-merge audit skills (`money-review`, `tenant-scope-audit`,
-`cross-stack-contract`) each repeated ~60 lines of preamble documenting
+Three pre-merge audit skills (`audit-money`, `audit-tenant`,
+`review-contracts`) each repeated ~60 lines of preamble documenting
 the same conventions: invocation flags, override-file cascade,
 severity output format, `--write-report` frontmatter, common errors,
 and composition note. Maintenance drift was a real risk — a fix to
@@ -30,9 +30,9 @@ Line counts after refactor (total includes the new shared file):
 
 | File | Before | After | Δ |
 |---|---:|---:|---:|
-| `skills/money-review/SKILL.md` | 233 | 197 | −15% |
-| `skills/tenant-scope-audit/SKILL.md` | 245 | 203 | −17% |
-| `skills/cross-stack-contract/SKILL.md` | 250 | 217 | −13% |
+| `skills/audit-money/SKILL.md` | 233 | 197 | −15% |
+| `skills/audit-tenant/SKILL.md` | 245 | 203 | −17% |
+| `skills/review-contracts/SKILL.md` | 250 | 217 | −13% |
 | `skills/_shared/audit-output-format.md` | — | 114 | new |
 | **Total** | 728 | 731 | +3 |
 
@@ -53,5 +53,5 @@ labels) across both the SKILL.md and the shared file, via a
 
 - Byte-level enforcement between SKILL.md and the shared file (the
   shared file is descriptive, not copy-pasted).
-- Extending this to `security-scan` or `audit-all` — both use a
+- Extending this to `audit-security` or `audit-all` — both use a
   different output contract.

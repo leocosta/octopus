@@ -14,7 +14,7 @@
 Teams that ship continuously have two distinct communication jobs:
 
 1. **Acquisition** — telling people who *don't use the product* that a
-   new feature exists, hoping they try. This is what `feature-to-market`
+   new feature exists, hoping they try. This is what `launch-feature`
    already solves: Instagram / LinkedIn / X / email-to-market / LP copy.
 2. **Retention / in-product** — telling people who *already use the
    product* what changed in a release. Changelog is the technical
@@ -36,7 +36,7 @@ team can send to its base without extra writing or styling work.
 
 ## Goals
 
-- Add a skill `octopus:release-announce` that, given one or more refs
+- Add a skill `octopus:launch-release` that, given one or more refs
   (tags, tag ranges, RM IDs), generates a themed release announcement
   pack aimed at **existing users**.
 - Produce two tiers of output: **canonical** (themed landing HTML, plain
@@ -59,8 +59,8 @@ team can send to its base without extra writing or styling work.
 
 - Publishing (sending email, posting to Slack/Discord, deploying a
   site). Output is paste-ready; transport is user-driven.
-- Replacing `feature-to-market`. That skill stays focused on
-  acquisition / external audiences; `release-announce` is for
+- Replacing `launch-feature`. That skill stays focused on
+  acquisition / external audiences; `launch-release` is for
   retention / existing users.
 - WYSIWYG theme editor. Themes are YAML by design.
 - Multi-language in a single run. Language comes from
@@ -76,9 +76,9 @@ team can send to its base without extra writing or styling work.
 
 ### Overview
 
-A pure-markdown Octopus skill (same shape as `feature-to-market`,
-`money-review`, `tenant-scope-audit`). Lives at
-`skills/release-announce/SKILL.md` + templates dir. The skill:
+A pure-markdown Octopus skill (same shape as `launch-feature`,
+`audit-money`, `audit-tenant`). Lives at
+`skills/launch-release/SKILL.md` + templates dir. The skill:
 
 1. Resolves the input refs (tags, tag ranges, RM IDs) into a unified
    highlight set.
@@ -96,7 +96,7 @@ YAML — not to render the final HTML.
 #### Invocation
 
 ```
-/octopus:release-announce [<ref>...] [--theme=<name>] [--since=<tag>]
+/octopus:launch-release [<ref>...] [--theme=<name>] [--since=<tag>]
                            [--audience=<level>] [--channels=<list>]
                            [--design-from="<prompt>"] [--dry-run]
 ```
@@ -133,7 +133,7 @@ YAML — not to render the final HTML.
    - Tag → `CHANGELOG.md` section for that version + `git log
      <prev-tag>..<tag>` for commit metadata.
    - Tag range → repeat per tag in range, union.
-   - RM ID → `docs/roadmap.md` section (via the `feature-to-market`
+   - RM ID → `docs/roadmap.md` section (via the `launch-feature`
      lookup pattern) + linked spec/research.
 
    Output: a `highlights` list — each entry has `title`, `summary`,
@@ -147,8 +147,8 @@ YAML — not to render the final HTML.
    (`voice.tone`, `voice.persona`) and tuned to `--audience`.
 
 3. **Resolve theme.** Cascade: CLI `--theme` → `--design-from` output →
-   `docs/release-announce/themes/<name>.yml` (repo override) →
-   `skills/release-announce/templates/themes/<name>.yml` (embedded).
+   `docs/launch-release/themes/<name>.yml` (repo override) →
+   `skills/launch-release/templates/themes/<name>.yml` (embedded).
    Fail fast if a named theme does not exist.
 
 4. **Render.** Read each template, substitute placeholders
@@ -245,11 +245,11 @@ When `--design-from="<prompt>"` is passed:
 1. Validate that the `frontend-design` skill is available in the
    current agent's environment (warn if not, abort with instructions).
 2. Delegate to `frontend-design` with a request of the form:
-   > Generate a release-announce theme YAML matching this schema: …
+   > Generate a launch-release theme YAML matching this schema: …
    > Inspired by: `<prompt>`.
 3. Validate the returned YAML against the schema (required fields,
    hex colors, enum values for layout/voice).
-4. Persist to `docs/release-announce/themes/<slug>.yml` where `<slug>`
+4. Persist to `docs/launch-release/themes/<slug>.yml` where `<slug>`
    is derived from the prompt (`retro synthwave` → `retro-synthwave`).
 5. Use the new theme for the current render and record it in
    `theme.yml` under the output directory.
@@ -263,8 +263,8 @@ Add to `bundles/growth.yml`:
 
 ```yaml
 skills:
-  - feature-to-market
-  - release-announce
+  - launch-feature
+  - launch-release
 ```
 
 Rationale: both are product communication skills; one for acquisition,
@@ -277,33 +277,33 @@ onboarding emails) lands, we spin off a dedicated `retention` bundle.
 - No breaking changes. Skill is additive.
 - `.octopus.yml` gains optional keys `theme:` and `releaseChannels:`;
   both safe to add without migration.
-- Existing `growth` bundle gains `release-announce` — users who
+- Existing `growth` bundle gains `launch-release` — users who
   already selected `growth` and re-run `octopus setup` get the new
-  skill. Users who prefer only `feature-to-market` can switch to
+  skill. Users who prefer only `launch-feature` can switch to
   explicit `skills:` in Full mode.
 
 ## Implementation Plan
 
-1. `skills/release-announce/SKILL.md` — frontmatter + Overview +
+1. `skills/launch-release/SKILL.md` — frontmatter + Overview +
    Invocation sections.
-2. `skills/release-announce/templates/themes/{classic,jade,dark,bold,newsletter,sunset,ocean,terminal,paper}.yml` — nine preset themes.
-3. `skills/release-announce/templates/html/index.html.tmpl` — landing
+2. `skills/launch-release/templates/themes/{classic,jade,dark,bold,newsletter,sunset,ocean,terminal,paper}.yml` — nine preset themes.
+3. `skills/launch-release/templates/html/index.html.tmpl` — landing
    page template, theme-token placeholders.
-4. `skills/release-announce/templates/html/email.html.tmpl` — email
+4. `skills/launch-release/templates/html/email.html.tmpl` — email
    body (inline CSS, `<table>` layout, no `<script>`).
-5. `skills/release-announce/templates/html/slides.html.tmpl` — slide
+5. `skills/launch-release/templates/html/slides.html.tmpl` — slide
    deck with inline CSS + vanilla JS nav.
-6. `skills/release-announce/templates/channels/{slack,discord,in-app-banner,status-page,x-announcement,whatsapp}.md.tmpl` — six channel message templates.
-7. `skills/release-announce/templates/notes.md.tmpl`,
+6. `skills/launch-release/templates/channels/{slack,discord,in-app-banner,status-page,x-announcement,whatsapp}.md.tmpl` — six channel message templates.
+7. `skills/launch-release/templates/notes.md.tmpl`,
    `readme.md.tmpl` — canonical non-HTML artifacts.
-8. `commands/release-announce.md` — thin slash command dispatching to
+8. `commands/launch-release.md` — thin slash command dispatching to
    the skill.
-9. `cli/lib/setup-wizard.sh` — register `release-announce` in items
+9. `cli/lib/setup-wizard.sh` — register `launch-release` in items
    array, hints, and legend (alphabetical placement).
-10. `bundles/growth.yml` — add `release-announce` to the skills list.
-11. `docs/features/release-announce.md` — tutorial.
+10. `bundles/growth.yml` — add `launch-release` to the skills list.
+11. `docs/features/launch-release.md` — tutorial.
 12. `docs/features/skills.md` — new row with bundle membership.
-13. `README.md` — add `release-announce` to the Available skills
+13. `README.md` — add `launch-release` to the Available skills
     comment.
 14. `tests/test_release_announce.sh` — structural tests covering
     skill file, command, wizard, bundle, all templates, documented
@@ -375,7 +375,7 @@ onboarding emails) lands, we spin off a dedicated `retention` bundle.
 A companion design doc extends this spec with three additions driven by
 Marty Cagan's product premises (outcomes over outputs, customer
 obsession, missionaries not mercenaries). See
-`docs/specs/2026-04-20-release-announce-cagan-refinement-design.md` for
+`docs/specs/2026-04-20-launch-release-cagan-refinement-design.md` for
 the full design.
 
 Summary of additions (authoritative schema lives in SKILL.md):

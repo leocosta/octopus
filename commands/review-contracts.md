@@ -3,12 +3,7 @@ name: review-contracts
 description: (Octopus) Detect API-vs-frontend contract drift in multi-stack monorepos — endpoints, DTOs, enums, status codes, auth rules, params.
 ---
 
----
-description: (Octopus) Detect API-vs-frontend contract drift in multi-stack monorepos — endpoints, DTOs, enums, status codes, auth rules, params.
-agent: code
----
-
-# /octopus:cross-stack-contract
+# /octopus:review-contracts
 
 ## Purpose
 
@@ -20,13 +15,13 @@ confidence labels, covering seven drift classes.
 ## Usage
 
 ```
-/octopus:cross-stack-contract [ref] [--base=main] [--stacks=<list>] [--only=<checks>] [--write-report]
+/octopus:review-contracts [ref] [--base=main] [--stacks=<list>] [--only=<checks>] [--write-report]
 ```
 
 ## Instructions
 
-Invoke the `cross-stack-contract` skill
-(`skills/cross-stack-contract/SKILL.md`). The skill owns the full
+Invoke the `review-contracts` skill
+(`skills/review-contracts/SKILL.md`). The skill owns the full
 workflow: stack discovery, ref/diff resolution, intent extraction,
 cross-stack matching, and report rendering.
 

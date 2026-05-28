@@ -8,7 +8,7 @@ renamed on the API side is never updated on the React / Astro side.
 
 Before merging any PR that touches your API and you want a sanity check
 that the frontends are still in sync. Works well alongside
-`money-review` and `security-scan` — all three emit the same report
+`audit-money` and `audit-security` — all three emit the same report
 format so reviews can be concatenated.
 
 ## Enable
@@ -16,7 +16,7 @@ format so reviews can be concatenated.
 ```yaml
 # .octopus.yml
 skills:
-  - cross-stack-contract
+  - review-contracts
 
 # Optional: declare the stack roots explicitly.
 # If omitted, the skill auto-detects from the filesystem.
@@ -31,11 +31,11 @@ Run `octopus setup`.
 ## Use
 
 ```
-/octopus:cross-stack-contract                          # current branch vs main
-/octopus:cross-stack-contract #123                     # a PR
-/octopus:cross-stack-contract --stacks=api,app
-/octopus:cross-stack-contract --only=endpoint-removed,dto
-/octopus:cross-stack-contract --write-report
+/octopus:review-contracts                          # current branch vs main
+/octopus:review-contracts #123                     # a PR
+/octopus:review-contracts --stacks=api,app
+/octopus:review-contracts --only=endpoint-removed,dto
+/octopus:review-contracts --write-report
 ```
 
 ## Inspection checks
@@ -59,7 +59,7 @@ Every finding is labeled with a confidence level (`high` / `medium` /
 
 ## Overrides
 
-- `docs/cross-stack-contract/patterns.md` — append repo-specific
+- `docs/review-contracts/patterns.md` — append repo-specific
   endpoint / DTO / consumer patterns.
 
 ## Review before merge

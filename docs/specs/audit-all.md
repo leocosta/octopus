@@ -13,8 +13,8 @@
 ## Problem Statement
 
 Octopus ships four audit skills that all target a git diff:
-`security-scan`, `money-review`, `tenant-scope-audit`, and
-`cross-stack-contract`. Running a full pre-merge review today means
+`audit-security`, `audit-money`, `audit-tenant`, and
+`review-contracts`. Running a full pre-merge review today means
 invoking each of them sequentially, and each one repeats the same
 preparatory work: resolve the ref, compute the diff, list touched
 files, classify them by domain. Four sequential invocations also
@@ -39,7 +39,7 @@ somehow together.
 - Update `bundles/quality-gates.yml` to list `audit-all` instead of
   the four individual audits; the `depends_on:` resolver arranges
   for the individual skills to still ship so users who want focused
-  runs (just `money-review`, say) keep that path.
+  runs (just `audit-money`, say) keep that path.
 - Preserve the exact output format and confidence labels already
   used by the audit skills so the concatenated report is identical
   in shape.
@@ -107,10 +107,10 @@ description: >
   Run all quality audit skills in parallel against a single ref,
   with shared file discovery and a consolidated report.
 depends_on:
-  - security-scan
-  - money-review
-  - tenant-scope-audit
-  - cross-stack-contract
+  - audit-security
+  - audit-money
+  - audit-tenant
+  - review-contracts
 ---
 ```
 
@@ -139,7 +139,7 @@ The agent running `audit-all` executes a single discovery pass:
 1. `git diff --name-only <base>...<ref>` → list of touched files.
 2. For each file, apply the domain-tag heuristics from the four
    audits' patterns, already documented in their templates
-   (`skills/money-review/templates/patterns.md`, etc.). The agent
+   (`skills/audit-money/templates/patterns.md`, etc.). The agent
    reuses those patterns — no duplication.
 3. Produce `file → [domains]` map. Example:
    `api/src/.../BillingController.cs → [money, tenant, api-contract]`.
@@ -166,12 +166,12 @@ Subagents that have no files to review emit a one-line
 ### Graceful degradation
 
 `audit-all` respects what's installed. If `.octopus.yml` has
-`skills: [audit-all, security-scan]` but not `money-review`, then:
+`skills: [audit-all, audit-security]` but not `audit-money`, then:
 
 - `depends_on` resolver logs the missing dep and skips it.
 - Parallel phase dispatches only to installed audits.
 - Report's summary line notes "2 of 4 audits ran; install
-  money-review and tenant-scope-audit to enable the rest".
+  audit-money and audit-tenant to enable the rest".
 
 `--only=<list>` further narrows this: `--only=security` runs only
 that one even if all four are installed.
@@ -194,21 +194,21 @@ Files flagged by more than one audit — prioritize these first.
 | api/src/.../BillingController.cs | security, money, tenant |
 | api/src/.../WebhookHandler.cs | security, money |
 
-## 🔒 security-scan
-<security-scan's own output, unchanged>
+## 🔒 audit-security
+<audit-security's own output, unchanged>
 
-## 💰 money-review
-<money-review's own output, unchanged>
+## 💰 audit-money
+<audit-money's own output, unchanged>
 
-## 🏢 tenant-scope-audit
-<tenant-scope-audit's own output, unchanged>
+## 🏢 audit-tenant
+<audit-tenant's own output, unchanged>
 
-## 🔁 cross-stack-contract
-<cross-stack-contract's own output, unchanged>
+## 🔁 review-contracts
+<review-contracts's own output, unchanged>
 ```
 
 Every sub-report keeps its own summary footer
-(`money-review: N block, N warn, N info (...)`) — that makes the
+(`audit-money: N block, N warn, N info (...)`) — that makes the
 report copy-pasteable in pieces when reviewers want to comment on
 specific audits in a PR thread.
 
@@ -218,9 +218,9 @@ specific audits in a PR thread.
 
 ```yaml
 skills:
-  - security-scan
-  - money-review
-  - tenant-scope-audit
+  - audit-security
+  - audit-money
+  - audit-tenant
 roles:
   - backend-specialist
 ```
@@ -285,8 +285,8 @@ against this bundle get everything.
    (`quality-gates` bundle) and keep the individual audits' rows
    (they're still first-class).
 8. Update `docs/features/bundles.md` — `quality-gates` row now
-   reads `audit-all (pulls security-scan, money-review,
-   tenant-scope-audit via depends_on) + backend-specialist role`.
+   reads `audit-all (pulls audit-security, audit-money,
+   audit-tenant via depends_on) + backend-specialist role`.
 9. Create `docs/features/audit-all.md` tutorial.
 10. Update `README.md` Available-skills comment to insert
     `audit-all` alphabetically.

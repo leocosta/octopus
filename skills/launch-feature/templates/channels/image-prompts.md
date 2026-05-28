@@ -1,6 +1,6 @@
 ---
 feature_ref: {{FEATURE_REF}}
-generated_by: octopus:feature-to-market
+generated_by: octopus:launch-feature
 generated_at: {{TODAY}}
 brand_source: {{BRAND_SOURCE}}
 provider: {{PROVIDER_OR_NONE}}

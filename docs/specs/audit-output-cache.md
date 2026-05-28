@@ -12,7 +12,7 @@
 
 ## Problem Statement
 
-Audit skills (`money-review`, `security-scan`, `cross-stack-contract`, `tenant-scope-audit`) re-run full LLM analysis every time they are invoked, even when the PR diff hasn't changed. On busy review cycles this wastes tokens and adds latency for identical work.
+Audit skills (`audit-money`, `audit-security`, `review-contracts`, `audit-tenant`) re-run full LLM analysis every time they are invoked, even when the PR diff hasn't changed. On busy review cycles this wastes tokens and adds latency for identical work.
 
 ## Goals
 
@@ -56,7 +56,7 @@ Cache path: `.octopus/cache/<skill-name>/<key>.md`
 
 ```markdown
 ---
-skill: money-review
+skill: audit-money
 ref: <ref argument passed to the skill>
 base: <base branch>
 created_at: YYYY-MM-DDTHH:MM:SSZ
@@ -119,13 +119,13 @@ Regression risk: low. The only new behavior is returning cached output instead o
 
 1. **Create `skills/_shared/audit-cache.md`** — shared fragment with the full Cache Check + Cache Write protocol (§4.3)
 
-2. **Update `skills/money-review/SKILL.md`** — add reference to `audit-cache.md` in File Discovery, after the `audit-pre-pass.md` line
+2. **Update `skills/audit-money/SKILL.md`** — add reference to `audit-cache.md` in File Discovery, after the `audit-pre-pass.md` line
 
-3. **Update `skills/security-scan/SKILL.md`** — same
+3. **Update `skills/audit-security/SKILL.md`** — same
 
-4. **Update `skills/cross-stack-contract/SKILL.md`** — same (File Discovery section)
+4. **Update `skills/review-contracts/SKILL.md`** — same (File Discovery section)
 
-5. **Update `skills/tenant-scope-audit/SKILL.md`** — same
+5. **Update `skills/audit-tenant/SKILL.md`** — same
 
 6. **Add `tests/test_audit_output_cache.sh`** — grep-based: shared fragment exists and contains protocol markers; each skill references `audit-cache.md`; `.octopus/cache` mentioned in fragment
 
@@ -134,7 +134,7 @@ Regression risk: low. The only new behavior is returning cached output instead o
 **Knowledge modules**: audit-skills, shared-fragments, frontmatter-conventions
 **Implementing roles**: general-purpose
 **Related ADRs**: N/A
-**Skills needed**: money-review, security-scan, cross-stack-contract, tenant-scope-audit
+**Skills needed**: audit-money, audit-security, review-contracts, audit-tenant
 **Bundle**: audit
 
 **Constraints**:
@@ -153,10 +153,10 @@ Grep-based tests in `tests/test_audit_output_cache.sh`:
 4. Fragment contains "sha256"
 5. Fragment contains `.octopus/cache`
 6. Fragment contains "created_at"
-7. `money-review/SKILL.md` references `audit-cache.md`
-8. `security-scan/SKILL.md` references `audit-cache.md`
-9. `cross-stack-contract/SKILL.md` references `audit-cache.md`
-10. `tenant-scope-audit/SKILL.md` references `audit-cache.md`
+7. `audit-money/SKILL.md` references `audit-cache.md`
+8. `audit-security/SKILL.md` references `audit-cache.md`
+9. `review-contracts/SKILL.md` references `audit-cache.md`
+10. `audit-tenant/SKILL.md` references `audit-cache.md`
 
 ## Risks
 

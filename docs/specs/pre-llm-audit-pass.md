@@ -12,7 +12,7 @@
 
 ## Problem Statement
 
-Audit skills (`money-review`, `security-scan`, `cross-stack-contract`, `tenant-scope-audit`) currently instruct the LLM to analyse the full diff of a PR. When the diff is large, the LLM reads irrelevant files before narrowing to the ones that matter, wasting tokens and increasing latency. There is no deterministic pre-filter that can terminate early if no relevant files exist.
+Audit skills (`audit-money`, `audit-security`, `review-contracts`, `audit-tenant`) currently instruct the LLM to analyse the full diff of a PR. When the diff is large, the LLM reads irrelevant files before narrowing to the ones that matter, wasting tokens and increasing latency. There is no deterministic pre-filter that can terminate early if no relevant files exist.
 
 ## Goals
 
@@ -81,15 +81,15 @@ The existing file-discovery section in each skill is **replaced** by a reference
 
 | Skill | Section to replace |
 |---|---|
-| `money-review` | `## File Discovery` |
-| `security-scan` | `## File Discovery` |
-| `tenant-scope-audit` | `## File Discovery` |
-| `cross-stack-contract` | `## Stack Discovery` |
+| `audit-money` | `## File Discovery` |
+| `audit-security` | `## File Discovery` |
+| `audit-tenant` | `## File Discovery` |
+| `review-contracts` | `## Stack Discovery` |
 
 Replacement content (heading retained, body replaced):
 
 ```markdown
-## File Discovery   <!-- or ## Stack Discovery for cross-stack-contract -->
+## File Discovery   <!-- or ## Stack Discovery for review-contracts -->
 
 Follow the Pre-Pass protocol in `skills/_shared/audit-pre-pass.md`.
 Use this skill's `pre_pass.file_patterns` and `pre_pass.line_patterns` from the frontmatter.
@@ -100,10 +100,10 @@ Proceed to inspection checks only with the scoped diff produced by Step 4.
 
 | Skill | file_patterns | line_patterns |
 |---|---|---|
-| `money-review` | `billing\|payment\|charge\|cobran\|split\|invoice\|subscription\|asaas\|stripe\|pix\|webhook\|refund\|reembolso\|tax\|taxa\|fee` | `PERCENT[_A-Z]*\s*=\|\bdecimal\b\|asaas\|stripe\|mercadopago\|webhook.*(signature\|hmac)` |
-| `security-scan` | `auth\|jwt\|oauth\|secret\|token\|password\|credential\|permission\|role\|middleware\|\.env` | `password\|secret\|Bearer\|Authorization\|SQL\|querySelector` |
-| `cross-stack-contract` | `controller\|endpoint\|route\|openapi\|swagger\|dto\|request\|response\|contract` | `\[Route\]\|\[HttpGet\]\|\[HttpPost\]\|app\.map\|MapGet\|MapPost\|fetch(\|axios\.` |
-| `tenant-scope-audit` | `tenant\|org\|workspace\|organization\|scope` | `tenantId\|orgId\|workspaceId\|TenantId\|OrgId` |
+| `audit-money` | `billing\|payment\|charge\|cobran\|split\|invoice\|subscription\|asaas\|stripe\|pix\|webhook\|refund\|reembolso\|tax\|taxa\|fee` | `PERCENT[_A-Z]*\s*=\|\bdecimal\b\|asaas\|stripe\|mercadopago\|webhook.*(signature\|hmac)` |
+| `audit-security` | `auth\|jwt\|oauth\|secret\|token\|password\|credential\|permission\|role\|middleware\|\.env` | `password\|secret\|Bearer\|Authorization\|SQL\|querySelector` |
+| `review-contracts` | `controller\|endpoint\|route\|openapi\|swagger\|dto\|request\|response\|contract` | `\[Route\]\|\[HttpGet\]\|\[HttpPost\]\|app\.map\|MapGet\|MapPost\|fetch(\|axios\.` |
+| `audit-tenant` | `tenant\|org\|workspace\|organization\|scope` | `tenantId\|orgId\|workspaceId\|TenantId\|OrgId` |
 
 ### Migration / Backward Compatibility
 
@@ -119,22 +119,22 @@ Regression risk: low. The only behavioral change is early-exit on PRs with no re
 
 1. **Create `skills/_shared/audit-pre-pass.md`** — shared fragment with the full Pre-Pass protocol (Steps 1–4 per Detailed Design §4.2)
 
-2. **Update `skills/money-review/SKILL.md`** — add `pre_pass:` frontmatter block with `file_patterns` and `line_patterns`; replace `## File Discovery` with shared fragment reference
+2. **Update `skills/audit-money/SKILL.md`** — add `pre_pass:` frontmatter block with `file_patterns` and `line_patterns`; replace `## File Discovery` with shared fragment reference
 
-3. **Update `skills/security-scan/SKILL.md`** — same, with security patterns (including `\.env`)
+3. **Update `skills/audit-security/SKILL.md`** — same, with security patterns (including `\.env`)
 
-4. **Update `skills/cross-stack-contract/SKILL.md`** — same, with contract patterns; note: replace `## Stack Discovery` (not `## File Discovery`) with the shared fragment reference
+4. **Update `skills/review-contracts/SKILL.md`** — same, with contract patterns; note: replace `## Stack Discovery` (not `## File Discovery`) with the shared fragment reference
 
-5. **Update `skills/tenant-scope-audit/SKILL.md`** — same, with tenant patterns
+5. **Update `skills/audit-tenant/SKILL.md`** — same, with tenant patterns
 
-6. **Add `tests/test_pre_llm_audit_pass.sh`** — grep-based tests: shared fragment exists and contains required sections; each skill has `pre_pass:` in frontmatter; each skill references the shared fragment; `\.env` present in security-scan patterns
+6. **Add `tests/test_pre_llm_audit_pass.sh`** — grep-based tests: shared fragment exists and contains required sections; each skill has `pre_pass:` in frontmatter; each skill references the shared fragment; `\.env` present in audit-security patterns
 
 ## Context for Agents
 
 **Knowledge modules**: audit-skills, shared-fragments, frontmatter-conventions
 **Implementing roles**: general-purpose
 **Related ADRs**: N/A
-**Skills needed**: money-review, security-scan, cross-stack-contract, tenant-scope-audit
+**Skills needed**: audit-money, audit-security, review-contracts, audit-tenant
 **Bundle**: audit
 
 **Constraints**:
@@ -149,11 +149,11 @@ Grep-based tests in `tests/test_pre_llm_audit_pass.sh`:
 1. `skills/_shared/audit-pre-pass.md` exists
 2. Shared fragment contains "Step 1", "Step 2", "Step 3", "Step 4"
 3. Shared fragment contains "early exit" and "CANDIDATE_FILES"
-4. `money-review/SKILL.md` contains `pre_pass:`
-5. `security-scan/SKILL.md` contains `pre_pass:`
-6. `cross-stack-contract/SKILL.md` contains `pre_pass:`
-7. `tenant-scope-audit/SKILL.md` contains `pre_pass:`
-8. `security-scan/SKILL.md` `file_patterns` contains `\.env`
+4. `audit-money/SKILL.md` contains `pre_pass:`
+5. `audit-security/SKILL.md` contains `pre_pass:`
+6. `review-contracts/SKILL.md` contains `pre_pass:`
+7. `audit-tenant/SKILL.md` contains `pre_pass:`
+8. `audit-security/SKILL.md` `file_patterns` contains `\.env`
 9. Each of the 4 skills references `audit-pre-pass.md` in its File Discovery section
 10. None of the 4 skills contains inline content in `## File Discovery` beyond the shared fragment reference
 

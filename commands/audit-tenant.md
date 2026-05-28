@@ -3,12 +3,7 @@ name: audit-tenant
 description: (Octopus) Pre-merge audit of multi-tenant data-scope enforcement — query filters, new entity configs, raw SQL, controller ownership, admin endpoints.
 ---
 
----
-description: (Octopus) Pre-merge audit of multi-tenant data-scope enforcement — query filters, new entity configs, raw SQL, controller ownership, admin endpoints.
-agent: code
----
-
-# /octopus:tenant-scope-audit
+# /octopus:audit-tenant
 
 ## Purpose
 
@@ -20,13 +15,13 @@ six checks critical to multi-tenant SaaS codebases.
 ## Usage
 
 ```
-/octopus:tenant-scope-audit [ref] [--base=main] [--only=<checks>] [--write-report]
+/octopus:audit-tenant [ref] [--base=main] [--only=<checks>] [--write-report]
 ```
 
 ## Instructions
 
-Invoke the `tenant-scope-audit` skill
-(`skills/tenant-scope-audit/SKILL.md`). The skill owns the full
+Invoke the `audit-tenant` skill
+(`skills/audit-tenant/SKILL.md`). The skill owns the full
 workflow: config resolution, file discovery, six-check execution, and
 report rendering.
 

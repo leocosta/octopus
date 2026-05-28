@@ -16,7 +16,7 @@ out of date. Works great as a recurring scheduled task.
 ```yaml
 # .octopus.yml
 skills:
-  - plan-backlog-hygiene
+  - plan-backlog
 
 # Optional: override the plans directory if non-standard.
 plansDir: docs/plans
@@ -27,11 +27,11 @@ Run `octopus setup`.
 ## Use
 
 ```
-/octopus:plan-backlog-hygiene                     # read-only scan
-/octopus:plan-backlog-hygiene --fix               # move concluded plans
-/octopus:plan-backlog-hygiene --stale-days=180
-/octopus:plan-backlog-hygiene --only=concluded,broken-link
-/octopus:plan-backlog-hygiene --write-report
+/octopus:plan-backlog                     # read-only scan
+/octopus:plan-backlog --fix               # move concluded plans
+/octopus:plan-backlog --stale-days=180
+/octopus:plan-backlog --only=concluded,broken-link
+/octopus:plan-backlog --write-report
 ```
 
 ## Hygiene checks
@@ -60,7 +60,7 @@ to undo.
 
 ## Overrides
 
-- `docs/plan-backlog-hygiene/patterns.md` — append repo-specific
+- `docs/plan-backlog/patterns.md` — append repo-specific
   regex for RM/PR/spec-link detection.
 - `.octopus.yml` `plansDir:` — override autodetection.
 
@@ -69,7 +69,7 @@ to undo.
 Pair with Octopus's `schedule` skill to run monthly:
 
 ```
-/schedule "0 9 1 * *" /octopus:plan-backlog-hygiene --write-report
+/schedule "0 9 1 * *" /octopus:plan-backlog --write-report
 ```
 
 ## Review before merge

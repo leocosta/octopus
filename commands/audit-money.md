@@ -3,12 +3,7 @@ name: audit-money
 description: (Octopus) Pre-merge audit of money-touching code — types, rounding, cents tests, env drift, idempotency, webhook signatures, fee disclosure.
 ---
 
----
-description: (Octopus) Pre-merge audit of money-touching code — types, rounding, cents tests, env drift, idempotency, webhook signatures, fee disclosure.
-agent: code
----
-
-# /octopus:money-review
+# /octopus:audit-money
 
 ## Purpose
 
@@ -19,12 +14,12 @@ info) covering seven inspection families.
 ## Usage
 
 ```
-/octopus:money-review [ref] [--base=main] [--write-report] [--only=<families>]
+/octopus:audit-money [ref] [--base=main] [--write-report] [--only=<families>]
 ```
 
 ## Instructions
 
-Invoke the `money-review` skill (`skills/money-review/SKILL.md`). The
+Invoke the `audit-money` skill (`skills/audit-money/SKILL.md`). The
 skill owns the full workflow: ref/diff resolution, file discovery,
 inspection family execution, and report rendering.
 

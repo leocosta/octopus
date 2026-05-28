@@ -35,7 +35,7 @@ available by default.
 
 ## Goals
 
-- Ship a skill `debugging` that codifies a four-phase protocol:
+- Ship a skill `debug` that codifies a four-phase protocol:
   (1) reproduce deterministically, (2) isolate, (3) fix with a
   regression test first, (4) document non-obvious cause.
 - Make the skill active by default in every Octopus-managed repo by
@@ -71,7 +71,7 @@ available by default.
 
 ### Overview
 
-A pure-markdown skill at `skills/debugging/SKILL.md`, same shape as
+A pure-markdown skill at `skills/debug/SKILL.md`, same shape as
 every other Octopus skill — no new runtime, no new dependencies.
 The body is organized into six sections. The skill joins
 `bundles/starter.yml` next to `implement`, so every `octopus setup`
@@ -81,7 +81,7 @@ The skill is active-by-default: Claude Code discovers it in
 `.claude/skills/` and engages via its description whenever a task
 starts from a bug report, a failing test, a stack trace, or a
 regression. Other agents receive the content concatenated into
-their output file. A thin slash command `/octopus:debugging
+their output file. A thin slash command `/octopus:debug
 [<bug description>]` exists for explicit invocation.
 
 ### Detailed Design
@@ -89,7 +89,7 @@ their output file. A thin slash command `/octopus:debugging
 #### Invocation
 
 ```
-/octopus:debugging [<bug description or failing test name>]
+/octopus:debug [<bug description or failing test name>]
 ```
 
 Most uses are implicit — the skill is active by default, and the
@@ -99,7 +99,7 @@ wants to drive the four phases manually.
 
 #### Skill structure
 
-`skills/debugging/SKILL.md`:
+`skills/debug/SKILL.md`:
 
 ```markdown
 ---
@@ -222,8 +222,8 @@ The v1 SKILL.md includes the same stub shape as `implement`:
 
 > When a debugging task starts, consider whether domain-specific
 > skills help — `dotnet` for .NET stack traces, the
-> `frontend-specialist` role for UI-layer bugs, `tenant-scope-audit`
-> for multi-tenant data-leak bugs, `money-review` for financial
+> `frontend-specialist` role for UI-layer bugs, `audit-tenant`
+> for multi-tenant data-leak bugs, `audit-money` for financial
 > regressions.
 >
 > RM-034 will replace this paragraph with a decision matrix that
@@ -236,7 +236,7 @@ exactly so RM-034 can edit both in one pass.
 
 #### Integration with other skills
 
-- **`implement`** — features workflow. `debugging` handles bug
+- **`implement`** — features workflow. `debug` handles bug
   triage up through the fix; the TDD loop inside `implement` is
   reused in Phase 3. They are paired members of the `starter`
   bundle.
@@ -245,13 +245,13 @@ exactly so RM-034 can edit both in one pass.
   scope, or cross-stack contracts.
 - **`continuous-learning`** — when a Phase 4 finding is a
   recurring pattern, capture it there.
-- **`rules/common/*`** — always-on static rules. `debugging` never
+- **`rules/common/*`** — always-on static rules. `debug` never
   re-states rule content; references only.
 - **`feature-lifecycle`** — if the bug has architectural
   implications, escalate to an ADR via `/octopus:doc-adr`.
 - **`superpowers:systematic-debugging`** — when the superpowers
   plugin is installed, that skill wins per phase on the practices
-  it covers. `debugging` still owns Phase 4 (Octopus-specific
+  it covers. `debug` still owns Phase 4 (Octopus-specific
   integration with `continuous-learning` / ADR).
 
 #### Anti-patterns (explicit in SKILL.md)
@@ -276,7 +276,7 @@ The skill forbids, by name:
 
 ### Bundle membership
 
-`bundles/starter.yml` gains `debugging`:
+`bundles/starter.yml` gains `debug`:
 
 ```yaml
 name: starter
@@ -291,7 +291,7 @@ skills:
 ```
 
 `starter` is foundation-category (auto-included in every setup),
-so `debugging` becomes universal. The skill stays stack-neutral;
+so `debug` becomes universal. The skill stays stack-neutral;
 nothing in it assumes a specific language or test runner.
 
 ### Slash command
@@ -305,39 +305,39 @@ name: debugging
 description: Walk the Octopus bug-fix protocol — reproduce, isolate, regression test, document.
 ---
 
-# /octopus:debugging
+# /octopus:debug
 
 ## Purpose
 
-The `debugging` skill is active by default on every bug-triage
+The `debug` skill is active by default on every bug-triage
 task; this slash command drives it explicitly for a single bug the
 user describes inline.
 
 ## Usage
 
 ```
-/octopus:debugging <bug description or failing test name>
+/octopus:debug <bug description or failing test name>
 ```
 
 ## Instructions
 
-Invoke the `debugging` skill (`skills/debugging/SKILL.md`). The
+Invoke the `debug` skill (`skills/debug/SKILL.md`). The
 skill owns the full four-phase workflow — do not reinterpret it
 here.
 ```
 
 ### Wizard registration
 
-`cli/lib/setup-wizard.sh` registers `debugging` in the skills items
+`cli/lib/setup-wizard.sh` registers `debug` in the skills items
 array + hints + legend, inserted alphabetically after
-`continuous-learning` and before `cross-stack-contract`.
+`continuous-learning` and before `review-contracts`.
 
 ### Migration / Backward Compatibility
 
 - Additive: a new skill joining the existing `starter` bundle.
   Users who re-run `octopus setup` after upgrading get the skill;
   users who don't re-run keep the old setup (no breakage — the
-  absence of `debugging` just means their agents do not have the
+  absence of `debug` just means their agents do not have the
   protocol codified).
 - No mandatory `.octopus.yml` changes.
 - Test-file counts in `tests/test_bundles.sh` must increment:
@@ -350,21 +350,21 @@ array + hints + legend, inserted alphabetically after
 
 ## Implementation Plan
 
-1. `skills/debugging/SKILL.md` — frontmatter + Overview + When to
+1. `skills/debug/SKILL.md` — frontmatter + Overview + When to
    Engage, with tests enforcing both.
 2. SKILL.md — The Four Phases section with the four sub-sections
    from the content contract.
 3. SKILL.md — Task Routing v1 stub naming RM-034.
 4. SKILL.md — Integration + Anti-Patterns sections.
 5. `commands/debugging.md` — thin dispatcher.
-6. `bundles/starter.yml` — append `debugging` to skills list;
+6. `bundles/starter.yml` — append `debug` to skills list;
    update `description:` line.
-7. `cli/lib/setup-wizard.sh` — register `debugging` in items +
+7. `cli/lib/setup-wizard.sh` — register `debug` in items +
    hints + legend (alphabetical — after `continuous-learning`,
-   before `cross-stack-contract`).
+   before `review-contracts`).
 8. `docs/features/debugging.md` — tutorial.
 9. `docs/features/skills.md` — new row with `starter` bundle.
-10. `README.md` — add `debugging` to the Available-skills comment.
+10. `README.md` — add `debug` to the Available-skills comment.
 11. `docs/roadmap.md` — move RM-031 from Backlog Cluster 4 into
     the Completed / Rejected table with a link to this spec.
 12. `tests/test_debugging.sh` — structural tests covering
@@ -382,12 +382,12 @@ array + hints + legend, inserted alphabetically after
 `tech-writer` (tutorial + README).
 **Related ADRs**: consider an ADR capturing the "active-by-default
 workflow skill pair in `starter`" precedent — `implement` and
-`debugging` together establish the pattern that future workflow
-skills in `starter` may follow (e.g. `receiving-code-review`
+`debug` together establish the pattern that future workflow
+skills in `starter` may follow (e.g. `respond-to-review`
 belongs in `starter` too once RM-032 ships, if we agree; decision
 deferred to that spec).
 **Skills needed**: `adr`, `feature-lifecycle`.
-**Bundle**: `starter` (existing) — append `debugging` alongside
+**Bundle**: `starter` (existing) — append `debug` alongside
 `implement`.
 
 **Constraints**:
@@ -410,7 +410,7 @@ deferred to that spec).
 
 ### Structural (`tests/test_debugging.sh`)
 
-- `skills/debugging/SKILL.md` exists with correct frontmatter
+- `skills/debug/SKILL.md` exists with correct frontmatter
   (`name: debugging`, `description:` present).
 - All six section headers present: `## Overview`, `## When to
   Engage`, `## The Four Phases`, `## Task Routing`, `## Integration
@@ -424,10 +424,10 @@ deferred to that spec).
   `regression test`, `silent retry`, `feature flag`, and
   `macro-commit` (or `Macro-commits`).
 - `commands/debugging.md` exists with `name: debugging` frontmatter.
-- `bundles/starter.yml` lists `debugging`.
-- Wizard items/hints/legend contain `debugging`.
-- README Available list contains `debugging`.
-- `docs/features/skills.md` has a `debugging` row with bundle
+- `bundles/starter.yml` lists `debug`.
+- Wizard items/hints/legend contain `debug`.
+- README Available list contains `debug`.
+- `docs/features/skills.md` has a `debug` row with bundle
   `starter`.
 - `docs/features/debugging.md` tutorial file exists.
 
@@ -436,13 +436,13 @@ deferred to that spec).
 - Test 5 (starter fixture): `expected_skills=(adr feature-lifecycle
   context-budget implement debugging)`; assertions expect 5 skills.
 - Test 9 (full expansion): assertion `-eq 9` → `-eq 10`;
-  `expected_skills=` array gains `debugging`.
+  `expected_skills=` array gains `debug`.
 
 ### Manual / integration (not automated)
 
 - Running `octopus setup` in a fresh repo emits
-  `.claude/skills/debugging/SKILL.md` as a symlink.
-- Invoking `/octopus:debugging "login endpoint returns 500 on
+  `.claude/skills/debug/SKILL.md` as a symlink.
+- Invoking `/octopus:debug "login endpoint returns 500 on
   empty email"` in a live session walks the four phases.
 - When a bug report lands without invoking the slash command, the
   skill engages via its description on the first code-reading step.
@@ -462,7 +462,7 @@ deferred to that spec).
   corresponding domain skill (`dotnet`, etc.), not here. A later
   RM can open composition hooks if the demand is real.
 - **False-positive activation** — an agent might engage
-  `debugging` when the user asks to read a stack trace they saw in
+  `debug` when the user asks to read a stack trace they saw in
   a blog post, rather than a real bug in the repo. Mitigation: the
   `When to Engage` section narrows to tasks where the failure is
   inside the current working copy; read-only analysis is excluded.

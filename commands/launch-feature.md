@@ -3,12 +3,7 @@ name: launch-feature
 description: (Octopus) Generate a multi-channel launch kit from a completed feature (RM/spec/PR).
 ---
 
----
-description: (Octopus) Generate a multi-channel launch kit from a completed feature (RM/spec/PR).
-agent: code
----
-
-# /octopus:feature-to-market
+# /octopus:launch-feature
 
 ## Purpose
 
@@ -20,14 +15,14 @@ images.
 ## Usage
 
 ```
-/octopus:feature-to-market <ref> [--channels=a,b,c] [--dry-run] [--no-images] [--images-only] [--angle=<label>] [--force]
+/octopus:launch-feature <ref> [--channels=a,b,c] [--dry-run] [--no-images] [--images-only] [--angle=<label>] [--force]
 ```
 
 - `<ref>`: `RM-NNN`, spec/research path, or PR (`#123` / URL).
 
 ## Instructions
 
-Invoke the `feature-to-market` skill (`skills/feature-to-market/SKILL.md`).
+Invoke the `launch-feature` skill (`skills/launch-feature/SKILL.md`).
 The skill owns the full workflow: ref resolution, override cascade, template
 rendering, optional image generation.
 

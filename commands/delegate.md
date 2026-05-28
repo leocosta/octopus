@@ -3,11 +3,6 @@ name: delegate
 description: (Octopus) Delegate one task or a multi-step pipeline to Octopus roles — sequential, parallel, with confirmation gates between steps.
 ---
 
----
-description: (Octopus) Delegate one task or a multi-step pipeline to Octopus roles — sequential, parallel, with confirmation gates between steps.
-agent: code
----
-
 # /octopus:delegate
 
 ## Purpose

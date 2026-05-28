@@ -32,7 +32,7 @@ external source.
 
 ## Enable
 
-The `starter` bundle includes `debugging`, so a standard
+The `starter` bundle includes `debug`, so a standard
 `octopus setup` run delivers it. If you use an explicit
 `skills:` list in `.octopus.yml`, add:
 
@@ -44,18 +44,18 @@ skills:
 ## Explicit invocation
 
 ```
-/octopus:debugging <bug description or failing test name>
+/octopus:debug <bug description or failing test name>
 ```
 
 ## Relationship to other skills
 
-- `implement` — features workflow. Phase 3 of `debugging` reuses
+- `implement` — features workflow. Phase 3 of `debug` reuses
   `implement`'s TDD loop.
 - `audit-all` — pre-merge audit. Run after the fix, before
   opening the PR.
 - `continuous-learning` — Phase 4 destination for recurring
   patterns.
-- `rules/common/*` — always-on static rules. `debugging` never
+- `rules/common/*` — always-on static rules. `debug` never
   duplicates them.
 - `superpowers:systematic-debugging` — when installed, wins per
   phase on the practices it already covers.
@@ -64,11 +64,11 @@ skills:
 
 The `## Task Routing` section is a v1 stub reserved for RM-034,
 which will auto-dispatch to the right companion skill based on
-the bug (`dotnet` for .NET traces, `tenant-scope-audit` for
-data-leak bugs, `money-review` for financial regressions, etc.).
+the bug (`dotnet` for .NET traces, `audit-tenant` for
+data-leak bugs, `audit-money` for financial regressions, etc.).
 
 ## Review before merging
 
-The `debugging` skill is guidance, not a gate. Treat anti-pattern
+The `debug` skill is guidance, not a gate. Treat anti-pattern
 violations as review blockers; the skill itself never fails the
 build. Run `audit-all` after a fix to catch downstream effects.

@@ -1,6 +1,6 @@
 # Tenant-Scope-Audit Patterns (default)
 
-> Embedded default. Override at `docs/tenant-scope-audit/patterns.md`.
+> Embedded default. Override at `docs/audit-tenant/patterns.md`.
 > Overrides append; they do not replace the defaults.
 
 ## Path tokens

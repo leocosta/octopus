@@ -278,7 +278,7 @@ script; most likely not).
 **Related ADRs**: the checkbox-commit ADR from
 Implementation Step 2 (`docs/adr/<N>-plan-walker-checkbox-commit.md`).
 **Skills needed**: `adr`, `feature-lifecycle`, `implement`
-(reused as the inner TDD loop), `plan-backlog-hygiene`.
+(reused as the inner TDD loop), `plan-backlog`.
 **Bundle**: `starter (existing)` — `implement` is already
 in `starter`; no new placement needed.
 

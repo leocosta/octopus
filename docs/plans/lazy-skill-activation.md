@@ -19,10 +19,10 @@
 | `setup.sh` | modify | Add trigger parser helpers + conditional stub logic in `concatenate_from_manifest` |
 | `skills/e2e-testing/SKILL.md` | modify | Add `triggers:` frontmatter |
 | `skills/dotnet/SKILL.md` | modify | Add `triggers:` frontmatter |
-| `skills/security-scan/SKILL.md` | modify | Add `triggers:` frontmatter |
-| `skills/money-review/SKILL.md` | modify | Add `triggers:` frontmatter |
-| `skills/tenant-scope-audit/SKILL.md` | modify | Add `triggers:` frontmatter |
-| `skills/cross-stack-contract/SKILL.md` | modify | Add `triggers:` frontmatter |
+| `skills/audit-security/SKILL.md` | modify | Add `triggers:` frontmatter |
+| `skills/audit-money/SKILL.md` | modify | Add `triggers:` frontmatter |
+| `skills/audit-tenant/SKILL.md` | modify | Add `triggers:` frontmatter |
+| `skills/review-contracts/SKILL.md` | modify | Add `triggers:` frontmatter |
 | `tests/test_lazy_skill_activation.sh` | create | Structural + integration tests for stub vs. full-content logic |
 
 ---
@@ -288,7 +288,7 @@ git commit -m "feat(setup): lazy skill activation via triggers: frontmatter"
 **Files:**
 - Modify: `skills/e2e-testing/SKILL.md`
 - Modify: `skills/dotnet/SKILL.md`
-- Modify: `skills/cross-stack-contract/SKILL.md`
+- Modify: `skills/review-contracts/SKILL.md`
 
 - [x] **Step 1: Write the failing test**
 
@@ -309,11 +309,11 @@ grep -q '\.csproj\|\.cs' "$OCTOPUS_DIR/skills/dotnet/SKILL.md" \
   || { echo "FAIL: dotnet triggers missing expected paths"; exit 1; }
 echo "PASS"
 
-echo "Test 8: cross-stack-contract has triggers: with paths"
-grep -q "^triggers:" "$OCTOPUS_DIR/skills/cross-stack-contract/SKILL.md" \
-  || { echo "FAIL: cross-stack-contract missing triggers:"; exit 1; }
-grep -q 'openapi\|contracts' "$OCTOPUS_DIR/skills/cross-stack-contract/SKILL.md" \
-  || { echo "FAIL: cross-stack-contract triggers missing expected paths"; exit 1; }
+echo "Test 8: review-contracts has triggers: with paths"
+grep -q "^triggers:" "$OCTOPUS_DIR/skills/review-contracts/SKILL.md" \
+  || { echo "FAIL: review-contracts missing triggers:"; exit 1; }
+grep -q 'openapi\|contracts' "$OCTOPUS_DIR/skills/review-contracts/SKILL.md" \
+  || { echo "FAIL: review-contracts triggers missing expected paths"; exit 1; }
 echo "PASS"
 ```
 
@@ -345,7 +345,7 @@ triggers:
   tools: []
 ```
 
-In `skills/cross-stack-contract/SKILL.md`, insert after the `description:` block, before the closing `---`:
+In `skills/review-contracts/SKILL.md`, insert after the `description:` block, before the closing `---`:
 
 ```yaml
 triggers:
@@ -362,8 +362,8 @@ Expected: PASS (all tests including 6–8)
 - [x] **Step 5: Commit**
 
 ```bash
-git add skills/e2e-testing/SKILL.md skills/dotnet/SKILL.md skills/cross-stack-contract/SKILL.md
-git commit -m "feat(skills): add path triggers to e2e-testing, dotnet, cross-stack-contract"
+git add skills/e2e-testing/SKILL.md skills/dotnet/SKILL.md skills/review-contracts/SKILL.md
+git commit -m "feat(skills): add path triggers to e2e-testing, dotnet, review-contracts"
 ```
 
 ---
@@ -371,34 +371,34 @@ git commit -m "feat(skills): add path triggers to e2e-testing, dotnet, cross-sta
 ## Task 3: Add triggers: to keyword-based skills
 
 **Files:**
-- Modify: `skills/security-scan/SKILL.md`
-- Modify: `skills/money-review/SKILL.md`
-- Modify: `skills/tenant-scope-audit/SKILL.md`
+- Modify: `skills/audit-security/SKILL.md`
+- Modify: `skills/audit-money/SKILL.md`
+- Modify: `skills/audit-tenant/SKILL.md`
 
 - [x] **Step 1: Write the failing test**
 
 Append to `tests/test_lazy_skill_activation.sh`:
 
 ```bash
-echo "Test 9: security-scan has triggers: with keywords"
-grep -q "^triggers:" "$OCTOPUS_DIR/skills/security-scan/SKILL.md" \
-  || { echo "FAIL: security-scan missing triggers:"; exit 1; }
-grep -q 'auth\|jwt\|secret\|token' "$OCTOPUS_DIR/skills/security-scan/SKILL.md" \
-  || { echo "FAIL: security-scan triggers missing expected keywords"; exit 1; }
+echo "Test 9: audit-security has triggers: with keywords"
+grep -q "^triggers:" "$OCTOPUS_DIR/skills/audit-security/SKILL.md" \
+  || { echo "FAIL: audit-security missing triggers:"; exit 1; }
+grep -q 'auth\|jwt\|secret\|token' "$OCTOPUS_DIR/skills/audit-security/SKILL.md" \
+  || { echo "FAIL: audit-security triggers missing expected keywords"; exit 1; }
 echo "PASS"
 
-echo "Test 10: money-review has triggers: with keywords"
-grep -q "^triggers:" "$OCTOPUS_DIR/skills/money-review/SKILL.md" \
-  || { echo "FAIL: money-review missing triggers:"; exit 1; }
-grep -q 'payment\|stripe\|billing\|invoice' "$OCTOPUS_DIR/skills/money-review/SKILL.md" \
-  || { echo "FAIL: money-review triggers missing expected keywords"; exit 1; }
+echo "Test 10: audit-money has triggers: with keywords"
+grep -q "^triggers:" "$OCTOPUS_DIR/skills/audit-money/SKILL.md" \
+  || { echo "FAIL: audit-money missing triggers:"; exit 1; }
+grep -q 'payment\|stripe\|billing\|invoice' "$OCTOPUS_DIR/skills/audit-money/SKILL.md" \
+  || { echo "FAIL: audit-money triggers missing expected keywords"; exit 1; }
 echo "PASS"
 
-echo "Test 11: tenant-scope-audit has triggers: with keywords"
-grep -q "^triggers:" "$OCTOPUS_DIR/skills/tenant-scope-audit/SKILL.md" \
-  || { echo "FAIL: tenant-scope-audit missing triggers:"; exit 1; }
-grep -q 'tenant\|org\|workspace' "$OCTOPUS_DIR/skills/tenant-scope-audit/SKILL.md" \
-  || { echo "FAIL: tenant-scope-audit triggers missing expected keywords"; exit 1; }
+echo "Test 11: audit-tenant has triggers: with keywords"
+grep -q "^triggers:" "$OCTOPUS_DIR/skills/audit-tenant/SKILL.md" \
+  || { echo "FAIL: audit-tenant missing triggers:"; exit 1; }
+grep -q 'tenant\|org\|workspace' "$OCTOPUS_DIR/skills/audit-tenant/SKILL.md" \
+  || { echo "FAIL: audit-tenant triggers missing expected keywords"; exit 1; }
 echo "PASS"
 ```
 
@@ -412,7 +412,7 @@ Expected: FAIL on Tests 9, 10, 11
 
 - [x] **Step 3: Add triggers: to the three skills**
 
-In `skills/security-scan/SKILL.md`, insert after the `description:` block, before the closing `---`:
+In `skills/audit-security/SKILL.md`, insert after the `description:` block, before the closing `---`:
 
 ```yaml
 triggers:
@@ -421,7 +421,7 @@ triggers:
   tools: []
 ```
 
-In `skills/money-review/SKILL.md`, insert after the `description:` block, before the closing `---`:
+In `skills/audit-money/SKILL.md`, insert after the `description:` block, before the closing `---`:
 
 ```yaml
 triggers:
@@ -430,7 +430,7 @@ triggers:
   tools: []
 ```
 
-In `skills/tenant-scope-audit/SKILL.md`, insert after the `description:` block, before the closing `---`:
+In `skills/audit-tenant/SKILL.md`, insert after the `description:` block, before the closing `---`:
 
 ```yaml
 triggers:
@@ -447,8 +447,8 @@ Expected: PASS (all 11 tests)
 - [x] **Step 5: Commit**
 
 ```bash
-git add skills/security-scan/SKILL.md skills/money-review/SKILL.md skills/tenant-scope-audit/SKILL.md
-git commit -m "feat(skills): add keyword triggers to security-scan, money-review, tenant-scope-audit"
+git add skills/audit-security/SKILL.md skills/audit-money/SKILL.md skills/audit-tenant/SKILL.md
+git commit -m "feat(skills): add keyword triggers to audit-security, audit-money, audit-tenant"
 ```
 
 ---

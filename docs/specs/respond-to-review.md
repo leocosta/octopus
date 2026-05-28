@@ -46,21 +46,21 @@ available by default.
 
 ## Goals
 
-- Ship a skill `receiving-code-review` that codifies a five-rule
+- Ship a skill `respond-to-review` that codifies a five-rule
   protocol for processing PR feedback: verify, ask for evidence,
   separate reasoned vs preference, never performative, ask before
   acting on ambiguity.
 - Make the skill active by default in every Octopus-managed repo by
   adding it to the `starter` bundle (foundation category), joining
-  `implement` (features) and `debugging` (bugs) as the third
+  `implement` (features) and `debug` (bugs) as the third
   workflow skill.
-- Preserve the SKILL.md shape used by `implement` and `debugging`
+- Preserve the SKILL.md shape used by `implement` and `debug`
   (Overview, When to Engage, body sections, Task Routing reserved
   hook for RM-034, Integration with Other Skills, Anti-Patterns)
   so the three skills feel like a coherent trio.
 - Compose cleanly with `/octopus:pr-comments` (the command that
   drives the feedback loop — the skill supplies the discipline, the
-  command supplies the mechanics), with `implement` and `debugging`
+  command supplies the mechanics), with `implement` and `debug`
   (they resume once the reviewer's ask is clear), and with
   `superpowers:receiving-code-review` when installed (composition
   rule: more specific skill wins per rule).
@@ -79,7 +79,7 @@ available by default.
   was resolved with evidence). The skill is guidance, not a gate.
 - Replacing `superpowers:receiving-code-review`. That skill, when
   installed, covers the same ground with more depth; this skill
-  composes with it per the established `implement` / `debugging`
+  composes with it per the established `implement` / `debug`
   precedent.
 - RM-034 routing logic (the task-aware dispatcher). This spec
   reserves the section header for RM-034 to fill in.
@@ -88,10 +88,10 @@ available by default.
 
 ### Overview
 
-A pure-markdown skill at `skills/receiving-code-review/SKILL.md`,
-same shape as `implement` and `debugging` — no new runtime, no new
+A pure-markdown skill at `skills/respond-to-review/SKILL.md`,
+same shape as `implement` and `debug` — no new runtime, no new
 dependencies. The body is organized into six sections. The skill
-joins `bundles/starter.yml` next to `implement` and `debugging`,
+joins `bundles/starter.yml` next to `implement` and `debug`,
 completing the starter-foundation workflow trio (features / bugs /
 review feedback).
 
@@ -99,7 +99,7 @@ The skill is active-by-default: Claude Code discovers it in
 `.claude/skills/` and engages via its description whenever a task
 involves processing PR feedback. Other agents receive the content
 concatenated into their output file. A thin slash command
-`/octopus:receiving-code-review [<pr or comment ref>]` exists for
+`/octopus:respond-to-review [<pr or comment ref>]` exists for
 explicit invocation.
 
 ### Detailed Design
@@ -107,7 +107,7 @@ explicit invocation.
 #### Invocation
 
 ```
-/octopus:receiving-code-review [<pr or comment ref>]
+/octopus:respond-to-review [<pr or comment ref>]
 ```
 
 Most uses are implicit — the skill is active by default, and the
@@ -119,11 +119,11 @@ five rules manually against a specific comment.
 
 #### Skill structure
 
-`skills/receiving-code-review/SKILL.md`:
+`skills/respond-to-review/SKILL.md`:
 
 ```markdown
 ---
-name: receiving-code-review
+name: respond-to-review
 description: >
   The Octopus PR-feedback discipline — verify the critique, ask
   for evidence on generic comments, separate reasoned feedback
@@ -246,13 +246,13 @@ wastes the reviewer's time. One clarifying question saves that.
 #### Task Routing (RM-034 reserved stub)
 
 The v1 SKILL.md includes the same stub shape as `implement` and
-`debugging`:
+`debug`:
 
 > When a code-review response starts, consider whether
-> domain-specific skills help — `money-review` for comments on
-> billing / tax / splits, `tenant-scope-audit` for multi-tenant
-> data access concerns, `cross-stack-contract` for comments that
-> touch both API and frontend, `debugging` when the reviewer
+> domain-specific skills help — `audit-money` for comments on
+> billing / tax / splits, `audit-tenant` for multi-tenant
+> data access concerns, `review-contracts` for comments that
+> touch both API and frontend, `debug` when the reviewer
 > points at a bug rather than a style issue.
 >
 > RM-034 will replace this paragraph with a decision matrix that
@@ -262,7 +262,7 @@ The v1 SKILL.md includes the same stub shape as `implement` and
 > the installed-skills list.
 
 The section heading (`## Task Routing`) matches `implement` and
-`debugging` exactly so RM-034 can edit all three in one pass.
+`debug` exactly so RM-034 can edit all three in one pass.
 
 #### Integration with other skills
 
@@ -278,8 +278,8 @@ The section heading (`## Task Routing`) matches `implement` and
   feature, refactor, new test), `implement`'s five practices drive
   the edit itself. This skill ensures the change is the right
   change before `implement` runs.
-- **`debugging`** — when a comment flags a bug the reviewer
-  spotted, hand off to `debugging` (reproduce → isolate → fix
+- **`debug`** — when a comment flags a bug the reviewer
+  spotted, hand off to `debug` (reproduce → isolate → fix
   with regression test → document). This skill still owns the
   verification step (Rule 1) before the handoff.
 - **`rules/common/*`** — always-on static rules. This skill
@@ -287,7 +287,7 @@ The section heading (`## Task Routing`) matches `implement` and
 - **`superpowers:receiving-code-review`** — when the superpowers
   plugin is installed, that skill wins per rule on the practices
   it covers. This skill still owns Octopus-native integration
-  with `pr-comments` and the handoff to `implement` / `debugging`.
+  with `pr-comments` and the handoff to `implement` / `debug`.
 
 #### Anti-patterns (explicit in SKILL.md)
 
@@ -313,7 +313,7 @@ The skill forbids, by name:
 
 ### Bundle membership
 
-`bundles/starter.yml` gains `receiving-code-review`:
+`bundles/starter.yml` gains `respond-to-review`:
 
 ```yaml
 name: starter
@@ -325,52 +325,52 @@ skills:
   - context-budget
   - implement
   - debugging
-  - receiving-code-review
+  - respond-to-review
 ```
 
 `starter` is foundation-category (auto-included in every setup),
-so the skill becomes universal. The trio `implement` + `debugging`
-+ `receiving-code-review` now covers the three common workflow
+so the skill becomes universal. The trio `implement` + `debug`
++ `respond-to-review` now covers the three common workflow
 states — writing new code, fixing broken code, responding to
 feedback on written code.
 
 ### Slash command
 
-`commands/receiving-code-review.md` is a thin dispatcher matching
-the pattern established by `implement` / `debugging`:
+`commands/respond-to-review.md` is a thin dispatcher matching
+the pattern established by `implement` / `debug`:
 
 ```markdown
 ---
-name: receiving-code-review
+name: respond-to-review
 description: Walk the Octopus PR-feedback discipline — verify, ask for evidence, separate reasoned vs preference, never performative, clarify ambiguity.
 ---
 
-# /octopus:receiving-code-review
+# /octopus:respond-to-review
 
 ## Purpose
 
-The `receiving-code-review` skill is active by default on every
+The `respond-to-review` skill is active by default on every
 PR feedback loop; this slash command drives it explicitly for a
 single comment or thread the user describes inline.
 
 ## Usage
 
 ```
-/octopus:receiving-code-review <pr-or-comment-ref>
+/octopus:respond-to-review <pr-or-comment-ref>
 ```
 
 ## Instructions
 
-Invoke the `receiving-code-review` skill
-(`skills/receiving-code-review/SKILL.md`). The skill owns the
+Invoke the `respond-to-review` skill
+(`skills/respond-to-review/SKILL.md`). The skill owns the
 full five-rule workflow — do not reinterpret it here.
 ```
 
 ### Wizard registration
 
-`cli/lib/setup-wizard.sh` registers `receiving-code-review` in the
+`cli/lib/setup-wizard.sh` registers `respond-to-review` in the
 skills items array + hints + legend, inserted alphabetically after
-`plan-backlog-hygiene` and before `release-announce`.
+`plan-backlog` and before `launch-release`.
 
 ### Migration / Backward Compatibility
 
@@ -385,25 +385,25 @@ skills items array + hints + legend, inserted alphabetically after
 - Composition with `superpowers:receiving-code-review` is
   non-breaking by design (more specific wins per rule, same
   precedent as `implement` with `superpowers:test-driven-development`
-  and `debugging` with `superpowers:systematic-debugging`).
+  and `debug` with `superpowers:systematic-debugging`).
 
 ## Implementation Plan
 
-1. `skills/receiving-code-review/SKILL.md` — frontmatter +
+1. `skills/respond-to-review/SKILL.md` — frontmatter +
    Overview + When to Engage sections, with tests enforcing both.
 2. SKILL.md — The Five Rules section with the five sub-sections
    from the content contract.
 3. SKILL.md — Task Routing v1 stub naming RM-034.
 4. SKILL.md — Integration + Anti-Patterns sections.
-5. `commands/receiving-code-review.md` — thin dispatcher.
-6. `bundles/starter.yml` — append `receiving-code-review` to
+5. `commands/respond-to-review.md` — thin dispatcher.
+6. `bundles/starter.yml` — append `respond-to-review` to
    skills list; update `description:` line.
 7. `cli/lib/setup-wizard.sh` — register
-   `receiving-code-review` in items + hints + legend (alphabetical
-   — after `plan-backlog-hygiene`, before `release-announce`).
-8. `docs/features/receiving-code-review.md` — tutorial.
+   `respond-to-review` in items + hints + legend (alphabetical
+   — after `plan-backlog`, before `launch-release`).
+8. `docs/features/respond-to-review.md` — tutorial.
 9. `docs/features/skills.md` — new row with `starter` bundle.
-10. `README.md` — add `receiving-code-review` to the
+10. `README.md` — add `respond-to-review` to the
     Available-skills comment.
 11. `docs/roadmap.md` — move RM-032 from Backlog Cluster 4 into
     the Completed / Rejected table with a link to this spec.
@@ -422,18 +422,18 @@ skills items array + hints + legend, inserted alphabetically after
 **Implementing roles**: `backend-specialist` (bash + markdown),
 `tech-writer` (tutorial + README).
 **Related ADRs**: this is the third active-by-default workflow
-skill in `starter` (following `implement` and `debugging`) — the
+skill in `starter` (following `implement` and `debug`) — the
 pattern is now firmly established; an ADR recording it is overdue
 and would be worth filing as a side-RM.
 **Skills needed**: `adr`, `feature-lifecycle`.
 **Bundle**: `starter` (existing) — append
-`receiving-code-review` alongside `implement` and `debugging`.
+`respond-to-review` alongside `implement` and `debug`.
 
 **Constraints**:
 - Pure markdown; no bash or python logic beyond documented
   commands the user or agent runs.
 - `## Task Routing` heading must match `implement` and
-  `debugging` exactly so RM-034 can extend all three in one pass.
+  `debug` exactly so RM-034 can extend all three in one pass.
 - The five rules must be named exactly `Rule 1. Verify the
   critique against the code`, `Rule 2. Ask for evidence on generic
   comments`, `Rule 3. Separate reasoned feedback from preference`,
@@ -450,8 +450,8 @@ and would be worth filing as a side-RM.
 
 ### Structural (`tests/test_receiving_code_review.sh`)
 
-- `skills/receiving-code-review/SKILL.md` exists with correct
-  frontmatter (`name: receiving-code-review`, `description:`
+- `skills/respond-to-review/SKILL.md` exists with correct
+  frontmatter (`name: respond-to-review`, `description:`
   present).
 - All six section headers present: `## Overview`, `## When to
   Engage`, `## The Five Rules`, `## Task Routing`, `## Integration
@@ -465,30 +465,30 @@ and would be worth filing as a side-RM.
 - Anti-patterns section mentions `performative`, `generic
   comment`, `preference`, `ambiguity`, and `batching` (or a
   variant — the test greps for key words).
-- `commands/receiving-code-review.md` exists with
-  `name: receiving-code-review` frontmatter.
-- `bundles/starter.yml` lists `receiving-code-review`.
-- Wizard items/hints/legend contain `receiving-code-review`.
-- README Available list contains `receiving-code-review`.
-- `docs/features/skills.md` has a `receiving-code-review` row
+- `commands/respond-to-review.md` exists with
+  `name: respond-to-review` frontmatter.
+- `bundles/starter.yml` lists `respond-to-review`.
+- Wizard items/hints/legend contain `respond-to-review`.
+- README Available list contains `respond-to-review`.
+- `docs/features/skills.md` has a `respond-to-review` row
   with bundle `starter`.
-- `docs/features/receiving-code-review.md` tutorial file exists.
+- `docs/features/respond-to-review.md` tutorial file exists.
 
 ### Extended `tests/test_bundles.sh`
 
 - Test 5 (starter fixture): `expected_skills` gains
-  `receiving-code-review`; assertions expect 6 skills.
+  `respond-to-review`; assertions expect 6 skills.
 - Test 9 (full expansion): assertion `-eq 10` → `-eq 11`;
-  `expected_skills=` array gains `receiving-code-review`.
+  `expected_skills=` array gains `respond-to-review`.
 
 ### Manual / integration (not automated)
 
 - Running `octopus setup` in a fresh repo emits
-  `.claude/skills/receiving-code-review/SKILL.md` as a symlink.
+  `.claude/skills/respond-to-review/SKILL.md` as a symlink.
 - Invoking `/octopus:pr-comments <n>` in a live session engages
-  `receiving-code-review` for each comment iteration.
+  `respond-to-review` for each comment iteration.
 - Explicit invocation
-  `/octopus:receiving-code-review "comment says 'this is ugly'"`
+  `/octopus:respond-to-review "comment says 'this is ugly'"`
   triggers Rule 2 (ask for evidence).
 
 ## Risks

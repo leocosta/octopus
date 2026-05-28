@@ -25,11 +25,11 @@ Single file: `cli/lib/setup-wizard.sh`
 
 ```bash
 declare -A ROLE_SKILL_MAP=(
-  ["backend-specialist"]="backend-patterns tenant-scope-audit money-review security-scan debugging"
-  ["frontend-specialist"]="e2e-testing cross-stack-contract debugging"
-  ["product-manager"]="adr plan-backlog-hygiene feature-lifecycle doc-design doc-plan"
+  ["backend-specialist"]="backend-patterns audit-tenant audit-money audit-security debugging"
+  ["frontend-specialist"]="e2e-testing review-contracts debugging"
+  ["product-manager"]="adr plan-backlog feature-lifecycle doc-design doc-plan"
   ["tech-writer"]="adr doc-design doc-plan continuous-learning"
-  ["social-media"]="feature-to-market release-announce"
+  ["social-media"]="launch-feature launch-release"
 )
 ```
 
@@ -62,7 +62,7 @@ print a legend when any roles are active:
 
 1. `./cli/octopus setup --mode full` — confirm Roles appears before Skills in Group 2.
 2. Select `backend-specialist` → Skills screen shows ★ on `backend-patterns`,
-   `tenant-scope-audit`, `money-review`, `security-scan`, `debugging`; legend
+   `audit-tenant`, `audit-money`, `audit-security`, `debug`; legend
    `★ = recommended for: backend-specialist`.
 3. Select no roles → Skills screen has no ★, no legend.
 4. Select `backend-specialist` + `product-manager` → union of both skill sets

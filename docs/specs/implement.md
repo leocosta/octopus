@@ -36,7 +36,7 @@ TDD/verification discipline elsewhere.
 The roadmap's Cluster 4 (RM-030..RM-034) closes this gap. RM-030
 is the core — the `implement` skill that encodes the universal
 workflow. Cluster 4 lands in order: RM-030 (core), RM-031
-(`debugging`), RM-032 (`receiving-code-review`), RM-033
+(`debug`), RM-032 (`respond-to-review`), RM-033
 (destructive-action guard hook), RM-034 (task routing inside
 `implement`).
 
@@ -53,8 +53,8 @@ workflow. Cluster 4 lands in order: RM-030 (core), RM-031
   skill is the process layer; the rules are the static layer.
   Neither duplicates the other.
 - Cover the contract with other Octopus skills: compose with
-  `feature-lifecycle` (docs), leave room for `debugging` (RM-031)
-  and `receiving-code-review` (RM-032) to plug in cleanly.
+  `feature-lifecycle` (docs), leave room for `debug` (RM-031)
+  and `respond-to-review` (RM-032) to plug in cleanly.
 
 ## Non-Goals
 
@@ -252,8 +252,8 @@ The v1 SKILL.md includes the section verbatim:
 > domain-specific skills should be consulted alongside the five
 > core practices — `backend-patterns` or `dotnet` for server-side
 > work, the `frontend-specialist` role for UI work, the
-> `debugging` skill (when installed) for bug-fix flows, the
-> `receiving-code-review` skill (when installed) for PR feedback
+> `debug` skill (when installed) for bug-fix flows, the
+> `respond-to-review` skill (when installed) for PR feedback
 > loops.
 >
 > RM-034 will replace this paragraph with a decision matrix that
@@ -275,15 +275,15 @@ not a restructure.
   Knowledge). `implement` governs code. A task with both a docs
   ask and a code ask triggers both skills; the two compose
   without conflict.
-- **`debugging` (RM-031, future)** — when a task starts from a
-  bug report or a failing test, delegate to `debugging` for the
+- **`debug` (RM-031, future)** — when a task starts from a
+  bug report or a failing test, delegate to `debug` for the
   reproduce → isolate → fix → regression steps. `implement`'s
   TDD loop still applies to the fix itself.
-- **`receiving-code-review` (RM-032, future)** — PR feedback
+- **`respond-to-review` (RM-032, future)** — PR feedback
   flows go through that skill; `implement` resumes for each
   implementation step the reviewer asks for.
-- **Audit skills (`security-scan`, `money-review`,
-  `tenant-scope-audit`, `cross-stack-contract`, `audit-all`)** —
+- **Audit skills (`audit-security`, `audit-money`,
+  `audit-tenant`, `review-contracts`, `audit-all`)** —
   pre-merge review; `implement` is pre-audit.
 
 #### Anti-patterns (explicit in SKILL.md)
@@ -356,7 +356,7 @@ skill owns the full workflow — do not reinterpret it here.
 
 `cli/lib/setup-wizard.sh` lists `implement` in the skills items
 array + hints + legend, inserted alphabetically between
-`feature-to-market` and `money-review`.
+`launch-feature` and `audit-money`.
 
 ### Migration / Backward Compatibility
 
@@ -405,8 +405,8 @@ array + hints + legend, inserted alphabetically between
 markdown), `tech-writer` (tutorial + README).
 **Related ADRs**: worth considering an ADR for the
 "active-by-default skill in the foundation bundle" pattern —
-it's a precedent the future `debugging` and
-`receiving-code-review` skills will reuse.
+it's a precedent the future `debug` and
+`respond-to-review` skills will reuse.
 **Skills needed**: `adr`, `feature-lifecycle`.
 **Bundle**: `starter` (existing) — append `implement` to the
 bundle's skills list.
@@ -488,8 +488,8 @@ bundle's skills list.
   those would feel noisy. Mitigation: Integration section
   defers to superpowers skills when installed.
 - **Scope creep into RM-031/032/033** — the Anti-Patterns list
-  mentions deferring to `receiving-code-review` (RM-032) and
-  `debugging` (RM-031). If those RMs slip, users will ask
+  mentions deferring to `respond-to-review` (RM-032) and
+  `debug` (RM-031). If those RMs slip, users will ask
   `implement` to cover those flows. Mitigation: spec keeps
   those strictly out of scope; a future RM can extend
   `implement` if the community prefers one skill to three.

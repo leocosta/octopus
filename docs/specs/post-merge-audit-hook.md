@@ -12,8 +12,8 @@
 
 ## Problem Statement
 
-Octopus ships four pre-merge audit skills (`money-review`,
-`tenant-scope-audit`, `cross-stack-contract`, `security-scan`) plus
+Octopus ships four pre-merge audit skills (`audit-money`,
+`audit-tenant`, `review-contracts`, `audit-security`) plus
 the `audit-all` composer, but reviewers and authors have to
 remember to run them. In practice they run sporadically — and
 the most valuable signals (money-logic drift, missing tenant
@@ -26,7 +26,7 @@ that benefit from being automatic on a hot PR.
   at the diff of the incoming change, maps touched files +
   keywords to the relevant audits, and surfaces the list as a
   gentle suggestion: "this change touched billing code; consider
-  running `/octopus:money-review`".
+  running `/octopus:audit-money`".
 - Zero-config for the common case: the hook activates for repos
   that have `workflow: true` in `.octopus.yml` and have at least
   one of the audit skills installed.
@@ -49,8 +49,8 @@ that benefit from being automatic on a hot PR.
 
 A `pre-push` git hook that reads the diff of the commits about
 to be pushed, maps touched files and keywords to the relevant
-Octopus audit skills (`money-review`, `tenant-scope-audit`,
-`cross-stack-contract`, `security-scan`), and prints a short
+Octopus audit skills (`audit-money`, `audit-tenant`,
+`review-contracts`, `audit-security`), and prints a short
 list of suggestions before returning exit 0 (advisory only —
 never blocks the push).
 
@@ -86,7 +86,7 @@ it never blocks the push; it never pings the network.
 | File | Role |
 |---|---|
 | `hooks/git/pre-push-audit-suggest.sh` | The hook body. Reads `$OCTOPUS_SKIP_AUDIT_HOOK`, computes the push diff, dispatches to the map library, prints suggestions. Exits 0 unconditionally. |
-| `cli/lib/audit-map.sh` | Pure function library. Given a unified diff on stdin, emits the set of audit names (`money-review`, `tenant-scope-audit`, `cross-stack-contract`, `security-scan`) whose triggers fired. |
+| `cli/lib/audit-map.sh` | Pure function library. Given a unified diff on stdin, emits the set of audit names (`audit-money`, `audit-tenant`, `review-contracts`, `audit-security`) whose triggers fired. |
 | `setup.sh` (modification) | Installs the hook into `.git/hooks/pre-push` (or `core.hooksPath` when set) when `workflow: true` AND `postMergeAuditHook` is not `false`. |
 | `cli/lib/parse_octopus_yml` (existing) | Reads the new `postMergeAuditHook:` key. Default `true`. |
 
@@ -110,8 +110,8 @@ it never blocks the push; it never pings the network.
    ```
    ┌─ Octopus — audit suggestions ─────────────────────────────┐
    │ This push touches code typically audited by:              │
-   │   • /octopus:money-review   (billing / payment tokens)    │
-   │   • /octopus:security-scan  (secret / credential tokens)  │
+   │   • /octopus:audit-money   (billing / payment tokens)    │
+   │   • /octopus:audit-security  (secret / credential tokens)  │
    │ Run them in your agent before merging if applicable.      │
    │ Skip: OCTOPUS_SKIP_AUDIT_HOOK=1 git push                  │
    └───────────────────────────────────────────────────────────┘
@@ -137,11 +137,11 @@ Parse the resolved `patterns.md` for two kinds of signals:
 
 An audit matches when **any** of its path tokens OR content
 regexes hit the diff. Emit `<audit-name>` on its own line on
-stdout. Order: `security-scan`, `money-review`,
-`tenant-scope-audit`, `cross-stack-contract` (criticality, then
+stdout. Order: `audit-security`, `audit-money`,
+`audit-tenant`, `review-contracts` (criticality, then
 alphabetical).
 
-**Cross-stack special case:** `cross-stack-contract` doesn't
+**Cross-stack special case:** `review-contracts` doesn't
 need a `patterns.md` — it fires when the diff touches paths
 belonging to two or more stacks declared in the manifest's
 `stacks:` map. Implemented as a dedicated helper inside
@@ -196,8 +196,8 @@ installed but bypasses the output for a given push.
 
 1. **Document the `patterns.md` mini-schema** and migrate the
    existing audit `patterns.md` files
-   (`docs/money-review/`, `docs/tenant-scope-audit/`,
-   `docs/security-scan/`, `skills/*/templates/patterns.md`)
+   (`docs/audit-money/`, `docs/audit-tenant/`,
+   `docs/audit-security/`, `skills/*/templates/patterns.md`)
    to it. Two headings — `## Path tokens` and
    `## Content regex` — with bullet lists. Isolated refactor
    PR, no behaviour change.
@@ -208,9 +208,9 @@ installed but bypasses the output for a given push.
    Special cross-stack helper reading `.octopus.yml` `stacks:`.
    Depends on Step 1.
 3. **Create `tests/test_audit_map.sh`.** Fixture diffs per
-   audit (a billing.cs diff → expects `money-review`; a diff
-   touching `api/` + `app/` → expects `cross-stack-contract`;
-   a diff adding `sk-ABC123` → expects `security-scan`; a
+   audit (a billing.cs diff → expects `audit-money`; a diff
+   touching `api/` + `app/` → expects `review-contracts`;
+   a diff adding `sk-ABC123` → expects `audit-security`; a
    benign README diff → expects empty). Malformed
    `patterns.md` fixture → skip that audit, warn once.
    Depends on Step 2.
@@ -244,8 +244,8 @@ tech-writer (for the `patterns.md` schema doc).
 **Related ADRs**: none yet; the `patterns.md` mini-schema
 merits an ADR — flag as a follow-up.
 **Skills needed**: `adr`, `feature-lifecycle`,
-`security-scan`, `money-review`, `tenant-scope-audit`,
-`cross-stack-contract`, `audit-all`.
+`audit-security`, `audit-money`, `audit-tenant`,
+`review-contracts`, `audit-all`.
 **Bundle**: N/A — hook under the existing `hooks:` setting,
 not a new skill.
 
@@ -265,7 +265,7 @@ not a new skill.
 - **Unit tests** in `tests/test_audit_map.sh` (step 3 of the
   plan): fixture diffs covering each audit, empty-set diff,
   malformed `patterns.md` graceful failure, and
-  cross-stack-contract manifest-driven path matching.
+  review-contracts manifest-driven path matching.
 - **Install tests** in `tests/test_post_merge_audit_hook.sh`
   (step 6): minimal fixture repos exercising the three
   install paths (fresh, opt-out, chain onto existing hook).

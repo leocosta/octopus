@@ -3,11 +3,6 @@ name: audit-config
 description: (Octopus) Audit the Octopus configuration surface (rules, skills, hooks, commands, bundles) for model drift, stale dates, phantom skills, and deprecated paths. Severity-tiered report.
 ---
 
----
-description: (Octopus) Audit the Octopus configuration surface (rules, skills, hooks, commands, bundles) for model drift, stale dates, phantom skills, and deprecated paths. Severity-tiered report.
-agent: code
----
-
 # /octopus:audit-config
 
 ## Purpose

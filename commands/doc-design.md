@@ -3,11 +3,6 @@ name: doc-design
 description: (Octopus) Interactive design session that fills a spec stub's Design, Implementation Plan, Testing, and adaptive sections one question at a time
 ---
 
----
-description: (Octopus) Interactive design session that fills a spec stub's Design, Implementation Plan, Testing, and adaptive sections one question at a time
-agent: code
----
-
 # /octopus:doc-design
 
 ## Purpose
@@ -75,7 +70,7 @@ Silently read, without asking the user a question:
   matches the slug or the stub's metadata `Roadmap` field.
 - `knowledge/INDEX.md` if present.
 - Skills adjacent to the topic by simple keyword match (e.g. slug
-  contains `audit` → check `skills/audit-all/`, `skills/money-review/`).
+  contains `audit` → check `skills/audit-all/`, `skills/audit-money/`).
 
 Report in a single line: `"Scanned N commits, roadmap, and
 adjacent skills. Let's design."`

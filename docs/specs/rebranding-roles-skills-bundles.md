@@ -3,8 +3,8 @@
 ## Problem
 
 The current naming system has three compounding issues:
-1. **Inconsistent patterns** — skills mix verbs (`implement`, `batch`), nouns (`adr`, `dotnet`), and long descriptives (`plan-backlog-hygiene`, `receiving-code-review`)
-2. **Unclear names** — `cross-stack-contract`, `tenant-scope-audit`, and `receiving-code-review` require domain knowledge to understand
+1. **Inconsistent patterns** — skills mix verbs (`implement`, `batch`), nouns (`adr`, `dotnet`), and long descriptives (`plan-backlog`, `respond-to-review`)
+2. **Unclear names** — `review-contracts`, `audit-tenant`, and `respond-to-review` require domain knowledge to understand
 3. **Role/skill overlap** — `tech-writer` (role) alongside `doc-plan`, `doc-design`, `adr` (skills) blurs the boundary between who does the work and what they do
 
 ## Solution
@@ -33,9 +33,9 @@ Introduce a consistent naming system:
 | Old | New |
 |---|---|
 | `audit-all` | `audit-all` |
-| `money-review` | `audit-money` |
-| `security-scan` | `audit-security` |
-| `tenant-scope-audit` | `audit-tenant` |
+| `audit-money` | `audit-money` |
+| `audit-security` | `audit-security` |
+| `audit-tenant` | `audit-tenant` |
 
 ### `doc-*` — documentation creation
 | Old | New |
@@ -48,21 +48,21 @@ Introduce a consistent naming system:
 ### `review-*` — code review processes
 | Old | New |
 |---|---|
-| `receiving-code-review` | `review-pr` |
-| `cross-stack-contract` | `review-contracts` |
+| `respond-to-review` | `review-pr` |
+| `review-contracts` | `review-contracts` |
 
 ### `launch-*` — publishing and go-to-market
 | Old | New |
 |---|---|
-| `feature-to-market` | `launch-feature` |
-| `release-announce` | `launch-release` |
+| `launch-feature` | `launch-feature` |
+| `launch-release` | `launch-release` |
 
 ### Unchanged
 | Name | Status |
 |---|---|
 | `implement` | unchanged |
-| `debugging` → `debug` | verb normalisation only |
-| `plan-backlog-hygiene` → `plan-backlog` | shorter |
+| `debug` → `debug` | verb normalisation only |
+| `plan-backlog` → `plan-backlog` | shorter |
 | `backend-patterns` | unchanged |
 | `e2e-testing` → `test-e2e` | prefix pattern |
 | `dotnet` | unchanged |
@@ -96,15 +96,15 @@ Introduce a consistent naming system:
 - `roles/staff-engineer.md` → `roles/architect.md`
 - `skills/adr/` → `skills/doc-adr/`
 - `skills/feature-lifecycle/` → `skills/doc-lifecycle/`
-- `skills/money-review/` → `skills/audit-money/`
-- `skills/security-scan/` → `skills/audit-security/`
-- `skills/tenant-scope-audit/` → `skills/audit-tenant/`
-- `skills/receiving-code-review/` → `skills/review-pr/`
-- `skills/cross-stack-contract/` → `skills/review-contracts/`
-- `skills/feature-to-market/` → `skills/launch-feature/`
-- `skills/release-announce/` → `skills/launch-release/`
-- `skills/debugging/` → `skills/debug/`
-- `skills/plan-backlog-hygiene/` → `skills/plan-backlog/`
+- `skills/audit-money/` → `skills/audit-money/`
+- `skills/audit-security/` → `skills/audit-security/`
+- `skills/audit-tenant/` → `skills/audit-tenant/`
+- `skills/respond-to-review/` → `skills/review-pr/`
+- `skills/review-contracts/` → `skills/review-contracts/`
+- `skills/launch-feature/` → `skills/launch-feature/`
+- `skills/launch-release/` → `skills/launch-release/`
+- `skills/debug/` → `skills/debug/`
+- `skills/plan-backlog/` → `skills/plan-backlog/`
 - `skills/e2e-testing/` → `skills/test-e2e/`
 - `bundles/quality-gates.yml` → `bundles/saas-quality.yml`
 - `bundles/docs-discipline.yml` → `bundles/documentation.yml`

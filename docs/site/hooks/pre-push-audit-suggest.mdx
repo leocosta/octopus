@@ -49,7 +49,7 @@ patterns:
 | `audit-money` | Touched files under `src/billing/`, `src/payments/`, or anything matching `money\|price\|cents\|fee\|discount\|invoice` |
 | `audit-tenant` | New `class … : DbContext` lines, new entity configs, raw SQL with no `WHERE` filter on tenant columns |
 | `audit-security` | Changes to auth code, middleware, env-var loading, public route handlers |
-| `cross-stack-contract` | Touched files on both sides of a frontend/backend split (`api/` + `web/`, etc.) |
+| `review-contracts` | Touched files on both sides of a frontend/backend split (`api/` + `web/`, etc.) |
 | `audit-config` | Edits under `rules/`, `skills/`, `hooks/`, `commands/`, or `bundles/` |
 
 The patterns are intentionally conservative — better to suggest

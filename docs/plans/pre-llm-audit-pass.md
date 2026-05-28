@@ -18,10 +18,10 @@
 |---|---|---|
 | `skills/_shared/audit-pre-pass.md` | create | 4-step pre-pass protocol shared by all audit skills |
 | `tests/test_pre_llm_audit_pass.sh` | create | Structural grep tests verifying fragment and skill wiring |
-| `skills/money-review/SKILL.md` | modify | Add `pre_pass:` frontmatter; replace `## File Discovery` body |
-| `skills/security-scan/SKILL.md` | modify | Add `pre_pass:` frontmatter; replace `## File Discovery` body |
-| `skills/cross-stack-contract/SKILL.md` | modify | Add `pre_pass:` frontmatter; replace `## Stack Discovery` body |
-| `skills/tenant-scope-audit/SKILL.md` | modify | Add `pre_pass:` frontmatter; replace `## File Discovery` body |
+| `skills/audit-money/SKILL.md` | modify | Add `pre_pass:` frontmatter; replace `## File Discovery` body |
+| `skills/audit-security/SKILL.md` | modify | Add `pre_pass:` frontmatter; replace `## File Discovery` body |
+| `skills/review-contracts/SKILL.md` | modify | Add `pre_pass:` frontmatter; replace `## Stack Discovery` body |
+| `skills/audit-tenant/SKILL.md` | modify | Add `pre_pass:` frontmatter; replace `## File Discovery` body |
 
 ---
 
@@ -70,28 +70,28 @@ check "fragment contains 'CANDIDATE_FILES'" \
   grep -q "CANDIDATE_FILES" "$OCTOPUS_DIR/skills/_shared/audit-pre-pass.md"
 
 # T4: each skill has pre_pass: in frontmatter
-check "money-review has pre_pass:" \
-  grep -q "^pre_pass:" "$OCTOPUS_DIR/skills/money-review/SKILL.md"
-check "security-scan has pre_pass:" \
-  grep -q "^pre_pass:" "$OCTOPUS_DIR/skills/security-scan/SKILL.md"
-check "cross-stack-contract has pre_pass:" \
-  grep -q "^pre_pass:" "$OCTOPUS_DIR/skills/cross-stack-contract/SKILL.md"
-check "tenant-scope-audit has pre_pass:" \
-  grep -q "^pre_pass:" "$OCTOPUS_DIR/skills/tenant-scope-audit/SKILL.md"
+check "audit-money has pre_pass:" \
+  grep -q "^pre_pass:" "$OCTOPUS_DIR/skills/audit-money/SKILL.md"
+check "audit-security has pre_pass:" \
+  grep -q "^pre_pass:" "$OCTOPUS_DIR/skills/audit-security/SKILL.md"
+check "review-contracts has pre_pass:" \
+  grep -q "^pre_pass:" "$OCTOPUS_DIR/skills/review-contracts/SKILL.md"
+check "audit-tenant has pre_pass:" \
+  grep -q "^pre_pass:" "$OCTOPUS_DIR/skills/audit-tenant/SKILL.md"
 
-# T5: security-scan file_patterns contains \.env
-check "security-scan file_patterns contains .env" \
-  grep -A2 "file_patterns:" "$OCTOPUS_DIR/skills/security-scan/SKILL.md" | grep -q "env"
+# T5: audit-security file_patterns contains \.env
+check "audit-security file_patterns contains .env" \
+  grep -A2 "file_patterns:" "$OCTOPUS_DIR/skills/audit-security/SKILL.md" | grep -q "env"
 
 # T6: each skill references audit-pre-pass.md in its discovery section
-check "money-review references audit-pre-pass.md" \
-  grep -q "audit-pre-pass.md" "$OCTOPUS_DIR/skills/money-review/SKILL.md"
-check "security-scan references audit-pre-pass.md" \
-  grep -q "audit-pre-pass.md" "$OCTOPUS_DIR/skills/security-scan/SKILL.md"
-check "cross-stack-contract references audit-pre-pass.md" \
-  grep -q "audit-pre-pass.md" "$OCTOPUS_DIR/skills/cross-stack-contract/SKILL.md"
-check "tenant-scope-audit references audit-pre-pass.md" \
-  grep -q "audit-pre-pass.md" "$OCTOPUS_DIR/skills/tenant-scope-audit/SKILL.md"
+check "audit-money references audit-pre-pass.md" \
+  grep -q "audit-pre-pass.md" "$OCTOPUS_DIR/skills/audit-money/SKILL.md"
+check "audit-security references audit-pre-pass.md" \
+  grep -q "audit-pre-pass.md" "$OCTOPUS_DIR/skills/audit-security/SKILL.md"
+check "review-contracts references audit-pre-pass.md" \
+  grep -q "audit-pre-pass.md" "$OCTOPUS_DIR/skills/review-contracts/SKILL.md"
+check "audit-tenant references audit-pre-pass.md" \
+  grep -q "audit-pre-pass.md" "$OCTOPUS_DIR/skills/audit-tenant/SKILL.md"
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
@@ -163,13 +163,13 @@ git commit -m "feat(audit): add shared pre-pass protocol fragment and test scaff
 
 ---
 
-## Task 2: money-review + security-scan
+## Task 2: audit-money + audit-security
 
 **Files:**
-- Modify: `skills/money-review/SKILL.md`
-- Modify: `skills/security-scan/SKILL.md`
+- Modify: `skills/audit-money/SKILL.md`
+- Modify: `skills/audit-security/SKILL.md`
 
-- [ ] **Step 1: Update `skills/money-review/SKILL.md` frontmatter**
+- [ ] **Step 1: Update `skills/audit-money/SKILL.md` frontmatter**
 
 Add `pre_pass:` block immediately after `triggers:` in the frontmatter:
 
@@ -189,7 +189,7 @@ Use this skill's `pre_pass.file_patterns` and `pre_pass.line_patterns` from the 
 Proceed to inspection checks only with the scoped diff produced by Step 4.
 ```
 
-- [ ] **Step 2: Update `skills/security-scan/SKILL.md` frontmatter**
+- [ ] **Step 2: Update `skills/audit-security/SKILL.md` frontmatter**
 
 Add `pre_pass:` block immediately after `triggers:` in the frontmatter:
 
@@ -212,24 +212,24 @@ Proceed to inspection checks only with the scoped diff produced by Step 4.
 - [ ] **Step 3: Run tests**
 
 Run: `bash tests/test_pre_llm_audit_pass.sh`
-Expected: money-review and security-scan checks now PASS; cross-stack-contract and tenant-scope-audit still FAIL
+Expected: audit-money and audit-security checks now PASS; review-contracts and audit-tenant still FAIL
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add skills/money-review/SKILL.md skills/security-scan/SKILL.md
-git commit -m "feat(audit): wire pre-pass protocol into money-review and security-scan (RM-025)"
+git add skills/audit-money/SKILL.md skills/audit-security/SKILL.md
+git commit -m "feat(audit): wire pre-pass protocol into audit-money and audit-security (RM-025)"
 ```
 
 ---
 
-## Task 3: cross-stack-contract + tenant-scope-audit
+## Task 3: review-contracts + audit-tenant
 
 **Files:**
-- Modify: `skills/cross-stack-contract/SKILL.md`
-- Modify: `skills/tenant-scope-audit/SKILL.md`
+- Modify: `skills/review-contracts/SKILL.md`
+- Modify: `skills/audit-tenant/SKILL.md`
 
-- [ ] **Step 1: Update `skills/cross-stack-contract/SKILL.md` frontmatter**
+- [ ] **Step 1: Update `skills/review-contracts/SKILL.md` frontmatter**
 
 Add `pre_pass:` block immediately after `triggers:` in the frontmatter:
 
@@ -249,7 +249,7 @@ Use this skill's `pre_pass.file_patterns` and `pre_pass.line_patterns` from the 
 Proceed to inspection checks only with the scoped diff produced by Step 4.
 ```
 
-- [ ] **Step 2: Update `skills/tenant-scope-audit/SKILL.md` frontmatter**
+- [ ] **Step 2: Update `skills/audit-tenant/SKILL.md` frontmatter**
 
 Add `pre_pass:` block immediately after `triggers:` in the frontmatter:
 
@@ -277,6 +277,6 @@ Expected: all checks PASS (0 failures)
 - [ ] **Step 4: Commit**
 
 ```bash
-git add skills/cross-stack-contract/SKILL.md skills/tenant-scope-audit/SKILL.md
-git commit -m "feat(audit): wire pre-pass protocol into cross-stack-contract and tenant-scope-audit (RM-025)"
+git add skills/review-contracts/SKILL.md skills/audit-tenant/SKILL.md
+git commit -m "feat(audit): wire pre-pass protocol into review-contracts and audit-tenant (RM-025)"
 ```

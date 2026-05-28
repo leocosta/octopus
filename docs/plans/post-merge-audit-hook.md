@@ -16,9 +16,9 @@
 
 | File | Change | Responsibility |
 |---|---|---|
-| `skills/money-review/templates/patterns.md` | modify | Standardize to `## Path tokens` + `## Content regex` headings |
-| `skills/tenant-scope-audit/templates/patterns.md` | modify | Add `## Path tokens` + `## Content regex` headings |
-| `skills/security-scan/templates/patterns.md` | create | New patterns file with standard headings |
+| `skills/audit-money/templates/patterns.md` | modify | Standardize to `## Path tokens` + `## Content regex` headings |
+| `skills/audit-tenant/templates/patterns.md` | modify | Add `## Path tokens` + `## Content regex` headings |
+| `skills/audit-security/templates/patterns.md` | create | New patterns file with standard headings |
 | `cli/lib/audit-map.sh` | create | Pure function library: parse patterns.md cascade, match diff |
 | `tests/test_audit_map.sh` | create | Fixture-diff unit tests for audit-map.sh |
 | `hooks/git/pre-push-audit-suggest.sh` | create | Hook body: reads stdin, computes diff, prints blocklet |
@@ -31,9 +31,9 @@
 
 ## Task 1: Standardize patterns.md schema
 
-- [ ] Migrate `skills/money-review/templates/patterns.md` (rename headings)
-- [ ] Migrate `skills/tenant-scope-audit/templates/patterns.md` (add path tokens + content regex)
-- [ ] Create `skills/security-scan/templates/patterns.md`
+- [ ] Migrate `skills/audit-money/templates/patterns.md` (rename headings)
+- [ ] Migrate `skills/audit-tenant/templates/patterns.md` (add path tokens + content regex)
+- [ ] Create `skills/audit-security/templates/patterns.md`
 
 ## Task 2: Create `cli/lib/audit-map.sh`
 

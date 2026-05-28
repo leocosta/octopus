@@ -89,7 +89,7 @@ invariant. No file is written.
 Chat (no `--apply`):
 
 ```
-## Compression preview — skills/money-review/SKILL.md
+## Compression preview — skills/audit-money/SKILL.md
 
 before: 197 lines / 7.1 KB
 after:  148 lines / 5.3 KB
@@ -103,7 +103,7 @@ after:  148 lines / 5.3 KB
 - dropped one example in "## Invocation" — covered by `--only` list.
 ```
 
-With `--apply`: same output + `written: skills/money-review/SKILL.md`.
+With `--apply`: same output + `written: skills/audit-money/SKILL.md`.
 
 ## Errors
 
@@ -119,7 +119,7 @@ With `--apply`: same output + `written: skills/money-review/SKILL.md`.
 ## Bundle
 
 Adds to the **`docs-discipline`** bundle. The bundle already hosts
-meta-tools for documentation quality (`plan-backlog-hygiene`,
+meta-tools for documentation quality (`plan-backlog`,
 `continuous-learning`); compressing skill documentation fits the same
 audience — teams that actively maintain written artefacts.
 

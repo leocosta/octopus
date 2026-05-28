@@ -13,14 +13,14 @@ One bug in this layer means one tenant sees another tenant's data.
 
 Before merging any PR that touches a `DbContext`, a controller, a
 query helper, or anywhere the `TenantId` discipline applies. Runs well
-alongside `security-scan`, `money-review`, and `cross-stack-contract`.
+alongside `audit-security`, `audit-money`, and `review-contracts`.
 
 ## Enable
 
 ```yaml
 # .octopus.yml
 skills:
-  - tenant-scope-audit
+  - audit-tenant
 
 # Optional: configure the tenant field, filter helper, and DbContext.
 # Defaults are TenantId / AppQueryFilter / AppDbContext.
@@ -39,10 +39,10 @@ Run `octopus setup`.
 ## Use
 
 ```
-/octopus:tenant-scope-audit                       # current branch vs main
-/octopus:tenant-scope-audit #123                  # a PR
-/octopus:tenant-scope-audit --base=main --only=query-without-filter,dbcontext-missing-filter
-/octopus:tenant-scope-audit --write-report
+/octopus:audit-tenant                       # current branch vs main
+/octopus:audit-tenant #123                  # a PR
+/octopus:audit-tenant --base=main --only=query-without-filter,dbcontext-missing-filter
+/octopus:audit-tenant --write-report
 ```
 
 ## Inspection checks
@@ -86,7 +86,7 @@ just the marker, so future readers see *why*.
 
 ## Overrides (patterns)
 
-- `docs/tenant-scope-audit/patterns.md` — append repo-specific
+- `docs/audit-tenant/patterns.md` — append repo-specific
   entity names, admin role markers, ownership helper names.
 
 ## Review before merge

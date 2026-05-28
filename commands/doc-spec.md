@@ -3,11 +3,6 @@ name: doc-spec
 description: (Octopus) Create a new feature spec from template
 ---
 
----
-description: (Octopus) Create a new feature specification from the Octopus template
-agent: code
----
-
 # /octopus:doc-spec
 
 ## Purpose

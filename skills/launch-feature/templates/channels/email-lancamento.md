@@ -1,6 +1,6 @@
 ---
 feature_ref: {{FEATURE_REF}}
-generated_by: octopus:feature-to-market
+generated_by: octopus:launch-feature
 generated_at: {{TODAY}}
 voice_source: {{VOICE_SOURCE}}
 angle: "{{ANGLE}}"
