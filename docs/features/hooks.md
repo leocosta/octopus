@@ -18,6 +18,8 @@ Lifecycle hooks that automate quality enforcement for Claude Code. Other agents 
 | `save-state` | PreCompact | Saves session state before compacting |
 | `load-context` | SessionStart | Loads project context on session start |
 | `console-log-check` | Stop | Final check for debug statements |
+| `propose-knowledge-update` | Stop | Queues CLAUDE.md / knowledge update proposals for manual review via `/octopus:review-proposals`. |
+| `grounding-check` | Stop | Queues a signal-only grounding review (invented conventions, unsupported domain facts) vs. the source of truth. See [audit-grounding.md](audit-grounding.md). |
 | `session-end` | Stop | Session cleanup |
 | `lifecycle-marker` | SessionEnd | Marks session lifecycle events |
 
