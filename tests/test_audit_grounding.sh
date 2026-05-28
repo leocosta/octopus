@@ -25,5 +25,14 @@ check "emits invented-convention finding" grep -q "invented-convention" "$SKILL"
 check "emits unsupported-domain-fact finding" grep -q "unsupported-domain-fact" "$SKILL"
 check "is signal-only (never blocks)" grep -qiE "signal-only|does not block|never block" "$SKILL"
 
+# --- Task 2: the stop-hook trigger --------------------------------------
+HOOK="$OCTOPUS_DIR/hooks/stop/grounding-check.sh"
+check "stop hook exists" test -f "$HOOK"
+check "stop hook is executable" test -x "$HOOK"
+check "hook routes to proposals queue" grep -q "proposals" "$HOOK"
+check "hook is non-blocking (exit 0)" grep -q "exit 0" "$HOOK"
+check "hook references audit-grounding" grep -q "audit-grounding" "$HOOK"
+check "hook registered in hooks.json" grep -q "grounding-check" "$OCTOPUS_DIR/hooks/hooks.json"
+
 echo "PASS=$PASS FAIL=$FAIL"
 test "$FAIL" -eq 0

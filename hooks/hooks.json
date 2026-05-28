@@ -164,6 +164,17 @@
       "hooks": [
         {
           "type": "command",
+          "command": "octopus/hooks/stop/grounding-check.sh",
+          "id": "grounding-check",
+          "timeout": 10000
+        }
+      ]
+    },
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
           "command": "octopus/hooks/stop/session-end.sh",
           "id": "session-end",
           "timeout": 10000
