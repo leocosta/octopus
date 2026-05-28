@@ -75,7 +75,7 @@ Pressing `[a]` opens an inline prompt bar at the bottom of the TUI.
 Input is interpreted in three modes, evaluated in order:
 
 1. **Slash command** — `/skill-name [args] [--model <model>]`
-   e.g. `/audit-all`, `/security-scan src/auth/ --model opus`.
+   e.g. `/audit-all`, `/audit-security src/auth/ --model opus`.
    Maps directly to the Octopus skill of that name. The skill's `SKILL.md`
    is injected as the Claude Code session prompt. `--model` overrides model
    resolution for this task only.
@@ -83,7 +83,7 @@ Input is interpreted in three modes, evaluated in order:
 2. **Natural language** — free text run through the existing trigger-matching
    engine (same keyword + path scoring used in lazy skill activation).
    Matching rule: if exactly one skill has at least one keyword or path hit,
-   it is proposed: `"Matched: security-scan — confirm? [y/n]"`. If two or
+   it is proposed: `"Matched: audit-security — confirm? [y/n]"`. If two or
    more skills match, a fuzzy picker lists them. If none match, the text
    becomes a raw instruction. No numeric threshold — match presence is
    binary per skill.
@@ -104,7 +104,7 @@ The resulting task is written to `.octopus/queue/<ts>-<role>.json`:
 {
   "id": "<ts>",
   "role": "backend-specialist",
-  "skill": "security-scan",
+  "skill": "audit-security",
   "model": "claude-sonnet-4-6",
   "prompt": "<resolved text>",
   "status": "queued",
@@ -148,7 +148,7 @@ by reading existing PID files.
 - id: s1
   when: "daily 09:00"       # cron-style or "on: push"
   role: backend-specialist
-  skill: security-scan      # or prompt: "..."
+  skill: audit-security      # or prompt: "..."
   enabled: true
 ```
 
@@ -165,16 +165,16 @@ existing pre-push git hook installed by Octopus.
 │  ||||                                                                │
 ├─────────────────────────────────────────────────────────────────────┤
 │  ┌─ Agents ────────────────┐  ┌─ Queue ───────────────────────────┐ │
-│  │ ● backend-specialist    │  │ ▶ security-scan          2m ago   │ │
+│  │ ● backend-specialist    │  │ ▶ audit-security          2m ago   │ │
 │  │ ● tech-writer           │  │ ○ doc-design             queued   │ │
-│  │ ○ frontend-specialist   │  │ ✓ release-announce       done 8m  │ │
+│  │ ○ frontend-specialist   │  │ ✓ launch-release       done 8m  │ │
 │  └─────────────────────────┘  └───────────────────────────────────┘ │
 │  ┌─ Output ── backend-specialist ───────────────────────────────────┐│
 │  │ 10:42:01  Reading src/auth/middleware.ts...                      ││
 │  │ 10:42:07  ✓ 4 tests passed                                      ││
 │  └──────────────────────────────────────────────────────────────────┘│
 │  ┌─ Schedule ────────────────────────────────────────────────────────┐│
-│  │ ◷ daily 09:00   security-scan        backend-specialist          ││
+│  │ ◷ daily 09:00   audit-security        backend-specialist          ││
 │  └──────────────────────────────────────────────────────────────────┘│
 │  [a]dd  [p]ause  [k]ill  [tab] focus  [q]uit                        │
 └─────────────────────────────────────────────────────────────────────┘
@@ -287,7 +287,7 @@ are added inside it.
 **Knowledge modules**: none new
 **Implementing roles**: `backend-specialist` (process manager, scheduler — bash/Python), `tech-writer` (docs)
 **Related ADRs**: N/A
-**Skills needed**: `implement`, `debugging`
+**Skills needed**: `implement`, `debug`
 **Bundle**: `starter` (existing) — no new bundle needed; `octopus control` is a CLI feature, not a skill
 
 **Constraints**:
@@ -317,7 +317,7 @@ are added inside it.
 - Queue file is created on enqueue and removed on dequeue.
 
 **Manual / dog-food:**
-- Run `octopus control` in the Octopus repo itself; submit `/security-scan`
+- Run `octopus control` in the Octopus repo itself; submit `/audit-security`
   via `[a]`; verify Claude Code launches in a worktree and output appears
   in the panel.
 - Schedule a task for "in 1 minute"; verify it fires.

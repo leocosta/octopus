@@ -1,6 +1,6 @@
 ---
 title: pr-comments
-description: Aplica a disciplina do receiving-code-review aos comentários de PR — verifica a crítica, pede evidências quando o comentário é genérico, separa feedback fundamentado de preferência e nunca faz mudanças performáticas.
+description: Aplica a disciplina do respond-to-review aos comentários de PR — verifica a crítica, pede evidências quando o comentário é genérico, separa feedback fundamentado de preferência e nunca faz mudanças performáticas.
 sidebar:
   order: 6
 source_hash: "sha256:b1ecc61eae09cd54c720dcba50fb7a0336bbc88d4574931f2d29ceb408260510"
@@ -9,7 +9,7 @@ needs_retranslation: false
 
 `/octopus:pr-comments` é o comando que roda toda vez que chega
 feedback de PR. Ele carrega os comentários via `gh` e então aplica
-a skill receiving-code-review a cada um — verificando a crítica,
+a skill respond-to-review a cada um — verificando a crítica,
 pedindo evidências quando o comentário é genérico e separando
 feedback fundamentado de preferência.
 
@@ -26,7 +26,7 @@ para um agent:
   reflexo, esgotando a paciência do revisor e enterrando os
   comentários que de fato tinham razão.
 
-A skill receiving-code-review é o caminho do meio: para cada
+A skill respond-to-review é o caminho do meio: para cada
 comentário, o agent ou faz a mudança *com entendimento*, pede a
 evidência que justificaria a mudança, ou discorda de forma
 explícita e fundamentada. Nada de edições silenciosas para

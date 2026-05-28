@@ -13,14 +13,14 @@
 ## Problem Statement
 
 Three Octopus workflow skills in the `starter` bundle —
-`implement` (RM-030), `debugging` (RM-031), and
-`receiving-code-review` (RM-032) — each ship with a reserved
+`implement` (RM-030), `debug` (RM-031), and
+`respond-to-review` (RM-032) — each ship with a reserved
 `## Task Routing` section containing the same stub paragraph:
 
 > When [...] consider whether domain-specific skills help —
 > `dotnet` for .NET stack traces, the `frontend-specialist` role
-> for UI-layer bugs, `tenant-scope-audit` for multi-tenant
-> data-leak bugs, `money-review` for financial regressions.
+> for UI-layer bugs, `audit-tenant` for multi-tenant
+> data-leak bugs, `audit-money` for financial regressions.
 >
 > RM-034 will replace this paragraph with a decision matrix that
 > auto-selects the right companion skill per task. Until
@@ -44,7 +44,7 @@ the three skills references, avoiding three-way drift.
 ## Goals
 
 - Replace the `## Task Routing` stub in all three starter
-  skills (`implement`, `debugging`, `receiving-code-review`)
+  skills (`implement`, `debug`, `respond-to-review`)
   with a concrete decision matrix.
 - Factor the matrix into a single shared file so all three
   skills consult the same rules. One source of truth.
@@ -52,9 +52,9 @@ the three skills references, avoiding three-way drift.
   agent has something to pattern-match against, not prose.
 - Cover the common companion cases: stack/language
   (`dotnet` / `frontend-specialist` role), domain audits
-  (`money-review` / `tenant-scope-audit` / `cross-stack-contract`),
-  cross-workflow handoffs (between `implement` / `debugging` /
-  `receiving-code-review`), and the pre-merge composer
+  (`audit-money` / `audit-tenant` / `review-contracts`),
+  cross-workflow handoffs (between `implement` / `debug` /
+  `respond-to-review`), and the pre-merge composer
   (`audit-all`).
 - Degrade gracefully: when a companion skill isn't installed,
   the main workflow skill continues with `rules/common/*` and
@@ -66,8 +66,8 @@ the three skills references, avoiding three-way drift.
 ## Non-Goals
 
 - Adding routing to any skill other than the three starter
-  workflow skills. Audit skills (`money-review`,
-  `tenant-scope-audit`, …) are destinations of routing, not
+  workflow skills. Audit skills (`audit-money`,
+  `audit-tenant`, …) are destinations of routing, not
   sources.
 - New routing metadata in skill frontmatter. The shared fragment
   is plain markdown; no new schema.
@@ -111,7 +111,7 @@ future edits.
 
 ```markdown
 <!-- Canonical task-routing matrix for the three starter workflow
-     skills (implement, debugging, receiving-code-review).
+     skills (implement, debugging, respond-to-review).
      When you edit this file, the pre-commit / CI checks verify
      that each SKILL.md contains a byte-identical copy of the
      block between the BEGIN and END markers below. Edit once
@@ -136,10 +136,10 @@ checklist, not a switch statement.
 
 | Signal | Consult |
 |---|---|
-| Keywords `payment`, `billing`, `split`, `fee`, `invoice`, `subscription`; paths `billing/`, `payment/` | `money-review` |
-| New `DbSet<X>`, multi-tenant queries, `[Authorize]` changes, `IgnoreQueryFilters()` | `tenant-scope-audit` |
-| Change touches both `api/` and `app/` (or `lp/`) in the same diff; DTO/endpoint changes | `cross-stack-contract` |
-| Secrets, env vars, `detect-secrets` warnings, authentication paths | `security-scan` |
+| Keywords `payment`, `billing`, `split`, `fee`, `invoice`, `subscription`; paths `billing/`, `payment/` | `audit-money` |
+| New `DbSet<X>`, multi-tenant queries, `[Authorize]` changes, `IgnoreQueryFilters()` | `audit-tenant` |
+| Change touches both `api/` and `app/` (or `lp/`) in the same diff; DTO/endpoint changes | `review-contracts` |
+| Secrets, env vars, `detect-secrets` warnings, authentication paths | `audit-security` |
 | Pre-merge on a non-trivial PR that touches billing or multi-tenant data | `audit-all` (composer — runs all four audits in parallel) |
 
 **Cross-workflow signals**
@@ -147,8 +147,8 @@ checklist, not a switch statement.
 | Signal | Consult |
 |---|---|
 | Trigger is a **new feature** or **refactor** (not a reported bug or review comment) | Stay in `implement` |
-| Trigger is a **bug report**, **failing test**, **stack trace**, or **regression** | Hand off to `debugging` (Phase 3 uses `implement`'s TDD loop for the fix) |
-| Trigger is a **PR review comment** | Hand off to `receiving-code-review` (Rule 1 verifies, then handoff back to `implement` or `debugging` per the comment's intent) |
+| Trigger is a **bug report**, **failing test**, **stack trace**, or **regression** | Hand off to `debug` (Phase 3 uses `implement`'s TDD loop for the fix) |
+| Trigger is a **PR review comment** | Hand off to `respond-to-review` (Rule 1 verifies, then handoff back to `implement` or `debug` per the comment's intent) |
 | Task involves both docs and code | Compose with `feature-lifecycle` for docs (RFC / Spec / ADR), use the appropriate workflow skill for the code |
 
 **Risk-profile signals**
@@ -156,8 +156,8 @@ checklist, not a switch statement.
 | Signal | Consult |
 |---|---|
 | Large-scale / cross-module change (touches ≥ 3 modules) | Escalate `implement`'s plan-before-code gate to a spec via `/octopus:doc-spec`; add an ADR via `/octopus:doc-adr` if the change encodes a decision |
-| Data migration, schema change, irreversible operation | Keep `debugging`'s Phase 3 regression test; consider an ADR; consider tagging the change for the destructive-action guard hook |
-| Release-triggering change | Pair with `release-announce` (retention) or `feature-to-market` (acquisition) for the user-facing announcement after merge |
+| Data migration, schema change, irreversible operation | Keep `debug`'s Phase 3 regression test; consider an ADR; consider tagging the change for the destructive-action guard hook |
+| Release-triggering change | Pair with `launch-release` (retention) or `launch-feature` (acquisition) for the user-facing announcement after merge |
 
 **Graceful degradation**
 
@@ -237,8 +237,8 @@ review comment.
 2. `skills/implement/SKILL.md` — replace the `## Task Routing`
    body (stub paragraph) with the fragment body wrapped in
    BEGIN/END markers.
-3. `skills/debugging/SKILL.md` — same replacement.
-4. `skills/receiving-code-review/SKILL.md` — same replacement.
+3. `skills/debug/SKILL.md` — same replacement.
+4. `skills/respond-to-review/SKILL.md` — same replacement.
 5. `tests/test_task_routing.sh` — drift-prevention test.
 6. Update the existing RM-030/RM-031/RM-032 skill tests to
    ensure the Task Routing section no longer asserts the
@@ -299,8 +299,8 @@ extract_block() {
 canonical_body="$(extract_block "$CANONICAL")"
 for f in \
   "$SCRIPT_DIR/skills/implement/SKILL.md" \
-  "$SCRIPT_DIR/skills/debugging/SKILL.md" \
-  "$SCRIPT_DIR/skills/receiving-code-review/SKILL.md"
+  "$SCRIPT_DIR/skills/debug/SKILL.md" \
+  "$SCRIPT_DIR/skills/respond-to-review/SKILL.md"
 do
   skill_body="$(extract_block "$f")"
   if [[ "$skill_body" != "$canonical_body" ]]; then
@@ -314,8 +314,8 @@ echo "PASS: three skills synced with canonical"
 echo "Test 4: the RM-034 placeholder string is gone from all three skills"
 for f in \
   "$SCRIPT_DIR/skills/implement/SKILL.md" \
-  "$SCRIPT_DIR/skills/debugging/SKILL.md" \
-  "$SCRIPT_DIR/skills/receiving-code-review/SKILL.md"
+  "$SCRIPT_DIR/skills/debug/SKILL.md" \
+  "$SCRIPT_DIR/skills/respond-to-review/SKILL.md"
 do
   if grep -q "RM-034 will replace this paragraph" "$f"; then
     echo "FAIL: $f still contains the v1 RM-034 stub"

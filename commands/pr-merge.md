@@ -4,11 +4,6 @@ description: (Octopus) Merge an approved PR
 cli: octopus.sh pr-merge
 ---
 
----
-description: (Octopus) Merge an approved PR
-agent: code
----
-
 ## Instructions
 
 1. Run: `octopus pr-merge <pr-number>` (the legacy shim remains for now).

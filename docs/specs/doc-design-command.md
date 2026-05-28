@@ -213,7 +213,7 @@ workflow skill).
 "spec-design → plan → execute" loop may follow once RM-036 and
 RM-037 ship.
 **Skills needed**: `adr`, `feature-lifecycle`,
-`plan-backlog-hygiene`.
+`plan-backlog`.
 **Bundle**: `docs-discipline (existing)` — no new bundle
 proposed.
 

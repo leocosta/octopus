@@ -9,15 +9,15 @@ disclosure.
 ## When to use
 
 Before merging any PR that touches billing, payments, splits, fees,
-taxes, or refunds. Runs well alongside `security-scan`.
+taxes, or refunds. Runs well alongside `audit-security`.
 
 ## Enable
 
 ```yaml
 # .octopus.yml
 skills:
-  - money-review
-  - security-scan
+  - audit-money
+  - audit-security
 ```
 
 Run `octopus setup`.
@@ -25,18 +25,18 @@ Run `octopus setup`.
 ## Use
 
 ```
-/octopus:money-review                       # current branch vs main
-/octopus:money-review #123                  # a PR
-/octopus:money-review feat/billing --base=main
-/octopus:money-review --only=env,webhook
-/octopus:money-review --write-report
+/octopus:audit-money                       # current branch vs main
+/octopus:audit-money #123                  # a PR
+/octopus:audit-money feat/billing --base=main
+/octopus:audit-money --only=env,webhook
+/octopus:audit-money --write-report
 ```
 
 ## Overrides (recommended for mature repos)
 
-- `docs/money-review/patterns.md` — add domain-specific tokens
+- `docs/audit-money/patterns.md` — add domain-specific tokens
   (e.g. `mensalidade`, `matricula`) and content regex.
-- `docs/money-review/providers.md` — override provider idioms
+- `docs/audit-money/providers.md` — override provider idioms
   (idempotency conventions, webhook signature helpers).
 
 Both override files **append** to the defaults; they do not replace them.

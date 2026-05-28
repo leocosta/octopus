@@ -4,11 +4,6 @@ description: (Octopus) Address PR review comments
 cli: octopus.sh pr-comments
 ---
 
----
-description: (Octopus) Address PR review comments
-agent: code
----
-
 ## Instructions
 
 1. Run: `octopus pr-comments <pr-number>` (legacy shim also works for the short term).

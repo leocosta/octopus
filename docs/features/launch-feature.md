@@ -15,7 +15,7 @@ Add to `.octopus.yml`:
 
 ```yaml
 skills:
-  - feature-to-market
+  - launch-feature
 ```
 
 Run `octopus setup` to install the slash command in your agent of choice.
@@ -23,10 +23,10 @@ Run `octopus setup` to install the slash command in your agent of choice.
 ## Use
 
 ```
-/octopus:feature-to-market RM-008
-/octopus:feature-to-market RM-008 --channels=email,linkedin
-/octopus:feature-to-market docs/specs/billing.md --no-images
-/octopus:feature-to-market #123 --dry-run
+/octopus:launch-feature RM-008
+/octopus:launch-feature RM-008 --channels=email,linkedin
+/octopus:launch-feature docs/specs/billing.md --no-images
+/octopus:launch-feature #123 --dry-run
 ```
 
 ## Overrides (recommended)

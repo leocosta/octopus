@@ -3,11 +3,6 @@ name: scaffold-skill
 description: (Octopus) Create a new Octopus skill end-to-end — frontmatter, SKILL.md, optional REFERENCE.md, and bundle registration so no skill ships loose.
 ---
 
----
-description: (Octopus) Create a new Octopus skill end-to-end — frontmatter, SKILL.md, optional REFERENCE.md, and bundle registration so no skill ships loose.
-agent: code
----
-
 # /octopus:scaffold-skill
 
 ## Purpose

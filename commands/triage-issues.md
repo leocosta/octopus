@@ -3,11 +3,6 @@ name: triage-issues
 description: (Octopus) Run the state-machine triage flow on a single issue — recommend category and state, reproduce bugs, grill, transition.
 ---
 
----
-description: (Octopus) Run the state-machine triage flow on a single issue — recommend category and state, reproduce bugs, grill, transition.
-agent: code
----
-
 # /octopus:triage-issues
 
 ## Purpose

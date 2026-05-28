@@ -1,6 +1,6 @@
 # Money-Review Patterns (default)
 
-> Embedded default. Override at `docs/money-review/patterns.md`.
+> Embedded default. Override at `docs/audit-money/patterns.md`.
 > The override appends to these defaults — it does not replace them.
 
 ## Path tokens

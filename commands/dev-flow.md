@@ -3,11 +3,6 @@ name: dev-flow
 description: (Octopus) Full development workflow orchestrator
 ---
 
----
-description: (Octopus) Full development workflow orchestrator
-agent: code
----
-
 ## Instructions
 
 This is the full development workflow. Execute steps in order with pauses

@@ -1,6 +1,6 @@
 # Security-Scan Patterns (default)
 
-> Embedded default. Override at `docs/security-scan/patterns.md`.
+> Embedded default. Override at `docs/audit-security/patterns.md`.
 > Overrides append; they do not replace the defaults.
 
 ## Path tokens

@@ -4,11 +4,6 @@ description: (Octopus) Open a PR with an agent-written title + body following Oc
 cli: octopus.sh pr-open
 ---
 
----
-description: (Octopus) Open a PR with an agent-written title + body following Octopus conventions
-agent: code
----
-
 Open a pull request. The agent writes the title AND body; the CLI
 handles the mechanics (branch push + `gh pr create`).
 

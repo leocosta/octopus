@@ -4,11 +4,6 @@ description: (Octopus) Create a development branch following conventions
 cli: octopus.sh branch-create
 ---
 
----
-description: (Octopus) Create a development branch following Octopus conventions
-agent: code
----
-
 ## Instructions
 
 1. If no branch name was provided:

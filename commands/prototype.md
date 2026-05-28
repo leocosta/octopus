@@ -3,11 +3,6 @@ name: prototype
 description: (Octopus) Build a throwaway prototype to answer one design question — logic branch (terminal app) or UI branch (variants on one route).
 ---
 
----
-description: (Octopus) Build a throwaway prototype to answer one design question — logic branch (terminal app) or UI branch (variants on one route).
-agent: code
----
-
 # /octopus:prototype
 
 ## Purpose

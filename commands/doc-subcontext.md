@@ -3,11 +3,6 @@ name: doc-subcontext
 description: (Octopus) Create a scoped CLAUDE.md at a subdirectory — captures conventions unique to one module without duplicating the parent.
 ---
 
----
-description: (Octopus) Create a scoped CLAUDE.md at a subdirectory — captures conventions unique to one module without duplicating the parent.
-agent: code
----
-
 # /octopus:doc-subcontext
 
 ## Purpose

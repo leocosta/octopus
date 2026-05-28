@@ -3,7 +3,7 @@
 The Octopus PR-feedback discipline — active by default whenever
 a task involves processing reviewer comments. The third workflow
 skill in the `starter` bundle, alongside `implement` (features)
-and `debugging` (bugs).
+and `debug` (bugs).
 
 The skill codifies five rules:
 
@@ -53,35 +53,35 @@ not engage for:
 - Feature work that doesn't originate from a comment (that is
   `implement`)
 - Bug triage that doesn't originate from a comment (that is
-  `debugging`)
+  `debug`)
 
 ## Enable
 
-The `starter` bundle includes `receiving-code-review`, so a
+The `starter` bundle includes `respond-to-review`, so a
 standard `octopus setup` run delivers it. If you use an explicit
 `skills:` list in `.octopus.yml`, add:
 
 ```yaml
 skills:
-  - receiving-code-review
+  - respond-to-review
 ```
 
 ## Explicit invocation
 
 ```
-/octopus:receiving-code-review <pr-or-comment-ref>
+/octopus:respond-to-review <pr-or-comment-ref>
 ```
 
 ## Relationship to other skills
 
 - `/octopus:pr-comments` — alternative entry point for walking
-  a PR's threads from scratch. `receiving-code-review` is
+  a PR's threads from scratch. `respond-to-review` is
   end-to-end (five rules + post-fix loop) and does not require
   it.
 - `implement` — when a comment asks for a code change, its five
   practices drive the edit after this skill's five rules
   validate the ask.
-- `debugging` — when a comment flags a bug, hand off; Rule 1
+- `debug` — when a comment flags a bug, hand off; Rule 1
   still runs first.
 - `rules/common/*` — always-on static rules. Never duplicated
   here.
@@ -92,9 +92,9 @@ skills:
 
 The `## Task Routing` section is a v1 stub reserved for RM-034,
 which will auto-dispatch to the right companion skill based on
-comment content (`money-review` for billing comments,
-`tenant-scope-audit` for multi-tenant data access,
-`cross-stack-contract` for cross-layer concerns, `debugging` for
+comment content (`audit-money` for billing comments,
+`audit-tenant` for multi-tenant data access,
+`review-contracts` for cross-layer concerns, `debug` for
 reported bugs).
 
 ## Review before merging

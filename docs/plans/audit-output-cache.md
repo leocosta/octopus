@@ -18,10 +18,10 @@
 |---|---|---|
 | `skills/_shared/audit-cache.md` | create | Cache Check + Write protocol |
 | `tests/test_audit_output_cache.sh` | create | Structural grep tests |
-| `skills/money-review/SKILL.md` | modify | Add `audit-cache.md` reference in File Discovery |
-| `skills/security-scan/SKILL.md` | modify | Add `audit-cache.md` reference in File Discovery |
-| `skills/cross-stack-contract/SKILL.md` | modify | Add `audit-cache.md` reference in File Discovery |
-| `skills/tenant-scope-audit/SKILL.md` | modify | Add `audit-cache.md` reference in File Discovery |
+| `skills/audit-money/SKILL.md` | modify | Add `audit-cache.md` reference in File Discovery |
+| `skills/audit-security/SKILL.md` | modify | Add `audit-cache.md` reference in File Discovery |
+| `skills/review-contracts/SKILL.md` | modify | Add `audit-cache.md` reference in File Discovery |
+| `skills/audit-tenant/SKILL.md` | modify | Add `audit-cache.md` reference in File Discovery |
 
 ---
 
@@ -70,14 +70,14 @@ check "fragment contains 'created_at'" \
   grep -q "created_at" "$OCTOPUS_DIR/skills/_shared/audit-cache.md"
 
 # T3: each skill references audit-cache.md
-check "money-review references audit-cache.md" \
-  grep -q "audit-cache.md" "$OCTOPUS_DIR/skills/money-review/SKILL.md"
-check "security-scan references audit-cache.md" \
-  grep -q "audit-cache.md" "$OCTOPUS_DIR/skills/security-scan/SKILL.md"
-check "cross-stack-contract references audit-cache.md" \
-  grep -q "audit-cache.md" "$OCTOPUS_DIR/skills/cross-stack-contract/SKILL.md"
-check "tenant-scope-audit references audit-cache.md" \
-  grep -q "audit-cache.md" "$OCTOPUS_DIR/skills/tenant-scope-audit/SKILL.md"
+check "audit-money references audit-cache.md" \
+  grep -q "audit-cache.md" "$OCTOPUS_DIR/skills/audit-money/SKILL.md"
+check "audit-security references audit-cache.md" \
+  grep -q "audit-cache.md" "$OCTOPUS_DIR/skills/audit-security/SKILL.md"
+check "review-contracts references audit-cache.md" \
+  grep -q "audit-cache.md" "$OCTOPUS_DIR/skills/review-contracts/SKILL.md"
+check "audit-tenant references audit-cache.md" \
+  grep -q "audit-cache.md" "$OCTOPUS_DIR/skills/audit-tenant/SKILL.md"
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
@@ -163,10 +163,10 @@ git commit -m "feat(audit): add shared cache protocol fragment and test scaffold
 ## Task 2: Wire cache protocol into all 4 audit skills
 
 **Files:**
-- Modify: `skills/money-review/SKILL.md`
-- Modify: `skills/security-scan/SKILL.md`
-- Modify: `skills/cross-stack-contract/SKILL.md`
-- Modify: `skills/tenant-scope-audit/SKILL.md`
+- Modify: `skills/audit-money/SKILL.md`
+- Modify: `skills/audit-security/SKILL.md`
+- Modify: `skills/review-contracts/SKILL.md`
+- Modify: `skills/audit-tenant/SKILL.md`
 
 - [ ] **Step 1: Update all 4 skills**
 
@@ -181,10 +181,10 @@ Then follow the Cache protocol in `skills/_shared/audit-cache.md` before proceed
 ```
 
 Apply to:
-- `skills/money-review/SKILL.md` → `## File Discovery`
-- `skills/security-scan/SKILL.md` → `## File Discovery`
-- `skills/cross-stack-contract/SKILL.md` → `## File Discovery`
-- `skills/tenant-scope-audit/SKILL.md` → `## File Discovery`
+- `skills/audit-money/SKILL.md` → `## File Discovery`
+- `skills/audit-security/SKILL.md` → `## File Discovery`
+- `skills/review-contracts/SKILL.md` → `## File Discovery`
+- `skills/audit-tenant/SKILL.md` → `## File Discovery`
 
 - [ ] **Step 2: Run all tests**
 
@@ -198,7 +198,7 @@ Expected: all 15 checks PASS
 - [ ] **Step 3: Commit**
 
 ```bash
-git add skills/money-review/SKILL.md skills/security-scan/SKILL.md \
-        skills/cross-stack-contract/SKILL.md skills/tenant-scope-audit/SKILL.md
+git add skills/audit-money/SKILL.md skills/audit-security/SKILL.md \
+        skills/review-contracts/SKILL.md skills/audit-tenant/SKILL.md
 git commit -m "feat(audit): wire cache protocol into all 4 audit skills (RM-026)"
 ```

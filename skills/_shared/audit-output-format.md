@@ -1,5 +1,5 @@
 <!-- Canonical conventions shared by all pre-merge audit skills
-     (money-review, tenant-scope-audit, cross-stack-contract).
+     (audit-money, audit-tenant, review-contracts).
      Each audit SKILL.md references this file by path; only
      skill-specific sections (inspection families, config) live
      in the SKILL.md itself. -->
@@ -26,7 +26,7 @@ All audit skills accept the same core flags:
   `<slug>` is derived from the branch or PR number (lowercase ASCII,
   non-alphanumeric runs collapsed to `-`, max 40 chars).
 
-Additional per-skill flags (e.g. `--stacks` in cross-stack-contract)
+Additional per-skill flags (e.g. `--stacks` in review-contracts)
 are documented in the SKILL.md.
 
 ## Override-file cascade
@@ -99,7 +99,7 @@ All audit skills handle these conditions uniformly:
   continue.
 - **Unrecognized `--only` value** → abort, list valid IDs.
 
-Per-skill errors (e.g. cross-stack-contract's "only one stack
+Per-skill errors (e.g. review-contracts's "only one stack
 detected") are documented in the SKILL.md.
 
 ## Composition

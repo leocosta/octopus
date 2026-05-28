@@ -5,7 +5,7 @@ or more refs (tags, tag ranges, RM IDs). Produces a landing HTML page,
 a slide deck, a plain notes file, and paste-ready messages for Slack,
 Discord, email, in-app banner, status page, X/Twitter, and WhatsApp.
 
-Distinct from `feature-to-market` — this one talks to people already
+Distinct from `launch-feature` — this one talks to people already
 using the product. Different jobs, different tones.
 
 ## When to use
@@ -19,7 +19,7 @@ tagged and written the CHANGELOG.
 ```yaml
 # .octopus.yml
 skills:
-  - release-announce
+  - launch-release
 
 # Default theme for every run
 theme: jade
@@ -31,26 +31,26 @@ releaseChannels:
   - in-app-banner
 ```
 
-Or add `growth` to your bundles — `release-announce` ships there
-alongside `feature-to-market`.
+Or add `growth` to your bundles — `launch-release` ships there
+alongside `launch-feature`.
 
 ## Use
 
 ```
 # default — since last tag, default channels, default theme
-/octopus:release-announce
+/octopus:launch-release
 
 # specific version, pick a theme, include every channel
-/octopus:release-announce v1.7.0 --theme=dark --channels=all
+/octopus:launch-release v1.7.0 --theme=dark --channels=all
 
 # single RM with editorial paper theme, email only
-/octopus:release-announce RM-008 --theme=paper --channels=email
+/octopus:launch-release RM-008 --theme=paper --channels=email
 
 # multi-version bundle with developer audience
-/octopus:release-announce v1.5.0..v1.7.0 --audience=developer
+/octopus:launch-release v1.5.0..v1.7.0 --audience=developer
 
 # synthesize a one-off theme via frontend-design
-/octopus:release-announce v1.7.0 --design-from="retro arcade synthwave"
+/octopus:launch-release v1.7.0 --design-from="retro arcade synthwave"
 ```
 
 ## Themes (v1)
@@ -73,11 +73,11 @@ When none of the presets fit, invoke `frontend-design` inline to
 synthesize one from a free-form prompt:
 
 ```
-/octopus:release-announce v1.7.0 --design-from="retro arcade synthwave"
+/octopus:launch-release v1.7.0 --design-from="retro arcade synthwave"
 ```
 
 The generated YAML lands at
-`docs/release-announce/themes/retro-arcade-synthwave.yml`. Subsequent
+`docs/launch-release/themes/retro-arcade-synthwave.yml`. Subsequent
 runs reuse it via `--theme=retro-arcade-synthwave`.
 
 ## Output

@@ -1,6 +1,6 @@
 # Payment Provider Patterns (default)
 
-> Embedded default. Override at `docs/money-review/providers.md`.
+> Embedded default. Override at `docs/audit-money/providers.md`.
 
 ## Asaas
 

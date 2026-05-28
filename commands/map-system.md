@@ -3,11 +3,6 @@ name: map-system
 description: (Octopus) Produce a higher-level map of the relevant modules and their callers in the project's domain vocabulary — manual-invocation only.
 ---
 
----
-description: (Octopus) Produce a higher-level map of the relevant modules and their callers in the project's domain vocabulary — manual-invocation only.
-agent: code
----
-
 # /octopus:map-system
 
 ## Purpose

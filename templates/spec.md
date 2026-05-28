@@ -51,7 +51,7 @@
 **Knowledge modules**: <!-- e.g. [domain, architecture] -->
 **Implementing roles**: <!-- e.g. [backend-specialist] -->
 **Related ADRs**: <!-- e.g. [ADR-001, ADR-005] -->
-**Skills needed**: <!-- e.g. [adr, e2e-testing, security-scan] -->
+**Skills needed**: <!-- e.g. [adr, e2e-testing, audit-security] -->
 **Bundle**: <!-- Required when this spec introduces a new skill. Either
   the name of an existing bundle that will adopt the skill
   (e.g. `quality-gates (existing)`) or a proposal for a new bundle

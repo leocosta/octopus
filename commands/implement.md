@@ -3,11 +3,6 @@ name: implement
 description: (Octopus) Walk the Octopus implementation workflow explicitly — TDD, plan-before-code, verification, simplify, commit cadence.
 ---
 
----
-description: (Octopus) Walk the Octopus implementation workflow explicitly — TDD, plan-before-code, verification, simplify, commit cadence.
-agent: code
----
-
 # /octopus:implement
 
 ## Purpose

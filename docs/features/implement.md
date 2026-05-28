@@ -49,11 +49,11 @@ If the skill does not auto-engage, drive it explicitly:
   the dynamic side; never duplicates the rules.
 - `feature-lifecycle` — docs workflow (RFC/Spec/ADR). `implement`
   is the code workflow. They compose.
-- `debugging` (RM-031, future) — bug-fix flow. `implement`'s TDD
+- `debug` (RM-031, future) — bug-fix flow. `implement`'s TDD
   loop still applies to the fix itself.
-- `receiving-code-review` (RM-032, future) — PR feedback flow.
-- Audit skills (`security-scan`, `money-review`,
-  `tenant-scope-audit`, `cross-stack-contract`, `audit-all`) —
+- `respond-to-review` (RM-032, future) — PR feedback flow.
+- Audit skills (`audit-security`, `audit-money`,
+  `audit-tenant`, `review-contracts`, `audit-all`) —
   pre-merge review. `implement` is pre-audit.
 - `superpowers:*` skills — when installed, they win on the
   practices they already cover (TDD, systematic debugging,

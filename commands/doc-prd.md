@@ -3,11 +3,6 @@ name: doc-prd
 description: (Octopus) Synthesise the current conversation into a PRD and publish it to the issue tracker, labelled ready-for-agent.
 ---
 
----
-description: (Octopus) Synthesise the current conversation into a PRD and publish it to the issue tracker, labelled ready-for-agent.
-agent: code
----
-
 # /octopus:doc-prd
 
 ## Purpose

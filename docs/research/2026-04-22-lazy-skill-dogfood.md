@@ -21,10 +21,10 @@ matches.
 |---|---|---|---|
 | `e2e-testing` | paths: `*.spec.ts`, `cypress/**`, `playwright/**` | **STUB** | No spec/test files, no cypress or playwright dirs |
 | `dotnet` | paths: `*.csproj`, `*.cs`, `*.sln` | **STUB** | No .NET files |
-| `cross-stack-contract` | paths: `openapi/**`, `contracts/**`, `swagger.*` | **STUB** | No OpenAPI/contract files |
-| `security-scan` | keywords: `auth`, `jwt`, `token`, `sql`, … | **STUB** | Keywords not found in README, package.json, docs/ |
-| `money-review` | keywords: `payment`, `stripe`, `billing`, … | **STUB** | Keywords not found |
-| `tenant-scope-audit` | keywords: `tenant`, `org`, `workspace`, … | **STUB** | Keywords not found |
+| `review-contracts` | paths: `openapi/**`, `contracts/**`, `swagger.*` | **STUB** | No OpenAPI/contract files |
+| `audit-security` | keywords: `auth`, `jwt`, `token`, `sql`, … | **STUB** | Keywords not found in README, package.json, docs/ |
+| `audit-money` | keywords: `payment`, `stripe`, `billing`, … | **STUB** | Keywords not found |
+| `audit-tenant` | keywords: `tenant`, `org`, `workspace`, … | **STUB** | Keywords not found |
 
 All 6 trigger-guarded skills would be stubbed for a concat-mode agent on this
 project.
@@ -40,14 +40,14 @@ project.
 A typical Copilot AGENTS.md or Gemini concat output for the `starter` bundle
 with all skills active runs ~800–1,200 lines of skill content. With 6 skills
 stubbed, a project using only the always-on skills (implement, debugging,
-receiving-code-review, adr, feature-lifecycle, context-budget) would see a
+respond-to-review, adr, feature-lifecycle, context-budget) would see a
 significantly smaller output file.
 
 For a project using the `dotnet-api` or `node-api` bundle (which includes
 domain-specific skills), the realistic reduction depends on which triggers
 fire:
-- A pure Node.js API project → `dotnet`, `e2e-testing`, `cross-stack-contract`
-  stubbed; `security-scan` likely active (jwt, token keywords common); ~400–600
+- A pure Node.js API project → `dotnet`, `e2e-testing`, `review-contracts`
+  stubbed; `audit-security` likely active (jwt, token keywords common); ~400–600
   lines saved.
 - A .NET project with Stripe billing → all 6 skills likely active → no reduction.
 
@@ -60,7 +60,7 @@ expected.
 `**` and `*` patterns without false positives in this repo. The `_skill_has_triggers`
 check correctly gates always-on skills (no `triggers:` key → always full content).
 
-**Observation:** The keyword `org` in `tenant-scope-audit` could be overly broad
+**Observation:** The keyword `org` in `audit-tenant` could be overly broad
 for projects that use GitHub org references in docs. The current keywords list
 (`tenant`, `org`, `workspace`, `multi-tenant`, `organization`) might trigger
 on repos with GitHub workflow files or contribution guidelines that mention

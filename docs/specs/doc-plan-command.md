@@ -298,7 +298,7 @@ skill).
 workflow (design → plan → execute) is worth writing once
 RM-037 ships.
 **Skills needed**: `adr`, `feature-lifecycle`,
-`plan-backlog-hygiene`.
+`plan-backlog`.
 **Bundle**: `docs-discipline (existing)` — mirrors
 `doc-design`'s placement.
 

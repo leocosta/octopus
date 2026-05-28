@@ -134,7 +134,7 @@ deliver_permissions "$agent"
 **Knowledge modules**: N/A
 **Implementing roles**: N/A
 **Related ADRs**: N/A
-**Skills needed**: [security-scan]
+**Skills needed**: [audit-security]
 
 **Constraints**:
 - Pure bash + Python3 stdlib — no external dependencies

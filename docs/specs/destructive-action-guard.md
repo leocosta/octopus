@@ -465,7 +465,7 @@ Inside a fresh repo with `hooks: true` and default
   sprinkle `# destructive-guard-ok` on everything. Mitigation:
   the marker requires a non-empty reason, surfaces in the
   command history and in code review, and the Anti-Patterns
-  section of `implement` / `debugging` / `receiving-code-review`
+  section of `implement` / `debug` / `respond-to-review`
   could be extended in a future RM to flag the pattern.
 
 ## Changelog

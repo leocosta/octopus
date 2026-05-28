@@ -3,11 +3,6 @@ name: doc-rfc
 description: (Octopus) Create a new RFC from template with project context
 ---
 
----
-description: (Octopus) Create a new RFC document from the Octopus template
-agent: code
----
-
 # /octopus:doc-rfc
 
 ## Purpose

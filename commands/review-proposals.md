@@ -3,11 +3,6 @@ name: review-proposals
 description: (Octopus) Walk the .octopus/proposals/ queue produced by the propose-knowledge-update Stop hook — review session findings, promote actionable items to CLAUDE.md / knowledge/ / rules/, archive the rest.
 ---
 
----
-description: (Octopus) Walk the .octopus/proposals/ queue produced by the propose-knowledge-update Stop hook — review session findings, promote actionable items to CLAUDE.md / knowledge/ / rules/, archive the rest.
-agent: code
----
-
 # /octopus:review-proposals
 
 ## Purpose

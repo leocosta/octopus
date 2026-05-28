@@ -3,11 +3,6 @@ name: context-handoff
 description: (Octopus) Compact the current conversation into a handoff document in the OS tmp dir, with redacted secrets and a prescriptive suggested-skills section.
 ---
 
----
-description: (Octopus) Compact the current conversation into a handoff document in the OS tmp dir, with redacted secrets and a prescriptive suggested-skills section.
-agent: code
----
-
 # /octopus:context-handoff
 
 ## Purpose

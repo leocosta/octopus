@@ -45,7 +45,7 @@ ou de ponta a ponta via `/octopus:dev-flow`.
 | `/octopus:commit` | Sugere uma mensagem Conventional Commits a partir do diff staged; faz commit após confirmação; adiciona o trailer AI co-authored quando aplicável. | [→](./commit/) |
 | `/octopus:pr-open` | Abre um PR com título + body escritos pelo agente seguindo as convenções de PR do Octopus; faz push da branch se necessário. | [→](./pr-open/) |
 | `/octopus:pr-review` | Faz self-review do diff do PR contra o checklist do projeto de correctness/design/readability/edge-case/security/tests, e então atribui reviewers humanos. | [→](./pr-review/) |
-| `/octopus:pr-comments` | Aplica a disciplina de receiving-code-review ao feedback do PR — verificar, pedir evidências, separar argumentos fundamentados de preferência, nunca performativo, esclarecer ambiguidades. | [→](./pr-comments/) |
+| `/octopus:pr-comments` | Aplica a disciplina de respond-to-review ao feedback do PR — verificar, pedir evidências, separar argumentos fundamentados de preferência, nunca performativo, esclarecer ambiguidades. | [→](./pr-comments/) |
 | `/octopus:pr-merge` | Faz merge de um PR aprovado com squash; deleta a branch; recusa se não estiver aprovado ou se os checks estiverem falhando. | [→](./pr-merge/) |
 | `/octopus:dev-flow` | O ciclo de vida completo em um único command, com pausas humanas entre as fases. | [→](./dev-flow/) |
 | `/octopus:codereview` | Review abrangente de segurança + qualidade das mudanças não commitadas. Escopo mais amplo que `pr-review`. | — |
@@ -74,7 +74,7 @@ Todas as auditorias encapsulam suas respectivas skills. Execute
 
 | Command | O que audita |
 |---|---|
-| `/octopus:audit-all` | Dispara `audit-security`, `audit-money`, `audit-tenant` e `cross-stack-contract` em paralelo; consolida achados com níveis de severidade. |
+| `/octopus:audit-all` | Dispara `audit-security`, `audit-money`, `audit-tenant` e `review-contracts` em paralelo; consolida achados com níveis de severidade. |
 | `/octopus:audit-money` | Código que toca dinheiro — tipos, arredondamento, testes em centavos, drift de env, idempotência, assinaturas de webhook. |
 | `/octopus:audit-tenant` | Enforcement de escopo de dados multi-tenant — query filters, SQL bruto, ownership de controllers. |
 | `/octopus:audit-config` | Frescor da configuração do agente — premissas de modelo, datas vencidas, skills fantasma, paths deprecados. |
@@ -86,8 +86,8 @@ Todas as auditorias encapsulam suas respectivas skills. Execute
 | `/octopus:implement` | `implement` — o workflow TDD / plan / verify / simplify / commit. |
 | `/octopus:debug` | `debug` — reproduzir → isolar → regression-test → documentar. |
 | `/octopus:prototype` | `prototype` — protótipos descartáveis para amadurecer um design antes de se comprometer com ele. |
-| `/octopus:review-contracts` | `cross-stack-contract` — detecção de drift de contrato frontend/backend. |
-| `/octopus:respond-to-review` | `receiving-code-review` — disciplina para lidar com feedback de PR. |
+| `/octopus:review-contracts` | `review-contracts` — detecção de drift de contrato frontend/backend. |
+| `/octopus:respond-to-review` | `respond-to-review` — disciplina para lidar com feedback de PR. |
 
 ## Orquestração
 

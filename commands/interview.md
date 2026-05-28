@@ -3,11 +3,6 @@ name: interview
 description: (Octopus) Run the requirements interview to scope one feature or problem — one question at a time until intent is concrete enough to feed doc-align, doc-prd, or implement. For area-level exploration that generates multiple backlog items, use /octopus:doc-research.
 ---
 
----
-description: (Octopus) Run the requirements interview to scope one feature or problem — one question at a time until intent is concrete enough to feed doc-align, doc-prd, or implement. For area-level exploration that generates multiple backlog items, use /octopus:doc-research.
-agent: code
----
-
 # /octopus:interview
 
 ## Purpose

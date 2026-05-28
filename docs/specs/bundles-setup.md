@@ -21,8 +21,8 @@ choice" abandonment on first run. Users frequently under-select
 (picking everything to be safe, polluting their repo with unused
 artifacts).
 
-Octopus ships useful skills (`money-review`, `tenant-scope-audit`,
-`cross-stack-contract`, `feature-to-market`, etc.) that cluster
+Octopus ships useful skills (`audit-money`, `audit-tenant`,
+`review-contracts`, `launch-feature`, etc.) that cluster
 naturally around intent ("we're a SaaS", "we produce content",
 "we document with RFCs") but the wizard does not expose the cluster —
 it exposes the atoms.
@@ -98,9 +98,9 @@ persona_default: false      # default answer when the user skips
 
 # Component lists — same keys as .octopus.yml
 skills:
-  - money-review
-  - tenant-scope-audit
-  - security-scan
+  - audit-money
+  - audit-tenant
+  - audit-security
 roles:
   - backend-specialist
   - product-manager
@@ -181,10 +181,10 @@ Pre-flight prompt: `Setup mode — [1] Quick (recommended) [2] Full
 | Bundle | Category | Persona question | Contents |
 |---|---|---|---|
 | `starter` | foundation | (none — auto-include) | skills: `adr`, `feature-lifecycle`, `context-budget` |
-| `quality-gates` | intent | "Is this a SaaS product for external customers (billing, multi-tenant)?" | skills: `security-scan`, `money-review`, `tenant-scope-audit`; roles: `backend-specialist` |
-| `growth` | intent | "Does your team produce marketing content alongside code?" | skills: `feature-to-market`; roles: `social-media` |
-| `docs-discipline` | intent | "Do you document with RFCs, specs, and ADRs?" | skills: `plan-backlog-hygiene`, `continuous-learning`; roles: `tech-writer` |
-| `cross-stack` | intent | "Does your repo contain both an API and a separate frontend?" | skills: `cross-stack-contract`; roles: `backend-specialist`, `frontend-specialist` |
+| `quality-gates` | intent | "Is this a SaaS product for external customers (billing, multi-tenant)?" | skills: `audit-security`, `audit-money`, `audit-tenant`; roles: `backend-specialist` |
+| `growth` | intent | "Does your team produce marketing content alongside code?" | skills: `launch-feature`; roles: `social-media` |
+| `docs-discipline` | intent | "Do you document with RFCs, specs, and ADRs?" | skills: `plan-backlog`, `continuous-learning`; roles: `tech-writer` |
+| `cross-stack` | intent | "Does your repo contain both an API and a separate frontend?" | skills: `review-contracts`; roles: `backend-specialist`, `frontend-specialist` |
 | `dotnet-api` | stack | "Primary backend language is .NET?" | skills: `dotnet`, `backend-patterns`, `e2e-testing` |
 | `node-api` | stack | "Primary backend language is Node/TypeScript?" | skills: `backend-patterns`, `e2e-testing` |
 

@@ -4,11 +4,6 @@ description: (Octopus) Create a versioned release with CHANGELOG, README sync, a
 cli: octopus.sh release
 ---
 
----
-description: (Octopus) Create a versioned release with CHANGELOG, README sync, and GitHub Release
-agent: code
----
-
 ## Instructions
 
 This command creates a versioned release: generates a CHANGELOG entry, syncs deterministic version references in `README.md`, creates a git tag with release notes, and optionally publishes a GitHub Release.

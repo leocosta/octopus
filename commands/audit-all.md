@@ -3,17 +3,12 @@ name: audit-all
 description: (Octopus) Run all quality-audit skills in parallel against one ref — consolidated severity report with a cross-audit hotspots table.
 ---
 
----
-description: (Octopus) Run all quality-audit skills in parallel against one ref — consolidated severity report with a cross-audit hotspots table.
-agent: code
----
-
 # /octopus:audit-all
 
 ## Purpose
 
-Run `security-scan`, `money-review`, `tenant-scope-audit`, and
-`cross-stack-contract` in parallel against a single ref with
+Run `audit-security`, `audit-money`, `audit-tenant`, and
+`review-contracts` in parallel against a single ref with
 shared file discovery. Output is a consolidated severity report
 with cross-audit hotspots.
 
