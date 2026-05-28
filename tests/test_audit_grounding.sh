@@ -25,6 +25,13 @@ check "emits invented-convention finding" grep -q "invented-convention" "$SKILL"
 check "emits unsupported-domain-fact finding" grep -q "unsupported-domain-fact" "$SKILL"
 check "is signal-only (never blocks)" grep -qiE "signal-only|does not block|never block" "$SKILL"
 
+# --- Task 4: feature doc + roadmap --------------------------------------
+DOC="$OCTOPUS_DIR/docs/features/audit-grounding.md"
+check "feature doc exists" test -f "$DOC"
+check "feature doc names the guardrails config" grep -q "guardrails" "$DOC"
+check "feature doc names the quality bundle" grep -q "quality" "$DOC"
+check "roadmap has RM-088" grep -q "RM-088" "$OCTOPUS_DIR/docs/roadmap.md"
+
 # --- Task 3: bundle registration ----------------------------------------
 QBUNDLE="$OCTOPUS_DIR/bundles/quality.yml"
 check "audit-grounding listed in quality bundle" grep -q "audit-grounding" "$QBUNDLE"

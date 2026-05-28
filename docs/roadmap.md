@@ -104,7 +104,7 @@ _RM-085..087 complete. Shipped across v1.50.0 → v1.51.0 (`doc-subcontext`, kno
 
 ## In Progress
 
-_No items in progress. All clusters complete through RM-087._
+_RM-088 (`audit-grounding` skill + `grounding-check` Stop hook) in progress on `feat/audit-grounding`. All other clusters complete through RM-087._
 
 ---
 
@@ -199,3 +199,4 @@ _No items in progress. All clusters complete through RM-087._
 | RM-085 | `doc-subcontext` skill + command — subdirectory CLAUDE.md tooling | completed → v1.50.0 | 2026-05-19 |
 | RM-086 | Stop hook for CLAUDE.md / knowledge update proposals + `/octopus:review-proposals` | completed → v1.51.0 | 2026-05-19 |
 | RM-087 | `audit-config` skill + command — configuration freshness audit | completed → v1.50.0 | 2026-05-19 |
+| RM-088 | `audit-grounding` skill + `grounding-check` Stop hook — signal-only divergence from the source of truth (invented conventions, unsupported domain facts) | in progress → `feat/audit-grounding` | 2026-05-28 |
