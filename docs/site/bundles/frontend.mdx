@@ -1,0 +1,119 @@
+---
+title: frontend
+description: Frontend-specific architecture patterns, component-level testing, and end-to-end test conventions. Pairs with the frontend-developer role for stack-aware UI implementation.
+sidebar:
+  order: 6
+---
+
+`frontend` adds frontend-specific skills and the `frontend-developer`
+role on top of `starter` — covering component architecture, the
+component-test layer, and end-to-end flows. It is the mirror image of
+`backend`: where `backend` carries server-side patterns and a data-layer
+review gate, `frontend` carries UI patterns and the testing layers that
+verify them. The bundle exists to give frontend teams a coherent
+extension point without bloating `starter` for non-UI repos.
+
+## Why this exists
+
+The skills in `starter` are stack-agnostic. `implement` doesn't ship
+opinions about where component state lives; `debug` doesn't know a
+re-render storm from a server error. But UI work has component-shaped
+patterns the stack-agnostic skills can't carry: where state belongs
+(local vs. lifted vs. server cache), how a component stays accessible
+*and* testable through the same property, what a behaviour-first
+component test looks like versus an end-to-end journey.
+
+Putting those patterns in `starter` would force every repo to load
+them, even pure-backend or pure-tooling ones. `frontend` keeps them
+opt-in.
+
+## Team archetype
+
+This is for teams whose primary work is a user-facing UI:
+
+- React / Next.js / Vue applications and component libraries
+- Design systems and shared component packages
+- Landing pages and marketing sites with interactive islands
+- Anything where accessibility, responsive layout, and render
+  performance are first-order concerns
+
+If your repo is a backend API, a CLI, or a library with no UI,
+`frontend` is the wrong shape. Stay with `starter` (add `backend`
+for server work, or `fullstack` if the repo has both).
+
+## What it includes
+
+```yaml
+skills:
+  - frontend-patterns # component design, state, data fetching, a11y
+  - test-component    # component-level tests (RTL / Testing Library)
+  - test-e2e          # end-to-end testing protocol (real browser)
+roles:
+  - frontend-developer # senior frontend persona for /octopus:delegate
+```
+
+[Source: `bundles/frontend.yml`](https://github.com/leocosta/octopus/blob/main/bundles/frontend.yml)
+
+### Why each one is in
+
+- **`frontend-patterns`** — the decision layer above the TypeScript
+  rules. It codifies component composition (over configuration), the
+  "components render, hooks hold logic" split, where state should live
+  (narrowest scope; never mirror server data into `useState`), the
+  loading/error/empty/success contract, styling conventions, and
+  accessibility as a first-class concern rather than a polish pass. It
+  engages when the agent works on UI code and routes the implementation
+  through these patterns.
+- **`test-component`** — the component-layer test discipline. Testing
+  Library + Vitest, behaviour over implementation, accessible queries
+  (`getByRole`), `user-event`, and MSW mocking at the network boundary.
+  It draws the line against `test-e2e`: rules and states are tested
+  here, journeys are pushed up.
+- **`test-e2e`** — the end-to-end test discipline (shared with
+  `backend`). The assembled app in a real browser, asserting on
+  observable behaviour across pages — the critical journeys that must
+  never break.
+- **`frontend-developer` role** — the persona you delegate to when the
+  task is unambiguously UI. Useful when a backend developer dispatches
+  frontend work and wants the agent in the right mental model.
+
+### Why not included
+
+- **No backend or data-layer skills** — the bundle stays UI-focused.
+  A repo with both stacks wants `fullstack`, not `frontend + backend`
+  hand-assembled.
+- **`review-contracts`** — lives in `quality` (and in `fullstack`),
+  because contract-drift detection only makes sense when both an API
+  and its consumer are in scope. A pure-frontend repo against a
+  third-party API doesn't own the contract.
+- **Framework-specific skills** — like `backend`'s relationship to
+  `dotnet`, deep per-framework guidance (e.g. a hypothetical `nextjs`
+  skill) would install separately, not bundle in. Not every frontend
+  is React.
+
+## Workflow this enables
+
+UI-shaped tasks become routed:
+
+1. A task comes in: "add an inline-editable name field to the profile card."
+2. The agent recognises the frontend signal (the `.tsx` path,
+   `components/` in the tree, or your explicit `/octopus:delegate
+   @frontend-developer …`) and engages `frontend-developer` mode.
+3. `frontend-patterns` informs the implementation: state stays local
+   to the field, the mutation lives in a hook, the optimistic update
+   reads from the server cache, and the control is a real `<button>`
+   with an accessible name — keyboard-reachable by construction.
+4. Tests follow `test-component`: render the card, `user-event` to edit
+   and save, assert the mutation fired and the new value renders — with
+   the network mocked at the MSW boundary.
+5. The critical "edit profile" journey gets one `test-e2e` covering the
+   assembled flow against a real backend.
+
+## Composes with
+
+- **[starter](/octopus/bundles/starter/)** — required foundation.
+- **[quality](/octopus/bundles/quality/)** — pairs for production UIs.
+  Brings `review-contracts` (API ↔ frontend drift) and the audit gates.
+- **[fullstack](/octopus/bundles/fullstack/)** — if the repo has a
+  backend too, prefer `fullstack`, which already unions this bundle
+  with `backend` and `review-contracts`.

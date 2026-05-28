@@ -5,11 +5,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUNDLES_DIR="$SCRIPT_DIR/bundles"
 
 echo "Test 1: all expected bundle files exist"
-for name in starter docs quality growth backend; do
+for name in starter docs quality growth backend frontend fullstack; do
   [[ -f "$BUNDLES_DIR/$name.yml" ]] \
     || { echo "FAIL: bundle $name.yml missing"; exit 1; }
 done
-echo "PASS: all five bundles present"
+echo "PASS: all seven bundles present"
 
 echo "Test 2: every bundle has name/description/category"
 for f in "$BUNDLES_DIR"/*.yml; do
@@ -161,6 +161,55 @@ printf '%s\n' "${OCTOPUS_ROLES[@]}" | grep -q "^architect$" \
 rm -rf "$TMPDIR"
 echo "PASS: bundles-only manifest expands to full component lists"
 
+echo "Test 9b: frontend bundle expands to its skills + role"
+
+OCTOPUS_SKILLS=()
+OCTOPUS_ROLES=()
+OCTOPUS_RULES=()
+OCTOPUS_MCP=()
+OCTOPUS_BUNDLES=("frontend")
+
+expand_bundles
+
+printf '%s\n' "${OCTOPUS_SKILLS[@]}" | sort > /tmp/got_fe.$$
+printf '%s\n' frontend-patterns test-component test-e2e | sort > /tmp/exp_fe.$$
+diff -q /tmp/got_fe.$$ /tmp/exp_fe.$$ >/dev/null \
+  || { echo "FAIL: frontend bundle skills wrong"; cat /tmp/got_fe.$$; rm -f /tmp/got_fe.$$ /tmp/exp_fe.$$; exit 1; }
+rm -f /tmp/got_fe.$$ /tmp/exp_fe.$$
+
+printf '%s\n' "${OCTOPUS_ROLES[@]}" | grep -q "^frontend-developer$" \
+  || { echo "FAIL: frontend-developer role missing"; exit 1; }
+
+echo "PASS: frontend bundle expands correctly"
+
+echo "Test 9c: fullstack bundle unions backend + frontend + review-contracts, dedups test-e2e"
+
+OCTOPUS_SKILLS=()
+OCTOPUS_ROLES=()
+OCTOPUS_RULES=()
+OCTOPUS_MCP=()
+OCTOPUS_BUNDLES=("fullstack")
+
+expand_bundles
+
+expected_fs=(backend-patterns test-e2e dba-mssql dba-postgres dba-mongodb dba-redis frontend-patterns test-component review-contracts)
+printf '%s\n' "${OCTOPUS_SKILLS[@]}" | sort -u > /tmp/got_fs.$$
+printf '%s\n' "${expected_fs[@]}" | sort -u > /tmp/exp_fs.$$
+diff -q /tmp/got_fs.$$ /tmp/exp_fs.$$ >/dev/null \
+  || { echo "FAIL: fullstack bundle skills wrong"; cat /tmp/got_fs.$$; rm -f /tmp/got_fs.$$ /tmp/exp_fs.$$; exit 1; }
+rm -f /tmp/got_fs.$$ /tmp/exp_fs.$$
+
+te_count=$(printf '%s\n' "${OCTOPUS_SKILLS[@]}" | grep -c "^test-e2e$" || true)
+[[ "$te_count" -eq 1 ]] \
+  || { echo "FAIL: test-e2e not de-duplicated in fullstack ($te_count occurrences)"; exit 1; }
+
+for role in backend-developer dba frontend-developer; do
+  printf '%s\n' "${OCTOPUS_ROLES[@]}" | grep -q "^${role}$" \
+    || { echo "FAIL: fullstack missing role $role"; exit 1; }
+done
+
+echo "PASS: fullstack bundle expands and de-duplicates correctly"
+
 echo "Test 10: depends_on — happy path resolves dependency chain"
 
 OCTOPUS_SKILLS=()
@@ -303,7 +352,7 @@ rm -rf "$FAKE"
 echo "PASS: skills without depends_on are untouched"
 
 echo "Test: renamed skill dirs exist"
-for skill in doc-adr doc-lifecycle audit-money audit-security audit-tenant respond-to-review review-contracts launch-feature launch-release debug plan-backlog test-e2e; do
+for skill in doc-adr doc-lifecycle audit-money audit-security audit-tenant respond-to-review review-contracts launch-feature launch-release debug plan-backlog test-e2e frontend-patterns test-component; do
   [[ -d "skills/${skill}" ]] \
     || { echo "FAIL: skills/${skill}/ not found"; exit 1; }
 done
