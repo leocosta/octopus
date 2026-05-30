@@ -44,7 +44,7 @@ Rolling a standard out to 6+ repos today means running `octopus setup` by hand i
 
 The "standard" is composed, not a single file:
 
-- **Baseline** (stack-agnostic, every repo): `agents`, `workflow`, the `workspace:` reference, baseline bundles (`quality`, `docs`, `tech-lead`), baseline roles (`architect`, `security`).
+- **Baseline** (stack-agnostic, every repo): `agents`, `workflow`, the `workspace:` reference, baseline bundles (`quality`, `docs`), baseline roles (`mentor`, `architect`, `security`). Per-repo leadership reaches leaf repos this way (docs + mentor + the capture hook) — **not** via the `tech-lead` bundle, which is the manager's control-repo install (it carries the cross-repo control tools).
 - **Stack profile** (per repo): adds the stack's bundles/skills. Selected by **auto-detection** (file signals) by default, **overridable** in the fleet list (legacy/monorepo/ambiguous stacks).
 - **Adoption tier** (per repo, D2): which enforcement layers turn on.
 
@@ -81,8 +81,8 @@ baseline:
   agents: [claude, opencode]
   workflow: true
   workspace: git@github.com:acme/octopus-workspace.git
-  bundles: [quality, docs, tech-lead]
-  roles:   [architect, security]
+  bundles: [quality, docs]      # tech-lead is the manager's install, not a baseline bundle
+  roles:   [mentor, architect, security]
 
 profiles:
   dotnet:       { detect: ["*.sln", "*.csproj"],                 bundles: [backend], skills: [dotnet] }
@@ -111,8 +111,8 @@ The repo's own `.octopus.yml` never contains `fleet`; it only receives the compo
 agents: [claude, opencode]
 workflow: true
 workspace: git@github.com:acme/octopus-workspace.git
-bundles: [quality, docs, tech-lead, backend]   # baseline ∪ profile
-roles:   [architect, security]
+bundles: [quality, docs, backend]   # baseline ∪ profile
+roles:   [mentor, architect, security]
 hooks: true                                     # tier T2
 qualityWorkflow: true                           # tier T2
 ```
@@ -148,7 +148,7 @@ Worked example — `payments-svc` already had `bundles: [quality, backend, growt
 | Key | Local | Standard | Result |
 |---|---|---|---|
 | `bundles: quality, backend` | ✓ | ✓ | keep |
-| `bundles: docs, tech-lead` | — | baseline | **converge** (add) |
+| `bundles: docs` | — | baseline | **converge** (add) |
 | `bundles: growth` | ✓ | ✗ (neither baseline nor profile) | **⚠ conflict flagged** — keep or drop? |
 | `roles: backend-developer` | ✓ | backend profile | **justified keep** (matches profile) |
 | `roles: security` | — | baseline | converge (add) |

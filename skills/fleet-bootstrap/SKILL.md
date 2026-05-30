@@ -49,8 +49,11 @@ baseline:                       # every repo, any stack, any tier
   agents: [claude, opencode]
   workflow: true
   workspace: git@github.com:acme/octopus-workspace.git
-  bundles: [quality, docs, tech-lead]
-  roles:   [architect, security]
+  bundles: [quality, docs]      # per-repo leadership via docs + mentor + hooks
+  roles:   [mentor, architect, security]
+  # NOTE: the `tech-lead` bundle (RM-096) is the manager's control-repo install,
+  # NOT a baseline bundle — it carries the cross-repo control tools (audit-fleet,
+  # fleet-bootstrap) that leaf repos don't need.
 
 profiles:                       # what each stack adds; selected by detection or pinned
   dotnet:       { detect: ["*.sln", "*.csproj"],                 bundles: [backend], skills: [dotnet] }

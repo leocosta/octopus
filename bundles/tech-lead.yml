@@ -1,0 +1,22 @@
+name: tech-lead
+description: The engineering-leadership kit — mentor-driven review that teaches the why, new-engineer onboarding, a first-class team Definition of Done, self-serve standards lookup, team-level learning from recurring review feedback, and cross-repo adoption/drift audit + fleet bootstrap. The manager's one-stop install on the control repo; layers on top of quality + starter. Per-repo leadership (mentor, onboarding, DoD, standards, the review-log capture hook) reaches the fleet via the baseline, not this bundle.
+category: intent
+persona_question: "Are you leading a team — raising the technical bar and autonomy across one or more repos?"
+persona_default: false
+skills:
+  - standards                 # RM-092 — self-serve "what's our standard for X, and why"
+  - onboarding                # RM-090 — ramp a new engineer onto standards + code + flow
+  - definition-of-done        # RM-091 — first-class team DoD + validate
+  - continuous-learning       # RM-093 — team mode: recurring review feedback → rule candidates
+  - audit-fleet               # RM-094 — cross-repo adoption + drift audit (control-plane)
+  - fleet-bootstrap           # RM-095 — converge the fleet onto a layered standard (control-plane)
+roles:
+  - mentor                    # RM-089 — teaches the why
+  - architect                 # existing — gates
+  - security                  # existing — gates sensitive diffs
+rules: []
+mcp: []
+# hooks: null — this composition bundle does not force hooks. The team-learning
+# capture hook (review-log-capture) reaches the leaf repos via the fleet
+# baseline's `hooks: true`, where reviews actually happen.
+hooks: null
