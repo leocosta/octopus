@@ -1,0 +1,102 @@
+<!doctype html>
+<!--
+  map-system complete-mode deck (RM-098).
+  Self-contained system presentation: cover + sections, themed via the
+  launch-release theme schema. frontend-design fills the {{...}} content
+  slots and may refine the layout; the --theme cascade substitutes the
+  THEME_* variables. No external assets — styles inline; diagrams use
+  embedded Mermaid.
+-->
+<html lang="{{LANG}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{REPO_NAME}} — System Map</title>
+  <style>
+    :root {
+      --bg: {{THEME_BACKGROUND}};
+      --surface: {{THEME_SURFACE}};
+      --primary: {{THEME_PRIMARY}};
+      --accent: {{THEME_ACCENT}};
+      --muted: {{THEME_MUTED}};
+      --text: {{THEME_TEXT}};
+      --font-display: {{THEME_FONT_DISPLAY}};
+      --font-body: {{THEME_FONT_BODY}};
+      --font-mono: {{THEME_FONT_MONO}};
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: var(--font-body); line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    .deck { max-width: 960px; margin: 0 auto; padding: 48px 24px; }
+    section { padding: 3rem 0; border-bottom: 1px solid var(--surface); }
+    h1, h2, h3 { font-family: var(--font-display); line-height: 1.2; }
+    h1 { font-size: 3rem; margin: 0 0 0.5rem; color: var(--primary); }
+    h2 { font-size: 1.6rem; margin: 0 0 1rem; color: var(--primary); }
+    .meta { color: var(--muted); font-size: 0.9rem; }
+    .cover { padding: 4rem 0; text-align: left; }
+    .card { background: var(--surface); padding: 1.25rem 1.5rem; border-radius: 12px; margin: 0.75rem 0; }
+    .tag { display: inline-block; font-size: 0.75rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.08em; }
+    code, pre { font-family: var(--font-mono); }
+    pre.mermaid { background: var(--surface); padding: 1.5rem; border-radius: 12px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--surface); }
+    footer { padding: 2rem 0; color: var(--muted); font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+  <div class="deck">
+
+    <!-- Cover -->
+    <section class="cover">
+      <span class="tag">System Map</span>
+      <h1>{{REPO_NAME}}</h1>
+      <p class="meta">{{ONE_LINE_PURPOSE}} · generated {{GENERATED_DATE}}</p>
+    </section>
+
+    <!-- Overview & business insights -->
+    <section>
+      <h2>Overview &amp; business insights</h2>
+      {{OVERVIEW_AND_INSIGHTS}}
+    </section>
+
+    <!-- Architecture & module map (embedded Mermaid) -->
+    <section>
+      <h2>Architecture &amp; module map</h2>
+      <pre class="mermaid">
+{{ARCHITECTURE_MERMAID}}
+      </pre>
+      {{MODULE_NOTES}}
+    </section>
+
+    <!-- Contracts (rendered when an API is detected) -->
+    <section>
+      <h2>Contracts</h2>
+      {{API_CONTRACTS}}
+    </section>
+
+    <!-- Data model (rendered when a DB is detected) -->
+    <section>
+      <h2>Data model</h2>
+      {{DATA_MODEL}}
+    </section>
+
+    <!-- Decisions of record -->
+    <section>
+      <h2>Decisions of record</h2>
+      {{ADR_SUMMARIES}}
+    </section>
+
+    <footer>{{THEME_SIGNATURE}}</footer>
+  </div>
+
+  <!-- Embedded Mermaid for the architecture/data diagrams -->
+  <script type="module">
+    {{MERMAID_INLINE_OR_CDN}}
+    // mermaid.initialize({ startOnLoad: true, theme: "{{MERMAID_THEME}}" });
+  </script>
+</body>
+</html>

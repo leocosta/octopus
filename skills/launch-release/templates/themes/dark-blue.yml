@@ -1,0 +1,25 @@
+name: dark-blue
+description: GitHub dark-mode / Primer palette — deep blue-black with a bright blue accent. Our own preset name (there is no GitHub Pages theme literally called "dark-blue").
+palette:
+  background: "#0d1117"
+  surface: "#161b22"
+  primary: "#58a6ff"
+  accent: "#1f6feb"
+  muted: "#8b949e"
+  text: "#c9d1d9"
+typography:
+  display: "Inter, system-ui, -apple-system, sans-serif"
+  body: "Inter, system-ui, -apple-system, sans-serif"
+  mono: "SFMono-Regular, JetBrains Mono, ui-monospace, monospace"
+layout:
+  hero: medium
+  grouping: grid
+  density: comfortable
+voice:
+  tone: precise
+  persona: guide
+intent: informing
+brand:
+  signature: "— {{PRODUCT_NAME}}"
+  cta_style: direct
+  hero_pattern: overview-led
