@@ -19,6 +19,7 @@
 AGENTS.md
 .octopus/queue/
 .octopus/proposals/
+.octopus/onboarding/
 site/node_modules/
 site/dist/
 site/.astro/
