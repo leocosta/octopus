@@ -1,0 +1,77 @@
+---
+title: map-system
+description: Mapeia um repositório no vocabulário dele em duas profundidades — uma orientação textual rápida (simplified), ou um deck HTML autocontido e temado do repo inteiro (complete, o default) renderizado via frontend-design e o sistema de temas do launch-release.
+sidebar:
+  order: 21
+source_hash: "sha256:641cf5888906b8020852bff1541b9d5df600eb8b3ec1f314d635085498e1a384"
+needs_retranslation: false
+---
+
+`map-system` responde *"o que é isto — nas nossas palavras?"* em duas
+profundidades. O skill original era deliberadamente minúsculo: um mapa
+textual de ~30 linhas, anti-exaustivo por design. O RM-098 mantém isso como
+o modo `simplified` e adiciona um modo `complete` — agora o **default** —
+que renderiza um **deck HTML autocontido e temado** do repositório inteiro.
+
+## Dois modos
+
+- **`simplified` `--no-save`** — o micro mapa original. Sample, não faz
+  crawl, ~uma tela, no vocabulário de domínio do projeto. A ferramenta certa
+  pra *"não conheço esta área, me dá um zoom out"*.
+- **`complete`** (o default) — um passe exaustivo que produz o artefato
+  voltado pra humano *"o que é este projeto"*: capa, overview do projeto e
+  insights de negócio, um mapa de arquitetura/módulos como diagramas Mermaid
+  embutidos, contratos de API (quando há API), o modelo de dados e as
+  decisões de record. O `onboarding` (RM-090) caminha um novo engenheiro por
+  esse deck.
+
+## Três eixos ortogonais
+
+```
+map-system                              → DEFAULT: complete + save + html + dark-blue
+                                          → docs/system-map/<repo>.html
+map-system --mode simplified --no-save  → o mapa textual rápido, inline (default antigo)
+map-system --no-save                    → retrato completo, inline
+map-system --output markdown            → retrato completo salvo como markdown
+map-system --theme light-jade           → deck completo, tema light-jade
+map-system --design-from "<prompt>"     → deck completo, tema custom via frontend-design
+```
+
+- **`--mode simplified | complete`** — profundidade do conteúdo (default
+  `complete`).
+- **`--save` / `--no-save`** — persiste em arquivo ou responde inline
+  (default save).
+- **`--output markdown | html`** — formato salvo (default `html`, o deck
+  temado; `markdown` é o mesmo conteúdo como doc plano).
+
+## Temado e autocontido
+
+O deck `complete` + `html` reusa o **sistema de temas do `launch-release`** —
+o mesmo schema, presets e síntese via `--design-from` com `frontend-design` —
+em vez de inventar uma camada de estilo. Três presets vêm de fábrica:
+**`dark-blue`** (o default — a paleta dark-mode / Primer do GitHub, fundo
+`#0d1117`, acento `#58a6ff`), **`dark-jade`** e **`light-jade`**. A saída é um
+único arquivo `.html` autocontido (estilos inline, Mermaid embutido) — abre e
+apresenta sem build step, gravado em `docs/system-map/<repo>.html`.
+
+## Um novo default, deliberado
+
+Um `map-system` sem flags agora gera e salva o deck — uma **mudança breaking**
+em relação ao micro mapa inline antigo. O raio de impacto é limitado: o skill
+é manual-invocation only (agents não rodam por conta própria), e o
+comportamento antigo está a um flag de distância (`--mode simplified
+--no-save`). Quando o `frontend-design` não está disponível, `complete` +
+`html` degrada pro rendering markdown mais uma nota — nunca falha a execução.
+O racional está registrado no
+[ADR-003](https://github.com/leocosta/octopus/blob/main/docs/adr/003-map-system-complete-deck.md).
+
+## Compõe com
+
+- **[launch-release](/octopus/skills/launch-release/)** — o schema de temas e
+  os presets que o deck reusa.
+- **frontend-design** — renderiza e tema o deck HTML.
+- **[review-contracts](/octopus/skills/review-contracts/)** — as heurísticas
+  de detecção de API pra seção de contratos.
+- **onboarding** (RM-090) — apresenta o deck `complete` durante o ramp.
+
+[Source: `skills/map-system/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/map-system/SKILL.md)

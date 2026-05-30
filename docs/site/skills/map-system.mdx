@@ -1,0 +1,75 @@
+---
+title: map-system
+description: Map a repository in its own vocabulary at two depths — a quick textual orientation (simplified), or an exhaustive, self-contained themed HTML deck of the whole repo (complete, the default) rendered via frontend-design and the launch-release theme system.
+sidebar:
+  order: 21
+---
+
+`map-system` answers *"what is this — in our own words?"* at two depths.
+The original skill was a deliberately tiny one: a ~30-line textual
+orientation map, anti-exhaustive by design. RM-098 keeps that as the
+`simplified` mode and adds a `complete` mode — now the **default** — that
+renders a **self-contained, themed HTML deck** of the whole repository.
+
+## Two modes
+
+- **`simplified` `--no-save`** — the original micro map. Sample, do not
+  crawl, ~one screen, in the project's domain vocabulary. The right tool
+  for *"I don't know this area, zoom me out"*.
+- **`complete`** (the default) — an exhaustive pass that produces the
+  human-facing *"what is this project"* artifact: cover, project overview
+  and business insights, an architecture/module map as embedded Mermaid
+  diagrams, API contracts (when an API is detected), the data model, and
+  the decisions of record. `onboarding` (RM-090) walks a new engineer
+  through this deck.
+
+## Three orthogonal axes
+
+```
+map-system                              → DEFAULT: complete + save + html + dark-blue
+                                          → docs/system-map/<repo>.html
+map-system --mode simplified --no-save  → the quick textual map, inline (old default)
+map-system --no-save                    → complete picture, inline
+map-system --output markdown            → complete picture saved as markdown
+map-system --theme light-jade           → complete deck, light-jade theme
+map-system --design-from "<prompt>"     → complete deck, custom theme via frontend-design
+```
+
+- **`--mode simplified | complete`** — content depth (default `complete`).
+- **`--save` / `--no-save`** — persist to a file or return inline (default
+  save).
+- **`--output markdown | html`** — saved format (default `html`, the themed
+  deck; `markdown` is the same content as a plain document).
+
+## Themed, and self-contained
+
+The `complete` + `html` deck reuses the **`launch-release` theme system** —
+the same schema, presets, and `--design-from` synthesis via
+`frontend-design` — rather than inventing a styling layer. Three presets
+ship: **`dark-blue`** (the default — the GitHub dark-mode / Primer palette,
+`#0d1117` background, `#58a6ff` accent), **`dark-jade`**, and
+**`light-jade`**. The output is a single self-contained `.html` file (inline
+styles, embedded Mermaid) — openable and presentable with no build step,
+written to `docs/system-map/<repo>.html`.
+
+## A new default, deliberately
+
+A bare `map-system` now generates and saves the deck — a **breaking change**
+from the old inline micro map. The blast radius is bounded: the skill is
+manual-invocation only (agents must not run it on their own), and the old
+behaviour is one flag away (`--mode simplified --no-save`). When
+`frontend-design` isn't available, `complete` + `html` degrades to the
+markdown rendering plus a note — it never fails the run. The rationale is
+recorded in
+[ADR-003](https://github.com/leocosta/octopus/blob/main/docs/adr/003-map-system-complete-deck.md).
+
+## Composes with
+
+- **[launch-release](/octopus/skills/launch-release/)** — the theme schema
+  and presets the deck reuses.
+- **frontend-design** — renders and themes the HTML deck.
+- **[review-contracts](/octopus/skills/review-contracts/)** — the
+  API-detection heuristics for the contracts section.
+- **onboarding** (RM-090) — presents the `complete` deck during the ramp.
+
+[Source: `skills/map-system/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/map-system/SKILL.md)
