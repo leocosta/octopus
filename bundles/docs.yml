@@ -15,6 +15,7 @@ skills:
   - doc-subcontext
   - triage-issues
   - scaffold-skill
+  - standards
 roles:
   - writer
 rules: []
