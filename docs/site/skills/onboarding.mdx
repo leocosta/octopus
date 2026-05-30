@@ -1,0 +1,65 @@
+---
+title: onboarding
+description: Ramp a new engineer onto a repo's standards, architecture, and way of working — a guided, scoped sequence that composes existing artifacts (CONTEXT.md, ADRs, rules, the map-system deck, the DoD) and presents the map-system deck. Ephemeral by design.
+sidebar:
+  order: 22
+---
+
+`onboarding` (RM-090) ramps a new engineer onto a repo. `map-system` maps
+the *code*, `interview` scopes a *feature* — neither onboards a *person*.
+This skill does: it walks a hire through the repo's **standards +
+architecture + workflow** in a structured order, routing through the
+artifacts the team already maintains, so "I know how we work here" doesn't
+have to consume the manager's first weeks with each hire.
+
+## Scoped, and ephemeral
+
+Two design choices keep it useful and low-noise:
+
+- **Scoped** — it asks "what area or stack will you start in?" up front and
+  scopes the standards and map steps to that, instead of dumping the whole
+  repo.
+- **Ephemeral** — a resumable checklist lives **gitignored** under
+  `.octopus/onboarding/<name>.md`; re-running resumes from the first
+  unchecked item. Nothing is committed. The durable, manager-facing asset a
+  hire sees is the **`map-system` deck**, not an onboarding file.
+
+## The manager's optional seed
+
+If `docs/onboarding/guide.md` exists — the manager's curated "start here"
+(the ADRs that matter, the key modules, a welcome note) — the ramp **leads
+with it** and uses it to prioritize the steps. Without it, the ramp is fully
+auto-derived from live artifacts. The manager curates the seed **once per
+repo**, optionally — high signal without becoming the per-hire bottleneck.
+
+## The ramp
+
+Each step routes to an existing source or skill, and degrades gracefully —
+surfacing a thin `CONTEXT.md` or sparse ADRs as an adoption signal rather
+than skipping silently:
+
+1. **The domain** — `CONTEXT.md`, the team's vocabulary.
+2. **The decisions** — the `docs/adr/*` that touch the engineer's area.
+3. **The standards** — the `rules/` for their stack (incl. `*.local.md`
+   overrides), with the [`standards`](/octopus/skills/) skill for follow-ups.
+4. **The map** — **presents the [`map-system`](/octopus/skills/map-system/)
+   complete deck**: opens `docs/system-map/<repo>.html` if present, else
+   generates it scoped to their area (falling back to the textual map when
+   `frontend-design` is unavailable).
+5. **The way of working** — the PR flow, the **Definition of Done**, and the
+   active bundles/hooks (what their agent enforces on every commit).
+6. **The fleet** — the `workspace:` standard and the other repos they'll
+   touch (over 6+ repos this matters), pointing at `audit-fleet` (RM-094)
+   output when available.
+
+## Composes with
+
+- **[map-system](/octopus/skills/map-system/)** — step 4 presents its deck.
+- **standards** — the self-serve standards follow-up.
+- **definition-of-done** — shown at the "way of working" step.
+- **audit-fleet** (RM-094) — the cross-repo output at the fleet step.
+
+Registered in the `tech-lead` bundle (RM-096); interim home the `docs`
+bundle.
+
+[Source: `skills/onboarding/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/onboarding/SKILL.md)
