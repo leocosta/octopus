@@ -3,7 +3,7 @@ title: map-system
 description: Mapeia um repositório no vocabulário dele em duas profundidades — uma orientação textual rápida (simplified), ou um deck HTML autocontido e temado do repo inteiro (complete, o default) renderizado via frontend-design e o sistema de temas do launch-release.
 sidebar:
   order: 21
-source_hash: "sha256:9d819a45324ac706dd24c3afd0d50445114cc38a3629c92f5cae309c7af2d952"
+source_hash: "sha256:091977edf1c40da16bcb6b35a3fa359e49581ac4280e06131ac6f5959b22df9a"
 needs_retranslation: false
 ---
 
@@ -20,8 +20,8 @@ que renderiza um **deck HTML autocontido e temado** do repositório inteiro.
   pra *"não conheço esta área, me dá um zoom out"*.
 - **`complete`** (o default) — um passe exaustivo que produz o artefato
   voltado pra humano *"o que é este projeto"*: capa, overview do projeto e
-  insights de negócio, um mapa de arquitetura/módulos como diagramas Mermaid
-  embutidos, contratos de API (quando há API), o modelo de dados e as
+  insights de negócio, um mapa de arquitetura/módulos como diagramas SVG
+  inline (Mermaid pré-renderizado), contratos de API (quando há API), o modelo de dados e as
   decisões de record. O `onboarding` (RM-090) caminha um novo engenheiro por
   esse deck.
 
@@ -51,7 +51,8 @@ o mesmo schema, presets e síntese via `--design-from` com `frontend-design` —
 em vez de inventar uma camada de estilo. Três presets vêm de fábrica:
 **`dark-blue`** (o default — a paleta dark-mode / Primer do GitHub, fundo
 `#0d1117`, acento `#58a6ff`), **`dark-jade`** e **`light-jade`**. A saída é um
-único arquivo `.html` autocontido (estilos inline, Mermaid embutido) — abre e
+único arquivo `.html` autocontido (estilos inline, diagramas como SVG inline,
+sem runtime de script) — abre e
 apresenta sem build step, gravado em `docs/system-map/<repo>.html`.
 
 ## Um novo default, deliberado

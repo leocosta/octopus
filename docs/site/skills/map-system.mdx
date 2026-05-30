@@ -18,8 +18,8 @@ renders a **self-contained, themed HTML deck** of the whole repository.
   for *"I don't know this area, zoom me out"*.
 - **`complete`** (the default) — an exhaustive pass that produces the
   human-facing *"what is this project"* artifact: cover, project overview
-  and business insights, an architecture/module map as embedded Mermaid
-  diagrams, API contracts (when an API is detected), the data model, and
+  and business insights, an architecture/module map as inline SVG diagrams
+  (Mermaid pre-rendered), API contracts (when an API is detected), the data model, and
   the decisions of record. `onboarding` (RM-090) walks a new engineer
   through this deck.
 
@@ -49,7 +49,8 @@ the same schema, presets, and `--design-from` synthesis via
 ship: **`dark-blue`** (the default — the GitHub dark-mode / Primer palette,
 `#0d1117` background, `#58a6ff` accent), **`dark-jade`**, and
 **`light-jade`**. The output is a single self-contained `.html` file (inline
-styles, embedded Mermaid) — openable and presentable with no build step,
+styles, diagrams as inline SVG, no script runtime) — openable and
+presentable with no build step,
 written to `docs/system-map/<repo>.html`.
 
 ## A new default, deliberately

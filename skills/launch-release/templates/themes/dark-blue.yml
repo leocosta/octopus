@@ -12,14 +12,14 @@ typography:
   body: "Inter, system-ui, -apple-system, sans-serif"
   mono: "SFMono-Regular, JetBrains Mono, ui-monospace, monospace"
 layout:
-  hero: medium
+  hero: large
   grouping: grid
   density: comfortable
 voice:
-  tone: precise
+  tone: formal
   persona: guide
-intent: informing
+intent: educating
 brand:
   signature: "— {{PRODUCT_NAME}}"
-  cta_style: direct
-  hero_pattern: overview-led
+  cta_style: informative
+  hero_pattern: product-led

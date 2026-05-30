@@ -4,8 +4,9 @@
   Self-contained system presentation: cover + sections, themed via the
   launch-release theme schema. frontend-design fills the {{...}} content
   slots and may refine the layout; the --theme cascade substitutes the
-  THEME_* variables. No external assets — styles inline; diagrams use
-  embedded Mermaid.
+  THEME_* variables. No external assets — styles inline; diagrams are
+  authored in Mermaid but pre-rendered to inline SVG at generation time, so
+  the deck needs no script runtime and works offline.
 -->
 <html lang="{{LANG}}">
 <head>
@@ -41,7 +42,8 @@
     .card { background: var(--surface); padding: 1.25rem 1.5rem; border-radius: 12px; margin: 0.75rem 0; }
     .tag { display: inline-block; font-size: 0.75rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.08em; }
     code, pre { font-family: var(--font-mono); }
-    pre.mermaid { background: var(--surface); padding: 1.5rem; border-radius: 12px; }
+    .diagram { background: var(--surface); padding: 1.5rem; border-radius: 12px; overflow-x: auto; }
+    .diagram svg { max-width: 100%; height: auto; }
     table { width: 100%; border-collapse: collapse; }
     th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--surface); }
     footer { padding: 2rem 0; color: var(--muted); font-size: 0.85rem; }
@@ -63,12 +65,12 @@
       {{OVERVIEW_AND_INSIGHTS}}
     </section>
 
-    <!-- Architecture & module map (embedded Mermaid) -->
+    <!-- Architecture & module map: Mermaid source pre-rendered to inline SVG -->
     <section>
       <h2>Architecture &amp; module map</h2>
-      <pre class="mermaid">
-{{ARCHITECTURE_MERMAID}}
-      </pre>
+      <div class="diagram">
+{{ARCHITECTURE_DIAGRAM_SVG}}
+      </div>
       {{MODULE_NOTES}}
     </section>
 
@@ -92,11 +94,10 @@
 
     <footer>{{THEME_SIGNATURE}}</footer>
   </div>
-
-  <!-- Embedded Mermaid for the architecture/data diagrams -->
-  <script type="module">
-    {{MERMAID_INLINE_OR_CDN}}
-    // mermaid.initialize({ startOnLoad: true, theme: "{{MERMAID_THEME}}" });
-  </script>
+  <!--
+    Diagrams are inline SVG (Mermaid source rendered at generation time).
+    No script runtime, no CDN — the deck is fully self-contained and
+    works offline.
+  -->
 </body>
 </html>

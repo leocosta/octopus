@@ -58,7 +58,7 @@ Theme flags (`--theme`, default **`dark-blue`**; `--design-from`) apply to `--ou
 
 1. **Cover** — repo name, one-line purpose, theme branding.
 2. **Project overview & business insights** — what the project does and why, in domain vocabulary. Sources: `CONTEXT.md`, `README`, the "why" recorded in `docs/adr/*`.
-3. **Architecture & module map** — the modules, their responsibilities, and how they connect, rendered as embedded diagrams (Mermaid in the HTML). The `--save` crawl produces the structure the default mode only samples.
+3. **Architecture & module map** — the modules, their responsibilities, and how they connect, rendered as **inline SVG diagrams** (authored in Mermaid, pre-rendered to SVG so the deck carries no script runtime). The `--save` crawl produces the structure the default mode only samples.
 4. **Contracts (when an API is detected)** — endpoints, DTOs, enums, status codes. Reuses the API-detection heuristics from `review-contracts`.
 5. **Data model (when a DB is detected)** — entities and relationships.
 6. **Decisions of record** — the ADRs that shape the codebase, summarized.
@@ -73,7 +73,7 @@ The deck is a *presentation*: curated and screen-paced (slide/section style), no
 
 Three presets ship: **`dark-blue`** (the default — the GitHub dark-mode / Primer palette: background `#0d1117`, accent `#58a6ff`, text `#c9d1d9`; our own name, not a GitHub Pages theme), **`dark-jade`** (the existing `jade` palette), and **`light-jade`** (a light-background variant). They live alongside the other presets so both skills share them.
 
-**Rendering.** The self-contained HTML is produced **deterministically** by filling `templates/deck.html.tmpl` — the content slots from the crawl, the `THEME_*` variables from the resolved theme (inline CSS/JS, embedded Mermaid, no external dependencies). `frontend-design` is an **enhancer**: when available it refines the visual design beyond the base template, and it is **required only for `--design-from`** (custom theme synthesis). Preset themes render without it. Output is a single `.html` file — openable directly and presentable.
+**Rendering.** The self-contained HTML is produced **deterministically** by filling `templates/deck.html.tmpl` — the content slots from the crawl, the `THEME_*` variables from the resolved theme (inline CSS, diagrams as inline SVG, no script runtime, no external dependencies). `frontend-design` is an **enhancer**: when available it refines the visual design beyond the base template, and it is **required only for `--design-from`** (custom theme synthesis). Preset themes render without it. Output is a single `.html` file — openable directly and presentable.
 
 **Output.** Saved files default to `docs/system-map/<repo>.<html|md>` (committed — a reusable, version-controlled asset). The extension follows `--output`.
 
@@ -87,7 +87,7 @@ The new default does **not** require `frontend-design`: preset themes (default `
 
 1. `skills/map-system/SKILL.md` — add the three axes (`--mode simplified|complete`, `--save`, `--output markdown|html`), the deck-section spec, the theme-resolution cascade, the `frontend-design` composition, and the exhaustive-crawl allowance for `complete`. Scope the existing anti-patterns (no crawl, ~30 lines) to **`simplified` mode**.
 2. Theme presets — `dark-blue.yml` (default; Primer palette), `dark-jade.yml`, and `light-jade.yml` in the shared `launch-release` themes directory (`skills/launch-release/templates/themes/`), following the theme schema. `dark-jade` mirrors the current `jade` palette.
-3. Deck template — `skills/map-system/templates/deck.html.tmpl` (self-contained skeleton: cover + section slots + Mermaid include), which `frontend-design` fills and themes. Models the `launch-release` `html/*.tmpl` approach.
+3. Deck template — `skills/map-system/templates/deck.html.tmpl` (self-contained skeleton: cover + section slots + an inline-SVG diagram slot), which `frontend-design` fills and themes. Models the `launch-release` `html/*.tmpl` approach.
 4. `tests/test_map_system_save.sh` — grep-structural: skill declares `--mode simplified|complete` (default `complete`), `--save`/`--no-save`, `--output markdown|html` (default html), default theme `dark-blue`; references `frontend-design` and the `launch-release` theme system; `simplified`-mode anti-crawl discipline preserved; `dark-blue`/`dark-jade`/`light-jade` presets exist; saved output defaults to `docs/system-map/`.
 5. **ADR** — "map-system gains a heavy `--save` deck mode that reuses the launch-release theme machinery" (two-mode skill identity + cross-skill theme reuse; a real alternative — a separate `system-presentation` skill — was considered and rejected to keep one home for system mapping).
 6. Docs site: `docs/site/skills/map-system.mdx` (the skill graduates from index-only to a detail page) + pt-br pair; update the skills index rows (EN + pt-br) to note the two modes.

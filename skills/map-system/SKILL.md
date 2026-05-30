@@ -110,7 +110,8 @@ Each section degrades gracefully when its source is absent:
 2. **Project overview & business insights** — what the project does and why,
    in domain vocabulary (sources: `CONTEXT.md`, `README`, the "why" in ADRs).
 3. **Architecture & module map** — modules, responsibilities, and how they
-   connect, as **embedded Mermaid diagrams**.
+   connect, as **inline SVG diagrams** (authored in Mermaid, pre-rendered to
+   SVG so the deck needs no runtime).
 4. **Contracts** — when an API is detected, the endpoints, DTOs, enums, and
    status codes. Reuse the API-detection heuristics from `review-contracts`.
 5. **Data model** — when a DB is detected, the entities and relationships.
@@ -135,7 +136,8 @@ GitHub dark-mode / Primer palette), **`dark-jade`**, **`light-jade`**.
 
 Render the self-contained HTML by filling `templates/deck.html.tmpl` — the
 content slots from the crawl, the `THEME_*` variables from the resolved
-theme (inline CSS/JS, embedded Mermaid, no external assets). This is
+theme (inline CSS, diagrams as inline SVG — no script runtime, no external
+assets). This is
 **deterministic** and needs no other skill. When `frontend-design` is
 available, use it to **refine** the visual design beyond the base template.
 Write to `docs/system-map/<repo>.html` (or `.md` for `--output markdown`),
