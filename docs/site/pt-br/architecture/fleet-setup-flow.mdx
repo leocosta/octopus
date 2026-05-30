@@ -3,7 +3,7 @@ title: Fluxo de setup da frota
 description: Como o Octopus é semeado em vários repos de uma vez — o modelo workspace + fleet.yml, o padrão em camadas (baseline + perfil de stack + tier de adoção), a cadeia de semeadura (fleet-bootstrap → octopus setup → enforce-*), a precedência de template de config e a merge policy. Com diagramas de fluxo e exemplos de uso.
 sidebar:
   order: 8
-source_hash: "sha256:a56f0feb809c2f9842fe52b6b4d8343efeebd98596efaac0d76adf3385a67eb9"
+source_hash: "sha256:649c67bd7b741a8059ee2ec784270e98929dff4935562a8afa61f444f5e89a5b"
 needs_retranslation: false
 ---
 
@@ -46,9 +46,9 @@ Não existe um `.octopus.yml` canônico único numa frota multi-stack. O padrão
    agents              dotnet  → backend+dotnet  T0  hooks:false
    workflow            node    → backend         T1  hooks:true  + enforce-ide
    workspace:          frontend→ frontend        T2  + enforce-precommit + CI
-   quality, docs,      python  → backend
-   tech-lead
-   architect,security
+   quality, docs       python  → backend
+   mentor, architect,
+   security
         └──────────────────┬───────────────────────────┘
                            ▼
               composed .octopus.yml for the repo
@@ -62,8 +62,8 @@ baseline:
   agents: [claude, opencode]
   workflow: true
   workspace: git@github.com:acme/octopus-workspace.git
-  bundles: [quality, docs, tech-lead]
-  roles:   [architect, security]
+  bundles: [quality, docs]      # tech-lead is the manager's install, not baseline
+  roles:   [mentor, architect, security]
 
 profiles:
   dotnet:       { detect: ["*.sln", "*.csproj"],                 bundles: [backend], skills: [dotnet] }
