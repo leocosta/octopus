@@ -89,6 +89,27 @@ If the repo already has one of the three frameworks installed
 (`.pre-commit-config.yaml`, `lefthook.yml`, `.husky/`), respect it —
 extend rather than replace.
 
+### Step 2.5 — Resolve the workspace template (RM-095, D5)
+
+Before generating, resolve the config source with this precedence
+(highest wins):
+
+1. **Project-local** — an existing framework config in the repo
+   (`.pre-commit-config.yaml`, `lefthook.yml`, `.husky/`) or
+   `enforce-precommit.local.md` directives. Intentional repo choices;
+   extended, never replaced.
+2. **Workspace template** — if the manifest sets `workspace:` and
+   `<workspace>/templates/precommit/<stack>.*` exists (e.g.
+   `dotnet.pre-commit-config.yaml`, `node.husky/`), use it as the
+   **canonical base**, taking precedence over the generated default below.
+   This lets a fleet manager curate one git-level standard (see
+   `fleet-bootstrap`).
+3. **Generated default** — Step 3's stack-inferred config; the fallback
+   when the workspace provides no template.
+
+When a workspace template is used, Step 3 merges the repo's existing hooks
+on top of it (by `id:`) rather than the built-in baseline.
+
 ### Step 3 — Generate / merge config
 
 For `pre-commit.com`, write `.pre-commit-config.yaml` with one repo

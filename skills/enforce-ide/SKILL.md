@@ -52,6 +52,25 @@ Reuse the stack-detection logic from `enforce-precommit` (file
 extension count + canonical manifests). If `enforce-precommit` ran
 recently, its detected set is the truth.
 
+### Step 1.5 — Resolve the workspace template (RM-095, D5)
+
+Before generating, resolve the `.editorconfig` source with this
+precedence (highest wins):
+
+1. **Project-local** — an existing `.editorconfig` in the repo, or
+   `enforce-ide.local.md` directives. Intentional repo choices; preserved
+   and merged on top (Step 2's conservative merge).
+2. **Workspace template** — if the manifest sets `workspace:` and
+   `<workspace>/templates/ide/<stack>.editorconfig` exists, use it as the
+   **canonical base**, taking precedence over the generated default below.
+   This lets a fleet manager curate one editor standard (see
+   `fleet-bootstrap`).
+3. **Generated default** — Step 2's stack-inferred baseline; the fallback
+   when the workspace provides no template.
+
+When a workspace template is used, Step 2 merges the repo's existing
+sections on top of it rather than the built-in baseline.
+
 ### Step 2 — `.editorconfig` (always)
 
 Write or merge `.editorconfig` with universal baseline plus per-stack
