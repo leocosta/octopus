@@ -1,9 +1,9 @@
 ---
 title: Roles
-description: Personas para as quais você pode delegar via /octopus:delegate. Cada role limita o comportamento de um agent para uma tarefa — architect, backend, frontend, marketer, product-manager, writer.
+description: Personas para as quais você pode delegar via /octopus:delegate. Cada role limita o comportamento de um agent para uma tarefa — architect, security, mentor, backend, frontend, marketer, product-manager, writer.
 sidebar:
   order: 0
-source_hash: "sha256:4bcbab7b218334896b3cb28cb733c984ff67f369598091559ffe07014ec66d1e"
+source_hash: "sha256:c825c98ac239e0f645238371e26bab7b62b734e33c6585eae045cd1d575d5b2d"
 needs_retranslation: false
 ---
 
@@ -21,7 +21,7 @@ execução em camadas. Um post de marketing pede approval gates e
 copy nativa da plataforma. A persona padrão do agent é generalista;
 roles dão alternativas direcionadas.
 
-## Os sete roles
+## Os oito roles
 
 - **[architect](/octopus/roles/architect/)** — senior reviewer e
   gate de qualidade de código. Valida qualidade técnica,
@@ -31,6 +31,10 @@ roles dão alternativas direcionadas.
   em segurança. Roda o checklist audit-security e adiciona threat
   modeling sobre o diff (superfície de ataque, fluxos de auth/dados)
   antes do merge. NÃO modifica código.
+- **[mentor](/octopus/roles/mentor/)** — revisor-coach. Transforma os
+  findings das gate roles em teaching units que explicam o porquê e
+  citam as fontes do próprio time. Nunca gata; read-only por padrão
+  (`--save` / `--pr` ativam um log de lições e comentários no PR).
 - **[backend-developer](/octopus/roles/backend-developer/)** —
   implementa código de backend seguindo plans. Stack-aware (.NET,
   Scala, Node, Python). Modifica código.
