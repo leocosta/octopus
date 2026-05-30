@@ -70,12 +70,15 @@ is worth the coupling.
 
 ### Negative
 
-- Breaking default: a bare `map-system` now crawls, writes a committed file, and
-  needs `frontend-design`. Bounded by manual-invocation-only and the
-  `--mode simplified --no-save` escape hatch.
+- Breaking default: a bare `map-system` now crawls and writes a committed file.
+  Bounded by manual-invocation-only and the `--mode simplified --no-save` escape
+  hatch. It does not add a hard `frontend-design` dependency — preset HTML decks
+  render deterministically from the template without it.
 - A change to the `launch-release` theme schema now affects `map-system` too.
 
 ### Risks
 
 - Stale committed decks — mitigated: cheap to regenerate; dated on the cover.
-- `frontend-design` absent — mitigated: graceful fallback to markdown/inline.
+- `frontend-design` absent — mitigated: it is an enhancer, not the renderer.
+  Preset HTML decks still render from the template; only `--design-from` needs
+  it, and that falls back to a preset.

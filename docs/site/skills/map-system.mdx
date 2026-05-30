@@ -57,17 +57,19 @@ written to `docs/system-map/<repo>.html`.
 A bare `map-system` now generates and saves the deck — a **breaking change**
 from the old inline micro map. The blast radius is bounded: the skill is
 manual-invocation only (agents must not run it on their own), and the old
-behaviour is one flag away (`--mode simplified --no-save`). When
-`frontend-design` isn't available, `complete` + `html` degrades to the
-markdown rendering plus a note — it never fails the run. The rationale is
-recorded in
+behaviour is one flag away (`--mode simplified --no-save`). It does **not**
+add a hard `frontend-design` dependency: preset HTML decks render
+deterministically from the template; `frontend-design` only refines the
+visuals when present, and is required solely for `--design-from` (which
+falls back to a preset). The rationale is recorded in
 [ADR-003](https://github.com/leocosta/octopus/blob/main/docs/adr/003-map-system-complete-deck.md).
 
 ## Composes with
 
 - **[launch-release](/octopus/skills/launch-release/)** — the theme schema
   and presets the deck reuses.
-- **frontend-design** — renders and themes the HTML deck.
+- **frontend-design** — refines the HTML deck and synthesizes custom themes
+  for `--design-from`; an enhancer, not required for preset decks.
 - **[review-contracts](/octopus/skills/review-contracts/)** — the
   API-detection heuristics for the contracts section.
 - **onboarding** (RM-090) — presents the `complete` deck during the ramp.

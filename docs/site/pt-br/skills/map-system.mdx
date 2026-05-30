@@ -3,7 +3,7 @@ title: map-system
 description: Mapeia um repositório no vocabulário dele em duas profundidades — uma orientação textual rápida (simplified), ou um deck HTML autocontido e temado do repo inteiro (complete, o default) renderizado via frontend-design e o sistema de temas do launch-release.
 sidebar:
   order: 21
-source_hash: "sha256:641cf5888906b8020852bff1541b9d5df600eb8b3ec1f314d635085498e1a384"
+source_hash: "sha256:9d819a45324ac706dd24c3afd0d50445114cc38a3629c92f5cae309c7af2d952"
 needs_retranslation: false
 ---
 
@@ -60,16 +60,18 @@ Um `map-system` sem flags agora gera e salva o deck — uma **mudança breaking*
 em relação ao micro mapa inline antigo. O raio de impacto é limitado: o skill
 é manual-invocation only (agents não rodam por conta própria), e o
 comportamento antigo está a um flag de distância (`--mode simplified
---no-save`). Quando o `frontend-design` não está disponível, `complete` +
-`html` degrada pro rendering markdown mais uma nota — nunca falha a execução.
-O racional está registrado no
+--no-save`). Ele **não** adiciona uma dependência dura de `frontend-design`:
+decks HTML com preset renderizam determinísticamente a partir do template; o
+`frontend-design` só refina o visual quando presente, e é exigido apenas pelo
+`--design-from` (que cai pra um preset). O racional está registrado no
 [ADR-003](https://github.com/leocosta/octopus/blob/main/docs/adr/003-map-system-complete-deck.md).
 
 ## Compõe com
 
 - **[launch-release](/octopus/skills/launch-release/)** — o schema de temas e
   os presets que o deck reusa.
-- **frontend-design** — renderiza e tema o deck HTML.
+- **frontend-design** — refina o deck HTML e sintetiza temas custom pro
+  `--design-from`; um enhancer, não exigido pra decks com preset.
 - **[review-contracts](/octopus/skills/review-contracts/)** — as heurísticas
   de detecção de API pra seção de contratos.
 - **onboarding** (RM-090) — apresenta o deck `complete` durante o ramp.

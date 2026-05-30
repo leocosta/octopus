@@ -33,7 +33,7 @@
 
 ### Overview
 
-`map-system` gains three orthogonal axes — `--mode`, `--save`, `--output` — and a **new default**: a bare `map-system` now produces the full, saved, themed HTML deck (`complete` + save + `html` + theme `dark-blue`). The quick textual orientation becomes **opt-in** via `--mode simplified`. The themed, self-contained deck is the `complete` + `html` combination, rendered via `frontend-design` and styled by a `launch-release` theme.
+`map-system` gains three orthogonal axes — `--mode`, `--save`, `--output` — and a **new default**: a bare `map-system` now produces the full, saved, themed HTML deck (`complete` + save + `html` + theme `dark-blue`). The quick textual orientation becomes **opt-in** via `--mode simplified`. The themed, self-contained deck is the `complete` + `html` combination, rendered deterministically from a template, styled by a `launch-release` theme, and refined by `frontend-design` when it is available.
 
 ```
 map-system                              → DEFAULT: complete + save + html + dark-blue → docs/system-map/<repo>.html
@@ -50,7 +50,7 @@ map-system --design-from "…"            → full deck, custom theme via fronte
 
 1. **`--mode simplified | complete`** (default **`complete`**) — the **content depth**. `simplified` is today's micro orientation: sample, do not crawl, ~one screen. `complete` does the exhaustive pass and renders every deck section below. The anti-patterns that forbid exhaustive crawling and 200-line output are scoped to **`simplified` mode only**; `complete` mode is *allowed and expected* to crawl.
 2. **`--save` / `--no-save`** (default **save on**) — whether the result is **written to a file** or returned **inline** in the response. `--no-save` returns the content inline as readable text (markdown), regardless of `--output`.
-3. **`--output markdown | html`** (default **`html`**) — the **format of the saved file**. `html` produces the self-contained themed deck (via `frontend-design`); `markdown` produces the same content as a plain markdown document (no theme, no `frontend-design`).
+3. **`--output markdown | html`** (default **`html`**) — the **format of the saved file**. `html` produces the self-contained themed deck (template + preset theme, deterministic; refined by `frontend-design` when available); `markdown` produces the same content as a plain markdown document (no theme, no `frontend-design`).
 
 Theme flags (`--theme`, default **`dark-blue`**; `--design-from`) apply to `--output html` only. Default saved path is `docs/system-map/<repo>.<html|md>`.
 
@@ -73,7 +73,7 @@ The deck is a *presentation*: curated and screen-paced (slide/section style), no
 
 Three presets ship: **`dark-blue`** (the default — the GitHub dark-mode / Primer palette: background `#0d1117`, accent `#58a6ff`, text `#c9d1d9`; our own name, not a GitHub Pages theme), **`dark-jade`** (the existing `jade` palette), and **`light-jade`** (a light-background variant). They live alongside the other presets so both skills share them.
 
-**Rendering.** `frontend-design` generates/refines the self-contained HTML (inline CSS/JS, embedded Mermaid), constrained by the resolved theme. Output is a single `.html` file with no external dependencies — openable directly and presentable.
+**Rendering.** The self-contained HTML is produced **deterministically** by filling `templates/deck.html.tmpl` — the content slots from the crawl, the `THEME_*` variables from the resolved theme (inline CSS/JS, embedded Mermaid, no external dependencies). `frontend-design` is an **enhancer**: when available it refines the visual design beyond the base template, and it is **required only for `--design-from`** (custom theme synthesis). Preset themes render without it. Output is a single `.html` file — openable directly and presentable.
 
 **Output.** Saved files default to `docs/system-map/<repo>.<html|md>` (committed — a reusable, version-controlled asset). The extension follows `--output`.
 
@@ -81,7 +81,7 @@ Three presets ship: **`dark-blue`** (the default — the GitHub dark-mode / Prim
 
 **This changes the default behaviour of `map-system`** — it is not purely additive. A bare `map-system` previously returned the quick inline textual map; now it generates and **saves** the full themed HTML deck. Callers who want the old behaviour use `--mode simplified --no-save`. Because the skill is **manual-invocation only** (agents must not invoke it autonomously), the blast radius is bounded to explicit human/skill calls — but the change must be called out in the changelog and the docs.
 
-The new default requires `frontend-design`; if it is not available, the skill falls back to the `markdown` rendering plus a note — it does not fail. The starter-bundle membership is unchanged.
+The new default does **not** require `frontend-design`: preset themes (default `dark-blue`) render the HTML deck deterministically from the template. `frontend-design` only refines the visuals when present, and is required solely for `--design-from` (custom theme synthesis) — which falls back to a preset when it is absent. The starter-bundle membership is unchanged.
 
 ## Implementation Plan
 
@@ -113,13 +113,14 @@ The new default requires `frontend-design`; if it is not available, the skill fa
 
 ## Risks
 
-- **Breaking default change:** a bare `map-system` now crawls, writes a committed file, and needs `frontend-design` — surprising to anyone expecting the old inline micro map. Mitigated by: manual-invocation-only (bounded blast radius), `--mode simplified --no-save` preserving the old behaviour, graceful `frontend-design` fallback, and an explicit changelog/docs note.
+- **Breaking default change:** a bare `map-system` now crawls and writes a committed file — surprising to anyone expecting the old inline micro map. Mitigated by: manual-invocation-only (bounded blast radius), `--mode simplified --no-save` preserving the old behaviour, and an explicit changelog/docs note. (It does **not** add a hard `frontend-design` dependency — preset HTML renders without it.)
 - **Scope creep / philosophy drift:** the micro-skill becoming a heavyweight generator. Mitigated by the strict mode split — `simplified` keeps its discipline; only `complete` is heavy.
 - **Stale decks:** a committed HTML deck drifts from the code. Mitigated — the deck is regenerated on demand (cheap to re-run); it is a snapshot, dated on the cover.
-- **`frontend-design` dependency:** unavailable in some setups. Mitigated by graceful degradation to the textual map.
+- **`frontend-design` unavailable:** in some setups it is not installed. Mitigated — it is an enhancer, not the renderer: preset HTML decks render deterministically without it; only `--design-from` needs it, and that falls back to a preset.
 - **Theme coupling to `launch-release`:** a change to the theme schema affects both skills. Acceptable — single source of truth for themes is the point; documented in the ADR.
 
 ## Changelog
 
 - **2026-05-30** — Initial draft (from RM-090 interview: split out as its own item; `map-system` complete-mode themed HTML deck, reusing launch-release themes + frontend-design).
 - **2026-05-30** — Default flipped to `complete` + save + `html` + `dark-blue` theme (the deck is the new default; `--mode simplified --no-save` restores the old inline micro map). Added `--no-save`; default theme `dark-blue` (Primer palette, our own name — confirmed not a GitHub Pages theme).
+- **2026-05-30** — Corrected the `frontend-design` dependency: it is an enhancer, not the renderer. Preset HTML decks render deterministically from the template; `frontend-design` only refines visuals and is required solely for `--design-from`. Mirrors the `launch-release` preset-vs-design-from contract.

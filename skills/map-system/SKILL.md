@@ -6,7 +6,8 @@ description: >
   (sample, do not crawl); `complete` (the default) does an exhaustive pass
   and renders a self-contained, themed HTML deck of the whole repo —
   overview, business insights, architecture diagrams, and API/data
-  contracts — via frontend-design and the launch-release theme system.
+  contracts — themed via the launch-release theme system, refined by
+  frontend-design when available.
   `--save` (default on) writes it to docs/system-map/; `--output
   markdown|html` (default html) picks the format. Manual invocation only —
   agents must not map-system on their own initiative. Ships in starter.
@@ -132,16 +133,29 @@ GitHub dark-mode / Primer palette), **`dark-jade`**, **`light-jade`**.
 
 ### Step 4 — Render and save
 
-Render the self-contained HTML from `templates/deck.html.tmpl` via
-`frontend-design` (inline CSS/JS, embedded Mermaid — no external assets),
-constrained by the resolved theme. Write to `docs/system-map/<repo>.html`
-(or `.md` for `--output markdown`), unless `--no-save`.
+Render the self-contained HTML by filling `templates/deck.html.tmpl` — the
+content slots from the crawl, the `THEME_*` variables from the resolved
+theme (inline CSS/JS, embedded Mermaid, no external assets). This is
+**deterministic** and needs no other skill. When `frontend-design` is
+available, use it to **refine** the visual design beyond the base template.
+Write to `docs/system-map/<repo>.html` (or `.md` for `--output markdown`),
+unless `--no-save`.
 
-### Degradation
+### When `frontend-design` is unavailable
 
-`complete` + `html` needs `frontend-design`. When it is not available, fall
-back to the `markdown` rendering (or inline when `--no-save`) and say so —
-never fail the run or the ramp.
+`frontend-design` is an **enhancer**, not the renderer:
+
+- **Preset themes** (`--theme <name>`, default `dark-blue`) render the HTML
+  deck deterministically from the template — they do **not** need
+  `frontend-design`. You get the template's base look; if `frontend-design`
+  is present it refines the visuals.
+- **`--design-from "<prompt>"`** (custom theme synthesis) is the only path
+  that **requires** `frontend-design`. When it is not available, say so and
+  fall back to a preset theme — mirroring the `launch-release`
+  `--design-from` contract.
+- **`--output markdown`** never involves `frontend-design`.
+
+Never fail the run or the ramp over a missing enhancer.
 
 ## Anti-Patterns
 
@@ -161,7 +175,8 @@ For **`complete` mode**:
 
 ## Integration with Other Skills
 
-- **`frontend-design`** — renders/themes the `complete` HTML deck.
+- **`frontend-design`** — refines the `complete` HTML deck and synthesizes
+  custom themes for `--design-from`; an enhancer, not required for presets.
 - **`launch-release`** — the theme schema and presets the deck reuses.
 - **`review-contracts`** — the API-detection heuristics for the contracts section.
 - **`onboarding` (RM-090)** — presents the `complete` deck during the ramp.
