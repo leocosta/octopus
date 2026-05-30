@@ -1,0 +1,198 @@
+---
+title: Fluxo de setup da frota
+description: Como o Octopus é semeado em vários repos de uma vez — o modelo workspace + fleet.yml, o padrão em camadas (baseline + perfil de stack + tier de adoção), a cadeia de semeadura (fleet-bootstrap → octopus setup → enforce-*), a precedência de template de config e a merge policy. Com diagramas de fluxo e exemplos de uso.
+sidebar:
+  order: 8
+source_hash: "sha256:649c67bd7b741a8059ee2ec784270e98929dff4935562a8afa61f444f5e89a5b"
+needs_retranslation: false
+---
+
+Esta página explica como um manager padroniza o Octopus em **6+ repos** de uma
+vez — o fluxo de semeadura ponta-a-ponta por trás do
+[`fleet-bootstrap`](/octopus/skills/fleet-bootstrap/) (RM-095). Assume uma
+frota multi-stack com código legado, porque é esse o caso que molda o design.
+
+## O modelo numa imagem
+
+```
+                ┌─────────────────────── workspace repo ───────────────────────┐
+                │  rules/common/*.local.md     (shared rules, symlinked)        │
+   manager  ──► │  fleet.yml                   (baseline + profiles + tiers +   │
+   edits one    │                               repos map)                      │
+   file         │  templates/{ide,precommit,ci}/<stack>.*   (optional standard) │
+                └───────────────┬───────────────────────────────────────────────┘
+                                │  fleet-bootstrap reads it
+                                ▼
+        for each repo:  compose .octopus.yml = baseline ∪ profile(s) ∪ tier
+                                │
+                                ▼
+                    `octopus setup`  ──►  seeds the repo (rules, hooks,
+                                          agent config, .editorconfig, .husky)
+```
+
+O manager edita **um** `fleet.yml`; cada repo recebe um `.octopus.yml` composto
+e é semeado pelo `octopus setup`. Os repos nunca contêm `fleet.yml` — só o
+resultado composto.
+
+## O padrão em camadas
+
+Não existe um `.octopus.yml` canônico único numa frota multi-stack. O padrão é
+**composto** por repo:
+
+```
+   baseline            stack profile             adoption tier
+   (every repo)        (detected or pinned)      (per repo)
+   ─────────────       ─────────────────────     ──────────────
+   agents              dotnet  → backend+dotnet  T0  hooks:false
+   workflow            node    → backend         T1  hooks:true  + enforce-ide
+   workspace:          frontend→ frontend        T2  + enforce-precommit + CI
+   quality, docs       python  → backend
+   mentor, architect,
+   security
+        └──────────────────┬───────────────────────────┘
+                           ▼
+              composed .octopus.yml for the repo
+```
+
+### `fleet.yml`
+
+```yaml
+# <workspace>/fleet.yml
+baseline:
+  agents: [claude, opencode]
+  workflow: true
+  workspace: git@github.com:acme/octopus-workspace.git
+  bundles: [quality, docs]      # tech-lead is the manager's install, not baseline
+  roles:   [mentor, architect, security]
+
+profiles:
+  dotnet:       { detect: ["*.sln", "*.csproj"],                 bundles: [backend], skills: [dotnet] }
+  node-backend: { detect: ["package.json + (express|nestjs)"],   bundles: [backend] }
+  frontend:     { detect: ["package.json + (react|next)"],       bundles: [frontend] }
+  python:       { detect: ["pyproject.toml", "requirements.txt"], bundles: [backend] }
+
+tiers:
+  T0: { hooks: false, precommit: false, qualityWorkflow: false }
+  T1: { hooks: true,  precommit: false, qualityWorkflow: false }
+  T2: { hooks: true,  precommit: true,  qualityWorkflow: true }
+
+repos:
+  - { path: ../billing-api,   profile: dotnet,            tier: T0 }   # legacy
+  - { path: ../checkout-web,                              tier: T1 }   # auto-detected
+  - { path: ../payments-svc,  profile: node-backend,      tier: T2 }
+  - { path: ../legacy-erp,    profile: [dotnet, frontend], tier: T0 }  # monorepo
+```
+
+## A cadeia de semeadura
+
+```
+fleet-bootstrap                octopus setup                 enforce-*
+───────────────                ─────────────                 ─────────
+1. resolve profile + tier
+2. compose .octopus.yml
+3. diff vs current  ─ preview
+4. (--apply) write manifest
+       └──────────────────────► expand bundles
+                                 deliver rules (workspace symlinked)
+                                 deliver skills / roles / knowledge
+                                 if T1+: ───────────────────────────► .editorconfig (per stack)
+                                 if T2+: ───────────────────────────► .husky / pre-commit (per stack)
+                                 if T2:  qualityWorkflow CI template
+5. (--pr) branch + PR per repo
+```
+
+O `fleet-bootstrap` escreve **só** o `.octopus.yml`. Todo o resto é trabalho do
+`octopus setup` — idêntico a um install de repo único. `.editorconfig` /
+`.husky` específicos da stack são **gerados detectando a stack de cada repo** (um
+monorepo ganha os dois), idempotente e respeitando o que existe.
+
+## O ratchet de tiers (adoção do legado)
+
+```
+   T0 ───────────────► T1 ───────────────► T2
+   capabilities        loop-level          full
+   ───────────         ──────────          ────
+   hooks: false        hooks: true         + enforce-precommit (.husky)
+   no .editorconfig    + enforce-ide       + qualityWorkflow (CI)
+   no .husky           (.editorconfig)
+   no CI               no commit/CI gate   blocking floor on every commit/PR
+
+   safe on any legacy  catches new         only when the repo
+   immediately         assistant drift     is clean
+```
+
+A sacada: **hooks loop-level só agem no que o agent edita daqui pra frente — não
+reprovam o código legado existente.** Quem quebra o legado é o pre-commit
+git-level e o CI, então esses moram no T2. Um repo legado começa em T0/T1; o
+manager edita o `tier:` no `fleet.yml` e re-roda pra promovê-lo.
+
+## Precedência de template de config
+
+Quando o `enforce-ide` / `enforce-precommit` escrevem `.editorconfig` /
+`.husky`, a fonte é resolvida com o maior ganhando:
+
+```
+   1. project-local        the repo's own file / *.local.md      ← always wins
+   2. workspace template   <workspace>/templates/{ide,precommit}/<stack>.*
+   3. generated default    Octopus stack-inferred generation     ← fallback
+```
+
+Assim um manager da frota cura **um** padrão de editor/git no workspace, e ele
+sobrescreve o default genérico gerado — enquanto a escolha local intencional de
+um repo ainda ganha, e a geração preenche as lacunas. Veja o
+[ADR-005](https://github.com/leocosta/octopus/blob/main/docs/adr/005-workspace-config-template-precedence.md).
+
+## A merge policy
+
+Um repo que já tem um `.octopus.yml` é mergeado **por chave**, nunca clobberado:
+
+```
+   converge   baseline + tier values                    (add missing; set hooks/CI)
+   keep       local additions matching the profile      (justified — e.g. backend-developer)
+   flag       local additions matching neither          (⚠ conflict — keep or drop?)
+   flag       any tier de-escalation                    (⚠ reducing enforcement)
+   survive    *.local.md rule overrides                 (project layer always wins)
+```
+
+Nada é removido em silêncio; de-escalações e keeps arbitrários são expostos pra
+um humano. Veja o
+[ADR-004](https://github.com/leocosta/octopus/blob/main/docs/adr/004-fleet-merge-policy.md).
+
+## Exemplos de uso
+
+**Primeiro bootstrap — preview, depois apply:**
+
+```bash
+# dry-run: print the per-repo diff, write nothing
+octopus fleet bootstrap
+# apply: write the merged .octopus.yml + run octopus setup in each
+octopus fleet bootstrap --apply
+```
+
+**Promover um repo legado de tier** — edite o `fleet.yml` (`tier: T0` → `T1`),
+depois:
+
+```bash
+octopus fleet bootstrap --apply        # only the changed repo actually changes
+```
+
+**Adicionar um novo repo** — anexe-o em `repos:` (perfil auto-detectado), depois
+apply.
+
+**Rollout guardado via PRs** (nunca dá push em main):
+
+```bash
+octopus fleet bootstrap --apply --pr
+```
+
+**Remediar só o que driftou** — alimente um relatório do `audit-fleet`:
+
+```bash
+octopus fleet bootstrap --apply --from-audit fleet-report.md
+```
+
+## Veja também
+
+- [skill `fleet-bootstrap`](/octopus/skills/fleet-bootstrap/)
+- [Composição de bundles](/octopus/architecture/bundles/) — como bundles expandem
+- `audit-fleet` (RM-094) — a metade *detect* de detect → remediate

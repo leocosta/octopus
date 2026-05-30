@@ -1,0 +1,89 @@
+---
+title: tech-lead
+description: O kit de liderança de engenharia — review com mentor, onboarding, uma Definition of Done do time, standards self-serve, aprendizado de time, e auditoria cross-repo + fleet bootstrap. O install one-stop do manager no repo de controle.
+sidebar:
+  order: 8
+source_hash: "sha256:2462b78ebf6eb78fde5cae7ca03f156dcfcb86c3686e5de8144011026343b0fa"
+needs_retranslation: false
+---
+
+`tech-lead` (RM-096) é o **ponto de entrada do manager**: um install que
+empacota o kit manager-multiplicador do Cluster 16, pra que um tech lead
+adotando Octopus não tenha que escolher a dedo as roles e skills certas no
+catálogo. É o bundle que responde *"estou liderando um time — me dê o aparato
+pra subir a régua e a autonomia nos meus repos."*
+
+## Por que existe
+
+Os outros sete itens do Cluster 16 entregam cada um uma peça — `mentor` ensina
+o porquê, `onboarding` rampa um hire, `definition-of-done` torna o "pronto"
+explícito, `standards` responde "qual nossa regra pra X", `continuous-learning`
+(team mode) transforma feedback recorrente de review em regras, `audit-fleet`
+mostra onde a frota driftou, `fleet-bootstrap` converge. Sem um bundle, um lead
+montaria tudo isso à mão. O `tech-lead` é a composição.
+
+Ele **lay sobre** `quality` + `starter` — um lead ainda quer o workflow de
+implementação e os gates de auditoria embaixo.
+
+## O install do manager — não um bundle de baseline
+
+O `tech-lead` é instalado no **repo de controle do manager**, porque carrega as
+ferramentas de **plano de controle cross-repo** — `audit-fleet` e
+`fleet-bootstrap` — que operam *sobre* a frota a partir de um ponto. Um leaf
+repo nunca precisa da ferramenta que faz bootstrap da frota.
+
+Os membros **por-repo** — `mentor`, `onboarding`, `definition-of-done`,
+`standards` e o hook `review-log-capture` — chegam a todo repo pelo
+**[baseline da frota](/octopus/architecture/fleet-setup-flow/)** (`docs` +
+`roles: [mentor, …]` + `hooks: true`), *não* por este bundle. Por isso o
+`tech-lead` é deliberadamente **excluído do baseline da frota**.
+
+## O que inclui
+
+```yaml
+skills:
+  - standards            # RM-092 — self-serve "what's our standard for X, and why"
+  - onboarding           # RM-090 — ramp a new engineer onto standards + code + flow
+  - definition-of-done   # RM-091 — first-class team DoD + validate
+  - continuous-learning  # RM-093 — team mode: recurring review feedback → rule candidates
+  - audit-fleet          # RM-094 — cross-repo adoption + drift audit (control-plane)
+  - fleet-bootstrap      # RM-095 — converge the fleet onto a layered standard (control-plane)
+roles:
+  - mentor               # RM-089 — teaches the why (pairs with architect's gate)
+  - architect            # gates technical quality / ADR compliance
+  - security             # gates auth/secret-sensitive diffs
+```
+
+Os membros continuam registrados nos seus bundles interinos (`docs`, `quality`)
+**e** são listados aqui — o expander dedup. Um time que escolhe só `docs` ainda
+ganha onboarding/standards/DoD; escolher `tech-lead` dá o kit completo.
+
+[Source: `bundles/tech-lead.yml`](https://github.com/leocosta/octopus/blob/main/bundles/tech-lead.yml)
+
+## Arquétipo de time
+
+Isto é pra quem **lidera** um time em um ou mais repos — um tech lead ou
+engineering manager que quer julgamento Staff-level codificado uma vez, em
+controle de versão, pra que o agent de cada engenheiro aplique isso em vez de o
+manager ser o revisor de última instância. Especialmente em **6+ repos**, onde
+a auditoria + bootstrap cross-repo se pagam.
+
+Se você é um contribuidor solo em um repo, o `tech-lead` é exagero — as peças
+por-repo (`mentor`, `standards`, `definition-of-done`) estão disponíveis sem
+ele.
+
+## O loop que ele fecha
+
+review (`mentor` / `architect`) → `review-log-capture` → o team mode do
+`continuous-learning` agrega fleet-wide → um padrão recorrente vira candidato →
+`/octopus:review-proposals` promove pras rules compartilhadas do `workspace:` →
+todo repo herda. O `audit-fleet` mostra quem driftou; o `fleet-bootstrap`
+converge. O manager padroniza sem ser o gargalo.
+
+## Compõe com
+
+- **[quality](/octopus/bundles/quality/)** — os gates de auditoria em que um
+  lead se apoia (também lista `architect` / `security`; deduped).
+- **[docs](/octopus/bundles/docs/)** — carrega os membros por-repo pro baseline
+  (onboarding, DoD, standards, continuous-learning).
+- **[starter](/octopus/bundles/starter/)** — o workflow de implementação embaixo.

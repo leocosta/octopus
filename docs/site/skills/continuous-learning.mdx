@@ -1,6 +1,6 @@
 ---
 title: continuous-learning
-description: Capture insights, test hypotheses, and promote confirmed patterns to project knowledge — multi-agent ready, designed to survive across Claude, Kilo Code, Copilot, Codex sessions.
+description: Capture insights, test hypotheses, and promote confirmed patterns to project knowledge — multi-agent ready. Team mode (RM-093) aggregates recurring review feedback across the fleet into rule-promotion candidates, routing fleet-wide patterns to the shared workspace rules.
 sidebar:
   order: 17
 ---
@@ -46,6 +46,38 @@ homes deliberately rather than letting them grow ad hoc.
    archived without shame — half of captured signal turns out to
    be one-off context, and pretending otherwise just pollutes the
    knowledge base.
+
+## Team mode — fleet-wide review learning (RM-093)
+
+Everything above is the **default mode**: a single developer's session capture
+to `knowledge/`. **Team mode** lifts the same capture→promote loop to the
+team/review scope — so "the whole team keeps making mistake X" becomes a rule
+instead of a re-typed PR comment.
+
+- **Capture is continuous and automatic.** A Stop hook —
+  [`review-log-capture`](/octopus/hooks/review-log-capture/) — reads the session
+  transcript, pulls review findings (the `BLOCKING:` / `ADVISORY:` / `QUESTION:`
+  tags `architect` / `security` / `mentor` / `pr-review` emit), and appends them
+  to `.octopus/review-log/` (gitignored). No edits to the review skills.
+- **Aggregation is operator-run, and fleet-aware.** Team mode mines the
+  review-log across the fleet (reusing the `fleet.yml` `repos:` list), groups
+  findings by topic, and counts both occurrences **and distinct-repo spread**.
+- **Spread routes the destination.** A pattern across `≥ fleet_repos` distinct
+  repos (default 3) promotes to the **shared `workspace:` rules** — inherited by
+  every repo; a single-repo pattern over `local` (default 5) stays that repo's
+  local rule. Thresholds are configurable in `fleet.yml`:
+
+  ```yaml
+  # fleet.yml
+  learning:
+    local: 5
+    fleet_repos: 3
+  ```
+
+- **Promotion stays human-gated.** Candidates land in `.octopus/proposals/` and
+  are promoted via `/octopus:review-proposals` — team mode never auto-edits a
+  rule. The loop closes: review → review-log → fleet-wide pattern → workspace
+  rule → every repo inherits it.
 
 ## What it doesn't do
 

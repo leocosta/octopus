@@ -45,6 +45,7 @@ composer runs the relevant ones in parallel.
 | `audit-tenant` | Multi-tenant data-scope enforcement — query filters, raw SQL, new entity configs, controller ownership, admin endpoints. | [→](./audit-tenant/) |
 | `audit-config` | Agent-configuration freshness — model-specific assumptions, stale dates, phantom skills, deprecated paths. | [→](./audit-config/) |
 | `audit-grounding` | Signal-only divergence from the source of truth — invented conventions, unsupported domain facts the formatter can't see. | [→](./audit-grounding/) |
+| `audit-fleet` | Cross-repo adoption + drift — each repo's config vs its declared target (baseline + stack profile + adoption tier) from fleet.yml. Signal-only; feeds fleet-bootstrap. | [→](./audit-fleet/) |
 | `review-contracts` | Frontend/backend contract drift — endpoints, DTOs, enums, status codes, auth rules, params. | [→](./review-contracts/) |
 
 ## Implementation workflows
@@ -84,11 +85,15 @@ the corresponding command invokes.
 
 | Skill | Engages when | Detail |
 |---|---|---|
-| `continuous-learning` | Capturing insights worth keeping across sessions. | [→](./continuous-learning/) |
+| `continuous-learning` | Capturing insights worth keeping across sessions; team mode aggregates recurring review feedback fleet-wide into rule candidates. | [→](./continuous-learning/) |
+| `standards` | Self-serve "what's our standard for X, and why" — answered from ADRs, rules, CONTEXT.md, knowledge; routes to authoring on a miss. | — |
+| `definition-of-done` | The team's Definition of Done as a versioned artifact — create/update it, or validate a diff against it. Wired into codereview, signal-only. | [→](./definition-of-done/) |
+| `onboarding` | Ramp a new engineer onto a repo's standards, architecture, and workflow — a scoped, ephemeral ramp that presents the map-system deck. | [→](./onboarding/) |
 | `plan-backlog` | Auditing the roadmap and plans for staleness, orphans, broken links. | [→](./plan-backlog/) |
 | `context-budget` | The conversation is heavy on tokens and needs pruning. | — |
 | `context-handoff` | Handing the current session to another agent. | — |
-| `map-system` | Generating a system map for onboarding or for AFK agents. | — |
+| `map-system` | Mapping a repo — a quick textual orientation, or a themed self-contained HTML deck of the whole repo (the default). | [→](./map-system/) |
+| `fleet-bootstrap` | Converge 6+ repos onto a layered standard (baseline + stack profile + adoption tier) from one fleet.yml — multi-stack and legacy first-class; dry-run, non-destructive. | [→](./fleet-bootstrap/) |
 | `interview` | Stress-testing a plan via grilling. | — |
 | `triage-issues` | Routing incoming issues through a state machine. | — |
 

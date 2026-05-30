@@ -1,0 +1,66 @@
+---
+title: onboarding
+description: Rampa um novo engenheiro nos standards, arquitetura e modo de trabalho de um repo — uma sequência guiada e escopada que compõe artefatos existentes (CONTEXT.md, ADRs, rules, o deck do map-system, o DoD) e apresenta o deck do map-system. Efêmero por design.
+sidebar:
+  order: 22
+source_hash: "sha256:129bd700e3ad10bfd9bfbfd3c6cb4eb4ca85d975f12d197b18aac5e29efa657b"
+needs_retranslation: false
+---
+
+`onboarding` (RM-090) rampa um novo engenheiro num repo. O `map-system`
+mapeia o *código*, o `interview` escopa uma *feature* — nenhum onboarda uma
+*pessoa*. Esta skill faz: caminha um novo hire pelos **standards +
+arquitetura + workflow** do repo numa ordem estruturada, roteando pelos
+artefatos que o time já mantém, pra que "eu sei como a gente trabalha aqui"
+não precise consumir as primeiras semanas do manager a cada contratação.
+
+## Escopado, e efêmero
+
+Duas escolhas de design o mantêm útil e de baixo ruído:
+
+- **Escopado** — pergunta "em que área ou stack você vai começar?" no início
+  e escopa os passos de standards e mapa pra isso, em vez de despejar o repo
+  inteiro.
+- **Efêmero** — um checklist reativável vive **gitignored** em
+  `.octopus/onboarding/<nome>.md`; rerodar retoma do primeiro item não
+  marcado. Nada é committado. O asset durável e voltado pro manager que um
+  hire vê é o **deck do `map-system`**, não um arquivo de onboarding.
+
+## A semente opcional do manager
+
+Se existir `docs/onboarding/guide.md` — o "comece por aqui" curado pelo
+manager (os ADRs que importam, os módulos-chave, uma nota de boas-vindas) —
+o ramp **lidera com ele** e o usa pra priorizar os passos. Sem ele, o ramp é
+totalmente auto-derivado dos artefatos vivos. O manager cura a semente **uma
+vez por repo**, opcionalmente — alto sinal sem virar o gargalo por hire.
+
+## O ramp
+
+Cada passo roteia pra uma fonte ou skill existente, e degrada com elegância —
+expondo um `CONTEXT.md` magro ou ADRs esparsos como sinal de adoção em vez de
+pular em silêncio:
+
+1. **O domínio** — `CONTEXT.md`, o vocabulário do time.
+2. **As decisões** — os `docs/adr/*` que tocam a área do engenheiro.
+3. **Os standards** — as `rules/` da stack dele (incl. overrides `*.local.md`),
+   com a skill [`standards`](/octopus/skills/) pros follow-ups.
+4. **O mapa** — **apresenta o deck completo do
+   [`map-system`](/octopus/skills/map-system/)**: abre
+   `docs/system-map/<repo>.html` se existir, senão gera escopado à área dele
+   (caindo pro mapa textual quando `frontend-design` não está disponível).
+5. **O modo de trabalho** — o fluxo de PR, a **Definition of Done** e os
+   bundles/hooks ativos (o que o agent dele aplica a cada commit).
+6. **A frota** — o standard do `workspace:` e os outros repos que ele vai
+   tocar (com 6+ repos isso importa), apontando pro output do `audit-fleet`
+   (RM-094) quando disponível.
+
+## Compõe com
+
+- **[map-system](/octopus/skills/map-system/)** — o passo 4 apresenta o deck.
+- **standards** — o follow-up self-serve de standards.
+- **definition-of-done** — mostrada no passo "modo de trabalho".
+- **audit-fleet** (RM-094) — o output cross-repo no passo da frota.
+
+Registrada no bundle `tech-lead` (RM-096); lar interino o bundle `docs`.
+
+[Source: `skills/onboarding/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/onboarding/SKILL.md)

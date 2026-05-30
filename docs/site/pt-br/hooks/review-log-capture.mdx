@@ -1,0 +1,51 @@
+---
+title: Captura de review log
+description: Stop hook que minera o transcript da sessão por findings de review (BLOCKING / ADVISORY / QUESTION) e as anexa ao .octopus/review-log/ — o backbone do team mode do continuous-learning (RM-093).
+sidebar:
+  order: 8
+source_hash: "sha256:4ca9285d361b815482d942c5dfd1615041981a6f2a4075c67a61b3926fc383c1"
+needs_retranslation: false
+---
+
+`review-log-capture` (RM-093) é o Stop hook que transforma as findings de
+review produzidas numa sessão num log persistente e minerável. Quando a
+conversa termina, o hook lê o transcript inteiro e puxa as findings que as
+review roles emitem — as tags `BLOCKING:` / `ADVISORY:` / `QUESTION:` do
+`architect`, `security`, `mentor`, e o relatório do `pr-review` — e anexa uma
+entrada estruturada por finding ao `.octopus/review-log/<data>.md`.
+
+O hook nunca edita a árvore do projeto além desse log gitignored. É a metade de
+**captura determinística** do loop de aprendizado do time; a agregação semântica
+é o team mode do [`continuous-learning`](/octopus/skills/continuous-learning/),
+rodado sob demanda.
+
+## O que ele captura
+
+Pra cada finding de review no transcript, uma linha:
+
+```
+- 2026-05-30T15:37:11-03:00 | repo=billing-api | sev=ADVISORY | topic="processData is a god function"
+```
+
+`repo` é o repositório atual, `sev` a tag de severidade, e `topic` uma dica
+normalizada da finding — suficiente pro team mode agrupar padrões recorrentes
+pela frota.
+
+## Por que um hook (e não um passo nos skills de review)
+
+A captura tem que ser determinística e fora de banda — dispara toda vez que um
+review acontece, sem ninguém precisar lembrar de um passo, e sem editar
+`pr-review` / `architect` / `mentor`. O julgamento fica onde julgamento deve
+ficar: na agregação operator-run que minera o log contra os limiares do
+`fleet.yml` e escreve candidatos a regra em `.octopus/proposals/` pro
+`/octopus:review-proposals`.
+
+## Fronteiras
+
+- **Read-only** na árvore do projeto exceto `.octopus/review-log/` (gitignored).
+- **Soft-skip** quando o transcript ou o `jq` não está disponível, e não escreve
+  nada quando a sessão não produziu findings de review.
+- **Signal-only** — nunca bloqueia o Stop.
+
+Veja o [team mode do continuous-learning](/octopus/skills/continuous-learning/)
+pra como o log vira candidatos a regra fleet-wide.

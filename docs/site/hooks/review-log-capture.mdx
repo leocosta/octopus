@@ -1,0 +1,49 @@
+---
+title: Review log capture
+description: Stop hook that mines the session transcript for review findings (BLOCKING / ADVISORY / QUESTION) and appends them to .octopus/review-log/ — the backbone for the team mode of continuous-learning (RM-093).
+sidebar:
+  order: 8
+---
+
+`review-log-capture` (RM-093) is the Stop hook that turns the review
+findings produced in a session into a persistent, mineable log. When the
+conversation ends, the hook reads the full transcript and pulls the findings
+the review roles emit — the `BLOCKING:` / `ADVISORY:` / `QUESTION:` tags from
+`architect`, `security`, `mentor`, and the `pr-review` report — and appends a
+structured entry per finding to `.octopus/review-log/<date>.md`.
+
+The hook never edits the project tree beyond that one gitignored log. It is
+the **deterministic capture** half of the team learning loop; the semantic
+aggregation is the [`continuous-learning`](/octopus/skills/continuous-learning/)
+team mode, run on demand.
+
+## What it captures
+
+For each review finding in the transcript, one line:
+
+```
+- 2026-05-30T15:37:11-03:00 | repo=billing-api | sev=ADVISORY | topic="processData is a god function"
+```
+
+`repo` is the current repository, `sev` the severity tag, and `topic` a
+normalized hint of the finding — enough for team mode to group recurring
+patterns across the fleet.
+
+## Why a hook (not a step in the review skills)
+
+Capture has to be deterministic and out of band — it fires every time a
+review happens, with no one having to remember a step, and without editing
+`pr-review` / `architect` / `mentor`. The judgment stays where judgment
+belongs: in the operator-run aggregation that mines the log against the
+`fleet.yml` thresholds and writes rule-promotion candidates to
+`.octopus/proposals/` for `/octopus:review-proposals`.
+
+## Boundaries
+
+- **Read-only** on the project tree except `.octopus/review-log/` (gitignored).
+- **Soft-skips** when the transcript or `jq` is unavailable, and writes nothing
+  when the session produced no review findings.
+- **Signal-only** — it never blocks the Stop.
+
+See the [team mode of continuous-learning](/octopus/skills/continuous-learning/)
+for how the log becomes fleet-wide rule candidates.

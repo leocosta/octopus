@@ -1,6 +1,6 @@
 ---
 title: Roles
-description: Personas you can delegate to via /octopus:delegate. Each role scopes an agent's behaviour for one task — architect, backend, frontend, marketer, product-manager, writer.
+description: Personas you can delegate to via /octopus:delegate. Each role scopes an agent's behaviour for one task — architect, security, mentor, backend, frontend, marketer, product-manager, writer.
 sidebar:
   order: 0
 ---
@@ -18,7 +18,7 @@ workflow. A marketing post wants approval gates and platform-native
 copy. The default agent persona is a generalist; roles give you
 targeted alternatives.
 
-## The seven roles
+## The eight roles
 
 - **[architect](/octopus/roles/architect/)** — senior reviewer and
   code-quality gate. Validates technical quality, architectural
@@ -28,6 +28,10 @@ targeted alternatives.
   reviewer. Runs the audit-security checklist and adds threat
   modeling over the diff (attack surface, auth/data flows) before
   merge. Does NOT modify code.
+- **[mentor](/octopus/roles/mentor/)** — coaching reviewer. Turns the
+  gate roles' findings into teaching units that explain the why and
+  cite the team's own sources. Never gates; read-only by default
+  (`--save` / `--pr` opt in to a lesson log and PR comments).
 - **[backend-developer](/octopus/roles/backend-developer/)** —
   implements backend code following plans. Stack-aware (.NET,
   Scala, Node, Python). Modifies code.

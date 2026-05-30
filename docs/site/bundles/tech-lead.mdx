@@ -1,0 +1,88 @@
+---
+title: tech-lead
+description: The engineering-leadership kit — mentor-driven review, onboarding, a team Definition of Done, self-serve standards, team-level learning, and cross-repo audit + fleet bootstrap. The manager's one-stop install on the control repo.
+sidebar:
+  order: 8
+---
+
+`tech-lead` (RM-096) is the **manager's entry point**: one install that
+packages the Cluster 16 manager-multiplier kit, so a tech lead adopting
+Octopus doesn't have to hand-pick the right roles and skills across the
+catalogue. It is the bundle that answers *"I'm leading a team — give me the
+apparatus to raise the bar and the autonomy across my repos."*
+
+## Why this exists
+
+The other seven Cluster 16 items each ship one piece — `mentor` teaches the
+why, `onboarding` ramps a hire, `definition-of-done` makes "done" explicit,
+`standards` answers "what's our rule for X", `continuous-learning` (team mode)
+turns recurring review feedback into rules, `audit-fleet` shows where the
+fleet drifts, `fleet-bootstrap` converges it. Without a bundle, a lead would
+assemble all of that by hand. `tech-lead` is the composition.
+
+It **layers on top of** `quality` + `starter` — a lead still wants the
+implementation workflow and the audit gates underneath.
+
+## The manager's install — not a baseline bundle
+
+`tech-lead` is installed on the **manager's control repo**, because it carries
+the **cross-repo control-plane** tools — `audit-fleet` and `fleet-bootstrap` —
+that operate *over* the fleet from one point. A leaf repo never needs the tool
+that bootstraps the fleet.
+
+The **per-repo** leadership members — `mentor`, `onboarding`,
+`definition-of-done`, `standards`, and the `review-log-capture` hook — reach
+every repo through the **[fleet baseline](/octopus/architecture/fleet-setup-flow/)**
+(`docs` + `roles: [mentor, …]` + `hooks: true`), *not* through this bundle. So
+`tech-lead` is deliberately **excluded from the fleet baseline**.
+
+## What it includes
+
+```yaml
+skills:
+  - standards            # RM-092 — self-serve "what's our standard for X, and why"
+  - onboarding           # RM-090 — ramp a new engineer onto standards + code + flow
+  - definition-of-done   # RM-091 — first-class team DoD + validate
+  - continuous-learning  # RM-093 — team mode: recurring review feedback → rule candidates
+  - audit-fleet          # RM-094 — cross-repo adoption + drift audit (control-plane)
+  - fleet-bootstrap      # RM-095 — converge the fleet onto a layered standard (control-plane)
+roles:
+  - mentor               # RM-089 — teaches the why (pairs with architect's gate)
+  - architect            # gates technical quality / ADR compliance
+  - security             # gates auth/secret-sensitive diffs
+```
+
+Members stay registered in their interim bundles (`docs`, `quality`) **and**
+are listed here — the expander dedups. A team that selects only `docs` still
+gets onboarding/standards/DoD; selecting `tech-lead` gets the full kit.
+
+[Source: `bundles/tech-lead.yml`](https://github.com/leocosta/octopus/blob/main/bundles/tech-lead.yml)
+
+## Team archetype
+
+This is for the person **leading** a team across one or more repos — a tech
+lead or engineering manager who wants Staff-level judgment encoded once, in
+version control, so every engineer's agent enforces it instead of the manager
+being the reviewer of last resort. Especially over **6+ repos**, where the
+cross-repo audit + bootstrap pay for themselves.
+
+If you're a solo contributor on one repo, `tech-lead` is overkill — the
+per-repo pieces (`mentor`, `standards`, `definition-of-done`) are available
+without it.
+
+## The loop it closes
+
+review (`mentor` / `architect`) → `review-log-capture` → `continuous-learning`
+team mode aggregates fleet-wide → a recurring pattern becomes a candidate →
+`/octopus:review-proposals` promotes it to the shared `workspace:` rules →
+every repo inherits it. `audit-fleet` shows who's drifted; `fleet-bootstrap`
+converges them. The manager standardizes without being the bottleneck.
+
+## Composes with
+
+- **[quality](/octopus/bundles/quality/)** — the audit gates a lead relies on
+  (also lists `architect` / `security`; deduped).
+- **[docs](/octopus/bundles/docs/)** — carries the per-repo members for the
+  baseline (onboarding, DoD, standards, continuous-learning).
+- **[starter](/octopus/bundles/starter/)** — the implementation workflow
+  underneath.

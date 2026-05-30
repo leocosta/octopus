@@ -48,6 +48,7 @@ compositor `audit-all` executa os relevantes em paralelo.
 | `audit-tenant` | Enforcement de escopo de dados multi-tenant — filtros de query, raw SQL, configs de novas entities, ownership em controllers, endpoints administrativos. | [→](./audit-tenant/) |
 | `audit-config` | Atualidade da configuração do agent — premissas específicas de modelo, datas obsoletas, skills fantasmas, paths depreciados. | [→](./audit-config/) |
 | `audit-grounding` | Divergência signal-only da fonte de verdade — convenções inventadas, fatos de domínio sem suporte que o formatter não enxerga. | [→](./audit-grounding/) |
+| `audit-fleet` | Adoção + drift cross-repo — config de cada repo vs o alvo declarado (baseline + perfil de stack + tier de adoção) do fleet.yml. Signal-only; alimenta o fleet-bootstrap. | [→](./audit-fleet/) |
 | `review-contracts` | Drift de contrato entre frontend/backend — endpoints, DTOs, enums, status codes, regras de auth, parâmetros. | [→](./review-contracts/) |
 
 ## Workflows de implementação
@@ -87,11 +88,15 @@ skill que o comando correspondente invoca.
 
 | Skill | Engaja quando | Detalhe |
 |---|---|---|
-| `continuous-learning` | Capturando insights que valem a pena guardar entre sessões. | [→](./continuous-learning/) |
+| `continuous-learning` | Capturando insights que valem a pena guardar entre sessões; o team mode agrega feedback recorrente de review pela frota em candidatos a regra. | [→](./continuous-learning/) |
+| `standards` | Self-serve "qual é o nosso padrão para X, e por quê" — respondido a partir de ADRs, rules, CONTEXT.md, knowledge; roteia para autoria quando não acha. | — |
+| `definition-of-done` | A Definition of Done do time como artefato versionado — crie/atualize, ou valide um diff contra ela. Integrada ao codereview, signal-only. | [→](./definition-of-done/) |
+| `onboarding` | Rampa um novo engenheiro nos standards, arquitetura e workflow de um repo — um ramp escopado e efêmero que apresenta o deck do map-system. | [→](./onboarding/) |
 | `plan-backlog` | Auditando o roadmap e os plans em busca de itens obsoletos, órfãos e links quebrados. | [→](./plan-backlog/) |
 | `context-budget` | A conversa está pesada em tokens e precisa de poda. | — |
 | `context-handoff` | Passando a sessão atual para outro agent. | — |
-| `map-system` | Gerando um mapa do sistema para onboarding ou para agents AFK. | — |
+| `map-system` | Mapeando um repo — uma orientação textual rápida, ou um deck HTML autocontido e temado do repo inteiro (o default). | [→](./map-system/) |
+| `fleet-bootstrap` | Converge 6+ repos num padrão em camadas (baseline + perfil de stack + tier de adoção) a partir de um fleet.yml — multi-stack e legado em primeiro plano; dry-run, não-destrutivo. | [→](./fleet-bootstrap/) |
 | `interview` | Stress-testando um plan via grilling. | — |
 | `triage-issues` | Roteando issues recebidas por uma máquina de estados. | — |
 

@@ -3,8 +3,8 @@ title: Bundles
 description: Bundles são pacotes opinativos de skills, roles, rules e hooks ajustados a um arquétipo de time — a forma como você escolhe quanto o Octopus aparece num repo.
 sidebar:
   order: 0
-source_hash: "sha256:b6ee6a3ce319fe0b62d82ecbd5943ce6e33b1e182e0f71fa301d80fcec8b2909"
-needs_retranslation: true
+source_hash: "sha256:47abe3629613f3b9f1c4a169c9c0357271cf190e5e6d7b7e0ee965ab808d7f78"
+needs_retranslation: false
 ---
 
 Um **bundle** é a unidade que o Octopus usa para entregar fatias
@@ -22,7 +22,7 @@ ou de menos (o Octopus não ajuda). Um pequeno conjunto de bundles
 curados transforma a escolha de "decidir 80 coisas" para "escolher
 o arquétipo mais próximo do seu time".
 
-## Os oito bundles
+## Os nove bundles
 
 - **[starter](/octopus/bundles/starter/)** — a fundação que todo
   repo deveria ter. Skills do ciclo de vida de docs, os protocolos
@@ -50,6 +50,12 @@ o arquétipo mais próximo do seu time".
 - **[growth](/octopus/bundles/growth/)** — ferramentas de
   lançamento + retenção. Lançamentos de features multi-canal,
   anúncios de release, geração de imagens de conteúdo.
+- **[tech-lead](/octopus/bundles/tech-lead/)** — o kit de liderança
+  de engenharia. Review com mentor, onboarding, uma Definition of
+  Done do time, standards self-serve, aprendizado de time, e
+  auditoria cross-repo + fleet bootstrap. O install one-stop do
+  manager; excluído do baseline da frota (carrega as ferramentas de
+  plano de controle).
 - **[frontend](/octopus/pt-br/bundles/frontend/)** — padrões de
   componente específicos de frontend, testes em nível de componente
   (RTL) e convenções end-to-end. Casa com a role `frontend-developer`.
@@ -107,7 +113,7 @@ O campo `category` tem peso:
 
 ## Quando criar um novo bundle
 
-Provavelmente você não deveria. Os oito bundles existentes cobrem
+Provavelmente você não deveria. Os nove bundles existentes cobrem
 os arquétipos de time mais claros, e adicionar mais dilui o modelo
 mental de "escolha o arquétipo mais próximo" que torna os bundles
 úteis.

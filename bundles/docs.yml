@@ -15,6 +15,9 @@ skills:
   - doc-subcontext
   - triage-issues
   - scaffold-skill
+  - standards
+  - definition-of-done
+  - onboarding
 roles:
   - writer
 rules: []

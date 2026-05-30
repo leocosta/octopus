@@ -1,0 +1,70 @@
+---
+title: audit-fleet
+description: Auditoria cross-repo de adoção + drift — reporta o config Octopus de cada repo contra o alvo declarado (baseline + perfil de stack + tier de adoção) do fleet.yml, mais versão e adoção de CONTEXT.md/ADR. Signal-only; a metade detect de detect → remediate.
+sidebar:
+  order: 24
+source_hash: "sha256:5beeb0e3ae620459a0caa3545fb54a5398a36e0f7456ec7f910deaf9522c570a"
+needs_retranslation: false
+---
+
+`audit-fleet` (RM-094) é a visão cross-repo que um manager de 6+ repos não tem
+de outro jeito. O `octopus setup` é por-repo e o `workspace:` compartilha
+rules, mas nada *mostra* quais repos estão atrás do padrão. Esta auditoria faz
+isso: resolve a frota e reporta, por repo, como o config Octopus real se compara
+ao **alvo que o time declarou** no `fleet.yml` — baseline + perfil de stack +
+tier de adoção — mais versão do Octopus e adoção de `CONTEXT.md`/ADR.
+
+É a metade **detect** do par da frota: o `audit-fleet` acha o drift, o
+[`fleet-bootstrap`](/octopus/skills/fleet-bootstrap/) fecha. O relatório é feito
+pra alimentar o `fleet-bootstrap --from-audit`. A auditoria é **signal-only e
+read-only** — nunca muta um repo.
+
+> Pro modelo completo da frota, veja
+> [Fluxo de setup da frota](/octopus/architecture/fleet-setup-flow/).
+
+## O drift é medido contra o alvo declarado
+
+Como a frota é multi-stack com adoção variada, "drift" só significa algo em
+relação ao que um repo *deveria* ser. O `audit-fleet` calcula o alvo de cada
+repo do mesmo jeito que o `fleet-bootstrap` calcularia — `baseline ∪ perfil ∪
+tier` — e compara:
+
+- **Tier de adoção** — tier efetivo (`hooks`/`precommit`/`qualityWorkflow`) vs
+  `tier` declarado (abaixo do alvo = drift; acima também é sinalizado).
+- **Perfil de stack / bundles** — presentes vs os bundles esperados do perfil;
+  stack detectada vs perfil declarado.
+- **Versão do Octopus** — instalada vs a mais recente.
+- **Drift de rules** — `*.local.md` + rules do workspace vs o baseline.
+- **Adoção de encode** — `CONTEXT.md` presente? quantidade de ADRs?
+
+Ele reusa os checks single-repo do `audit-config` em vez de reimplementá-los —
+é o análogo cross-repo.
+
+## O relatório
+
+Uma **tabela por-repo** (versão · tier alvo → real · perfil bate · bundles
+faltando · `CONTEXT.md`? · ADRs · flags de drift) mais um **rollup de
+drift-hotspots** — as maiores lacunas primeiro, pra o manager ver os maiores
+gaps de padronização antes do detalhe:
+
+```
+Hotspots: 2/4 behind version · 3/4 no CONTEXT.md · 1/4 below target tier
+→ remediate with `fleet-bootstrap --apply` (or `--from-audit` this report)
+```
+
+## Modelo de execução
+
+v1 roda **localmente contra repos com checkout** (sem infra), consistente com o
+`fleet-bootstrap`. Uma GitHub Action a nível de org varrendo remotes é um
+follow-up adiado — veja o
+[ADR-006](https://github.com/leocosta/octopus/blob/main/docs/adr/006-fleet-execution-model.md).
+
+## Compõe com
+
+- **[fleet-bootstrap](/octopus/skills/fleet-bootstrap/)** — a metade de
+  remediação; compartilha a lista da frota; consome este relatório via
+  `--from-audit`.
+- **audit-config** — os checks single-repo que esta auditoria reusa na frota.
+- **audit-grounding** — depende da adoção de `CONTEXT.md`/ADR que isto expõe.
+
+[Source: `skills/audit-fleet/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/audit-fleet/SKILL.md)

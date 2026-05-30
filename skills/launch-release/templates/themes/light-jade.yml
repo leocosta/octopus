@@ -1,0 +1,25 @@
+name: light-jade
+description: Calm green palette with elegant typography, light background (the jade palette inverted for light mode).
+palette:
+  background: "#FBFDFC"
+  surface: "#EEF5F1"
+  primary: "#2E8B6E"
+  accent: "#B07D3A"
+  muted: "#5A6F68"
+  text: "#0B1A17"
+typography:
+  display: "Fraunces, Georgia, serif"
+  body: "Inter, system-ui, sans-serif"
+  mono: "JetBrains Mono, ui-monospace, monospace"
+layout:
+  hero: large
+  grouping: grid
+  density: comfortable
+voice:
+  tone: calm
+  persona: guide
+intent: educating
+brand:
+  signature: "— {{PRODUCT_NAME}}"
+  cta_style: invitational
+  hero_pattern: product-led

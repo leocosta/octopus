@@ -3,10 +3,14 @@ name: continuous-learning
 description: >
   Continuous learning system that captures insights, tests hypotheses, and
   promotes confirmed patterns to rules. Inspired by the Claude.md learning
-  protocol — adapted for multi-agent environments (Kilo Code, Codex, Copilot, etc.)
+  protocol — adapted for multi-agent environments (Kilo Code, Codex, Copilot, etc.).
+  Default mode is single-developer/session capture to knowledge/. Team mode
+  (RM-093) aggregates recurring review feedback across the fleet into
+  rule-promotion candidates — a fleet-wide pattern promotes to the shared
+  workspace rules, a single-repo pattern stays local.
 triggers:
   paths: ["knowledge/**", "docs/learning/**", "docs/research/**"]
-  keywords: ["learning", "hypothesis", "knowledge", "insight", "pattern"]
+  keywords: ["learning", "hypothesis", "knowledge", "insight", "pattern", "recurring feedback", "team pattern", "keeps coming up", "promote to rule"]
   tools: []
 ---
 
@@ -100,6 +104,77 @@ Each file uses this structure:
   - Enforces: what behavior/pattern this enforces
   - Exception: when this rule does NOT apply
 ```
+
+## Team mode (RM-093) — fleet-wide review learning
+
+Everything above is the **default mode**: a single developer's session capture
+to `knowledge/`. **Team mode** lifts the same capture→promote loop to the
+*team/review* scope: it aggregates recurring **review feedback** across the
+fleet and turns repeated patterns into rule-promotion candidates — so "the
+whole team keeps making mistake X" becomes a rule instead of a re-typed PR
+comment.
+
+### Capture (continuous, automatic)
+
+A Stop hook — `hooks/stop/review-log-capture.sh` — reads the session
+transcript, detects review findings (the `BLOCKING:` / `ADVISORY:` /
+`QUESTION:` tags `architect` / `security` / `mentor` emit, and `pr-review`
+report blocks), and appends one structured entry per finding to
+`.octopus/review-log/<date>.md` (gitignored). No edits to the review skills —
+the capture is deterministic and out of band.
+
+```
+- 2026-05-30 | repo=billing-api | src=architect | sev=ADVISORY | topic="missing test for error path" | file=users/service.ts:42
+```
+
+### Aggregate + promote (operator-run)
+
+Run team mode to mine the log across the fleet:
+
+1. **Resolve the fleet** — reuse the `fleet.yml` `repos:` list (same as
+   `audit-fleet` / `fleet-bootstrap`). Mine each repo's `.octopus/review-log/`,
+   bootstrapping from existing artifacts where the log is thin (`pr-review` PR
+   comments, `mentor` `docs/mentoring/`, the `.octopus/proposals/` queue).
+2. **Normalize + group** findings by topic ("missing test for error path",
+   "custom exception without catch site").
+3. **Count occurrences and distinct-repo spread** per topic in the window.
+4. **Apply thresholds** — configurable in `fleet.yml`, with defaults:
+   ```yaml
+   # fleet.yml
+   learning:
+     local: 5         # 5+ occurrences within a single repo → local candidate
+     fleet_repos: 3   # appears in 3+ distinct repos → workspace candidate
+   ```
+   **Spread routes the destination:** a pattern across `≥ fleet_repos` distinct
+   repos promotes to the **shared `workspace:` rules** (inherited fleet-wide); a
+   single-repo pattern over `local` stays that repo's local rule.
+
+### Candidate shape (`.octopus/proposals/<ts>-team-pattern.md`)
+
+- **Pattern:** the recurring finding, normalized.
+- **Frequency:** N occurrences across which PRs/repos (cited) + distinct-repo count.
+- **Proposed rule:** a draft line for `rules/common/<topic>.local.md` (workspace
+  or local) or a `knowledge/` entry.
+- **Route:** `workspace` (≥ `fleet_repos`) or `local` (≥ `local`).
+
+Promotion reuses **`/octopus:review-proposals`** — the manager
+promotes/partials/archives. **Human-gated; team mode never auto-edits a rule.**
+A workspace-routed candidate, when promoted, writes to the workspace repo's
+shared `rules/common/*.local.md`, inherited by every repo.
+
+### Cadence
+
+Capture is continuous (the hook fires every session with review output);
+aggregation is **operator-run** (the manager runs team mode, pairing with the
+weekly `review-proposals` habit) — consistent with `audit-fleet` /
+`fleet-bootstrap`.
+
+### Anti-Patterns (team mode)
+
+- **Auto-promoting** a candidate — always human-gated via `review-proposals`.
+- **Editing the review skills to capture** — capture is the Stop hook's job.
+- **Counting raw occurrences only** — repo spread is the team signal and routes
+  local vs workspace.
 
 ## Integration with Octopus Agents
 

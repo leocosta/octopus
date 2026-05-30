@@ -65,6 +65,19 @@ substantive should be in a skill or role above; if it isn't,
 that's a gap to fix in the skill catalogue, not by inflating
 this checklist.
 
+## Phase 3.5 — Definition of Done
+
+If `docs/definition-of-done.md` exists, run the `definition-of-done`
+skill in **validate** mode against the same diff and fold its
+per-item verdict (met / unmet / not-applicable) into the report so
+the self-review answers "done per our DoD?" alongside the audits.
+
+This step is **additive and signal-only**: a DoD `unmet` item is an
+ADVISORY finding (`origin: definition-of-done`), never a BLOCKING
+one — hard blocking stays with the roles and guardrails hooks. When
+the DoD is **absent**, this step is a **no-op**: skip it silently
+(optionally suggest creating one once, never every review).
+
 ## Phase 4 — Aggregate Report
 
 Merge findings from all dispatched skills, roles, and the

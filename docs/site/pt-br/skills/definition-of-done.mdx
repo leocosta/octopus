@@ -1,0 +1,70 @@
+---
+title: definition-of-done
+description: Torna a Definition of Done do time um artefato versionado de primeira classe — um contrato que referencia a aplicação já existente, escrito por uma skill e checado pelo fluxo de codereview. Signal-only, nunca um gate.
+sidebar:
+  order: 20
+source_hash: "sha256:d69dff6d5bf41e5366ed11d57aa4c66ca3a3e0476fcfcb0d255aade733857bdd"
+needs_retranslation: false
+---
+
+`definition-of-done` (RM-091) transforma o "pronto" de algo implícito e
+espalhado em um **artefato versionado de primeira classe**. Hoje a régua
+do *pronto para merge / pronto para shippar* vive em fragmentos — um pouco
+no PRD, um pouco na triagem, o resto na cabeça do manager — então é
+aplicada de forma inconsistente. Esta skill coloca isso no papel:
+`docs/definition-of-done.md`, um checklist que o agent de cada engenheiro
+pode conferir.
+
+## Um contrato, não mais uma auditoria
+
+A DoD **não** reimplementa nenhuma checagem. Cada item é uma afirmação
+verificável acompanhada de um ponteiro para o que já a aplica:
+
+- **Tested** — comportamento coberto; caminhos críticos têm testes de
+  integração. (→ `rules/common/testing.md`, `test-tdd`)
+- **Reviewed** — passa pelo `architect`; diffs sensíveis à segurança passam
+  pelo `security`; diffs da camada de dados carregam o gate duplo
+  `dba` + `architect`. (→ roles)
+- **Documented** — decisões irreversíveis têm um ADR; mudanças de contrato
+  atualizam a documentação. (→ `doc-adr`, `review-contracts`)
+- **Grounded** — sem convenções inventadas, sem fatos de domínio sem
+  suporte. (→ `audit-grounding`, `standards`)
+- **Clean** — formatter e type check passam; sem statements de debug; sem
+  `--no-verify`. (→ hooks de `guardrails`)
+- **Released safely** — questões de dinheiro / tenant / contrato auditadas
+  quando tocadas. (→ `audit-*`)
+
+A DoD é o **contrato**; a role ou skill para a qual ela aponta é um
+*enforcer* dele. Essa separação é todo o design: ela pode nomear "a
+auditoria de segurança passa" sem ser dona de uma única checagem de
+segurança, então nunca sai de sincronia com a auditoria que referencia.
+
+## Dois modos
+
+**create / update** monta o artefato a partir de
+`templates/definition-of-done.md` e entrevista o manager — uma pergunta de
+cada vez, do jeito que o `doc-design` preenche um spec — para ajustar a
+baseline e adicionar os itens específicos do time que o template não tem
+como conhecer (higiene de feature-flags, eventos de analytics,
+acessibilidade, observabilidade). A saída é um documento revisado e
+commitado.
+
+**validate** percorre um diff ou PR contra o checklist e reporta cada item
+como **met**, **unmet** ou **not-applicable** — um item `unmet` carrega um
+ponteiro para a skill ou role que fecha a lacuna (teste faltando →
+`test-tdd`; sem ADR para uma mudança irreversível → `doc-adr`). Quando
+ainda não existe DoD, validate é um **no-op** que sugere criar uma; nunca
+inventa um checklist de fallback.
+
+## Signal-only, integrado ao codereview
+
+A validação é **sinal**, nunca um gate. Um item `unmet` da DoD é um aviso
+ADVISORY para agir; o bloqueio duro fica com os hooks de `guardrails` e as
+roles de review. A skill se prova sendo exercitada, não engavetada: o fluxo
+`/octopus:codereview` ganhou um passo de Definition-of-Done que roda
+validate contra o mesmo diff e incorpora o veredito por item ao
+auto-review consolidado — aditivo, e um no-op silencioso quando a DoD está
+ausente. Assim "isto está pronto?" vira um contrato verificado em vez de um
+julgamento, a cada auto-review.
+
+[Source: `skills/definition-of-done/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/definition-of-done/SKILL.md)

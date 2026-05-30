@@ -1,0 +1,109 @@
+---
+title: mentor
+description: Revisor-coach — transforma os findings das gate roles (architect / dba / security) em teaching units que explicam o porquê e citam as fontes do próprio time. Nunca gata; read-only por padrão, com opt-ins --save e --pr.
+sidebar:
+  order: 8
+source_hash: "sha256:9df828601b24d80de4bb51d565ac74a42dd61c1dac9af5a9fcfbd5b5b81593ac"
+needs_retranslation: false
+---
+
+`mentor` (RM-089) é a role cujo trabalho é **pedagogia**. As gate
+roles — `architect`, `dba`, `security` — julgam um diff e emitem
+vereditos `BLOCKING / ADVISORY / QUESTION`. O `mentor` faz a outra
+metade: pega esses findings e explica o *porquê* de cada um, pra que o
+engenheiro aprenda o princípio e precise menos da correção na próxima
+vez. Autonomia cresce quando o review transfere raciocínio, não só
+veredito.
+
+**A role não gata e, por padrão, não escreve.** Ela ensina.
+
+## Por que uma role separada (não um teach-mode no architect)
+
+Gatear e ensinar são trabalhos diferentes com modos de falha opostos:
+um gate que hesita pra ensinar é um gate pior, e um veredito que só diz
+"bloqueado" não ensina nada. Mantê-los separados deixa um PR ser gateado
+pelo `architect` **e** ensinado pelo `mentor` sem um diluir o outro — e
+deixa o mentor ensinar o porquê por trás dos gates de DB e segurança
+também, não só de arquitetura. Essa separação está registrada no
+[ADR-002](https://github.com/leocosta/octopus/blob/main/docs/adr/002-mentor-vs-architect-teach-mode.md).
+
+## Input — ele lê findings, não re-revisa
+
+O `mentor` consome os findings que as gate roles **já produziram** —
+nunca re-analisa o diff nem re-roda as roles (isso duplicaria trabalho e
+arriscaria divergir do veredito que o engenheiro recebeu). Ele encontra
+os findings, em ordem de prioridade:
+
+1. **Um PR aberto** — o comentário mais recente do report do
+   `/octopus:pr-review`, puxado via `gh pr view <pr#> --comments`.
+2. **A sessão atual** — um report do `/octopus:codereview` para a
+   working tree.
+3. **Um pipeline do delegate** — `@architect (+ @dba + @security) →
+   @mentor`, onde as saídas das roles anteriores chegam no contexto do
+   pipeline.
+
+Cada finding é parseado na sua **origin role**, `file:line`, severidade
+e nota. Sem findings disponíveis? A role diz isso e aponta pro
+`pr-review` / `codereview` — nunca inventa findings pra ensinar.
+
+## Output — uma teaching unit por finding
+
+Cada finding vira uma teaching unit taggeada com a origem:
+
+```
+[architect] users/service.ts:42 — god function
+
+- What I see:       processData faz validação, persistência e
+                    notificação numa função de 80 linhas.
+- Principle:        single responsibility — uma função faz uma coisa.
+- Why it matters:   o próximo leitor segura três preocupações de uma
+                    vez; mexer na notificação pode quebrar persistência.
+- Better approach:  extrair validateData / persist / notify.
+- Read more:        rules/common/coding-style.md (Code Structure).
+```
+
+Quando nenhuma fonte do time documenta o princípio, a role ainda ensina
+a partir do princípio geral e **sinaliza a lacuna inline** — essa
+ausência é, ela mesma, um sinal de que um standard deveria ser escrito.
+
+## Read-only por padrão; `--save` e `--pr` são opt-in
+
+Sem flag, o `mentor` não escreve nada — as units ficam inline.
+
+- **`--save`** — também grava o log de lições em
+  `docs/mentoring/<data>-<branch>.md`, e um stub de standards-gap em
+  `.octopus/proposals/` pra cada princípio não documentado (capturado
+  por `/octopus:review-proposals`).
+- **`--pr`** — também posta cada teaching unit como comentário inline no
+  PR em `file:line`, reusando o mesmo primitivo `gh pr comment` que o
+  `pr-review` usa. A lição aterrissa onde o engenheiro trabalha.
+
+Os flags compõem: `/octopus:delegate @mentor --save --pr: ensina o PR 142`.
+
+## Fronteiras
+
+- **Nunca um gate** — sem veredito de bloqueio, sem aprovação, sem
+  request-changes.
+- **Nunca um rewrite bot** — explica e aponta; não edita o código nem o
+  diff.
+- **Só escritas limitadas** — suas únicas escritas são opt-in:
+  `docs/mentoring/**` e `.octopus/proposals/**` (`--save`) e comentários
+  no PR (`--pr`). Nunca toca `rules/`, ADRs ou `CLAUDE.md`.
+
+## Compõe com
+
+- **[architect](/octopus/roles/architect/)**, **security**, **dba** — as
+  gate roles cujos findings o `mentor` ensina.
+- **[comando pr-review](/octopus/commands/pr-review/)** — produz o report
+  que o `mentor` lê, e é dono do primitivo de postar comentário no PR que
+  o `--pr` reusa.
+- **[skill standards](/octopus/skills/standards/)** /
+  **[audit-grounding](/octopus/skills/audit-grounding/)** — respondem e
+  sinalizam standards; o `mentor` os ensina e (sob `--save`) sinaliza as
+  lacunas no mesmo loop de proposals.
+
+## Referência
+
+[Source: `roles/mentor.md`](https://github.com/leocosta/octopus/blob/main/roles/mentor.md)
+— definição completa da persona. Registrada no bundle `tech-lead` (RM-096);
+até lá, adicione `mentor` às roles do `.octopus.yml` do repo.

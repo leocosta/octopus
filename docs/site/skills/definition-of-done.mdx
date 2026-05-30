@@ -1,0 +1,66 @@
+---
+title: definition-of-done
+description: Makes the team's Definition of Done a first-class versioned artifact — a contract that references existing enforcement, authored by a skill and checked by the codereview flow. Signal-only, never a gate.
+sidebar:
+  order: 20
+---
+
+`definition-of-done` (RM-091) turns "done" from something implicit and
+scattered into a **first-class, versioned artifact**. Today the bar for
+*ready to merge / ready to ship* lives in fragments — a bit in the PRD, a
+bit in triage, the rest in the manager's head — so it gets applied
+inconsistently. This skill writes it down: `docs/definition-of-done.md`, a
+checklist every engineer's agent can check against.
+
+## A contract, not another audit
+
+The DoD does **not** reimplement any check. Each item is a checkable
+statement paired with a pointer to whatever already enforces it:
+
+- **Tested** — behavior covered; critical paths have integration tests.
+  (→ `rules/common/testing.md`, `test-tdd`)
+- **Reviewed** — passes `architect`; security-sensitive diffs pass
+  `security`; data-layer diffs carry the `dba` + `architect` dual gate.
+  (→ roles)
+- **Documented** — irreversible decisions have an ADR; contract changes
+  update docs. (→ `doc-adr`, `review-contracts`)
+- **Grounded** — no invented conventions, no unsupported domain facts.
+  (→ `audit-grounding`, `standards`)
+- **Clean** — formatter and type check pass; no debug statements; no
+  `--no-verify`. (→ `guardrails` hooks)
+- **Released safely** — money / tenant / contract concerns audited when
+  touched. (→ `audit-*`)
+
+The DoD is the **contract**; the role or skill it points at is one
+*enforcer* of it. That split is the whole design: it can name "security
+audit passes" without owning a single security check, so it never drifts
+out of sync with the audit it references.
+
+## Two modes
+
+**create / update** scaffolds the artifact from
+`templates/definition-of-done.md` and grills the manager — one question at
+a time, the way `doc-design` fills a spec — to tailor the baseline and add
+the team-specific items the template can't know (feature-flag hygiene,
+analytics events, accessibility, observability). The output is a reviewed,
+committed document.
+
+**validate** walks a diff or PR against the checklist and reports each item
+as **met**, **unmet**, or **not-applicable** — an `unmet` item carries a
+pointer to the skill or role that closes the gap (missing test →
+`test-tdd`; no ADR for an irreversible change → `doc-adr`). When no DoD
+exists yet, validate is a **no-op** that suggests creating one; it never
+invents a fallback checklist.
+
+## Signal-only, wired into codereview
+
+Validation is **signal**, never a gate. A DoD `unmet` item is an ADVISORY
+prompt to act; hard blocking stays with the guardrails hooks and the review
+roles. The skill earns its keep by being exercised, not shelved: the
+`/octopus:codereview` flow gained a Definition-of-Done step that runs
+validate against the same diff and folds the per-item verdict into the
+consolidated self-review — additive, and a silent no-op when the DoD is
+absent. So "is this done?" becomes a checked contract instead of a judgment
+call, on every self-review.
+
+[Source: `skills/definition-of-done/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/definition-of-done/SKILL.md)
