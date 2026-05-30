@@ -100,11 +100,27 @@ _RM-085..087 complete. Shipped across v1.50.0 → v1.51.0 (`doc-subcontext`, kno
   already scopes by file path; full-suite test timeouts haven't
   been reported. Revisit if monorepos start hitting it.
 
+### Cluster 16 — Manager multiplier / engineering leadership
+
+_**Complete on `feat/standards-lookup`** — all of RM-089…096 + RM-098 implemented and committed (pending merge/release). Seeds from [research](research/2026-05-30-manager-multiplier.md): extend Octopus so a tech manager can standardize and raise the team's bar across 6+ repos without being the bottleneck._
+
+| RM | Item | Theme |
+|----|------|-------|
+| RM-089 | `mentor` role — coaching review persona that teaches the *why* | pedagogy |
+| RM-090 | `onboarding` skill — ramp a new engineer onto standards + codebase + workflow | pedagogy |
+| RM-091 | `definition-of-done` skill + artifact — first-class team DoD | pedagogy |
+| RM-092 | `standards` self-serve lookup — "what's our standard for X / why" | pedagogy |
+| RM-093 | Team-level `continuous-learning` — recurring PR feedback → rule candidates | knowledge loop |
+| RM-094 | `audit-fleet` — cross-repo adoption + drift audit | cross-repo |
+| RM-095 | Fleet bootstrap — bulk-apply a standard `.octopus.yml` across repos | cross-repo |
+| RM-096 | `tech-lead` bundle — composes the manager kit | bundle |
+| RM-098 | `map-system --save` — themed self-contained HTML deck of the repo (overview, business insights, diagrams, API contracts) via frontend-design + launch-release themes; RM-090 depends on it | pedagogy |
+
 ---
 
 ## In Progress
 
-_RM-088 (`audit-grounding` skill + `grounding-check` Stop hook) in progress on `feat/audit-grounding`. All other clusters complete through RM-087._
+_RM-088 (`audit-grounding`) shipped in v1.69.0. **Cluster 16** (manager-multiplier) is **complete on `feat/standards-lookup`** — all implemented & committed, pending merge/release: RM-089 (`mentor`), RM-090 (`onboarding`), RM-091 (`definition-of-done`), RM-092 (`standards`), RM-093 (team `continuous-learning`), RM-094 (`audit-fleet`), RM-095 (`fleet-bootstrap`), RM-096 (`tech-lead` bundle), RM-098 (`map-system` complete-mode deck). ADRs 002–006 recorded. See [research](research/2026-05-30-manager-multiplier.md)._
 
 ---
 
@@ -199,4 +215,4 @@ _RM-088 (`audit-grounding` skill + `grounding-check` Stop hook) in progress on `
 | RM-085 | `doc-subcontext` skill + command — subdirectory CLAUDE.md tooling | completed → v1.50.0 | 2026-05-19 |
 | RM-086 | Stop hook for CLAUDE.md / knowledge update proposals + `/octopus:review-proposals` | completed → v1.51.0 | 2026-05-19 |
 | RM-087 | `audit-config` skill + command — configuration freshness audit | completed → v1.50.0 | 2026-05-19 |
-| RM-088 | `audit-grounding` skill + `grounding-check` Stop hook — signal-only divergence from the source of truth (invented conventions, unsupported domain facts) | in progress → `feat/audit-grounding` | 2026-05-28 |
+| RM-088 | `audit-grounding` skill + `grounding-check` Stop hook — signal-only divergence from the source of truth (invented conventions, unsupported domain facts) | completed → v1.69.0 | 2026-05-30 |
