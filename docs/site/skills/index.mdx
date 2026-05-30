@@ -45,6 +45,7 @@ composer runs the relevant ones in parallel.
 | `audit-tenant` | Multi-tenant data-scope enforcement — query filters, raw SQL, new entity configs, controller ownership, admin endpoints. | [→](./audit-tenant/) |
 | `audit-config` | Agent-configuration freshness — model-specific assumptions, stale dates, phantom skills, deprecated paths. | [→](./audit-config/) |
 | `audit-grounding` | Signal-only divergence from the source of truth — invented conventions, unsupported domain facts the formatter can't see. | [→](./audit-grounding/) |
+| `audit-fleet` | Cross-repo adoption + drift — each repo's config vs its declared target (baseline + stack profile + adoption tier) from fleet.yml. Signal-only; feeds fleet-bootstrap. | [→](./audit-fleet/) |
 | `review-contracts` | Frontend/backend contract drift — endpoints, DTOs, enums, status codes, auth rules, params. | [→](./review-contracts/) |
 
 ## Implementation workflows

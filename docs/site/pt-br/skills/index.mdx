@@ -48,6 +48,7 @@ compositor `audit-all` executa os relevantes em paralelo.
 | `audit-tenant` | Enforcement de escopo de dados multi-tenant — filtros de query, raw SQL, configs de novas entities, ownership em controllers, endpoints administrativos. | [→](./audit-tenant/) |
 | `audit-config` | Atualidade da configuração do agent — premissas específicas de modelo, datas obsoletas, skills fantasmas, paths depreciados. | [→](./audit-config/) |
 | `audit-grounding` | Divergência signal-only da fonte de verdade — convenções inventadas, fatos de domínio sem suporte que o formatter não enxerga. | [→](./audit-grounding/) |
+| `audit-fleet` | Adoção + drift cross-repo — config de cada repo vs o alvo declarado (baseline + perfil de stack + tier de adoção) do fleet.yml. Signal-only; alimenta o fleet-bootstrap. | [→](./audit-fleet/) |
 | `review-contracts` | Drift de contrato entre frontend/backend — endpoints, DTOs, enums, status codes, regras de auth, parâmetros. | [→](./review-contracts/) |
 
 ## Workflows de implementação
