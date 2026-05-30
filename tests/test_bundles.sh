@@ -96,7 +96,7 @@ OCTOPUS_BUNDLES=("starter" "quality")
 
 expand_bundles
 
-expected_skills=(doc-adr doc-lifecycle context-budget implement debug respond-to-review delegate test-tdd map-system prototype context-handoff audit-all audit-security audit-money audit-tenant review-contracts refactor-deepen audit-config audit-grounding)
+expected_skills=(doc-adr doc-lifecycle context-budget implement debug respond-to-review delegate test-tdd map-system prototype context-handoff audit-all audit-security audit-money audit-tenant review-contracts refactor-deepen audit-config audit-grounding audit-fleet fleet-bootstrap)
 printf '%s\n' "${OCTOPUS_SKILLS[@]}" | sort -u > /tmp/got.$$
 printf '%s\n' "${expected_skills[@]}" | sort -u > /tmp/exp.$$
 diff -q /tmp/got.$$ /tmp/exp.$$ >/dev/null \

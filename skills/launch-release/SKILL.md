@@ -346,8 +346,9 @@ listed above.
   feature is the subject; `customer-led` → "You asked for…"; `team-led` →
   "We spent the sprint on…").
 
-Nine presets ship in v1: `classic` (default), `jade`, `dark`, `bold`,
-`newsletter`, `sunset`, `ocean`, `terminal`, `paper`.
+Twelve presets ship: `classic` (default), `jade`, `dark`, `bold`,
+`newsletter`, `sunset`, `ocean`, `terminal`, `paper`, plus `dark-blue`,
+`dark-jade`, and `light-jade` (added for the `map-system` deck, RM-098).
 
 ## Slides Channel
 

@@ -23,16 +23,17 @@ project_root=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 repo_name=$(basename "$project_root")
 
 # --- Extract review findings from the transcript ------------------------
-# Review roles (architect/security/mentor) and pr-review emit findings tagged
-# BLOCKING: / ADVISORY: / QUESTION:. Pull those lines from assistant messages.
+# Review roles (architect/security/mentor) and pr-review tag findings with a
+# severity — both as inline prose ("BLOCKING: ...") and as Markdown table rows
+# ("| BLOCKING | file:line | issue |"). Pull whole lines that carry a severity
+# token as a tag (start-of-line, after a pipe, or after whitespace).
 findings=$(jq -r '
   select(.type == "assistant") |
   .message.content[]? |
   select(.type == "text") |
   .text
 ' "$transcript_path" 2>/dev/null \
-  | grep -oiE '(BLOCKING|ADVISORY|QUESTION):[^|]*' \
-  | sed 's/[[:space:]]\+/ /g' \
+  | grep -iE '(^|\| *|[[:space:]])(BLOCKING|ADVISORY|QUESTION)([ :|.]|$)' \
   | head -40 || true)
 
 finding_count=$(printf '%s\n' "$findings" | grep -c . || true)
@@ -49,8 +50,15 @@ stamp=$(date -Iseconds)
 {
   while IFS= read -r line; do
     [[ -z "$line" ]] && continue
-    sev=$(printf '%s' "$line" | grep -oiE '^(BLOCKING|ADVISORY|QUESTION)' | tr '[:lower:]' '[:upper:]')
-    topic=$(printf '%s' "$line" | sed -E 's/^(BLOCKING|ADVISORY|QUESTION):[[:space:]]*//I' | cut -c1-160)
+    sev=$(printf '%s' "$line" | grep -oiE 'BLOCKING|ADVISORY|QUESTION' | head -1 | tr '[:lower:]' '[:upper:]')
+    # Topic hint: drop table pipes, the severity token, and file:line locations,
+    # then collapse whitespace. Works for both prose and table-row forms.
+    topic=$(printf '%s' "$line" \
+      | sed -E 's/\|/ /g' \
+      | sed -E 's/(BLOCKING|ADVISORY|QUESTION):?//Ig' \
+      | sed -E 's#[A-Za-z0-9_./-]+:[0-9]+##g' \
+      | sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//' \
+      | cut -c1-160)
     echo "- ${stamp} | repo=${repo_name} | sev=${sev} | topic=\"${topic}\""
   done <<<"$findings"
 } >> "$log_file"
