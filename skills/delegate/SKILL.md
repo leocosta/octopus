@@ -261,6 +261,7 @@ Resolve before validation in both single and pipeline mode:
 | `writer`, `tech-writer` | `tech-writer` |
 | `pm`, `product-manager` | `product-manager` |
 | `staff-engineer`, `staff`, `architect` | `architect` |
+| `mentor`, `coach`, `teacher` | `mentor` |
 | `frontend`, `fe`, `frontend-developer`, `frontend-specialist` | `frontend-developer` |
 | `backend`, `be`, `backend-developer`, `backend-specialist` | `backend-developer` |
 | `marketer` | `marketer` |
