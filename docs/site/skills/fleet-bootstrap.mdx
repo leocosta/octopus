@@ -1,0 +1,76 @@
+---
+title: fleet-bootstrap
+description: Converge a fleet of repos onto a layered Octopus standard — baseline + per-stack profile + adoption tier — composed from one fleet.yml and applied via octopus setup. Multi-stack and legacy first-class; dry-run by default, non-destructive, never force-pushes.
+sidebar:
+  order: 23
+---
+
+`fleet-bootstrap` (RM-095) is the cross-repo remediation skill: it converges
+6+ repos onto a standard Octopus configuration from **one control file**,
+running `octopus setup` in each. It closes the drift that
+[`audit-fleet`](/octopus/skills/) detects.
+
+Two realities of a real fleet shape it — and break the naïve "one canonical
+`.octopus.yml`" idea:
+
+- **Multi-stack** — a .NET repo needs different bundles than a frontend repo,
+  so the standard is **layered**, not monolithic.
+- **Legacy code** — a hard `guardrails` flip breaks legacy commits instantly,
+  so adoption is **phased** (a ratchet), not all-at-once.
+
+> For the full end-to-end flow with diagrams, see
+> [**Fleet setup flow**](/octopus/architecture/fleet-setup-flow/).
+
+## The layered standard
+
+Each repo's manifest is composed as **baseline ∪ stack profile ∪ tier**:
+
+- **Baseline** — stack-agnostic, every repo (agents, workflow, the
+  `workspace:` reference, baseline bundles + roles).
+- **Stack profile** — adds the stack's bundles, selected by **auto-detection**
+  (`*.csproj` → dotnet, `package.json` + framework → node/frontend,
+  `pyproject.toml` → python) or pinned per repo for legacy/monorepo.
+- **Adoption tier** — T0 / T1 / T2 (below).
+
+## Adoption tiers — the legacy ratchet
+
+Loop-level hooks only act on what the agent edits going forward; the
+pre-commit (git) and CI layers are what break legacy. Tiers select which
+layers turn on:
+
+| Tier | Turns on | Seeds | Legacy |
+|---|---|---|---|
+| **T0** | bundles/roles/rules; `hooks: false` | agent config, rules | zero enforcement — safe now |
+| **T1** | `hooks: true` + `enforce-ide` | `.editorconfig` per stack | catches new drift; no commit/CI gate |
+| **T2** | + `enforce-precommit` + `qualityWorkflow` | `.husky`/pre-commit + CI | full blocking floor — when clean |
+
+Legacy repos start at T0/T1; the manager bumps `tier:` and re-runs.
+
+## One control file — `fleet.yml`
+
+Lives in the `workspace:` repo. Carries the `baseline`, the `profiles`, the
+`tiers`, and the `repos:` map (each repo's optional profile + tier).
+`audit-fleet` and `fleet-bootstrap` read the same `repos:` list.
+
+## Thin orchestrator
+
+The skill writes **only the `.octopus.yml`**; the actual seeding — rules,
+hooks, agent config, `.editorconfig`, `.husky` — is delegated to
+`octopus setup`, exactly as for a single repo.
+
+## Safe by default
+
+- **Dry-run by default** — preview the per-repo diff, write nothing.
+- **Per-key merge** — converges baseline + tier, keeps profile-justified
+  local additions, **flags** arbitrary keeps and any tier de-escalation
+  (never silent removal); `*.local.md` overrides survive.
+- `--apply` writes + runs setup; `--yes` for a trusted batch; `--pr` opens a
+  guarded branch + PR per repo (**never pushes to main**); `--from-audit`
+  scopes to the repos `audit-fleet` flagged.
+
+The trade-offs are recorded in
+[ADR-004 (merge policy)](https://github.com/leocosta/octopus/blob/main/docs/adr/004-fleet-merge-policy.md)
+and
+[ADR-005 (config-template precedence)](https://github.com/leocosta/octopus/blob/main/docs/adr/005-workspace-config-template-precedence.md).
+
+[Source: `skills/fleet-bootstrap/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/fleet-bootstrap/SKILL.md)

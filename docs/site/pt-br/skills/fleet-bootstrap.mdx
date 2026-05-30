@@ -1,0 +1,79 @@
+---
+title: fleet-bootstrap
+description: Converge uma frota de repos num padrão Octopus em camadas — baseline + perfil por stack + tier de adoção — composto a partir de um fleet.yml e aplicado via octopus setup. Multi-stack e legado em primeiro plano; dry-run por padrão, não-destrutivo, nunca força push.
+sidebar:
+  order: 23
+source_hash: "sha256:83bf08d420d2a0a9f416d77598807d915859d4b1fc6669f7c521561d01125927"
+needs_retranslation: false
+---
+
+`fleet-bootstrap` (RM-095) é a skill de remediação cross-repo: converge 6+
+repos num config Octopus padrão a partir de **um arquivo de controle**,
+rodando `octopus setup` em cada. Fecha o drift que o
+[`audit-fleet`](/octopus/skills/) detecta.
+
+Duas realidades de uma frota real moldam a skill — e quebram a ideia ingênua
+de "um `.octopus.yml` canônico único":
+
+- **Multi-stack** — um repo .NET precisa de bundles diferentes de um repo
+  frontend, então o padrão é **em camadas**, não monolítico.
+- **Código legado** — um flip duro do `guardrails` quebra commits no legado na
+  hora, então a adoção é **faseada** (ratchet), não tudo de uma vez.
+
+> Pro fluxo completo ponta-a-ponta com diagramas, veja
+> [**Fluxo de setup da frota**](/octopus/architecture/fleet-setup-flow/).
+
+## O padrão em camadas
+
+O manifesto de cada repo é composto como **baseline ∪ perfil de stack ∪ tier**:
+
+- **Baseline** — stack-agnóstico, todo repo (agents, workflow, a referência
+  `workspace:`, bundles + roles do baseline).
+- **Perfil de stack** — soma os bundles da stack, escolhido por
+  **auto-detecção** (`*.csproj` → dotnet, `package.json` + framework →
+  node/frontend, `pyproject.toml` → python) ou fixado por repo pra
+  legado/monorepo.
+- **Tier de adoção** — T0 / T1 / T2 (abaixo).
+
+## Tiers de adoção — o ratchet do legado
+
+Hooks loop-level só agem no que o agent edita daqui pra frente; o pre-commit
+(git) e o CI são o que quebram o legado. Tiers selecionam quais camadas ligam:
+
+| Tier | Liga | Semeia | Legado |
+|---|---|---|---|
+| **T0** | bundles/roles/rules; `hooks: false` | agent config, rules | zero enforcement — seguro já |
+| **T1** | `hooks: true` + `enforce-ide` | `.editorconfig` por stack | pega drift novo; sem gate de commit/CI |
+| **T2** | + `enforce-precommit` + `qualityWorkflow` | `.husky`/pre-commit + CI | piso bloqueante — quando limpo |
+
+Repos legados começam em T0/T1; o manager sobe o `tier:` e re-roda.
+
+## Um arquivo de controle — `fleet.yml`
+
+Mora no repo `workspace:`. Carrega o `baseline`, os `profiles`, os `tiers` e o
+mapa `repos:` (perfil opcional + tier por repo). `audit-fleet` e
+`fleet-bootstrap` leem a mesma lista `repos:`.
+
+## Orquestrador fino
+
+A skill escreve **só o `.octopus.yml`**; a semeadura de fato — rules, hooks,
+agent config, `.editorconfig`, `.husky` — é delegada ao `octopus setup`,
+exatamente como num repo único.
+
+## Seguro por padrão
+
+- **Dry-run por padrão** — preview do diff por repo, escreve nada.
+- **Merge por-chave** — converge baseline + tier, mantém adições locais
+  justificadas pelo perfil, **sinaliza** keeps arbitrários e qualquer
+  de-escalação de tier (nunca remoção silenciosa); overrides `*.local.md`
+  sobrevivem.
+- `--apply` escreve + roda setup; `--yes` pra batch confiável; `--pr` abre
+  branch + PR guardado por repo (**nunca dá push em main**); `--from-audit`
+  escopa pros repos que o `audit-fleet` sinalizou.
+
+Os trade-offs estão registrados no
+[ADR-004 (merge policy)](https://github.com/leocosta/octopus/blob/main/docs/adr/004-fleet-merge-policy.md)
+e no
+[ADR-005 (precedência de template de config)](https://github.com/leocosta/octopus/blob/main/docs/adr/005-workspace-config-template-precedence.md).
+
+[Source: `skills/fleet-bootstrap/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/fleet-bootstrap/SKILL.md)
