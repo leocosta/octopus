@@ -9,6 +9,7 @@ skills:
   - refactor-deepen
   - audit-config
   - audit-grounding
+  - fleet-bootstrap
 roles:
   - architect
   - security
