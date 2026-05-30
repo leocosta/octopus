@@ -1,9 +1,9 @@
 ---
 title: continuous-learning
-description: Capture insights, teste hipóteses e promova padrões confirmados para o conhecimento do projeto — pronto para multi-agente, projetado para sobreviver entre sessões de Claude, Kilo Code, Copilot e Codex.
+description: Capture insights, teste hipóteses e promova padrões confirmados para o conhecimento do projeto — pronto para multi-agente. O team mode (RM-093) agrega feedback recorrente de review pela frota em candidatos a regra, roteando padrões fleet-wide para as rules compartilhadas do workspace.
 sidebar:
   order: 17
-source_hash: "sha256:9b1246cf3e78ce499d9993b4f6ac0a96de41580cf34a7dc20221118021df16d4"
+source_hash: "sha256:c4989413b4a90808aaf3a617f3162ab6ee3b4b958bb21ed20870c334ac0fbf1e"
 needs_retranslation: false
 ---
 
@@ -49,6 +49,39 @@ crescer de forma ad hoc.
    que não se confirmaram são arquivados sem constrangimento —
    metade do sinal capturado acaba sendo contexto pontual, e
    fingir o contrário só polui a base de conhecimento.
+
+## Team mode — aprendizado de review fleet-wide (RM-093)
+
+Tudo acima é o **modo default**: a captura de sessão de um único dev em
+`knowledge/`. O **team mode** sobe o mesmo loop captura→promoção pro escopo
+time/review — pra que "o time inteiro erra X" vire uma regra em vez de um
+comentário de PR redigitado.
+
+- **A captura é contínua e automática.** Um Stop hook —
+  [`review-log-capture`](/octopus/hooks/review-log-capture/) — lê o transcript da
+  sessão, puxa as findings de review (as tags `BLOCKING:` / `ADVISORY:` /
+  `QUESTION:` que `architect` / `security` / `mentor` / `pr-review` emitem) e as
+  anexa ao `.octopus/review-log/` (gitignored). Sem editar os skills de review.
+- **A agregação é operator-run, e fleet-aware.** O team mode minera o review-log
+  pela frota (reusando a lista `repos:` do `fleet.yml`), agrupa findings por
+  tópico e conta tanto ocorrências **quanto espalhamento entre repos distintos**.
+- **O espalhamento roteia o destino.** Um padrão em `≥ fleet_repos` repos
+  distintos (default 3) promove pras **rules compartilhadas do `workspace:`** —
+  herdadas por todos os repos; um padrão de um repo só acima de `local` (default
+  5) fica na rule local daquele repo. Os limiares são configuráveis no
+  `fleet.yml`:
+
+  ```yaml
+  # fleet.yml
+  learning:
+    local: 5
+    fleet_repos: 3
+  ```
+
+- **A promoção segue human-gated.** Candidatos caem em `.octopus/proposals/` e
+  são promovidos via `/octopus:review-proposals` — o team mode nunca auto-edita
+  uma regra. O loop fecha: review → review-log → padrão fleet-wide → regra no
+  workspace → todo repo herda.
 
 ## O que ela não faz
 
