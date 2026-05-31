@@ -92,6 +92,26 @@ t4_attention_folds_hygiene() {
 
 check "attention: folds hygiene warn-tier"  t4_attention_folds_hygiene
 
+# ---------------------------------------------------------------------------
+# Task 5 — --daily advances the watermark; --weekly leaves it untouched
+# ---------------------------------------------------------------------------
+REPO5="$(make_fixture)"; FIXTURES+=("$REPO5")
+: >"$REPO5/docs/recent.md"   # mtime ~now, no future frontmatter
+
+t5_daily_advances_watermark() {
+  briefing "$REPO5" --root docs --daily >/dev/null 2>&1          # 1st run: within 7d → changed; advances
+  local second; second="$(briefing "$REPO5" --root docs --daily 2>/dev/null)"
+  ! grep -q "changed|docs|$REPO5/docs/recent.md" <<<"$second"    # 2nd run: nothing new
+}
+t5_weekly_does_not_advance() {
+  kb_call "$REPO5" kb_watermark_set docs 555
+  briefing "$REPO5" --root docs --weekly >/dev/null 2>&1
+  [[ "$(kb_call "$REPO5" kb_watermark_get docs)" == "555" ]]
+}
+
+check "daily: advances the watermark"        t5_daily_advances_watermark
+check "weekly: leaves the watermark untouched"  t5_weekly_does_not_advance
+
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]
