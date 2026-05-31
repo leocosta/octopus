@@ -64,6 +64,30 @@ check "hook: skips a docs-only diff"             t1_skips_docs_only
 check "hook: skips a clean tree"                 t1_skips_clean_tree
 check "hook: never blocks (exit 0)"              t1_never_blocks
 
+# ---------------------------------------------------------------------------
+# Task 2 — run-evidence scan: a run command in the transcript suppresses the
+# proposal; no run (or no transcript) queues it.
+# ---------------------------------------------------------------------------
+REPO2="$(make_git_repo)"; FIXTURES+=("$REPO2")
+TR_RUN="$(mktemp)"; FIXTURES+=("$TR_RUN"); echo 'I ran `npm test` and `tsc --noEmit` — all green' >"$TR_RUN"
+TR_NORUN="$(mktemp)"; FIXTURES+=("$TR_NORUN"); echo 'edited the service and called it done' >"$TR_NORUN"
+
+t2_suppresses_when_run_found() {
+  printf 'export const a = 1\n' >"$REPO2/src/seed.ts"
+  rm -rf "$REPO2/.octopus"
+  run_hook "$REPO2" "$TR_RUN"
+  [[ -z "$(proposals_of "$REPO2")" ]]
+}
+t2_queues_when_no_run() {
+  printf 'export const b = 2\n' >"$REPO2/src/seed.ts"
+  rm -rf "$REPO2/.octopus"
+  run_hook "$REPO2" "$TR_NORUN"
+  [[ -n "$(proposals_of "$REPO2")" ]]
+}
+
+check "run-scan: suppresses proposal when a run command is in the transcript"  t2_suppresses_when_run_found
+check "run-scan: queues when no run command is found"                          t2_queues_when_no_run
+
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]

@@ -16,7 +16,7 @@ set -euo pipefail
 # Stop hook receives JSON on stdin with transcript_path (optional — the
 # run-evidence scan degrades without it; see RM-111 spec).
 input=$(cat 2>/dev/null || true)
-# (transcript_path is consumed by the run-evidence scan in a later task.)
+transcript_path=$(printf '%s' "$input" | jq -r '.transcript_path // empty' 2>/dev/null || true)
 
 # Only meaningful inside a git repo. Soft-skip otherwise.
 project_root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
@@ -27,6 +27,16 @@ changed=$(git -C "$project_root" diff --name-only HEAD 2>/dev/null || true)
 [[ -z "$changed" ]] && exit 0
 code_changed=$(grep -vE '\.(md|mdx|txt|rst)$|^docs/' <<<"$changed" || true)
 [[ -z "$code_changed" ]] && exit 0
+
+# Run-evidence scan (deterministic, zero LLM): did a build / test / typecheck
+# run this session? Command set covers the common stacks. A match means the
+# work was verified — suppress the proposal. No transcript ⇒ cannot confirm ⇒
+# treat as unverified (degrade to queue, per spec Risks).
+run_re='tsc|mypy|ruff|pytest|jest|vitest|dotnet (build|test)|go (test|build)|cargo (test|build)|(npm|yarn|pnpm)( run)? (test|build|typecheck)|gradle|mvn (test|verify)'
+if [[ -n "$transcript_path" && -f "$transcript_path" ]] \
+   && grep -qE "$run_re" "$transcript_path" 2>/dev/null; then
+  exit 0   # a run was found — work is verified, nothing to flag
+fi
 
 proposals_dir="$project_root/.octopus/proposals"
 mkdir -p "$proposals_dir"
