@@ -1,5 +1,5 @@
 name: quality
-description: Quality gates — security, money-logic, tenant-scope, cross-stack contract audits, architecture-depth refactoring, configuration freshness, source-of-truth grounding (signal-only divergence from CONTEXT.md/ADRs), and knowledge-root hygiene (staleness/orphans/links/archive over any markdown tree).
+description: Quality gates — security, money-logic, tenant-scope, cross-stack contract audits, architecture-depth refactoring, configuration freshness, source-of-truth grounding (signal-only divergence from CONTEXT.md/ADRs), knowledge-root hygiene (staleness/orphans/links/archive over any markdown tree), and knowledge synthesis (cross-node connections, forgotten-but-relevant, contradiction surfacing).
 category: intent
 persona_question: "Does your team run security, money, multi-tenant scope audits, architecture-depth refactors, configuration audits, or source-of-truth grounding checks?"
 persona_default: false
@@ -12,6 +12,7 @@ skills:
   - audit-fleet
   - fleet-bootstrap
   - knowledge-hygiene
+  - knowledge-synthesize
 roles:
   - architect
   - security
