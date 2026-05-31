@@ -108,6 +108,52 @@ check "command: description drops (Octopus)"    tc_strips_octopus
 check "command: description strips leakage"     tc_strips_leak
 check "command: carries the Usage block"        tc_carries_usage
 
+# ---------------------------------------------------------------------------
+# roles — quoted description, role template (When to invoke / What it judges)
+# ---------------------------------------------------------------------------
+make_role_repo() {
+  local r; r="$(mktemp -d)"; mkdir -p "$r/roles"
+  printf -- '---\nname: demo-role\ndescription: "Judges things, grounded in RM-099."\nmodel: opus\n---\nbody\n' >"$r/roles/demo-role.md"
+  echo "$r"
+}
+RREPO="$(make_role_repo)"; FIXTURES+=("$RREPO"); RDOCS="$(mktemp -d)"; FIXTURES+=("$RDOCS")
+SCAFFOLD_REPO_ROOT="$RREPO" SCAFFOLD_DOCS_ROOT="$RDOCS" bash "$GEN" roles >/dev/null 2>&1
+REN="$RDOCS/roles/demo-role.mdx"
+tr_creates()      { [[ -f "$REN" && -f "$RDOCS/pt-br/roles/demo-role.mdx" ]]; }
+tr_desc_clean()   { grep -q 'Judges things' "$REN" && ! grep -q 'RM-099' "$REN" && ! grep -q '"Judges' "$REN"; }
+tr_role_sections(){ grep -q '## When to invoke' "$REN" && grep -q '## What it judges' "$REN"; }
+
+check "role: creates EN + pt-br"              tr_creates
+check "role: description clean (quotes+leak)" tr_desc_clean
+check "role: role-specific sections"          tr_role_sections
+
+# ---------------------------------------------------------------------------
+# bundles — mechanical "What's included" list from the .yml
+# ---------------------------------------------------------------------------
+make_bundle_repo() {
+  local r; r="$(mktemp -d)"; mkdir -p "$r/bundles"
+  cat >"$r/bundles/demo-bundle.yml" <<'YML'
+name: demo-bundle
+description: A demo bundle.
+skills:
+  - alpha-skill
+  - beta-skill
+roles:
+  - gamma-role
+YML
+  echo "$r"
+}
+BREPO="$(make_bundle_repo)"; FIXTURES+=("$BREPO"); BDOCS="$(mktemp -d)"; FIXTURES+=("$BDOCS")
+SCAFFOLD_REPO_ROOT="$BREPO" SCAFFOLD_DOCS_ROOT="$BDOCS" bash "$GEN" bundles >/dev/null 2>&1
+BEN="$BDOCS/bundles/demo-bundle.mdx"
+tb_creates()        { [[ -f "$BEN" && -f "$BDOCS/pt-br/bundles/demo-bundle.mdx" ]]; }
+tb_lists_members()  { grep -q 'alpha-skill' "$BEN" && grep -q 'beta-skill' "$BEN" && grep -q 'gamma-role' "$BEN"; }
+tb_included_section(){ grep -q "## What's included" "$BEN"; }
+
+check "bundle: creates EN + pt-br"            tb_creates
+check "bundle: lists its skills + roles"      tb_lists_members
+check "bundle: What's included section"       tb_included_section
+
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]
