@@ -1,89 +1,89 @@
 # Research: consigliere-workspace
 
 **Date:** 2026-05-31
-**Trigger:** Manager pain point — acompanhar reuniões e digerir documentos diversos (Slack, transcrições de Meet, Jira, Confluence) é feito hoje de forma fragmentada. Detalhes que importam (impedimentos, decisões, mapa de sistemas, risco político) não vivem no Jira. Sessão derivada de uma `interview` concluída no mesmo dia, que já convergiu o intent — esta pesquisa só fatia em itens de roadmap.
+**Trigger:** Manager pain point — tracking meetings and digesting diverse documents (Slack, Meet transcripts, Jira, Confluence) is done in a fragmented way today. The details that matter (blockers, decisions, system map, political risk) do not live in Jira. Derived from an `interview` concluded the same day that already converged the intent — this research only slices it into roadmap items.
 
 ## Context
 
-Sub-iniciativa do **Cluster 16 — Manager multiplier** (já completo: RM-089…096, RM-098). Enquanto o Cluster 16 cobre o manager como multiplicador do **time** (pedagogia, knowledge loop, cross-repo), o **consigliere** cobre o manager como multiplicador de **si mesmo**: um acervo privado de conhecimento gerencial que digere insumos e mantém memória viva de status, impedimentos e sistemas.
+A sub-initiative of **Cluster 16 — Manager multiplier** (already complete: RM-089…096, RM-098). Where Cluster 16 covers the manager as a multiplier of the **team** (pedagogy, knowledge loop, cross-repo), the **consigliere** covers the manager as a multiplier of **themselves**: a private store of managerial knowledge that digests inputs and keeps living memory of status, blockers, and systems.
 
-A metáfora é literal: um *Chief of Staff* corporativo é o "force multiplier" do executivo — filtra informação, acompanha prioridades, detecta risco e desalinhamento, conecta silos e guarda a memória institucional. Aqui o executivo servido é o próprio manager — um chief-of-staff *pessoal*. O role recebeu o nome **`consigliere`** (uma palavra, convenção de roles do Octopus; conota conselheiro de confiança que conhece a política e sussurra o risco — exatamente o campo "riscos políticos").
+The metaphor is literal: a corporate *Chief of Staff* is the executive's "force multiplier" — it filters information, tracks priorities, detects risk and misalignment, connects silos, and keeps the institutional memory. Here the executive served is the manager themselves — a *personal* chief-of-staff. The role is named **`consigliere`** (one word, per Octopus role convention; it connotes a trusted advisor who knows the politics and whispers the risk — exactly the "political risk" field).
 
-Reusa guardrails já existentes: **`audit-grounding`** (RM-088, shipado v1.69.0) para o grounding estrito, e o padrão **continuous-learning / review-proposals** para o loop de heurísticas.
+It reuses existing guardrails: **`audit-grounding`** (RM-088, shipped v1.69.0) for strict grounding, and the **continuous-learning / review-proposals** pattern for the heuristics loop.
 
 ## Analysis
 
-### Modelo de dados (o núcleo)
+### Data model (the core)
 
-- **Contexto** = nó **perene** numa árvore de profundidade arbitrária (produto → domínio → sub-domínio). Cada nó tem **estado materializado próprio** (não rollup computado). Ex: `commerce` (uma área de produto) → `catalog` (domínio de negócio estável).
-- **Projeto** = entidade **temporal** (início/meio/fim), **transversal** — relação muitos-pra-muitos com contextos, podendo cruzar workspaces. Ex: `checkout-revamp` atravessa `payments` e `fulfillment`.
-- **Trio uniforme por nó** (contexto ou projeto): `state.md` (materializado) + `journal.md` (append-only datado) + `playbook.md` (heurísticas, opcional).
-- **Escrita transversal = fan-out de ponteiro:** o detalhe (6 campos) mora no projeto; o digest propaga uma linha-resumo pro `state.md` de cada contexto cruzado, mantendo cada contexto autossuficiente para consulta sem recomputar.
+- **Context** = a **perennial** node in a tree of arbitrary depth (product → domain → sub-domain). Each node has its **own materialized state** (not a computed rollup). Example: `commerce` (a product area) → `catalog` (a stable business domain).
+- **Project** = a **temporal** entity (start/middle/end), **cross-cutting** — a many-to-many relationship with contexts, possibly spanning workspaces. Example: `checkout-revamp` crosses `payments` and `fulfillment`.
+- **Uniform per-node trio** (context or project): `state.md` (materialized) + `journal.md` (append-only, dated) + `playbook.md` (heuristics, optional).
+- **Cross-cutting write = fan-out pointer:** the detail (6 fields) lives in the project; the digest propagates a one-line summary into each crossed context's `state.md`, keeping each context self-sufficient for consult without recomputation.
 
-### Layout do `manager-workspace` (repo privado, nunca commitado em repo de time)
+### `manager-workspace` layout (private repo, never committed to a team repo)
 
 ```
 manager-workspace/
-├── README.md                       # manual de operação
-├── sources/YYYY/MM/<data>-<slug>.md   # insumos brutos, imutáveis (frontmatter: origin, fetched_at) — base do grounding
-├── contexts/<arvore>/              # cada nó: state.md · journal.md · playbook.md
+├── README.md                       # operating manual
+├── sources/YYYY/MM/<date>-<slug>.md   # raw inputs, immutable (frontmatter: origin, fetched_at) — grounding base
+├── contexts/<tree>/                # each node: state.md · journal.md · playbook.md
 ├── projects/<proj>/                # state.md · journal.md · meta.yml (contexts: [...])
-└── people/<pessoa>.md              # heurísticas por pessoa
+└── people/<person>.md              # per-person heuristics
 ```
 
-### Contrato do digest — 6 campos
+### Digest contract — 6 fields
 
-status por frente · impedimentos+dono · decisões · mapa de sistemas/áreas · ações+owners · **riscos políticos** (sinais org/humanos que não vão pro Jira: conflito de prioridade entre áreas, sponsor/decisão pendente, expectativa desalinhada, bus-factor, retrabalho por decisão revertida).
+Status by workstream · Blockers+owner · Decisions · System & area map · Actions+owners · **Political risk** (org/human signals that do not reach Jira: cross-area priority conflict, pending sponsor/decision, expectation misalignment, bus-factor, rework from a reversed decision).
 
-### Fluxo de captura
+### Capture flow
 
-`/digest-source <texto | pdf | JIRA-123 | url-confluence> "descrição em linguagem natural"` →
-snapshot imutável em `sources/` → **infere** contexto/projeto da frase NL → **confirma** (cria nó on-the-fly se não existir) → extrai os 6 campos grounded com citação de origem → **preview** do que vai gravar → **grava** (fan-out). A frase natural É o roteamento; ambiguidade vira pergunta, não chute.
+`/digest-source <text | pdf | JIRA-123 | confluence-url> "natural-language description"` →
+immutable snapshot in `sources/` → **infers** context/project from the NL phrase → **confirms** (creates the node on-the-fly if it does not exist) → extracts the 6 grounded fields with source citations → **previews** the writes → **writes** (fan-out). The natural-language phrase IS the routing; ambiguity becomes a question, not a guess.
 
-### Multi-modal — viabilidade honesta
+### Multi-modal — honest feasibility
 
-| Fonte | Ingestão | Hoje |
+| Source | Ingestion | Today |
 |---|---|---|
-| Texto colado | direto | ✅ |
-| PDF (caminho local) | CC lê nativamente | ✅ |
-| Jira | MCP existente | ✅ |
-| Confluence (link) | precisa de MCP/token Atlassian | ⚠️ inexistente → fallback export-PDF |
+| Pasted text | direct | ✅ |
+| PDF (local path) | CC reads it natively | ✅ |
+| Jira | existing MCP | ✅ |
+| Confluence (link) | needs the Atlassian MCP/token | ⚠️ absent → export-PDF fallback |
 
-### Loop de aprendizado (o que separa "anotador" de "consigliere")
+### Learning loop (what separates "note-taker" from "consigliere")
 
-Bidirecional: o manager **semeia** heurísticas que já tem (escreve direto no `playbook.md`) **e** o agente **captura** novas dos digests (propõe → o manager confirma via `playbook-review`). Aplicadas **push** (cutuca ao ler insumo novo: "owner tende a atrasar → sugiro FUP") e **pull** (na consulta).
+Bidirectional: the manager **seeds** heuristics they already hold (writes them directly into `playbook.md`) **and** the agent **captures** new ones from digests (proposes → the manager confirms via `playbook-review`). Applied **push** (nudges when reading a fresh input: "owner tends to delay → suggest FUP") and **pull** (on consult).
 
-### Constraints duras
+### Hard constraints
 
-- **Grounding estrito:** nunca afirmar o que não está explícito no insumo ou numa heurística aprovada; na dúvida, perguntar; todo claim rastreia a `sources/`. (Reusa `audit-grounding`.)
-- **Privacidade:** workspace privado, single-user; transcrições e riscos políticos jamais num repo de time.
+- **Strict grounding:** never assert what is not explicit in the input or in an approved heuristic; when unsure, ask; every claim traces to `sources/`. (Reuses `audit-grounding`.)
+- **Privacy:** private, single-user workspace; transcripts and political risk never in a team repo.
 
-### Nomenclatura fechada
+### Settled naming
 
 - **Role:** `consigliere`
 - **Skills:** `digest-source` · `context-status` · `playbook-review`
-- **Bundle novo:** `consigliere`
-- `context-init` foi **descartado** — criação de nó é **on-the-fly** dentro do `digest-source` (sob confirmação).
+- **New bundle:** `consigliere`
+- `context-init` was **discarded** — node creation is **on-the-fly** inside `digest-source` (under confirmation).
 
-### Decisões de arquitetura
+### Architecture decisions
 
-1. **Onde os artefatos nascem** → **resolvido em [ADR-007](../adr/007-consigliere-artifact-location.md):** role+skills shipam **genéricos no Octopus**, operando sobre um `manager-workspace` apontado por config; os *dados* ficam sempre no workspace privado.
-2. **Bundle `consigliere` separado vs fundido com `tech-lead`** → **resolvido em [ADR-008](../adr/008-consigliere-bundle-separation.md):** bundle **separado** (audiência/dado/contexto de ativação diferentes).
-3. **Formato/escopo do `playbook`** (por contexto vs central) e como o role consulta sem inchar contexto → **pendente**, a fechar no spec do RM-103.
+1. **Where the artifacts are built** → **resolved in [ADR-007](../adr/007-consigliere-artifact-location.md):** role + skills ship **generic in Octopus**, operating on a `manager-workspace` pointed at by config; the *data* always stays in the private workspace.
+2. **`consigliere` bundle separate vs merged with `tech-lead`** → **resolved in [ADR-008](../adr/008-consigliere-bundle-separation.md):** **separate** bundle (different audience/data/activation context).
+3. **`playbook` format/scope** (per-context vs central) and how the role consults without bloating context → **open**, to be settled in the RM-103 spec.
 
 ## Identified Items
 
 | ID | Title | Priority | Effort |
 |----|-------|----------|--------|
 | RM-099 | `consigliere` workspace scaffold + bundle | 🔴 High | medium |
-| RM-100 | `digest-source` skill — captura multi-modal grounded com fan-out | 🔴 High | high |
-| RM-101 | `consigliere` role — lente/voz que aprende heurísticas | 🔴 High | medium |
-| RM-102 | `context-status` skill — consulta NL sobre estado materializado | 🟡 Medium | low |
-| RM-103 | `playbook-review` skill + loop de aprendizado de heurísticas | 🟡 Medium | medium |
-| RM-104 | Integração MCP Atlassian — Confluence + Jira enriquecido | 🟡 Medium | low |
+| RM-100 | `digest-source` skill — grounded multi-modal capture with fan-out | 🔴 High | high |
+| RM-101 | `consigliere` role — the lens/voice that learns heuristics | 🔴 High | medium |
+| RM-102 | `context-status` skill — NL consult over materialized state | 🟡 Medium | low |
+| RM-103 | `playbook-review` skill + heuristics learning loop | 🟡 Medium | medium |
+| RM-104 | Atlassian MCP integration — Confluence + richer Jira | 🟡 Medium | low |
 
 ## Discarded Items
 
 | Title | Reason |
 |---|---|
-| `context-init` skill (registro prévio de nó) | Nome colide com `/init` e `doc-subcontext`; criação de nó vira **on-the-fly** no `digest-source` sob confirmação. Renasce como `register-context` só se on-the-fly não bastar na prática. |
+| `context-init` skill (pre-registering a node) | Name collides with `/init` and `doc-subcontext`; node creation becomes **on-the-fly** in `digest-source` under confirmation. Resurfaces as `register-context` only if on-the-fly proves insufficient in practice. |

@@ -1,4 +1,4 @@
-# Playbook — <nó>
+# Playbook — <node>
 
 > Operating heuristics scoped to this node: what to watch, who tends to do what,
 > when to follow up. Seeded by you; grown by the agent (proposed → you confirm).
@@ -8,5 +8,5 @@
 > defined by `playbook-review` (RM-103). For now, write free-form bullets.
 
 <!-- Example (remove on first real heuristic):
-- <pessoa> tende a atrasar entregas → fazer FUP quando um projeto for dela.
+- <person> tends to delay deliveries → follow up when a project is theirs.
 -->

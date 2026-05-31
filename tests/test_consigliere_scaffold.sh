@@ -24,8 +24,8 @@ for f in README.md state.md journal.md playbook.md meta.yml gitignore; do
 done
 
 # --- state.md: the six fixed section headers (the digest contract) -------
-for h in "Status por frente" "Impedimentos" "Decisões" \
-         "Mapa de sistemas" "Ações" "Riscos políticos"; do
+for h in "Status by workstream" "Blockers" "Decisions" \
+         "System & area map" "Actions" "Political risk"; do
   check "state.md has section '$h'" grep -q "$h" "$T/state.md"
 done
 check "state.md carries a provenance marker" grep -qE "updated:|sources:" "$T/state.md"

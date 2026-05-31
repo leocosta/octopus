@@ -60,8 +60,8 @@ uniformity is the contract RM-100…103 depend on; treat changes to it as breaki
 
 ### `state.md` — the 6-field digest contract
 
-Fixed section headers, so consult (RM-102) is deterministic: **Status por frente ·
-Impedimentos · Decisões · Mapa de sistemas/áreas · Ações · Riscos políticos**. A
+Fixed section headers, so consult (RM-102) is deterministic: **Status by workstream ·
+Blockers · Decisions · System & area map · Actions · Political risk**. A
 leading `<!-- updated: … · sources: [...] -->` marker records provenance.
 
 ### `journal.md` — append-only with citation anchors

@@ -1,29 +1,29 @@
 <!-- updated: YYYY-MM-DD · sources: [] -->
-# Estado atual — <nó>
+# Current state — <node>
 
 > Materialized current state. Rewritten on each digest. Every claim traces to a
 > file under `sources/`. If it is not in a source, it is not asserted here.
 
-## Status por frente
+## Status by workstream
 
-- <frente> — <estado atual> (src: sources/…)
+- <workstream> — <current state> (src: sources/…)
 
-## Impedimentos
+## Blockers
 
-- <impedimento> — dono: <pessoa> — desde <data> (src: sources/…)
+- <blocker> — owner: <person> — since <date> (src: sources/…)
 
-## Decisões
+## Decisions
 
-- <decisão> — <data> (src: sources/…)
+- <decision> — <date> (src: sources/…)
 
-## Mapa de sistemas/áreas
+## System & area map
 
-- <sistema/área> — <como se conecta> (src: sources/…)
+- <system/area> — <how it connects> (src: sources/…)
 
-## Ações
+## Actions
 
-- <ação> — owner: <pessoa> — prazo: <data> (src: sources/…)
+- <action> — owner: <person> — due: <date> (src: sources/…)
 
-## Riscos políticos
+## Political risk
 
-- <sinal org/humano que não vai pro Jira> (src: sources/…)
+- <org/human signal that does not reach Jira> (src: sources/…)

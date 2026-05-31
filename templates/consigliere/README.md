@@ -40,8 +40,8 @@ Every node — context or project — carries the same trio: **`state.md`**
 
 ## The digest contract (6 fields)
 
-Each digest extracts exactly: **Status por frente · Impedimentos+dono · Decisões ·
-Mapa de sistemas/áreas · Ações+owners · Riscos políticos**. These are the fixed
+Each digest extracts exactly: **Status by workstream · Blockers+owner · Decisions ·
+System & area map · Actions+owners · Political risk**. These are the fixed
 section headers in every `state.md`.
 
 ## Grounding

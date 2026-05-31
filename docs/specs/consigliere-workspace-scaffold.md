@@ -104,8 +104,8 @@ one uniform target:
 
 - **`state.md`** — the *materialized* current state. Section headers fixed to the
   6-field contract so consult (RM-102) is deterministic:
-  `## Status por frente` · `## Impedimentos` · `## Decisões` ·
-  `## Mapa de sistemas/áreas` · `## Ações` · `## Riscos políticos`.
+  `## Status by workstream` · `## Blockers` · `## Decisions` ·
+  `## System & area map` · `## Actions` · `## Political risk`.
   A leading `<!-- updated: <date> · sources: [...] -->` marker records provenance.
 - **`journal.md`** — append-only, newest-last, one dated block per digest:
   `### <date> — <source-slug>` followed by the extracted notes, each line ending
