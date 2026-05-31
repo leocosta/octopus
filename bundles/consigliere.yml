@@ -7,8 +7,8 @@ skills:
   - consigliere-bootstrap     # RM-099 — scaffold the private manager-workspace + write-guard
   - digest-source             # RM-100 — capture: snapshot → route → grounded 6-field digest → fan-out
   # RM-102 context-status · RM-103 playbook-review — added as they ship
-roles: []
-  # RM-101 consigliere role — added when it ships
+roles:
+  - consigliere               # RM-101 — the lens/voice: political-risk read, heuristics push/pull
 rules: []
 mcp: []
 # hooks: null — the scaffold forces no hooks; grounding is enforced by the
