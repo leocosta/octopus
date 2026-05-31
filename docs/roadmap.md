@@ -165,6 +165,18 @@ _RM-106 has a [spec](specs/knowledge-root-registry.md). Architecture decisions s
 
 ---
 
+### Cluster 20 — Completion-verification guardrail
+
+_Proposed (added 2026-05-31). Closes the two failure modes the RM-088 PRD ([docs/specs/local-guardrails-quality-style-grounding.md](specs/local-guardrails-quality-style-grounding.md)) explicitly deferred. RM-088 shipped the **syntactic block** (`guardrails` bundle) and the **semantic signal** (`audit-grounding` skill + `grounding-check` Stop hook); the third side of the local-guardrail triad — the **verification signal** — was left out of scope: "non-existent APIs / missing files" and the "claimed done without running" failure mode. An agent can assert a task is complete or passing without ever executing the build/test/typecheck, and reference a symbol the type-checker would reject — neither is caught today (the type-checker only catches it if it is run)._
+
+| RM | Item | Theme |
+|----|------|-------|
+| RM-111 | `audit-verification` skill + `verification-check` Stop hook — signal-only, mirroring `audit-grounding`'s shape. At task end on a code diff, the hook queues a review; the skill confronts the session's completion claim against run evidence (did the build/test/typecheck actually run this session?) and flags unresolved-symbol / missing-file references the type-checker would reject. Never blocks (the syntactic gate already blocks at commit; this signals the "claimed done without running" gap). Registers in `quality` beside `audit-grounding`; pairs with the `guardrails` syntactic block | local guardrail |
+
+_Seed: the [RM-088 PRD](specs/local-guardrails-quality-style-grounding.md)'s Out-of-Scope section. Open question for the spec: how the Stop hook detects "claimed done" + "did not run" (transcript scan for completion language vs. a recorded run-artifact timestamp) without false positives._
+
+---
+
 ## In Progress
 
 _RM-088 (`audit-grounding`) shipped in v1.69.0. **Cluster 16** (manager-multiplier) is **complete on `feat/standards-lookup`** — all implemented & committed, pending merge/release: RM-089 (`mentor`), RM-090 (`onboarding`), RM-091 (`definition-of-done`), RM-092 (`standards`), RM-093 (team `continuous-learning`), RM-094 (`audit-fleet`), RM-095 (`fleet-bootstrap`), RM-096 (`tech-lead` bundle), RM-098 (`map-system` complete-mode deck). ADRs 002–006 recorded. See [research](research/2026-05-30-manager-multiplier.md)._
