@@ -1,0 +1,61 @@
+---
+title: playbook-review
+description: Fecha o loop de aprendizado do consigliere — percorre a fila de heurísticas que o digest-source propôs e deixa o manager promover as boas pro playbook por-nó certo, editar ou descartar; também semeia uma heurística direto. Escopo por-nó, propostas ancoradas, seeds do manager confiados.
+sidebar:
+  order: 28
+source_hash: "sha256:e863f1f307fcaaa5d4fdbcce5de7c5451d370b53141369687de0c0eb3b4a34ca"
+needs_retranslation: false
+---
+
+`playbook-review` (RM-103) é o que faz o consigliere *aprender*. O
+manager semeia heurísticas que já tem ("esse owner tende a atrasar →
+FUP"), e o `digest-source` propõe novas que nota ao longo dos digests.
+Esta skill curadoria esse loop; o role `consigliere` e o `context-status`
+depois aplicam as heurísticas.
+
+## Onde as heurísticas moram
+
+Escopadas no nó a que se aplicam — **não há playbook central**:
+
+- `contexts/<ctx>/playbook.md` / `projects/<proj>/playbook.md` — sobre
+  aquele contexto ou projeto.
+- `people/<pessoa>.md` — sobre uma pessoa (tendência a atrasar,
+  bus-factor).
+
+A lente lê o playbook do nó em escopo mais o arquivo `people/` relevante,
+então o contexto fica pequeno.
+
+## Dois modos
+
+```
+/octopus:playbook-review            # percorre a fila de propostas
+/octopus:playbook-review --seed     # adiciona uma heurística que você já tem
+```
+
+### Percorrer a fila
+
+O `digest-source` acrescenta cada heurística proposta ao
+`playbook-inbox.md` — a observação, o nó-alvo sugerido e a evidência
+`(src: …)`. Pra cada uma você **promove** pro `playbook.md` / `people/`
+do alvo, **edita** a redação ou re-aponta, ou **descarta**. Propostas
+processadas saem da inbox.
+
+### Semear direto
+
+Diz uma heurística que você já tem; a skill confirma o nó-alvo e a
+escreve — sem volta pela fila.
+
+## Grounding — propostas vs seeds
+
+Uma **proposta** do agente precisa carregar sua evidência `(src: …)` pra
+ser promovida (mostrada pra você verificar, reusando o `audit-grounding`).
+Um **seed** é **confiado** — é o seu próprio conhecimento e não precisa de
+evidência. De qualquer forma, as escritas ficam dentro do
+`consigliere.workspace`.
+
+## Onde se encaixa
+
+`playbook-review` completa o bundle **consigliere** (4 skills + 1 role): o
+`consigliere-bootstrap` faz o scaffold, o `digest-source` captura (e
+propõe), o `context-status` consulta, o role `consigliere` lê, e este
+curadoria as heurísticas que deixam tudo mais afiado com o tempo.
