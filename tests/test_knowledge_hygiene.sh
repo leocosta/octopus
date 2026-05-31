@@ -31,11 +31,26 @@ FIXTURES=()
 # ---------------------------------------------------------------------------
 REPO1="$(make_fixture)"; FIXTURES+=("$REPO1")
 
+# Capture output fully before grepping — `hygiene | grep -q` would SIGPIPE the
+# producer under pipefail (grep -q exits on first match).
 t1_runs_zero_exit() { hygiene "$REPO1" >/dev/null 2>&1; }
-t1_names_docs_root() { hygiene "$REPO1" 2>/dev/null | grep -q 'docs'; }
+t1_names_docs_root() { local o; o="$(hygiene "$REPO1" 2>/dev/null)"; grep -q 'docs' <<<"$o"; }
 
 check "hygiene runs with zero exit"      t1_runs_zero_exit
 check "hygiene names the docs root"      t1_names_docs_root
+
+# ---------------------------------------------------------------------------
+# Task 2 — staleness check (cascade: frontmatter updated: → git → mtime)
+# ---------------------------------------------------------------------------
+REPO2="$(make_fixture)"; FIXTURES+=("$REPO2")
+printf -- '---\nupdated: 2000-01-01\n---\n# old\n' >"$REPO2/docs/old.md"
+
+t2_flags_stale_by_frontmatter() {
+  local o; o="$(hygiene "$REPO2" --root docs 2>/dev/null)"
+  grep -q "warn|docs|staleness|$REPO2/docs/old.md" <<<"$o"
+}
+
+check "staleness: flags node stale by frontmatter date"  t2_flags_stale_by_frontmatter
 
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"

@@ -18,10 +18,32 @@ kh_targets() {
   else kr_load | cut -d'|' -f1; fi
 }
 
+# Last-update epoch of a node, by cascade: frontmatter `updated:` → git
+# last-commit → filesystem mtime. The first that resolves wins.
+kh_last_update() {
+  local f="$1" v
+  v="$(awk -F': *' '/^updated:/{print $2; exit} /^---/ && NR>1 {exit}' "$f")"
+  if [[ -n "$v" ]] && v="$(date -d "$v" +%s 2>/dev/null)"; then printf '%s' "$v"; return; fi
+  v="$(git -C "$(dirname "$f")" log -1 --format=%ct -- "$f" 2>/dev/null)"
+  [[ -n "$v" ]] && { printf '%s' "$v"; return; }
+  stat -c %Y "$f"
+}
+
+# Flag nodes whose last update is older than the root's staleness_days.
+kh_staleness() {
+  local root="$1" days now node age
+  days="$(kr_field "$root" staleness_days)"; now="$(date +%s)"
+  while read -r node; do
+    age=$(( (now - $(kh_last_update "$node")) / 86400 ))
+    (( age > days )) && echo "warn|$root|staleness|$node|${age}d > ${days}d"
+  done < <(kr_nodes "$root")
+}
+
 # Run the enabled checks over each target root, grouped by root.
 kh_run() {
   local root
   for root in $(kh_targets); do
     echo "## $root"
+    kh_staleness "$root"
   done
 }
