@@ -49,6 +49,27 @@ t1_profile_consigliere() { [[ "$(lens "$WS1" profile consigliere)" == "consiglie
 
 check "lens profile: returns the consigliere lens_profile"  t1_profile_consigliere
 
+# ---------------------------------------------------------------------------
+# Task 2 — `octopus lens context <node>` surfaces playbook + risk + blockers
+# ---------------------------------------------------------------------------
+WS2="$(make_workspace)"; FIXTURES+=("$WS2")
+NODE2="$WS2/contexts/payments/state.md"
+
+t2_context_playbook() {
+  local o; o="$(lens "$WS2" context "$NODE2")"
+  grep -q "playbook|$WS2/contexts/payments/playbook.md" <<<"$o"
+}
+t2_context_risk() {
+  local o; o="$(lens "$WS2" context "$NODE2")"; grep -q 'risk|.*finance VP' <<<"$o"
+}
+t2_context_blocker() {
+  local o; o="$(lens "$WS2" context "$NODE2")"; grep -q 'blocker|.*fiscal approval' <<<"$o"
+}
+
+check "lens context: surfaces sibling playbook"   t2_context_playbook
+check "lens context: surfaces political risk"     t2_context_risk
+check "lens context: surfaces blockers"           t2_context_blocker
+
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]
