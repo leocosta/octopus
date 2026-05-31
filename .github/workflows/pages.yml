@@ -36,6 +36,9 @@ jobs:
         with:
           bun-version: latest
 
+      - name: Check docs — no leakage, no unfinished published pages
+        run: CHECK_DOCS_ROOT=../docs/site bash scripts/check-docs.sh
+
       - name: Sync canonical content into Starlight
         run: bash scripts/sync-content.sh
 
