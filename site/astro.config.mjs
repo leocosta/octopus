@@ -95,15 +95,10 @@ export default defineConfig({
           collapsed: true,
         },
         {
-          label: 'Roadmap & Specs',
-          translations: { 'pt-BR': 'Roadmap & Specs' },
+          label: 'Reference',
+          translations: { 'pt-BR': 'Referência' },
           collapsed: true,
           items: [
-            {
-              label: 'Roadmap',
-              translations: { 'pt-BR': 'Roadmap' },
-              link: '/roadmap/',
-            },
             {
               label: 'Changelog',
               translations: { 'pt-BR': 'Changelog' },

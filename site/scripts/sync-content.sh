@@ -49,10 +49,11 @@ cp -f "$project_root/images/cover-light.png" "$public_dir/cover-light.png"
 cp -f "$project_root/images/logo-dark.png" "$public_dir/logo-dark.png"
 cp -f "$project_root/images/logo-light.png" "$public_dir/logo-light.png"
 
-# Generate roadmap & changelog MDX pages from the canonical sources at the
-# repo root. They live outside docs/site/ because they're updated by tooling
-# (release flow, /octopus:doc-research). Wrapping them with a Starlight
-# frontmatter is enough to make them routable pages.
+# Generate the changelog MDX page from the canonical source at the repo root.
+# It lives outside docs/site/ because it's updated by tooling (release flow).
+# Wrapping it with a Starlight frontmatter is enough to make it a routable page.
+# The internal roadmap is intentionally NOT published — the changelog is the
+# user-facing "what's new"; the roadmap (RM/cluster backlog) stays internal.
 generate_page() {
   local src="$1" dest="$2" title="$3" description="$4"
   if [[ ! -f "$src" ]]; then
@@ -73,12 +74,6 @@ generate_page() {
     printf '%s\n' "$body"
   } > "$dest"
 }
-
-generate_page \
-  "$project_root/docs/roadmap.md" \
-  "$content_dir/roadmap.md" \
-  "Roadmap" \
-  "Project backlog — ideas that need team discussion before becoming a spec."
 
 generate_page \
   "$project_root/CHANGELOG.md" \
