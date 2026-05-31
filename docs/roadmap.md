@@ -118,6 +118,16 @@ _**Complete on `feat/standards-lookup`** — all of RM-089…096 + RM-098 implem
 
 ---
 
+### Cluster 18 — Release-flow guardrails
+
+_Proposed (added 2026-05-31). Seeded by a real incident on a downstream project: `chore(release): vX.Y.Z` was committed on `develop` before the `develop` → `main` PR merged, leaving the tag unreachable from `main`. The consumer project's runbook teaches the correct order, but that is documentation-level defence. A programmatic guardrail inside Octopus is missing._
+
+| RM | Item | Theme |
+|----|------|-------|
+| RM-105 | Pre-push hook that rejects `git push --tags` when a release tag (`v*` by default) is not reachable from the main branch (`main` by default). Configurable via `.octopus.yml` (default branch and tag pattern). Explicit bypass via env var for emergencies. Pairs with the consumer runbook as the programmatic layer | hooks |
+
+---
+
 ## In Progress
 
 _RM-088 (`audit-grounding`) shipped in v1.69.0. **Cluster 16** (manager-multiplier) is **complete on `feat/standards-lookup`** — all implemented & committed, pending merge/release: RM-089 (`mentor`), RM-090 (`onboarding`), RM-091 (`definition-of-done`), RM-092 (`standards`), RM-093 (team `continuous-learning`), RM-094 (`audit-fleet`), RM-095 (`fleet-bootstrap`), RM-096 (`tech-lead` bundle), RM-098 (`map-system` complete-mode deck). ADRs 002–006 recorded. See [research](research/2026-05-30-manager-multiplier.md)._
