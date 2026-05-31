@@ -28,9 +28,15 @@ check "persona_default false (opt-in)" grep -q "persona_default: false" "$B"
 check "lists skill consigliere-bootstrap" \
   grep -qE "^[[:space:]]*-[[:space:]]*consigliere-bootstrap([[:space:]]|$|#)" "$B"
 
+# --- members: digest-source (RM-100) ------------------------------------
+check "lists skill digest-source" \
+  grep -qE "^[[:space:]]*-[[:space:]]*digest-source([[:space:]]|$|#)" "$B"
+
 # --- no-loose convention: every listed member exists --------------------
 check "member skill consigliere-bootstrap exists" \
   test -f "$OCTOPUS_DIR/skills/consigliere-bootstrap/SKILL.md"
+check "member skill digest-source exists" \
+  test -f "$OCTOPUS_DIR/skills/digest-source/SKILL.md"
 
 # --- ADR-008: separate from tech-lead -----------------------------------
 check "tech-lead.yml does NOT list consigliere-bootstrap" \
