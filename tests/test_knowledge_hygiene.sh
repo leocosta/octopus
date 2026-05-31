@@ -98,6 +98,31 @@ t5_flags_archive_drift() {
 
 check "archive-drift: flags concluded node outside archive"  t5_flags_archive_drift
 
+# ---------------------------------------------------------------------------
+# Task 6 — SKILL.md wrapper documents invocation, checks, and templates
+# (structural, mirrors tests/test_plan_backlog_hygiene.sh)
+# ---------------------------------------------------------------------------
+SKILL="$OCTOPUS_DIR/skills/knowledge-hygiene/SKILL.md"
+
+t6_skill_frontmatter()  { [[ -f "$SKILL" ]] && head -5 "$SKILL" | grep -q '^name: knowledge-hygiene$'; }
+t6_documents_invocation() {
+  grep -q '^## Invocation$' "$SKILL" || return 1
+  local f; for f in --root --gaps --fix --write-report; do grep -q -- "$f" "$SKILL" || return 1; done
+}
+t6_documents_checks() {
+  local c; for c in staleness broken-link orphan archive-drift gaps; do grep -q "$c" "$SKILL" || return 1; done
+}
+t6_delegates_to_kr()    { grep -q 'octopus kr' "$SKILL"; }
+t6_report_template()    { [[ -f "$OCTOPUS_DIR/skills/knowledge-hygiene/templates/report.md" ]]; }
+t6_registered_in_bundle() { grep -rqx ' *- knowledge-hygiene' "$OCTOPUS_DIR/bundles"; }
+
+check "skill: valid frontmatter"            t6_skill_frontmatter
+check "skill: documents invocation + flags"  t6_documents_invocation
+check "skill: documents all checks"          t6_documents_checks
+check "skill: delegates mechanics to kr"     t6_delegates_to_kr
+check "skill: report template present"       t6_report_template
+check "skill: registered in a bundle"        t6_registered_in_bundle
+
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]
