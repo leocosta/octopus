@@ -14,6 +14,7 @@
 set -uo pipefail
 
 DOCS_ROOT="${CHECK_DOCS_ROOT:-docs/site}"
+REPO_ROOT="${CHECK_REPO_ROOT:-.}"
 mode="check"; [[ "${1:-}" == "--report" ]] && mode="report"
 
 # PR refs are matched only in their unambiguous forms — `(#123)` / `PR #123` —
@@ -32,6 +33,26 @@ while IFS= read -r page; do
   if grep -EnH "$leak_re" "$page" 2>/dev/null; then findings=$((findings + 1)); fi
   if grep -EnH "$todo_re" "$page" 2>/dev/null; then findings=$((findings + 1)); fi
 done < <(find "$DOCS_ROOT" -type f \( -name '*.md' -o -name '*.mdx' \) | sort)
+
+# Completeness: every documentable artifact must have an EN + pt-br page (draft
+# or published). Mirrors scaffold-docs.sh's rules — `_`-prefixed items are
+# templates, skills need a SKILL.md. Scoped to the types the generator covers;
+# a collection is checked only when its source dir exists under REPO_ROOT.
+require_pages() {  # <name> <collection>
+  local name="$1" coll="$2" lang
+  [[ "$name" == _* ]] && return 0
+  for lang in "" "pt-br/"; do
+    if [[ ! -f "$DOCS_ROOT/${lang}${coll}/$name.mdx" ]]; then
+      echo "MISSING: ${lang}${coll}/$name.mdx"; findings=$((findings + 1))
+    fi
+  done
+}
+if [[ -d "$REPO_ROOT/skills" ]]; then
+  for d in "$REPO_ROOT"/skills/*/; do [[ -f "$d/SKILL.md" ]] && require_pages "$(basename "$d")" skills; done
+fi
+[[ -d "$REPO_ROOT/commands" ]] && for f in "$REPO_ROOT"/commands/*.md;  do [[ -f "$f" ]] && require_pages "$(basename "$f" .md)"  commands; done
+[[ -d "$REPO_ROOT/roles" ]]    && for f in "$REPO_ROOT"/roles/*.md;     do [[ -f "$f" ]] && require_pages "$(basename "$f" .md)"  roles;    done
+[[ -d "$REPO_ROOT/bundles" ]]  && for f in "$REPO_ROOT"/bundles/*.yml;  do [[ -f "$f" ]] && require_pages "$(basename "$f" .yml)" bundles;  done
 
 echo "----"
 echo "check-docs: $findings finding(s) in published pages under $DOCS_ROOT"
