@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# tests/test_consigliere_bundle.sh
+# Structural tests for the consigliere bundle (RM-099, ADR-008).
+# Grep-based, per project convention.
+set -euo pipefail
+OCTOPUS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+B="$OCTOPUS_DIR/bundles/consigliere.yml"
+TL="$OCTOPUS_DIR/bundles/tech-lead.yml"
+PASS=0; FAIL=0
+
+check() {
+  local desc="$1"; shift
+  if "$@" &>/dev/null; then
+    echo "PASS: $desc"; PASS=$((PASS + 1))
+  else
+    echo "FAIL: $desc"; FAIL=$((FAIL + 1))
+  fi
+}
+
+# --- the bundle file ----------------------------------------------------
+check "consigliere.yml exists" test -f "$B"
+check "name is consigliere" grep -q "name: consigliere" "$B"
+check "category intent" grep -q "category: intent" "$B"
+check "has a persona_question" grep -q "persona_question:" "$B"
+check "persona_default false (opt-in)" grep -q "persona_default: false" "$B"
+
+# --- members: skills ----------------------------------------------------
+check "lists skill consigliere-bootstrap" \
+  grep -qE "^[[:space:]]*-[[:space:]]*consigliere-bootstrap([[:space:]]|$|#)" "$B"
+
+# --- no-loose convention: every listed member exists --------------------
+check "member skill consigliere-bootstrap exists" \
+  test -f "$OCTOPUS_DIR/skills/consigliere-bootstrap/SKILL.md"
+
+# --- ADR-008: separate from tech-lead -----------------------------------
+check "tech-lead.yml does NOT list consigliere-bootstrap" \
+  bash -c "! grep -qE '^[[:space:]]*-[[:space:]]*consigliere-bootstrap' '$TL'"
+
+# --- summary ------------------------------------------------------------
+echo "-----------------------------------------"
+echo "consigliere-bundle: $PASS passed, $FAIL failed"
+[[ "$FAIL" -eq 0 ]]

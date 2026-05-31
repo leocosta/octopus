@@ -1,0 +1,19 @@
+# manager-workspace/.gitignore
+#
+# This is a PRIVATE workspace. It holds meeting transcripts, political-risk notes
+# and other sensitive managerial knowledge that must never leak into a team repo.
+# Keep this repo private at the host (GitHub private / local-only).
+#
+# Ignore OS / editor noise:
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Ignore anything explicitly marked secret:
+*.secret
+secrets/
+
+# NOTE: sources/, contexts/, projects/ and people/ ARE tracked — they are the
+# workspace's value. Do not ignore them.

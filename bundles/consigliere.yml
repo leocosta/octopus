@@ -1,0 +1,15 @@
+name: consigliere
+description: The manager's private chief-of-staff kit — a personal knowledge workspace that digests diverse inputs (meeting transcripts, Slack, Jira, Confluence) into living, grounded memory organized by perennial contexts and cross-cutting projects. Where tech-lead multiplies the team, consigliere multiplies the manager themselves. All managerial data lives in a private workspace (never a team repo, ADR-007); kept separate from tech-lead by audience, data and activation context (ADR-008). RM-099 ships the scaffold; digest-source, context-status, playbook-review and the consigliere role land in RM-100…103.
+category: intent
+persona_question: "Do you want a private chief-of-staff that digests your meetings and documents into living, grounded memory you can track and query?"
+persona_default: false
+skills:
+  - consigliere-bootstrap     # RM-099 — scaffold the private manager-workspace + write-guard
+  # RM-100 digest-source · RM-102 context-status · RM-103 playbook-review — added as they ship
+roles: []
+  # RM-101 consigliere role — added when it ships
+rules: []
+mcp: []
+# hooks: null — the scaffold forces no hooks; grounding is enforced by the
+# write-guard contract in consigliere-bootstrap and (for digests) audit-grounding.
+hooks: null
