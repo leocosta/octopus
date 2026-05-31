@@ -1,0 +1,62 @@
+---
+title: consigliere-connect-atlassian
+description: Setup único e de baixo atrito que conecta o Atlassian Rovo MCP Server oficial via OAuth pro digest-source ler Jira e Confluence — read-only. Um consentimento no browser, um guardrail read-only pré-pronto, zero prompts repetidos, nenhuma capacidade de escrita.
+sidebar:
+  order: 29
+source_hash: "sha256:3d511f8bc406b28e23dbe55674ea7a2fcfe678a5912befdd7bcd382b02ce7f92"
+needs_retranslation: false
+---
+
+`consigliere-connect-atlassian` (RM-104) conecta o Atlassian pro
+`digest-source` ler **Confluence** e **Jira** enriquecido. A questão de
+confiança — autorizar um agente a ler seu Jira/Confluence — é real; o
+atrito não é *como* confiar, é *quantas vezes* você reconfirma. Isto
+torna tudo **um consentimento OAuth mais um guardrail read-only
+pré-pronto**: depois de uma única aprovação no browser o consigliere lê
+o Atlassian sem prompts a cada chamada e **não consegue escrever**.
+
+Configura o **Claude Code** — nunca toca no seu workspace privado.
+
+## Por que OAuth, e não token
+
+O **Atlassian Rovo MCP Server** oficial (GA) usa **OAuth 2.1**,
+**per-user**: o agente enxerga **só o que você já enxerga** no Atlassian,
+não há **secret estático** na config nem no versionamento, é revogável e
+as ações ficam no audit log do Atlassian. Esse é o caminho de baixo
+atrito *e* baixo risco — bem melhor que um API token de vida longa.
+
+## O que a skill faz
+
+```
+/octopus:consigliere-connect-atlassian
+```
+
+1. **Registra o MCP** via OAuth no escopo user (cobre todos os seus
+   repos):
+   `claude mcp add --transport http atlassian --scope user https://mcp.atlassian.com/v1/mcp`
+   (o endpoint legado `/v1/sse` está deprecado — fixa o Streamable HTTP).
+2. **Escreve o guardrail read-only.** Os scopes de leitura do Atlassian
+   não escondem as tools de escrita, então o read-only é forçado no
+   `.claude/settings.json`: as tools de leitura são **permitidas**, as de
+   escrita **negadas**. O allowlist também é o que remove o prompt a cada
+   chamada.
+3. **Conduz o consentimento único** (`/mcp` → browser) e verifica. Se o
+   server estiver ausente, o `digest-source` cai no fallback de
+   export-PDF/colar.
+
+> Os nomes das tools dependem da versão — a skill faz você rodar `/mcp`
+> pra ler a lista real e reconciliar os allow/deny, em vez de confiar em
+> nomes fixos.
+
+## Fatos de confiança
+
+- **Revogue** quando quiser: Atlassian → Connected apps, ou `/mcp` → Clear
+  authentication no Claude Code.
+- **Auditoria:** as leituras via MCP aparecem nos audit logs do Atlassian.
+- **Menor privilégio:** OAuth per-user + deny-writes limita o raio de
+  impacto, inclusive prompt-injection de texto de ticket malicioso.
+
+## Onde se encaixa
+
+O conector opcional do bundle **consigliere**. Ele desbloqueia o
+`digest-source`; todo o resto do kit funciona sem ele.

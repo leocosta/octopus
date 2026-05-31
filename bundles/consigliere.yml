@@ -8,6 +8,7 @@ skills:
   - digest-source             # RM-100 — capture: snapshot → route → grounded 6-field digest → fan-out
   - context-status            # RM-102 — read-only NL consult over the materialized state
   - playbook-review           # RM-103 — curate the heuristics loop: promote proposals, seed directly
+  - consigliere-connect-atlassian  # RM-104 — one-time OAuth setup: read-only Jira + Confluence
 roles:
   - consigliere               # RM-101 — the lens/voice: political-risk read, heuristics push/pull
 rules: []
