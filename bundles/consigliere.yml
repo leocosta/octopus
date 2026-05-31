@@ -7,7 +7,7 @@ skills:
   - consigliere-bootstrap     # RM-099 — scaffold the private manager-workspace + write-guard
   - digest-source             # RM-100 — capture: snapshot → route → grounded 6-field digest → fan-out
   - context-status            # RM-102 — read-only NL consult over the materialized state
-  # RM-103 playbook-review — added as it ships
+  - playbook-review           # RM-103 — curate the heuristics loop: promote proposals, seed directly
 roles:
   - consigliere               # RM-101 — the lens/voice: political-risk read, heuristics push/pull
 rules: []

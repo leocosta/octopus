@@ -1,0 +1,57 @@
+---
+title: playbook-review
+description: Closes the consigliere's learning loop — walks the queue of heuristics digest-source proposed and lets the manager promote the good ones into the right per-node playbook, edit, or discard; also seeds a heuristic directly. Per-node scope, grounded proposals, manager seeds trusted.
+sidebar:
+  order: 28
+---
+
+`playbook-review` (RM-103) is what makes the consigliere *learn*. The
+manager seeds heuristics they already hold ("this owner tends to delay →
+FUP"), and `digest-source` proposes new ones it notices across digests.
+This skill curates that loop; the `consigliere` role and `context-status`
+then apply the heuristics.
+
+## Where heuristics live
+
+Scoped to the node they apply to — **there is no central playbook**:
+
+- `contexts/<ctx>/playbook.md` / `projects/<proj>/playbook.md` — about
+  that context or project.
+- `people/<person>.md` — about a person (delay tendency, bus-factor).
+
+The lens reads the playbook of the node in scope plus the relevant
+`people/` file, so context stays small.
+
+## Two modes
+
+```
+/octopus:playbook-review            # walk the proposal queue
+/octopus:playbook-review --seed     # add a heuristic you already hold
+```
+
+### Walk the queue
+
+`digest-source` appends each proposed heuristic to `playbook-inbox.md` —
+the observation, the suggested target node, and the `(src: …)` evidence.
+For each one you **promote** it into the target's `playbook.md` /
+`people/` file, **edit** the wording or retarget, or **discard** it.
+Processed proposals leave the inbox.
+
+### Seed directly
+
+State a heuristic you already hold; the skill confirms the target node
+and writes it — no queue round-trip.
+
+## Grounding — proposals vs seeds
+
+An agent **proposal** must carry its `(src: …)` evidence to be promoted
+(shown for you to verify, reusing `audit-grounding`). A **seed** is
+**trusted** — it's your own knowledge and needs no evidence. Either way,
+writes stay inside `consigliere.workspace`.
+
+## Where it sits
+
+`playbook-review` completes the **consigliere** bundle (4 skills + 1
+role): `consigliere-bootstrap` scaffolds, `digest-source` captures (and
+proposes), `context-status` consults, the `consigliere` role reads, and
+this curates the heuristics that make all of it sharper over time.

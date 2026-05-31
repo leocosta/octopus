@@ -36,6 +36,10 @@ check "lists skill digest-source" \
 check "lists skill context-status" \
   grep -qE "^[[:space:]]*-[[:space:]]*context-status([[:space:]]|$|#)" "$B"
 
+# --- members: playbook-review (RM-103) ----------------------------------
+check "lists skill playbook-review" \
+  grep -qE "^[[:space:]]*-[[:space:]]*playbook-review([[:space:]]|$|#)" "$B"
+
 # --- members: roles (RM-101) --------------------------------------------
 check "lists role consigliere" \
   grep -qE "^[[:space:]]*-[[:space:]]*consigliere([[:space:]]|$|#)" "$B"
@@ -47,6 +51,8 @@ check "member skill digest-source exists" \
   test -f "$OCTOPUS_DIR/skills/digest-source/SKILL.md"
 check "member skill context-status exists" \
   test -f "$OCTOPUS_DIR/skills/context-status/SKILL.md"
+check "member skill playbook-review exists" \
+  test -f "$OCTOPUS_DIR/skills/playbook-review/SKILL.md"
 check "member role consigliere exists" \
   test -f "$OCTOPUS_DIR/roles/consigliere.md"
 
