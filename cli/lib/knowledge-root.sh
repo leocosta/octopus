@@ -16,6 +16,7 @@ KR_PROJECT_YML="${KR_PROJECT_YML:-$KR_PROJECT_ROOT/.octopus.yml}"
 KR_USER_YML="${KR_USER_YML:-${XDG_CONFIG_HOME:-$HOME/.config}/octopus/.octopus.yml}"
 
 # Column index of a field in the defaults / kr_load line (1-based).
+# Order MUST match the pipe schema in knowledge-roots.default.
 kr_field_column() {
   case "$1" in
     id) echo 1;; path) echo 2;; link_convention) echo 3;; archive_dir) echo 4;;
@@ -25,17 +26,18 @@ kr_field_column() {
 }
 
 # Resolve a declared path to an absolute path, or empty if unresolvable.
-#   $VAR        → value from user config (env for now); empty if unset
+#   $VAR        → value of that environment variable (user config); empty if unset
 #   /abs        → as-is
 #   repo/rel    → $KR_PROJECT_ROOT/repo/rel
 kr_expand_path() {
-  local p="$1"
-  case "$p" in
-    '$OCTOPUS_MEMORY_DIR')    printf '%s' "${OCTOPUS_MEMORY_DIR:-}" ;;
-    '$CONSIGLIERE_WORKSPACE') printf '%s' "${CONSIGLIERE_WORKSPACE:-}" ;;
-    /*)                       printf '%s' "$p" ;;
-    *)                        printf '%s/%s' "$KR_PROJECT_ROOT" "$p" ;;
-  esac
+  local p="$1" var
+  if [[ "$p" =~ ^\$([A-Za-z_][A-Za-z0-9_]*)$ ]]; then
+    var="${BASH_REMATCH[1]}"; printf '%s' "${!var:-}"
+  elif [[ "$p" == /* ]]; then
+    printf '%s' "$p"
+  else
+    printf '%s/%s' "$KR_PROJECT_ROOT" "$p"
+  fi
 }
 
 # Per-user roots: their path comes from user config ($VAR), so a path override
