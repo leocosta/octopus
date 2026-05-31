@@ -1,11 +1,11 @@
 ---
 title: Review log capture
-description: Stop hook that mines the session transcript for review findings (BLOCKING / ADVISORY / QUESTION) and appends them to .octopus/review-log/ — the backbone for the team mode of continuous-learning (RM-093).
+description: Stop hook that mines the session transcript for review findings (BLOCKING / ADVISORY / QUESTION) and appends them to .octopus/review-log/ — the backbone for the team mode of continuous-learning.
 sidebar:
   order: 8
 ---
 
-`review-log-capture` (RM-093) is the Stop hook that turns the review
+`review-log-capture` is the Stop hook that turns the review
 findings produced in a session into a persistent, mineable log. When the
 conversation ends, the hook reads the full transcript and pulls the findings
 the review roles emit — the `BLOCKING:` / `ADVISORY:` / `QUESTION:` tags from

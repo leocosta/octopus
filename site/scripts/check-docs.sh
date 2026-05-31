@@ -16,7 +16,9 @@ set -uo pipefail
 DOCS_ROOT="${CHECK_DOCS_ROOT:-docs/site}"
 mode="check"; [[ "${1:-}" == "--report" ]] && mode="report"
 
-leak_re='RM-[0-9]+|Cluster [0-9]+|#[0-9]{2,}|shipped in v[0-9]'
+# PR refs are matched only in their unambiguous forms — `(#123)` / `PR #123` —
+# so hex colours like `#008000` in role frontmatter are not false positives.
+leak_re='RM-[0-9]+|Cluster [0-9]+|\(#[0-9]+\)|PR #[0-9]+|shipped in v[0-9]'
 todo_re='<!-- TODO'
 findings=0
 

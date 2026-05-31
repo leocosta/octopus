@@ -5,15 +5,15 @@ sidebar:
   order: 8
 ---
 
-`tech-lead` (RM-096) is the **manager's entry point**: one install that
-packages the Cluster 16 manager-multiplier kit, so a tech lead adopting
+`tech-lead` is the **manager's entry point**: one install that
+packages the manager-multiplier kit, so a tech lead adopting
 Octopus doesn't have to hand-pick the right roles and skills across the
 catalogue. It is the bundle that answers *"I'm leading a team — give me the
 apparatus to raise the bar and the autonomy across my repos."*
 
 ## Why this exists
 
-The other seven Cluster 16 items each ship one piece — `mentor` teaches the
+The other seven items each ship one piece — `mentor` teaches the
 why, `onboarding` ramps a hire, `definition-of-done` makes "done" explicit,
 `standards` answers "what's our rule for X", `continuous-learning` (team mode)
 turns recurring review feedback into rules, `audit-fleet` shows where the
@@ -40,14 +40,14 @@ every repo through the **[fleet baseline](/octopus/architecture/fleet-setup-flow
 
 ```yaml
 skills:
-  - standards            # RM-092 — self-serve "what's our standard for X, and why"
-  - onboarding           # RM-090 — ramp a new engineer onto standards + code + flow
-  - definition-of-done   # RM-091 — first-class team DoD + validate
-  - continuous-learning  # RM-093 — team mode: recurring review feedback → rule candidates
-  - audit-fleet          # RM-094 — cross-repo adoption + drift audit (control-plane)
-  - fleet-bootstrap      # RM-095 — converge the fleet onto a layered standard (control-plane)
+  - standards            # self-serve "what's our standard for X, and why"
+  - onboarding           # ramp a new engineer onto standards + code + flow
+  - definition-of-done   # first-class team DoD + validate
+  - continuous-learning  # team mode: recurring review feedback → rule candidates
+  - audit-fleet          # cross-repo adoption + drift audit (control-plane)
+  - fleet-bootstrap      # converge the fleet onto a layered standard (control-plane)
 roles:
-  - mentor               # RM-089 — teaches the why (pairs with architect's gate)
+  - mentor               # teaches the why (pairs with architect's gate)
   - architect            # gates technical quality / ADR compliance
   - security             # gates auth/secret-sensitive diffs
 ```
