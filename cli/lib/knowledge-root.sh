@@ -107,3 +107,24 @@ kr_field() {
   ov="$(kr_override "$KR_USER_YML"    "$id" "$field")"; [[ -n "$ov" ]] && val="$ov"
   printf '%s\n' "$val"
 }
+
+# Absolute archive dir of a root (archive_dir is relative to the root path),
+# or nothing if the root declares none.
+kr_archive() {
+  local id="$1" path arch
+  arch="$(kr_field "$id" archive_dir)"; [[ -n "$arch" ]] || return 0
+  path="$(kr_field "$id" path)"
+  printf '%s%s\n' "$path" "$arch"
+}
+
+# Absolute path of every markdown node in a root, excluding its archive dir.
+kr_nodes() {
+  local id="$1" path arch
+  path="$(kr_field "$id" path)"; [[ -n "$path" ]] || return 0
+  arch="$(kr_field "$id" archive_dir)"
+  if [[ -n "$arch" ]]; then
+    find "$path" -type f -name '*.md' -not -path "${path}${arch}*"
+  else
+    find "$path" -type f -name '*.md'
+  fi
+}

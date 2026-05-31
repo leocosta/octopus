@@ -93,6 +93,24 @@ t3_allows_scalar_override() { kr "$REPO3B" list >/dev/null 2>&1; }
 check "kr guard: rejects per-user path override in project manifest"  t3_rejects_private_path
 check "kr guard: allows scalar override for per-user root in project"  t3_allows_scalar_override
 
+# ---------------------------------------------------------------------------
+# Task 4 — kr nodes (excludes archive dir) + kr archive
+# ---------------------------------------------------------------------------
+REPO4="$(make_fixture)"; FIXTURES+=("$REPO4")
+mkdir -p "$REPO4/docs/plans/archive"
+: >"$REPO4/docs/a.md"
+: >"$REPO4/docs/plans/archive/old.md"
+
+t4_nodes_includes_active()    { kr "$REPO4" nodes docs | grep -q '/docs/a\.md$'; }
+t4_nodes_excludes_archive()   { ! kr "$REPO4" nodes docs | grep -q 'archive/old\.md'; }
+t4_archive_docs_path()        { [[ "$(kr "$REPO4" archive docs)" == "$REPO4/docs/plans/archive/" ]]; }
+t4_archive_standards_empty()  { [[ -z "$(kr "$REPO4" archive standards)" ]]; }
+
+check "kr nodes: includes active node"            t4_nodes_includes_active
+check "kr nodes: excludes archived node"          t4_nodes_excludes_archive
+check "kr archive: returns root-relative path"    t4_archive_docs_path
+check "kr archive: empty when root declares none"  t4_archive_standards_empty
+
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]
