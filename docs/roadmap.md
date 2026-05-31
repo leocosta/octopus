@@ -173,7 +173,9 @@ _Proposed (added 2026-05-31). Closes the two failure modes the RM-088 PRD ([docs
 |----|------|-------|
 | RM-111 | `audit-verification` skill + `verification-check` Stop hook — signal-only, mirroring `audit-grounding`'s shape. At task end on a code diff, the hook queues a review; the skill confronts the session's completion claim against run evidence (did the build/test/typecheck actually run this session?) and flags unresolved-symbol / missing-file references the type-checker would reject. Never blocks (the syntactic gate already blocks at commit; this signals the "claimed done without running" gap). Registers in `quality` beside `audit-grounding`; pairs with the `guardrails` syntactic block | local guardrail |
 
-_Seed: the [RM-088 PRD](specs/local-guardrails-quality-style-grounding.md)'s Out-of-Scope section. Open question for the spec: how the Stop hook detects "claimed done" + "did not run" (transcript scan for completion language vs. a recorded run-artifact timestamp) without false positives._
+_Seed: the [RM-088 PRD](specs/local-guardrails-quality-style-grounding.md)'s Out-of-Scope section._
+
+_**Status: Cluster 20 complete** — RM-111 shipped in #134. The local-guardrail triad is closed: syntactic **block** (`guardrails`) + semantic **signal** (`audit-grounding`) + verification **signal** (`audit-verification`). The recurring hook is zero-LLM; the judgment is cheap-tier on demand via `/octopus:review-proposals`._
 
 ---
 
@@ -187,6 +189,7 @@ _RM-088 (`audit-grounding`) shipped in v1.69.0. **Cluster 16** (manager-multipli
 
 | ID | Title | Resolution | Date |
 |----|-------|------------|------|
+| RM-111 | `audit-verification` — verification signal closing the RM-088-deferred failure modes; zero-LLM `verification-check` Stop hook (code-diff gate, transcript run-evidence scan, deterministic missing-file `unresolved-reference`) + cheap-tier `unverified-completion-claim` skill on demand; signal-only | completed → [Spec](specs/audit-verification.md), #134 | 2026-05-31 |
 | RM-106 | Knowledge-root registry — defaults file + loader + `octopus kr` subcommand (list/meta/nodes/links/archive); ADR-009 config scoping, ADR-010 hygiene boundary | completed → [Spec](specs/knowledge-root-registry.md), #120 | 2026-05-31 |
 | RM-107 | `knowledge-hygiene` — hybrid audit over any knowledge root (staleness/broken-link/orphan/archive-drift + `--gaps`, reversible `--fix`); deterministic core + `octopus hygiene` + SKILL.md; ADR-010 plan-backlog supersession | completed → [Spec](specs/knowledge-hygiene.md), #123 | 2026-05-31 |
 | RM-108 | `knowledge-synthesize` — hybrid engine surfacing cross-node connections (shared-target / co-mention / `--node` lexical-overlap); language-neutral entity core, contradiction judged by the SKILL.md; `octopus synthesize` | completed → [Spec](specs/knowledge-synthesize.md), #126 | 2026-05-31 |
