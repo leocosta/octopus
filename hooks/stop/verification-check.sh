@@ -28,15 +28,39 @@ changed=$(git -C "$project_root" diff --name-only HEAD 2>/dev/null || true)
 code_changed=$(grep -vE '\.(md|mdx|txt|rst)$|^docs/' <<<"$changed" || true)
 [[ -z "$code_changed" ]] && exit 0
 
+# unresolved-reference (deterministic, zero LLM): a changed code file whose
+# relative import names a file path that does not resolve on disk — what the
+# build would reject. Reliable + language-agnostic for the missing-file case.
+kr_resolve_exists() {  # importing-file relpath
+  local base p cand
+  base="$(dirname "$1")"; p="$base/$2"
+  for cand in "$p" "$p.ts" "$p.tsx" "$p.js" "$p.jsx" "$p.mjs" "$p/index.ts" "$p/index.js"; do
+    [[ -e "$cand" ]] && return 0
+  done
+  return 1
+}
+unresolved=""
+while IFS= read -r f; do
+  [[ -n "$f" && -f "$project_root/$f" ]] || continue
+  while IFS= read -r rel; do
+    [[ -n "$rel" ]] || continue
+    kr_resolve_exists "$project_root/$f" "$rel" || unresolved+="$f → $rel"$'\n'
+  done < <(grep -oE "['\"]\.\.?/[^'\"]+['\"]" "$project_root/$f" 2>/dev/null \
+             | tr -d "'\"" | sort -u)
+done <<<"$code_changed"
+
 # Run-evidence scan (deterministic, zero LLM): did a build / test / typecheck
-# run this session? Command set covers the common stacks. A match means the
-# work was verified — suppress the proposal. No transcript ⇒ cannot confirm ⇒
-# treat as unverified (degrade to queue, per spec Risks).
+# run this session? A match means the work was verified. No transcript ⇒ cannot
+# confirm ⇒ treat as unverified (degrade to queue, per spec Risks).
 run_re='tsc|mypy|ruff|pytest|jest|vitest|dotnet (build|test)|go (test|build)|cargo (test|build)|(npm|yarn|pnpm)( run)? (test|build|typecheck)|gradle|mvn (test|verify)'
+ran=0
 if [[ -n "$transcript_path" && -f "$transcript_path" ]] \
    && grep -qE "$run_re" "$transcript_path" 2>/dev/null; then
-  exit 0   # a run was found — work is verified, nothing to flag
+  ran=1
 fi
+
+# Suppress only when the work ran AND nothing references a missing file.
+[[ "$ran" == 1 && -z "$unresolved" ]] && exit 0
 
 proposals_dir="$project_root/.octopus/proposals"
 mkdir -p "$proposals_dir"
@@ -61,6 +85,17 @@ code_count=$(printf '%s\n' "$code_changed" | grep -c . || true)
   echo ""
   echo "This is a **signal only** — review and decide; nothing is blocked."
   echo ""
+  echo "- **Run detected this session:** $([[ "$ran" == 1 ]] && echo yes || echo "no — completion claim unverified")"
+  echo ""
+  if [[ -n "$unresolved" ]]; then
+    echo "## unresolved-reference (deterministic)"
+    echo ""
+    echo "These changed files import a relative path that does not resolve on disk —"
+    echo "the build would reject them:"
+    echo ""
+    while IFS= read -r u; do [[ -z "$u" ]] && continue; echo "- $u"; done <<<"$unresolved"
+    echo ""
+  fi
   echo "## Changed code files"
   echo ""
   while IFS= read -r f; do [[ -z "$f" ]] && continue; echo "- \`$f\`"; done <<<"$code_changed"

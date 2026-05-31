@@ -88,6 +88,30 @@ t2_queues_when_no_run() {
 check "run-scan: suppresses proposal when a run command is in the transcript"  t2_suppresses_when_run_found
 check "run-scan: queues when no run command is found"                          t2_queues_when_no_run
 
+# ---------------------------------------------------------------------------
+# Task 3 — unresolved-reference: a missing-file import queues even if a run ran
+# ---------------------------------------------------------------------------
+REPO3="$(make_git_repo)"; FIXTURES+=("$REPO3")
+
+t3_flags_missing_import() {
+  printf "import x from './missing'\nexport const c = x\n" >"$REPO3/src/seed.ts"
+  rm -rf "$REPO3/.octopus"
+  run_hook "$REPO3" "$TR_RUN"   # a run was found, yet the missing import must still queue
+  local p; p="$(proposals_of "$REPO3")"
+  [[ -n "$p" ]] && grep -q 'unresolved-reference' "$p" && grep -q 'missing' "$p"
+}
+t3_no_flag_when_import_resolves() {
+  local r; r="$(make_git_repo)"; FIXTURES+=("$r")
+  : >"$r/src/dep.ts"
+  printf "import x from './dep'\nexport const d = x\n" >"$r/src/seed.ts"
+  rm -rf "$r/.octopus"
+  run_hook "$r" "$TR_RUN"   # run found + import resolves → suppressed
+  [[ -z "$(proposals_of "$r")" ]]
+}
+
+check "unresolved-ref: missing import queues even when a run ran"  t3_flags_missing_import
+check "unresolved-ref: resolved import + run stays suppressed"      t3_no_flag_when_import_resolves
+
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]
