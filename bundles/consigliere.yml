@@ -5,7 +5,8 @@ persona_question: "Do you want a private chief-of-staff that digests your meetin
 persona_default: false
 skills:
   - consigliere-bootstrap     # RM-099 — scaffold the private manager-workspace + write-guard
-  # RM-100 digest-source · RM-102 context-status · RM-103 playbook-review — added as they ship
+  - digest-source             # RM-100 — capture: snapshot → route → grounded 6-field digest → fan-out
+  # RM-102 context-status · RM-103 playbook-review — added as they ship
 roles: []
   # RM-101 consigliere role — added when it ships
 rules: []

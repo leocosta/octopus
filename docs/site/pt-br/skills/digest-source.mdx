@@ -1,0 +1,65 @@
+---
+title: digest-source
+description: A skill de captura do consigliere — joga uma transcrição de reunião, thread do Slack, issue do Jira ou página do Confluence no seu workspace privado como um snapshot imutável, roteia por linguagem natural, extrai seis campos ancorados e grava uma entrada datada no journal mais um estado materializado atualizado.
+sidebar:
+  order: 26
+source_hash: "sha256:84217ffb86dd0f6c6a77f4723e8b972da73deb6f7fe93da70a280fcb57559002"
+needs_retranslation: false
+---
+
+`digest-source` (RM-100) é como o workspace do **consigliere** é
+preenchido. Você joga um insumo e o descreve em uma linha; a skill o
+transforma em memória ancorada e roteada. Ela só captura — consultar é
+o `context-status`, e o loop de heurísticas é o `playbook-review`.
+
+## Um comando
+
+```
+/octopus:digest-source <fonte> "descrição em linguagem natural"
+# <fonte> = texto colado | caminho/arquivo.pdf | JIRA-123 | url-confluence
+```
+
+A descrição **é** o roteamento. Descreva o insumo como você descreveria
+pra um colega — "a reunião de alinhamento com o time de POS sobre a nova
+ativação" — e a skill descobre onde aquilo pertence, mostrando o que
+entendeu antes de gravar qualquer coisa.
+
+## O que ela faz, em seis passos
+
+1. **Resolve + guarda.** Lê `consigliere.workspace`; toda escrita fica
+   dentro dele (o write-guard do `consigliere-bootstrap`). Nada nunca cai
+   num repo do time.
+2. **Snapshot.** Materializa o insumo em `sources/YYYY/MM/` com
+   frontmatter `origin / kind / fetched_at`. O snapshot é **imutável** — é
+   a base de grounding à qual tudo rastreia de volta.
+3. **Roteia por inferência, confirma antes de gravar.** Infere o contexto
+   ou projeto transversal alvo a partir da sua descrição e da árvore
+   existente, e pede confirmação. Se o nó não existe, oferece criá-lo.
+   Ambíguo? Ela pergunta — nunca chuta.
+4. **Extrai seis campos ancorados.** Status, impedimentos + dono,
+   decisões, mapa de sistemas/áreas, ações + owners e **risco político** —
+   os sinais que nunca chegam ao Jira. Cada linha cita sua linha de origem
+   `(src: …)`. Afirma **só o que está no snapshot**; se não está lá, não
+   está no digest (isso reusa o `audit-grounding`).
+5. **Preview.** Mostra o bloco do journal, o diff do state e as linhas de
+   ponteiro antes de tocar no disco — e levanta qualquer heurística
+   relevante ("owner tende a atrasar → FUP?") como sugestão, nunca como
+   fato.
+6. **Grava.** Acrescenta um bloco datado ao `journal.md`, reescreve o
+   `state.md` materializado, e para um projeto transversal faz **fan-out**
+   de uma linha de ponteiro em cada contexto que ele cruza — pra cada
+   contexto continuar autossuficiente quando depois você perguntar "como
+   tá o POS?".
+
+## Fontes hoje
+
+Texto colado, PDFs/arquivos locais e Jira (via MCP) funcionam
+ponta-a-ponta agora. **Confluence** precisa do MCP do Atlassian
+(RM-104); até isso chegar, a skill pede pra você exportar a página como
+PDF ou colar, em vez de falhar em silêncio.
+
+## Onde se encaixa
+
+`digest-source` é o segundo membro do bundle **consigliere**, construído
+sobre o scaffold do `consigliere-bootstrap`. Alimenta a memória que o
+`context-status` lê e as heurísticas que o `playbook-review` promove.
