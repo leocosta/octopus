@@ -36,14 +36,14 @@ echo "Test 4: parse_octopus_yml accepts a bundles: list"
 
 source "$SCRIPT_DIR/setup.sh" --source-only
 
-TMPDIR=$(mktemp -d)
-cat > "$TMPDIR/test.yml" <<'EOF'
+WORKDIR=$(mktemp -d)
+cat > "$WORKDIR/test.yml" <<'EOF'
 bundles:
   - starter
   - quality
 EOF
 
-parse_octopus_yml "$TMPDIR/test.yml"
+parse_octopus_yml "$WORKDIR/test.yml"
 
 [[ ${#OCTOPUS_BUNDLES[@]} -eq 2 ]] \
   || { echo "FAIL: expected 2 bundles, got ${#OCTOPUS_BUNDLES[@]}"; exit 1; }
@@ -52,8 +52,37 @@ parse_octopus_yml "$TMPDIR/test.yml"
 [[ "${OCTOPUS_BUNDLES[1]}" == "quality" ]] \
   || { echo "FAIL: second bundle wrong"; exit 1; }
 
-rm -rf "$TMPDIR"
+rm -rf "$WORKDIR"
 echo "PASS: parser reads bundles: list"
+
+echo "Test 4b: parse_octopus_yml strips inline comments from list items"
+
+# A hand-written .octopus.yml may annotate list members with inline comments;
+# the manifest parser must store the bare name, never the comment text.
+WORKDIR=$(mktemp -d)
+cat > "$WORKDIR/.octopus.yml" <<'EOF'
+bundles:
+  - starter        # foundation
+skills:
+  - audit-money    # RM-001 — money
+roles:
+  - architect      # gates
+EOF
+
+OCTOPUS_BUNDLES=()
+OCTOPUS_SKILLS=()
+OCTOPUS_ROLES=()
+parse_octopus_yml "$WORKDIR/.octopus.yml"
+
+[[ "${OCTOPUS_BUNDLES[0]}" == "starter" ]] \
+  || { echo "FAIL: bundle parsed as '${OCTOPUS_BUNDLES[0]}'"; exit 1; }
+[[ "${OCTOPUS_SKILLS[0]}" == "audit-money" ]] \
+  || { echo "FAIL: skill parsed as '${OCTOPUS_SKILLS[0]}'"; exit 1; }
+[[ "${OCTOPUS_ROLES[0]}" == "architect" ]] \
+  || { echo "FAIL: role parsed as '${OCTOPUS_ROLES[0]}'"; exit 1; }
+
+rm -rf "$WORKDIR"
+echo "PASS: parse_octopus_yml strips inline comments from list items"
 
 echo "Test 5: _load_bundle parses a single bundle YAML"
 
@@ -74,6 +103,31 @@ diff -q /tmp/got_skills.$$ /tmp/exp_skills.$$ >/dev/null \
 rm -f /tmp/got_skills.$$ /tmp/exp_skills.$$
 
 echo "PASS: _load_bundle populates OCTOPUS_SKILLS for starter"
+
+echo "Test 5b: _load_bundle strips inline YAML comments from list items"
+
+# Bundles may annotate members with inline '# RM-NNN ...' comments (valid YAML).
+# The parser must yield the bare skill/role name, never the comment text — a
+# glued comment makes setup look for a directory named "skill   # RM-099 ...".
+OCTOPUS_SKILLS=()
+OCTOPUS_ROLES=()
+OCTOPUS_RULES=()
+OCTOPUS_MCP=()
+
+_load_bundle "consigliere"  # every member of this bundle carries an inline '# RM-NNN' comment
+
+[[ ${#OCTOPUS_SKILLS[@]} -gt 0 ]] \
+  || { echo "FAIL: consigliere bundle parsed no skills"; exit 1; }
+
+for name in "${OCTOPUS_SKILLS[@]}" "${OCTOPUS_ROLES[@]}"; do
+  case "$name" in
+    *"#"* | *" "*)
+      echo "FAIL: parsed member '$name' carries an inline comment or whitespace"
+      exit 1 ;;
+  esac
+done
+
+echo "PASS: _load_bundle strips inline comments from list items"
 
 echo "Test 6: _load_bundle on an unknown name aborts with message"
 
@@ -96,7 +150,7 @@ OCTOPUS_BUNDLES=("starter" "quality")
 
 expand_bundles
 
-expected_skills=(doc-adr doc-lifecycle context-budget implement debug respond-to-review delegate test-tdd map-system prototype context-handoff audit-all audit-security audit-money audit-tenant review-contracts refactor-deepen audit-config audit-grounding audit-fleet fleet-bootstrap)
+expected_skills=(doc-adr doc-lifecycle context-budget implement debug respond-to-review delegate test-tdd map-system prototype context-handoff audit-all audit-security audit-money audit-tenant review-contracts refactor-deepen audit-config audit-grounding audit-verification audit-fleet fleet-bootstrap knowledge-hygiene knowledge-synthesize knowledge-briefing)
 printf '%s\n' "${OCTOPUS_SKILLS[@]}" | sort -u > /tmp/got.$$
 printf '%s\n' "${expected_skills[@]}" | sort -u > /tmp/exp.$$
 diff -q /tmp/got.$$ /tmp/exp.$$ >/dev/null \
@@ -129,8 +183,8 @@ echo "PASS: expand_bundles de-duplicates and preserves explicit entries"
 
 echo "Test 9: bundles-only manifest expands to full component lists"
 
-TMPDIR=$(mktemp -d)
-cat > "$TMPDIR/.octopus.yml" <<'EOF'
+WORKDIR=$(mktemp -d)
+cat > "$WORKDIR/.octopus.yml" <<'EOF'
 agents:
   - claude
 
@@ -148,17 +202,19 @@ OCTOPUS_AGENTS=()
 OCTOPUS_MCP=()
 OCTOPUS_RULES=()
 
-parse_octopus_yml "$TMPDIR/.octopus.yml"
+parse_octopus_yml "$WORKDIR/.octopus.yml"
 expand_bundles
 
-# starter (11 skills) + quality (audit-all + 4 deps + review-contracts + refactor-deepen + audit-config + audit-grounding = 8 unique skills) = 19 distinct skills
-[[ ${#OCTOPUS_SKILLS[@]} -eq 19 ]] \
-  || { echo "FAIL: expected 19 skills after bundle expansion, got ${#OCTOPUS_SKILLS[@]}"; exit 1; }
+# starter (11 skills) + quality (14 unique skills: audit-all + its 3 deps, review-contracts,
+# refactor-deepen, audit-config, audit-grounding, audit-verification, audit-fleet,
+# fleet-bootstrap, knowledge-hygiene, knowledge-synthesize, knowledge-briefing) = 25 distinct skills
+[[ ${#OCTOPUS_SKILLS[@]} -eq 25 ]] \
+  || { echo "FAIL: expected 25 skills after bundle expansion, got ${#OCTOPUS_SKILLS[@]}"; exit 1; }
 
 printf '%s\n' "${OCTOPUS_ROLES[@]}" | grep -q "^architect$" \
   || { echo "FAIL: architect role missing after expansion"; exit 1; }
 
-rm -rf "$TMPDIR"
+rm -rf "$WORKDIR"
 echo "PASS: bundles-only manifest expands to full component lists"
 
 echo "Test 9b: frontend bundle expands to its skills + role"
