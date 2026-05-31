@@ -1,0 +1,94 @@
+---
+title: consigliere-bootstrap
+description: Scaffolds the private manager-workspace — the consigliere's knowledge base — with the directory contract, the per-node state/journal/playbook trio, the project and source schemas, and the non-negotiable write-guard that keeps managerial data out of team repos.
+sidebar:
+  order: 25
+---
+
+`consigliere-bootstrap` (RM-099) stands up the foundation of the
+**consigliere** — a manager's private chief-of-staff workspace. Where
+the `tech-lead` bundle multiplies the *team*, the consigliere
+multiplies the *manager themselves*: it digests the diverse inputs a
+manager lives in — meeting transcripts, Slack, Jira, Confluence — into
+living, grounded memory that tracks status, blockers, decisions, the
+map of systems, and the political risk that never makes it into Jira.
+
+This skill does one thing: it creates the workspace. No digesting, no
+querying, no heuristics — those land in later skills. It is the
+scaffold the rest of the kit is built on.
+
+## The model — contexts and projects
+
+- **Context** — a *perennial* node in a tree of arbitrary depth
+  (product → domain → sub-domain). Each node holds its own materialized
+  state. Example: `tatame` → `jiu-jitsu`.
+- **Project** — a *temporal* effort (start / middle / end), and
+  **cross-cutting**: a single project can span several contexts and
+  even several workspaces. Example: `pos-activation` crosses both `tms`
+  and `pos`. Projects live under `projects/` and link the contexts they
+  touch through `meta.yml`.
+
+## The workspace contract
+
+```
+<manager-workspace>/                       # a PRIVATE repo
+├── README.md
+├── .gitignore
+├── sources/YYYY/MM/<date>-<slug>.<ext>    # raw inputs, IMMUTABLE — the grounding base
+├── contexts/<ctx>/[<subctx>/...]          # perennial tree
+│   ├── state.md                           # materialized current state (6 fixed sections)
+│   ├── journal.md                         # append-only, dated
+│   └── playbook.md                        # heuristics (optional)
+├── projects/<proj>/                       # temporal, cross-cutting
+│   ├── meta.yml                           # contexts: [...], status, dates
+│   ├── state.md
+│   ├── journal.md
+│   └── playbook.md
+└── people/<person>.md
+```
+
+Every node — context or project — carries the same **trio**:
+`state.md` (materialized current state) + `journal.md` (append-only,
+dated) + `playbook.md` (heuristics, optional). That uniformity is a
+contract the later skills depend on.
+
+The six fixed sections in every `state.md` — **Status por frente,
+Impedimentos, Decisões, Mapa de sistemas/áreas, Ações, Riscos
+políticos** — are the digest contract. Every claim traces back to a
+line under `sources/` via a `(src: …)` anchor: if it is not in a
+source, it is not asserted.
+
+## The write-guard — your private data stays private
+
+Two rules make privacy structural, not a matter of discipline:
+
+- The absolute path of your workspace is stored in the
+  **`consigliere.workspace`** config key.
+- Every consigliere skill may write **only** inside that path. Before
+  any write, it asserts the target is inside the configured workspace
+  and aborts otherwise. The consigliere **never writes outside the
+  configured workspace** — meeting transcripts and political-risk notes
+  cannot leak into a team repo.
+
+When you point the bootstrap at a directory that *looks like a code
+repo* (a `package.json`, a `.csproj`, a `src/`), it warns and asks for
+explicit confirmation before scaffolding there.
+
+## Using it
+
+```
+/octopus:consigliere-bootstrap
+```
+
+It asks for your private workspace path, warns if it looks like a code
+repo, materializes the directory contract (with a sample context and
+project as living documentation), records `consigliere.workspace`, and
+points you at `/octopus:digest-source` as the next step.
+
+## Where it sits
+
+`consigliere-bootstrap` is the first member of the **consigliere**
+bundle, kept separate from `tech-lead` by design (different audience,
+different data, different activation context). It is the foundation for
+`digest-source` (capture), `context-status` (consult), `playbook-review`
+(the learning loop), and the `consigliere` role.
