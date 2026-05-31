@@ -78,6 +78,26 @@ ks_relevant() {
   | sort -t'|' -k1 -rn | head -n "$KS_TOPN" | cut -d'|' -f2-
 }
 
+# --fix: seed a relative link for a mention whose entity resolves to exactly
+# one node title. Skips multi-target and already-linked cases. Reversible (a
+# plain edit the user can git-revert).
+ks_fix_links() {
+  local root="$1" node ent nodes matches target rel
+  nodes="$(kr_nodes "$root")"
+  while read -r node; do
+    while read -r ent; do
+      [[ -n "$ent" ]] || continue
+      matches="$(awk -v e="$ent" '
+        { p=$0; sub(/.*\//,"",p); sub(/\.md$/,"",p); if (p==e) print }' <<<"$nodes")"
+      [[ -n "$matches" && "$(wc -l <<<"$matches")" -eq 1 ]] || continue
+      target="$matches"
+      grep -qF "$(basename "$target")" "$node" && continue   # already linked
+      rel="$(realpath --relative-to "$(dirname "$node")" "$target")"
+      printf '\n[%s](%s)\n' "$ent" "$rel" >>"$node"
+    done < <(ks_entities "$node")
+  done <<<"$nodes"
+}
+
 # Emit the connection candidates for each target root, grouped by root.
 ks_run() {
   local root
@@ -89,5 +109,6 @@ ks_run() {
       ks_shared_target "$root"
       ks_co_mention "$root"
     fi
+    if [[ "${KS_FIX:-0}" == 1 ]]; then ks_fix_links "$root"; fi
   done
 }

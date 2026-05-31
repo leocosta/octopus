@@ -107,6 +107,21 @@ t5_relevant_skips_unrelated() {
 check "relevant: ranks node sharing an entity"  t5_relevant_ranks_match
 check "relevant: skips node with no overlap"     t5_relevant_skips_unrelated
 
+# ---------------------------------------------------------------------------
+# Task 6 — --fix seeds a link only for an exact single-target mention
+# ---------------------------------------------------------------------------
+REPO6="$(make_git_fixture)"; FIXTURES+=("$REPO6")
+printf 'mentions [[Stock Ledger]]\n' >"$REPO6/docs/note.md"
+: >"$REPO6/docs/Stock Ledger.md"
+( cd "$REPO6" && git add -A && git commit -qm seed )
+
+t6_fix_seeds_link() {
+  synthesize "$REPO6" --root docs --fix >/dev/null 2>&1
+  grep -q 'Stock Ledger.md' "$REPO6/docs/note.md"
+}
+
+check "fix: seeds link for exact single-target mention"  t6_fix_seeds_link
+
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]
