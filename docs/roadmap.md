@@ -118,6 +118,23 @@ _**Complete on `feat/standards-lookup`** — all of RM-089…096 + RM-098 implem
 
 ---
 
+### Cluster 17 — Consigliere / manager knowledge workspace
+
+_All items **proposed** (added 2026-05-31). Seeds from [research](research/2026-05-31-consigliere-workspace.md): a private `manager-workspace` where a manager digests diverse inputs (Slack, Meet transcripts, Jira, Confluence) into living, grounded memory organized by perennial **contexts** (tree) and cross-cutting **projects**. Where Cluster 16 multiplies the **team**, Cluster 17 multiplies the **manager themselves** — a personal chief-of-staff (`consigliere`). Reuses `audit-grounding` (RM-088) for strict grounding and the continuous-learning pattern for the heuristics loop. Build order: RM-099 → RM-100/101 → RM-102/103; RM-104 is an independent enabler._
+
+| RM | Item | Theme |
+|----|------|-------|
+| RM-099 | `consigliere` workspace scaffold + bundle — `manager-workspace` layout (sources/contexts/projects/people), `state/journal/playbook` trio convention, `meta.yml` schema, operating README, bundle registration | foundation |
+| RM-100 | `digest-source` skill — multi-modal capture (text/PDF/Jira) → immutable snapshot in `sources/` → infer→confirm→preview→write with fan-out pointers; grounded 6-field extraction (status, blockers+owner, decisions, system map, actions+owners, political risk) reusing `audit-grounding` | capture |
+| RM-101 | `consigliere` role — the lens/voice: political-risk reading, push/pull application of the playbook, "thinks like you"; the fundamental piece | role |
+| RM-102 | `context-status` skill — natural-language consult over materialized state ("how's POS? what's blocked?") | consult |
+| RM-103 | `playbook-review` skill + learning loop — seed + capture heuristics from digests, promote to `playbook.md` (reuses continuous-learning / review-proposals) | knowledge loop |
+| RM-104 | Atlassian MCP integration — Confluence read + richer Jira; fallback export-PDF until present | integration |
+
+_Architecture decisions: artifacts generic-in-Octopus + data-in-private-workspace ([ADR-007](adr/007-consigliere-artifact-location.md)); `consigliere` as a separate bundle ([ADR-008](adr/008-consigliere-bundle-separation.md)). Still open → settle in RM-103 spec: playbook scope (per-context vs central)._
+
+---
+
 ### Cluster 18 — Release-flow guardrails
 
 _Proposed (added 2026-05-31). Seeded by a real incident on a downstream project: `chore(release): vX.Y.Z` was committed on `develop` before the `develop` → `main` PR merged, leaving the tag unreachable from `main`. The consumer project's runbook teaches the correct order, but that is documentation-level defence. A programmatic guardrail inside Octopus is missing._
