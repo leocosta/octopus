@@ -89,7 +89,18 @@ kh_archive_drift() {
   done < <(kr_nodes "$root")
 }
 
+# Reversible fix: git mv each archive-drift node into the root's archive dir.
+kh_fix_archive() {
+  local root="$1" arch node
+  arch="$(kr_archive "$root")"; [[ -n "$arch" ]] || return 0
+  kh_archive_drift "$root" | while IFS='|' read -r _ _ _ node _; do
+    mkdir -p "$arch"
+    git mv "$node" "$arch" 2>/dev/null || mv "$node" "$arch"
+  done
+}
+
 # Run the enabled checks over each target root, grouped by root.
+# With KH_FIX, apply the reversible remedies after reporting.
 kh_run() {
   local root
   for root in $(kh_targets); do
@@ -98,5 +109,6 @@ kh_run() {
     kh_broken_links "$root"
     kh_orphans "$root"
     kh_archive_drift "$root"
+    if [[ "${KH_FIX:-0}" == 1 ]]; then kh_fix_archive "$root"; fi
   done
 }

@@ -22,6 +22,11 @@ hygiene() {
 }
 
 make_fixture() { local d; d="$(mktemp -d)"; mkdir -p "$d/docs" "$d/knowledge"; echo "$d"; }
+make_git_fixture() {
+  local d; d="$(mktemp -d)"; mkdir -p "$d/docs"
+  ( cd "$d" && git init -q && git config user.email t@t && git config user.name t )
+  echo "$d"
+}
 
 trap 'rm -rf "${FIXTURES[@]}"' EXIT
 FIXTURES=()
@@ -122,6 +127,20 @@ check "skill: documents all checks"          t6_documents_checks
 check "skill: delegates mechanics to kr"     t6_delegates_to_kr
 check "skill: report template present"       t6_report_template
 check "skill: registered in a bundle"        t6_registered_in_bundle
+
+# ---------------------------------------------------------------------------
+# Task 7 — --fix moves archive-drift nodes into the archive dir (reversible)
+# ---------------------------------------------------------------------------
+REPO7="$(make_git_fixture)"; FIXTURES+=("$REPO7")
+printf -- '---\nstatus: done\n---\n# done\n' >"$REPO7/docs/finished.md"
+( cd "$REPO7" && git add -A && git commit -qm seed )
+
+t7_fix_moves_to_archive() {
+  hygiene "$REPO7" --root docs --fix >/dev/null 2>&1
+  [[ -f "$REPO7/docs/plans/archive/finished.md" && ! -f "$REPO7/docs/finished.md" ]]
+}
+
+check "fix: moves concluded node into archive dir"  t7_fix_moves_to_archive
 
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
