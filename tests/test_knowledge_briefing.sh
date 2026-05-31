@@ -57,6 +57,28 @@ t2_never_writes_repo() {
 check "watermark: read/write roundtrip"        t2_watermark_roundtrip
 check "watermark: never written into the repo"  t2_never_writes_repo
 
+# ---------------------------------------------------------------------------
+# Task 3 — change-delta (nodes updated after the watermark)
+# ---------------------------------------------------------------------------
+REPO3="$(make_fixture)"; FIXTURES+=("$REPO3")
+printf -- '---\nupdated: 2030-01-01\n---\n# fresh\n' >"$REPO3/docs/fresh.md"
+: >"$REPO3/docs/old.md"; touch -d '2000-01-01' "$REPO3/docs/old.md"
+kb_call "$REPO3" kb_watermark_set docs "$(date -d '2020-01-01' +%s)"
+
+# fresh.md is dated in the future, so it stays "changed" regardless of how the
+# watermark advances — keeps the assertion robust once --daily advances it (t5).
+t3_flags_changed() {
+  local o; o="$(briefing "$REPO3" --root docs 2>/dev/null)"
+  grep -q "changed|docs|$REPO3/docs/fresh.md" <<<"$o"
+}
+t3_skips_old() {
+  local o; o="$(briefing "$REPO3" --root docs 2>/dev/null)"
+  ! grep -q "changed|docs|$REPO3/docs/old.md" <<<"$o"
+}
+
+check "change-delta: flags node updated after watermark"  t3_flags_changed
+check "change-delta: skips node older than watermark"     t3_skips_old
+
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]

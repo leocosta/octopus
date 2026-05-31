@@ -32,10 +32,33 @@ kb_targets() {
   else kr_load | cut -d'|' -f1; fi
 }
 
+# Last-update epoch of a node, by cascade: frontmatter `updated:` → git
+# last-commit → filesystem mtime (same signal as knowledge-hygiene).
+kb_last_update() {
+  local f="$1" v
+  v="$(awk -F': *' '$1=="updated"{print $2; exit} /^---/ && NR>1 {exit}' "$f")"
+  if [[ -n "$v" ]] && v="$(date -d "$v" +%s 2>/dev/null)"; then printf '%s' "$v"; return; fi
+  v="$(git -C "$(dirname "$f")" log -1 --format=%ct -- "$f" 2>/dev/null)"
+  [[ -n "$v" ]] && { printf '%s' "$v"; return; }
+  stat -c %Y "$f"
+}
+
+# changed: nodes whose last update is newer than the since-epoch.
+kb_changed() {
+  local root="$1" since="$2" node
+  while read -r node; do
+    if [[ "$(kb_last_update "$node")" -gt "$since" ]]; then
+      echo "changed|$root|$node|updated"
+    fi
+  done < <(kr_nodes "$root")
+}
+
 # Emit the briefing sections for each target root, grouped by root.
 kb_run() {
-  local root
+  local root since
   for root in $(kb_targets); do
     echo "## $root"
+    since="$(kb_since "$root")"
+    kb_changed "$root" "$since"
   done
 }
