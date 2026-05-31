@@ -11,10 +11,10 @@ and query — the details that never make it into Jira.
 
 - **Context** — a *perennial* node in a tree of arbitrary depth
   (product → domain → sub-domain). Each node has its own materialized state.
-  Example: `tatame` → `jiu-jitsu`.
+  Example: `commerce` → `catalog`.
 - **Project** — a *temporal* effort (start/middle/end), **cross-cutting**: it can
-  span several contexts and workspaces. Example: `pos-activation` crosses `tms`
-  and `pos`. It lives under `projects/` and links the contexts it touches via
+  span several contexts and workspaces. Example: `checkout-revamp` crosses `payments`
+  and `fulfillment`. It lives under `projects/` and links the contexts it touches via
   `meta.yml`.
 
 ## Layout
@@ -54,7 +54,7 @@ the agent asks.
 
 1. `/octopus:digest-source <text | pdf | JIRA-123 | confluence-url> "natural-language description"`
    → snapshot to `sources/` → infer context/project → confirm → preview → write.
-2. `/octopus:context-status` → ask "how's POS? what's blocked?" over the materialized state.
+2. `/octopus:context-status` → ask "how's payments? what's blocked?" over the materialized state.
 3. `/octopus:playbook-review` → seed and promote heuristics.
 
 This workspace was scaffolded by `/octopus:consigliere-bootstrap`.

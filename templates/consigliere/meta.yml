@@ -2,10 +2,10 @@
 # `contexts` is the M:N link that drives the fan-out pointer (RM-100):
 # a digest on this project propagates a one-line pointer into each listed
 # context's state.md.
-title: <Human label>             # e.g. "POS Activation"
+title: <Human label>             # e.g. "Checkout Revamp"
 status: active                   # active | paused | done | abandoned
 contexts:                        # perennial context node paths this project crosses
-  - <ctx>                        # e.g. tms
-  - <ctx>                        # e.g. pos
+  - <ctx>                        # e.g. payments
+  - <ctx>                        # e.g. fulfillment
 started: YYYY-MM-DD              # ISO date
 due: null                        # ISO date or null

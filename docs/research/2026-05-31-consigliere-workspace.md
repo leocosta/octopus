@@ -15,8 +15,8 @@ Reusa guardrails já existentes: **`audit-grounding`** (RM-088, shipado v1.69.0)
 
 ### Modelo de dados (o núcleo)
 
-- **Contexto** = nó **perene** numa árvore de profundidade arbitrária (produto → domínio → sub-domínio). Cada nó tem **estado materializado próprio** (não rollup computado). Ex: `tatame` (SaaS de gestão de academias) → `jiu-jitsu` (domínio de negócio estável).
-- **Projeto** = entidade **temporal** (início/meio/fim), **transversal** — relação muitos-pra-muitos com contextos, podendo cruzar workspaces. Ex: `pos-activation` atravessa `tms` e `pos`.
+- **Contexto** = nó **perene** numa árvore de profundidade arbitrária (produto → domínio → sub-domínio). Cada nó tem **estado materializado próprio** (não rollup computado). Ex: `commerce` (uma área de produto) → `catalog` (domínio de negócio estável).
+- **Projeto** = entidade **temporal** (início/meio/fim), **transversal** — relação muitos-pra-muitos com contextos, podendo cruzar workspaces. Ex: `checkout-revamp` atravessa `payments` e `fulfillment`.
 - **Trio uniforme por nó** (contexto ou projeto): `state.md` (materializado) + `journal.md` (append-only datado) + `playbook.md` (heurísticas, opcional).
 - **Escrita transversal = fan-out de ponteiro:** o detalhe (6 campos) mora no projeto; o digest propaga uma linha-resumo pro `state.md` de cada contexto cruzado, mantendo cada contexto autossuficiente para consulta sem recomputar.
 

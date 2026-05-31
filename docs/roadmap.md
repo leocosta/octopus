@@ -127,7 +127,7 @@ _All items **proposed** (added 2026-05-31). Seeds from [research](research/2026-
 | RM-099 | `consigliere` workspace scaffold + bundle — `manager-workspace` layout (sources/contexts/projects/people), `state/journal/playbook` trio convention, `meta.yml` schema, operating README, bundle registration | foundation |
 | RM-100 | `digest-source` skill — multi-modal capture (text/PDF/Jira) → immutable snapshot in `sources/` → infer→confirm→preview→write with fan-out pointers; grounded 6-field extraction (status, blockers+owner, decisions, system map, actions+owners, political risk) reusing `audit-grounding` | capture |
 | RM-101 | `consigliere` role — the lens/voice: political-risk reading, push/pull application of the playbook, "thinks like you"; the fundamental piece | role |
-| RM-102 | `context-status` skill — natural-language consult over materialized state ("how's POS? what's blocked?") | consult |
+| RM-102 | `context-status` skill — natural-language consult over materialized state ("how's payments? what's blocked?") | consult |
 | RM-103 | `playbook-review` skill + learning loop — seed + capture heuristics from digests, promote to `playbook.md` (reuses continuous-learning / review-proposals) | knowledge loop |
 | RM-104 | Atlassian MCP integration — Confluence read + richer Jira; fallback export-PDF until present | integration |
 

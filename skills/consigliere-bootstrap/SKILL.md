@@ -72,9 +72,9 @@ each claim traces back to the immutable raw input (the grounding hook for RM-100
 ### `projects/<proj>/meta.yml` — the project schema
 
 ```yaml
-title: POS Activation
+title: Checkout Revamp
 status: active            # active | paused | done | abandoned
-contexts: [tms, pos]      # perennial context node paths this project crosses
+contexts: [payments, fulfillment]   # perennial context node paths this project crosses
 started: 2026-05-31       # ISO date
 due: null                 # ISO date or null
 ```

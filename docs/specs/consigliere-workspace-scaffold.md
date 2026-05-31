@@ -116,11 +116,11 @@ one uniform target:
 #### `projects/<proj>/meta.yml` schema
 
 ```yaml
-title: POS Activation              # human label
+title: Checkout Revamp             # human label
 status: active                     # active | paused | done | abandoned
 contexts:                          # the perennial nodes this project crosses (paths)
-  - tms
-  - pos
+  - payments
+  - fulfillment
 started: 2026-05-31                # ISO date
 due: 2026-08-15                    # ISO date or null
 ```
