@@ -1,0 +1,98 @@
+---
+title: consigliere-bootstrap
+description: Faz o scaffold do manager-workspace privado — a base de conhecimento do consigliere — com o contrato de diretórios, o trio state/journal/playbook por nó, os schemas de projeto e de fontes, e o write-guard inegociável que mantém dado gerencial fora dos repos do time.
+sidebar:
+  order: 25
+source_hash: "sha256:7aa219168fa6024f2944ba8e60923d890ea0eb8b843fea06ecaa739be4a6f545"
+needs_retranslation: false
+---
+
+`consigliere-bootstrap` (RM-099) ergue a fundação do **consigliere** —
+o workspace privado de chief-of-staff de um manager. Enquanto o bundle
+`tech-lead` multiplica o *time*, o consigliere multiplica o *próprio
+manager*: ele digere os insumos diversos em que um manager vive —
+transcrições de reunião, Slack, Jira, Confluence — numa memória viva e
+ancorada que acompanha status, impedimentos, decisões, o mapa de
+sistemas e o risco político que nunca chega ao Jira.
+
+Esta skill faz uma coisa só: cria o workspace. Sem digerir, sem
+consultar, sem heurísticas — isso vem nas skills seguintes. É o
+scaffold sobre o qual o resto do kit é construído.
+
+## O modelo — contextos e projetos
+
+- **Contexto** — um nó *perene* numa árvore de profundidade arbitrária
+  (produto → domínio → sub-domínio). Cada nó guarda o seu próprio
+  estado materializado. Ex: `commerce` → `catalog`.
+- **Projeto** — um esforço *temporal* (início / meio / fim) e
+  **transversal**: um único projeto pode atravessar vários contextos e
+  até vários workspaces. Ex: `checkout-revamp` cruza `payments` e `fulfillment`. Os
+  projetos moram em `projects/` e linkam os contextos que tocam via
+  `meta.yml`.
+
+## O contrato do workspace
+
+```
+<manager-workspace>/                       # um repo PRIVADO
+├── README.md
+├── .gitignore
+├── sources/YYYY/MM/<data>-<slug>.<ext>    # insumos brutos, IMUTÁVEIS — a base do grounding
+├── contexts/<ctx>/[<subctx>/...]          # árvore perene
+│   ├── state.md                           # estado atual materializado (6 seções fixas)
+│   ├── journal.md                         # append-only, datado
+│   └── playbook.md                        # heurísticas (opcional)
+├── projects/<proj>/                       # temporal, transversal
+│   ├── meta.yml                           # contexts: [...], status, datas
+│   ├── state.md
+│   ├── journal.md
+│   └── playbook.md
+└── people/<pessoa>.md
+```
+
+Todo nó — contexto ou projeto — carrega o mesmo **trio**: `state.md`
+(estado atual materializado) + `journal.md` (append-only, datado) +
+`playbook.md` (heurísticas, opcional). Essa uniformidade é um contrato
+de que as skills seguintes dependem.
+
+As seis seções fixas em todo `state.md` — **Status by workstream,
+Blockers, Decisions, System & area map, Actions, Political risk** —
+são o contrato da digestão. Todo claim rastreia de volta
+a uma linha em `sources/` por uma âncora `(src: …)`: se não está numa
+fonte, não é afirmado.
+
+## O write-guard — seu dado privado continua privado
+
+Duas regras tornam a privacidade estrutural, não uma questão de
+disciplina:
+
+- O caminho absoluto do seu workspace fica na config key
+  **`consigliere.workspace`**.
+- Toda skill do consigliere só pode escrever **dentro** desse caminho.
+  Antes de qualquer escrita, ela garante que o alvo está dentro do
+  workspace configurado e aborta caso contrário. O consigliere **nunca
+  escreve fora do workspace configurado** — transcrições de reunião e
+  notas de risco político não vazam pra um repo do time.
+
+Quando você aponta o bootstrap pra um diretório que *parece um repo de
+código* (um `package.json`, um `.csproj`, um `src/`), ele avisa e pede
+confirmação explícita antes de fazer o scaffold ali.
+
+## Usando
+
+```
+/octopus:consigliere-bootstrap
+```
+
+Ele pergunta o caminho do seu workspace privado, avisa se parecer um
+repo de código, materializa o contrato de diretórios (com um contexto e
+um projeto de exemplo como documentação viva), grava
+`consigliere.workspace` e te aponta pro `/octopus:digest-source` como
+próximo passo.
+
+## Onde se encaixa
+
+`consigliere-bootstrap` é o primeiro membro do bundle **consigliere**,
+mantido separado do `tech-lead` de propósito (audiência diferente, dado
+diferente, contexto de ativação diferente). É a fundação para
+`digest-source` (captura), `context-status` (consulta), `playbook-review`
+(o loop de aprendizado) e o role `consigliere`.
