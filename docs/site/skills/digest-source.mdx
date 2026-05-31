@@ -1,0 +1,62 @@
+---
+title: digest-source
+description: The consigliere's capture skill — drops a meeting transcript, Slack thread, Jira issue or Confluence page into your private workspace as an immutable snapshot, routes it by natural language, extracts six grounded fields, and writes a dated journal entry plus a refreshed materialized state.
+sidebar:
+  order: 26
+---
+
+`digest-source` (RM-100) is how the **consigliere** workspace gets
+filled. You drop an input and describe it in one line; the skill turns
+it into grounded, routed memory. It does capture only — querying is
+`context-status`, and the heuristics loop is `playbook-review`.
+
+## One command
+
+```
+/octopus:digest-source <source> "natural-language description"
+# <source> = pasted text | path/to/file.pdf | JIRA-123 | confluence-url
+```
+
+The description **is** the routing. Describe the input as you would to a
+colleague — "the alignment meeting with the payments team about the new
+checkout flow" — and the skill figures out where it belongs, then shows you
+what it understood before writing anything.
+
+## What it does, in six steps
+
+1. **Resolve + guard.** Reads `consigliere.workspace`; every write stays
+   inside it (the write-guard from `consigliere-bootstrap`). Nothing ever
+   lands in a team repo.
+2. **Snapshot.** Materializes the input under `sources/YYYY/MM/` with
+   `origin / kind / fetched_at` frontmatter. The snapshot is
+   **immutable** — it is the grounding base everything traces back to.
+3. **Route by inference, confirm before writing.** Infers the target
+   context or cross-cutting project from your description and the existing
+   tree, and asks you to confirm. If the node doesn't exist, it offers to
+   create it. Ambiguous? It asks — it never guesses.
+4. **Extract six grounded fields.** Status, blockers + owner, decisions,
+   the map of systems/areas, actions + owners, and **political risk** —
+   the signals that never reach Jira. Every line cites its source line
+   `(src: …)`. It asserts **only what is in the snapshot**; if it isn't
+   there, it isn't in the digest (this reuses `audit-grounding`).
+5. **Preview.** Shows the journal block, the state diff, and the pointer
+   lines before touching disk — and surfaces any relevant heuristic
+   ("owner tends to delay → FUP?") as a suggestion, never as fact.
+6. **Write.** Appends a dated block to `journal.md`, rewrites the
+   materialized `state.md`, and for a transversal project **fans out** a
+   one-line pointer into each context it crosses — so each context stays
+   self-sufficient when you later ask "how's payments?".
+
+## Sources today
+
+Pasted text, local PDFs/files, and Jira (via MCP) work end-to-end now.
+**Confluence** needs the Atlassian MCP (RM-104); until that lands, the
+skill asks you to export the page as PDF or paste it rather than failing
+silently.
+
+## Where it sits
+
+`digest-source` is the second member of the **consigliere** bundle,
+built on the `consigliere-bootstrap` scaffold. It feeds the memory that
+`context-status` reads and the heuristics that `playbook-review`
+promotes.
