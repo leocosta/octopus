@@ -45,7 +45,7 @@ entry + refreshed state, with every claim traceable to `sources/`.
 
 ## Non-Goals
 
-- The natural-language **consult** side ("how's POS?") — that is `context-status`
+- The natural-language **consult** side ("how's payments?") — that is `context-status`
   (RM-102).
 - The **role** lens / autonomous political-risk reading — `consigliere` role (RM-101).
 - The heuristics **promotion** loop and the playbook's internal format —

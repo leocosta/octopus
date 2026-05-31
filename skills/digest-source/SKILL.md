@@ -41,8 +41,8 @@ workspace. Not auto-invoked.
 ```
 
 The natural-language description **is** the routing signal — describe the input as
-you would to a colleague ("the alignment meeting with the POS team about the new
-activation"); the skill translates that into a path in the tree and shows you what
+you would to a colleague ("the alignment meeting with the payments team about the new
+checkout flow"); the skill translates that into a path in the tree and shows you what
 it understood.
 
 ## Step 1 — Resolve workspace + write-guard
@@ -75,8 +75,8 @@ the contexts a transversal project crosses — and **show it for confirmation**:
 
 ```
 🔎 Understood as:
-   Project:  pos-activation   (from "new activation")
-   Contexts: pos, tms         (from its meta.yml)
+   Project:  checkout-revamp  (from "new checkout flow")
+   Contexts: payments, fulfillment  (from its meta.yml)
    Confirm? [Enter] · or correct the path
 ```
 
