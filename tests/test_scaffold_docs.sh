@@ -69,6 +69,45 @@ check "scaffold: curated sections are TODO"         t_curated_todo
 check "scaffold: spine sections present"            t_spine_sections
 check "scaffold: never overwrites an existing page" t_never_overwrites
 
+# ---------------------------------------------------------------------------
+# commands — description loses the "(Octopus) " prefix + leakage; the ## Usage
+# block is carried over (mechanical), not TODO.
+# ---------------------------------------------------------------------------
+make_cmd_repo() {
+  local r; r="$(mktemp -d)"; mkdir -p "$r/commands"
+  cat >"$r/commands/demo-cmd.md" <<'MD'
+---
+name: demo-cmd
+description: (Octopus) Does a demo via RM-099 with flags.
+---
+
+# /octopus:demo-cmd
+
+## Usage
+
+```
+/octopus:demo-cmd [--flag <x>] [--fast]
+```
+MD
+  echo "$r"
+}
+CREPO="$(make_cmd_repo)"; FIXTURES+=("$CREPO")
+CDOCS="$(mktemp -d)"; FIXTURES+=("$CDOCS")
+SCAFFOLD_REPO_ROOT="$CREPO" SCAFFOLD_DOCS_ROOT="$CDOCS" bash "$GEN" commands >/dev/null 2>&1
+CEN="$CDOCS/commands/demo-cmd.mdx"
+
+tc_creates_en()       { [[ -f "$CEN" && -f "$CDOCS/pt-br/commands/demo-cmd.mdx" ]]; }
+tc_is_draft()         { grep -q '^draft: true$' "$CEN"; }
+tc_strips_octopus()   { ! grep -q '(Octopus)' "$CEN"; }
+tc_strips_leak()      { ! grep -q 'RM-099' "$CEN"; }
+tc_carries_usage()    { grep -q '/octopus:demo-cmd \[--flag' "$CEN"; }
+
+check "command: creates EN + pt-br"            tc_creates_en
+check "command: page is a draft"               tc_is_draft
+check "command: description drops (Octopus)"    tc_strips_octopus
+check "command: description strips leakage"     tc_strips_leak
+check "command: carries the Usage block"        tc_carries_usage
+
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]

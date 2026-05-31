@@ -23,7 +23,13 @@ pull_description() {
     d { gsub(/^[[:space:]]+/, ""); buf=(buf=="") ? $0 : buf " " $0 }
     END { print buf }
   ' "$1" \
-  | sed -E 's/\(?RM-[0-9]+\)?//g; s/Cluster [0-9]+//g; s/\(#[0-9]+\)//g; s/shipped in v[0-9.]+//g; s/[[:space:]]+/ /g; s/^ //; s/ $//'
+  | sed -E 's/^\(Octopus\) //; s/\(?RM-[0-9]+\)?//g; s/Cluster [0-9]+//g; s/\(#[0-9]+\)//g; s/shipped in v[0-9.]+//g; s/[[:space:]]+/ /g; s/^ //; s/ $//'
+}
+
+# The fenced code block under a command's `## Usage` heading (fences included),
+# or empty when absent.
+pull_usage_block() {
+  awk '/^## Usage/{u=1; next} u && /^```/{f++; print; if (f==2) exit; next} u && f==1{print}' "$1"
 }
 
 write_skill_page() {  # <name> <description> <dest>
@@ -67,7 +73,56 @@ scaffold_skills() {
   done
 }
 
+write_command_page() {  # <name> <description> <usage-block> <dest>
+  local name="$1" desc="$2" usage="$3" dest="$4"
+  mkdir -p "$(dirname "$dest")"
+  {
+    echo "---"
+    echo "title: $name"
+    echo "description: $desc"
+    echo "draft: true"
+    echo "---"
+    echo
+    echo "<!-- TODO: Introduction — the hook (1–2 sentences) -->"
+    echo
+    echo "## What it solves"
+    echo
+    echo "<!-- TODO: the concrete pain this command removes -->"
+    echo
+    echo "## How it works"
+    echo
+    echo "<!-- TODO: the mechanism -->"
+    echo
+    echo "## Usage & parameters"
+    echo
+    if [[ -n "$usage" ]]; then
+      printf '%s\n' "$usage"
+      echo
+      echo "<!-- TODO: one row per flag/arg — what it does → default -->"
+    else
+      echo "<!-- TODO: invocation + parameters (flag → what it does → default) -->"
+    fi
+  } > "$dest"
+}
+
+scaffold_commands() {
+  local f name desc usage
+  for f in "$REPO"/commands/*.md; do
+    [[ -f "$f" ]] || continue
+    name="$(basename "$f" .md)"
+    desc="$(pull_description "$f")"
+    usage="$(pull_usage_block "$f")"
+    for prefix in "" "pt-br/"; do
+      local dest="$DOCS/${prefix}commands/$name.mdx"
+      [[ -f "$dest" ]] && continue
+      write_command_page "$name" "$desc" "$usage" "$dest"
+      echo "scaffold: created ${prefix}commands/$name.mdx" >&2
+    done
+  done
+}
+
 case "${1:-}" in
-  skills) scaffold_skills ;;
-  *) echo "usage: scaffold-docs.sh skills" >&2; exit 1 ;;
+  skills)   scaffold_skills ;;
+  commands) scaffold_commands ;;
+  *) echo "usage: scaffold-docs.sh <skills|commands>" >&2; exit 1 ;;
 esac

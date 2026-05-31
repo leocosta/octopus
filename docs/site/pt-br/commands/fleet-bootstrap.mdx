@@ -1,0 +1,27 @@
+---
+title: fleet-bootstrap
+description: Converge a fleet of repos onto a layered Octopus standard (baseline + per-stack profile + adoption tier) from one fleet.yml — dry-run by default, non-destructive merge, never force-pushes.
+draft: true
+---
+
+<!-- TODO: Introduction — the hook (1–2 sentences) -->
+
+## What it solves
+
+<!-- TODO: the concrete pain this command removes -->
+
+## How it works
+
+<!-- TODO: the mechanism -->
+
+## Usage & parameters
+
+```
+/octopus:fleet-bootstrap                 # dry-run: preview the per-repo diff, write nothing
+/octopus:fleet-bootstrap --apply         # write the merged .octopus.yml + run `octopus setup`
+/octopus:fleet-bootstrap --apply --yes   # trusted batch, skip per-repo confirmation
+/octopus:fleet-bootstrap --apply --pr    # open a guarded branch + PR per repo (never push main)
+/octopus:fleet-bootstrap --from-audit <report>   # scope to repos audit-fleet flagged
+```
+
+<!-- TODO: one row per flag/arg — what it does → default -->
