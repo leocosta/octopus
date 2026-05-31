@@ -151,6 +151,8 @@ _Proposed (added 2026-05-31). Seeded by a real incident on a downstream project:
 
 _Proposed (added 2026-05-31). Seeds from [research](research/2026-05-31-knowledge-root-operations.md): "summarize a base on a cadence", "surface connections that cross nodes", and "audit staleness/orphans/archive" are operations over **any linked markdown tree**, not a manager-specific need. Octopus already has four such roots (`docs/`, the standards set, auto-memory, the consigliere workspace) and already does fragments of this in `plan-backlog-hygiene` / `audit-config` / `doc-align`. One generic engine parameterized by a **knowledge root** replaces that fragmentation; the consigliere becomes one root + lens profile. Build order: RM-106 → RM-107/108/109 (independent) → RM-110._
 
+_**Status:** RM-106 (registry + `octopus kr`) **shipped** in #120. RM-107 (`knowledge-hygiene`) has a [spec](specs/knowledge-hygiene.md), in design._
+
 | RM | Item | Theme |
 |----|------|-------|
 | RM-106 | knowledge-root abstraction — config-declared registry: each root declares path, link convention (`relative` / `[[ ]]` / fan-out / none), archive dir, staleness threshold, optional lens profile, optional read-only source adapter (e.g. Obsidian vault, mirroring `consigliere-connect-atlassian`). Built-in roots: `docs/`, standards set, auto-memory, consigliere workspace. Solves: stops the three engines from each re-implementing "what tree, how linked, where archive" | foundation |
@@ -173,6 +175,7 @@ _RM-088 (`audit-grounding`) shipped in v1.69.0. **Cluster 16** (manager-multipli
 
 | ID | Title | Resolution | Date |
 |----|-------|------------|------|
+| RM-106 | Knowledge-root registry — defaults file + loader + `octopus kr` subcommand (list/meta/nodes/links/archive); ADR-009 config scoping, ADR-010 hygiene boundary | completed → [Spec](specs/knowledge-root-registry.md), #120 | 2026-05-31 |
 | RM-001 | Pre-approved permissions in the manifest | completed → [Spec](specs/permissions-manifest.md) | 2026-03-30 |
 | RM-002 | PostCompact hook | completed → [Spec](specs/postcompact-hook.md) | 2026-03-30 |
 | RM-003 | Claude-Specific Behavior in CLAUDE.md | completed → [Spec](specs/claude-specific-behavior.md) | 2026-03-30 |
