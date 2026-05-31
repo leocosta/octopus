@@ -41,7 +41,9 @@ A skill + `octopus`-invokable command that, for each target root, enumerates nod
 
 ### Detailed Design
 
-**Engine shape.** For each target root (`kr list`, or an explicit id), the skill pulls nodes via `kr nodes <id>`, the inbound-link graph via `kr links <id> <node>` over all nodes, and thresholds via `kr meta` / `kr archive`. The five checks run over that data; nothing reads paths or parses link syntax directly.
+**Architecture — hybrid (deterministic core + LLM wrapper).** Following the audit-family pattern (`skills/_shared/audit-pre-pass.md`), the mechanical checks live in a deterministic core `cli/lib/knowledge-hygiene.sh` exposed as `octopus hygiene`; a `skills/knowledge-hygiene/SKILL.md` wraps it for invocation, the fuzzy `--gaps` judgment, and `--fix` confirmation. Rationale: hygiene's checks are mostly mechanical (date arithmetic, link existence, orphan graph, `status:` matching) — those want determinism and unit tests, which the core + `octopus kr` provide; only the fuzzy tail (recurring-entity detection, ambiguous "concluded") needs LLM judgment. The deterministic core is also what makes the ADR-010 parity gate viable: the `docs`-target findings are reproducible, so they can be diffed against `plan-backlog-hygiene`'s.
+
+**Engine shape.** For each target root (`octopus kr list`, or an explicit `--root` id), the core pulls nodes via `kr nodes <id>`, the inbound-link graph via `kr links <id> <node>` over all nodes, and thresholds via `kr meta` / `kr archive`. The checks run over that data; nothing reads paths or parses link syntax directly.
 
 **Checks**
 
@@ -103,3 +105,4 @@ A skill + `octopus`-invokable command that, for each target root, enumerates nod
 
 - **2026-05-31** — Initial draft (stub pre-filled from Cluster 19 research + ADR-010).
 - **2026-05-31** — Design session completed. Settled: staleness cascade (frontmatter→git→mtime), terminal-status archive detection, orphan allowlist. Detailed Design, Testing Strategy, Implementation Plan filled.
+- **2026-05-31** — Architecture clarified to **hybrid** (deterministic core `cli/lib/knowledge-hygiene.sh` + `octopus hygiene` + LLM `SKILL.md` wrapper), matching the audit-family pattern rather than a bash-only engine. This keeps ADR-010's parity gate viable (deterministic `docs`-target findings); ADR-010 needs no change.
