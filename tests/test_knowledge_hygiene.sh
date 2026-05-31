@@ -142,6 +142,25 @@ t7_fix_moves_to_archive() {
 
 check "fix: moves concluded node into archive dir"  t7_fix_moves_to_archive
 
+# ---------------------------------------------------------------------------
+# Task 8 — docs-target parity with plan-backlog's generic checks (ADR-010)
+# ---------------------------------------------------------------------------
+REPO8="$(make_git_fixture)"; FIXTURES+=("$REPO8"); mkdir -p "$REPO8/docs/plans"
+printf -- '---\nupdated: 2000-01-01\n---\n# stale\n' >"$REPO8/docs/plans/stale.md"
+printf '[x](./nope.md)\n' >"$REPO8/docs/plans/broken.md"
+: >"$REPO8/docs/plans/orphan.md"
+
+t8_parity_generic_checks() {
+  local o; o="$(hygiene "$REPO8" --root docs 2>/dev/null)"
+  grep -q 'staleness' <<<"$o" && grep -q 'broken-link' <<<"$o" && grep -q '|orphan|' <<<"$o"
+}
+t8_plan_backlog_notes_supersession() {
+  grep -q 'knowledge-hygiene' "$OCTOPUS_DIR/skills/plan-backlog/SKILL.md"
+}
+
+check "parity: docs target covers orphan/broken-link/stale"  t8_parity_generic_checks
+check "fold: plan-backlog documents the supersession"        t8_plan_backlog_notes_supersession
+
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]
