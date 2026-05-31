@@ -85,6 +85,19 @@ t4_excludes_entry_node() {
 check "orphan: flags node with no inbound links"  t4_flags_orphan
 check "orphan: excludes entry-pattern node"       t4_excludes_entry_node
 
+# ---------------------------------------------------------------------------
+# Task 5 — archive-drift check (terminal frontmatter status, outside archive)
+# ---------------------------------------------------------------------------
+REPO5="$(make_fixture)"; FIXTURES+=("$REPO5")
+printf -- '---\nstatus: done\n---\n# finished\n' >"$REPO5/docs/finished.md"
+
+t5_flags_archive_drift() {
+  local o; o="$(hygiene "$REPO5" --root docs 2>/dev/null)"
+  grep -q "info|docs|archive-drift|$REPO5/docs/finished.md" <<<"$o"
+}
+
+check "archive-drift: flags concluded node outside archive"  t5_flags_archive_drift
+
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]

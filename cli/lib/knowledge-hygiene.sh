@@ -74,6 +74,21 @@ kh_broken_links() {
   done < <(kr_nodes "$root")
 }
 
+# Flag nodes whose frontmatter status is terminal but that still live outside
+# the root's archive dir.
+kh_archive_drift() {
+  local root="$1" arch terminal status node
+  arch="$(kr_archive "$root")"; [[ -n "$arch" ]] || return 0
+  terminal="$(kh_config "$root" terminal_status)"; terminal="${terminal:-done,closed,archived}"
+  while read -r node; do
+    [[ "$node" == "$arch"* ]] && continue
+    status="$(awk -F': *' '/^status:/{print $2; exit} /^---/ && NR>1 {exit}' "$node")"
+    if [[ -n "$status" && ",$terminal," == *",$status,"* ]]; then
+      echo "info|$root|archive-drift|$node|status=$status"
+    fi
+  done < <(kr_nodes "$root")
+}
+
 # Run the enabled checks over each target root, grouped by root.
 kh_run() {
   local root
@@ -82,5 +97,6 @@ kh_run() {
     kh_staleness "$root"
     kh_broken_links "$root"
     kh_orphans "$root"
+    kh_archive_drift "$root"
   done
 }
