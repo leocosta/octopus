@@ -40,6 +40,10 @@ check "lists skill context-status" \
 check "lists skill playbook-review" \
   grep -qE "^[[:space:]]*-[[:space:]]*playbook-review([[:space:]]|$|#)" "$B"
 
+# --- members: consigliere-connect-atlassian (RM-104) --------------------
+check "lists skill consigliere-connect-atlassian" \
+  grep -qE "^[[:space:]]*-[[:space:]]*consigliere-connect-atlassian([[:space:]]|$|#)" "$B"
+
 # --- members: roles (RM-101) --------------------------------------------
 check "lists role consigliere" \
   grep -qE "^[[:space:]]*-[[:space:]]*consigliere([[:space:]]|$|#)" "$B"
@@ -53,6 +57,8 @@ check "member skill context-status exists" \
   test -f "$OCTOPUS_DIR/skills/context-status/SKILL.md"
 check "member skill playbook-review exists" \
   test -f "$OCTOPUS_DIR/skills/playbook-review/SKILL.md"
+check "member skill consigliere-connect-atlassian exists" \
+  test -f "$OCTOPUS_DIR/skills/consigliere-connect-atlassian/SKILL.md"
 check "member role consigliere exists" \
   test -f "$OCTOPUS_DIR/roles/consigliere.md"
 
