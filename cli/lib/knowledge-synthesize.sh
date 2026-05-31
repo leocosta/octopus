@@ -29,10 +29,31 @@ ks_entities() {
     | sort -u
 }
 
+# shared-target: node pairs whose link sets intersect (link the same third
+# node). Rows are sorted so each pair is emitted in a stable order.
+ks_shared_target() {
+  local root="$1" node t rows
+  rows="$(while read -r node; do
+    kr_links "$root" "$node" | while read -r t; do printf '%s\t%s\n' "$node" "$t"; done
+  done < <(kr_nodes "$root") | sort)"
+  [[ -n "$rows" ]] || return 0
+  awk -F'\t' -v root="$root" '
+    { by[$2] = by[$2] FS $1 }
+    END {
+      for (t in by) {
+        n = split(by[t], a, FS)
+        for (i = 2; i <= n; i++)
+          for (j = i + 1; j <= n; j++)
+            print "shared-target|" root "|" a[i] "|" a[j] "|" t "|1"
+      }
+    }' <<<"$rows"
+}
+
 # Emit the connection candidates for each target root, grouped by root.
 ks_run() {
   local root
   for root in $(ks_targets); do
     echo "## $root"
+    ks_shared_target "$root"
   done
 }

@@ -58,6 +58,21 @@ check "entities: extracts wikilink"            t2_extracts_wikilink
 check "entities: extracts code span"           t2_extracts_code_span
 check "entities: extracts capitalized phrase"  t2_extracts_capitalized_phrase
 
+# ---------------------------------------------------------------------------
+# Task 3 — shared-target signal (two nodes linking the same third)
+# ---------------------------------------------------------------------------
+REPO3="$(make_fixture)"; FIXTURES+=("$REPO3")
+printf '[t](./t.md)\n' >"$REPO3/docs/a.md"
+printf '[t](./t.md)\n' >"$REPO3/docs/b.md"
+: >"$REPO3/docs/t.md"
+
+t3_shared_target() {
+  local o; o="$(synthesize "$REPO3" --root docs 2>/dev/null)"
+  grep -q "shared-target|docs|$REPO3/docs/a.md|$REPO3/docs/b.md|$REPO3/docs/t.md|1" <<<"$o"
+}
+
+check "shared-target: pairs nodes linking the same third"  t3_shared_target
+
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]
