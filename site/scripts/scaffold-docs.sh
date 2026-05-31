@@ -2,7 +2,7 @@
 # site/scripts/scaffold-docs.sh — generate missing doc pages for Octopus
 # artifacts. Permanent + idempotent: it creates a page only for an artifact
 # with no doc yet (mechanical sections filled from the artifact, curated prose
-# as `<!-- TODO -->`, `draft: true`), in EN and pt-br. It NEVER overwrites an
+# as `{/* TODO */}`, `draft: true`), in EN and pt-br. It NEVER overwrites an
 # existing page — curated rationale is hand-written and the generator must not
 # touch it. The curation principle holds: only mechanical facts are generated.
 #
@@ -39,6 +39,14 @@ pull_bundle_members() {
   ' "$1"
 }
 
+# Emit a YAML-safe `description:` line. Descriptions contain colons (`decay:
+# stale nodes`), so they MUST be quoted — bare values break the frontmatter
+# parser. Escape backslashes and double-quotes for a valid double-quoted scalar.
+write_description() {
+  local d="${1//\\/\\\\}"; d="${d//\"/\\\"}"
+  echo "description: \"$d\""
+}
+
 # The fenced code block under a command's `## Usage` heading (fences included),
 # or empty when absent.
 pull_usage_block() {
@@ -51,23 +59,23 @@ write_skill_page() {  # <name> <description> <dest>
   {
     echo "---"
     echo "title: $name"
-    echo "description: $desc"
+    write_description "$desc"
     echo "draft: true"
     echo "---"
     echo
-    echo "<!-- TODO: Introduction — the hook (1–2 sentences) -->"
+    echo "{/* TODO: Introduction — the hook (1–2 sentences) */}"
     echo
     echo "## What it solves"
     echo
-    echo "<!-- TODO: the concrete pain this skill removes -->"
+    echo "{/* TODO: the concrete pain this skill removes */}"
     echo
     echo "## How it works"
     echo
-    echo "<!-- TODO: the mechanism -->"
+    echo "{/* TODO: the mechanism */}"
     echo
     echo "## Usage"
     echo
-    echo "<!-- TODO: invocation + parameters (flag → what it does → default) -->"
+    echo "{/* TODO: invocation + parameters (flag → what it does → default) */}"
   } > "$dest"
 }
 
@@ -92,28 +100,28 @@ write_command_page() {  # <name> <description> <usage-block> <dest>
   {
     echo "---"
     echo "title: $name"
-    echo "description: $desc"
+    write_description "$desc"
     echo "draft: true"
     echo "---"
     echo
-    echo "<!-- TODO: Introduction — the hook (1–2 sentences) -->"
+    echo "{/* TODO: Introduction — the hook (1–2 sentences) */}"
     echo
     echo "## What it solves"
     echo
-    echo "<!-- TODO: the concrete pain this command removes -->"
+    echo "{/* TODO: the concrete pain this command removes */}"
     echo
     echo "## How it works"
     echo
-    echo "<!-- TODO: the mechanism -->"
+    echo "{/* TODO: the mechanism */}"
     echo
     echo "## Usage & parameters"
     echo
     if [[ -n "$usage" ]]; then
       printf '%s\n' "$usage"
       echo
-      echo "<!-- TODO: one row per flag/arg — what it does → default -->"
+      echo "{/* TODO: one row per flag/arg — what it does → default */}"
     else
-      echo "<!-- TODO: invocation + parameters (flag → what it does → default) -->"
+      echo "{/* TODO: invocation + parameters (flag → what it does → default) */}"
     fi
   } > "$dest"
 }
@@ -138,12 +146,12 @@ write_role_page() {  # <name> <description> <dest>
   local name="$1" desc="$2" dest="$3"
   mkdir -p "$(dirname "$dest")"
   {
-    echo "---"; echo "title: $name"; echo "description: $desc"; echo "draft: true"; echo "---"; echo
-    echo "<!-- TODO: Introduction — the hook (1–2 sentences) -->"; echo
-    echo "## What it solves"; echo; echo "<!-- TODO: the concrete pain this role addresses -->"; echo
-    echo "## How it works"; echo; echo "<!-- TODO: the mechanism -->"; echo
-    echo "## When to invoke"; echo; echo "<!-- TODO: the situations this role is for -->"; echo
-    echo "## What it judges"; echo; echo "<!-- TODO: what the role produces / the verdict it gives -->"
+    echo "---"; echo "title: $name"; write_description "$desc"; echo "draft: true"; echo "---"; echo
+    echo "{/* TODO: Introduction — the hook (1–2 sentences) */}"; echo
+    echo "## What it solves"; echo; echo "{/* TODO: the concrete pain this role addresses */}"; echo
+    echo "## How it works"; echo; echo "{/* TODO: the mechanism */}"; echo
+    echo "## When to invoke"; echo; echo "{/* TODO: the situations this role is for */}"; echo
+    echo "## What it judges"; echo; echo "{/* TODO: what the role produces / the verdict it gives */}"
   } > "$dest"
 }
 
@@ -151,12 +159,12 @@ write_bundle_page() {  # <name> <description> <members> <dest>
   local name="$1" desc="$2" members="$3" dest="$4"
   mkdir -p "$(dirname "$dest")"
   {
-    echo "---"; echo "title: $name"; echo "description: $desc"; echo "draft: true"; echo "---"; echo
-    echo "<!-- TODO: Introduction — the hook (1–2 sentences) -->"; echo
-    echo "## What it solves"; echo; echo "<!-- TODO: the concrete pain enabling this bundle removes -->"; echo
-    echo "## How it works"; echo; echo "<!-- TODO: the mechanism -->"; echo
+    echo "---"; echo "title: $name"; write_description "$desc"; echo "draft: true"; echo "---"; echo
+    echo "{/* TODO: Introduction — the hook (1–2 sentences) */}"; echo
+    echo "## What it solves"; echo; echo "{/* TODO: the concrete pain enabling this bundle removes */}"; echo
+    echo "## How it works"; echo; echo "{/* TODO: the mechanism */}"; echo
     echo "## What's included"; echo; printf '%s\n' "$members"; echo
-    echo "## When to enable"; echo; echo "<!-- TODO: the team/situation this bundle is for -->"
+    echo "## When to enable"; echo; echo "{/* TODO: the team/situation this bundle is for */}"
   } > "$dest"
 }
 

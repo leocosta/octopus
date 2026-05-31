@@ -20,7 +20,7 @@ make_docs() {
   printf -- '---\ntitle: clean\n---\nA tidy page.\n' >"$d/clean.mdx"
   printf -- '---\ntitle: leak\n---\nShipped in RM-088, see Cluster 19 (#123).\n' >"$d/leak.mdx"
   printf -- '---\ntitle: draft\ndraft: true\n---\nWork in progress, RM-088.\n' >"$d/draft-leak.mdx"
-  printf -- '---\ntitle: todo\n---\n<!-- TODO: write the rationale -->\n' >"$d/todo.mdx"
+  printf -- '---\ntitle: todo\n---\n{/* TODO: write the rationale */}\n' >"$d/todo.mdx"
   echo "$d"
 }
 

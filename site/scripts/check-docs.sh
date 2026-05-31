@@ -19,7 +19,7 @@ mode="check"; [[ "${1:-}" == "--report" ]] && mode="report"
 # PR refs are matched only in their unambiguous forms — `(#123)` / `PR #123` —
 # so hex colours like `#008000` in role frontmatter are not false positives.
 leak_re='RM-[0-9]+|Cluster [0-9]+|\(#[0-9]+\)|PR #[0-9]+|shipped in v[0-9]'
-todo_re='<!-- TODO'
+todo_re='\{/\* TODO|<!-- TODO'
 findings=0
 
 # A page is a draft when its frontmatter (first `---` block) sets draft: true.
@@ -30,7 +30,7 @@ is_draft() {
 while IFS= read -r page; do
   is_draft "$page" && continue
   if grep -EnH "$leak_re" "$page" 2>/dev/null; then findings=$((findings + 1)); fi
-  if grep -nH "$todo_re" "$page" 2>/dev/null; then findings=$((findings + 1)); fi
+  if grep -EnH "$todo_re" "$page" 2>/dev/null; then findings=$((findings + 1)); fi
 done < <(find "$DOCS_ROOT" -type f \( -name '*.md' -o -name '*.mdx' \) | sort)
 
 echo "----"
