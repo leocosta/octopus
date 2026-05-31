@@ -38,6 +38,25 @@ t1_names_docs_root() { local o; o="$(briefing "$REPO1" 2>/dev/null)"; grep -q 'd
 check "briefing runs with zero exit"  t1_runs_zero_exit
 check "briefing names the docs root"  t1_names_docs_root
 
+# ---------------------------------------------------------------------------
+# Task 2 — watermark (per-root, user-scoped; never written into the repo)
+# ---------------------------------------------------------------------------
+kb_call() { local dir="$1"; shift; ( cd "$dir" && source "$OCTOPUS_DIR/cli/lib/knowledge-briefing.sh" && "$@" ); }
+
+REPO2="$(make_fixture)"; FIXTURES+=("$REPO2")
+
+t2_watermark_roundtrip() {
+  kb_call "$REPO2" kb_watermark_set docs 1700000000
+  [[ "$(kb_call "$REPO2" kb_watermark_get docs)" == "1700000000" ]]
+}
+t2_never_writes_repo() {
+  kb_call "$REPO2" kb_watermark_set docs 1700000000
+  [[ ! -e "$REPO2/.octopus" ]]
+}
+
+check "watermark: read/write roundtrip"        t2_watermark_roundtrip
+check "watermark: never written into the repo"  t2_never_writes_repo
+
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]

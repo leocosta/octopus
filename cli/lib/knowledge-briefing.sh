@@ -12,6 +12,20 @@ KB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=./knowledge-root.sh
 source "$KB_DIR/knowledge-root.sh"
 
+# Watermark — per-root "since you last looked", user-scoped (never the repo).
+KB_STATE_DIR="${KB_STATE_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/octopus/briefing-state}"
+kb_watermark_get() { local f="$KB_STATE_DIR/$1"; if [[ -f "$f" ]]; then cat "$f"; else echo 0; fi; }
+kb_watermark_set() { mkdir -p "$KB_STATE_DIR"; printf '%s\n' "$2" >"$KB_STATE_DIR/$1"; }
+
+# Resolve the "since" epoch for a root: --since window > stored watermark > 7d default.
+kb_since() {
+  local root="$1" wm
+  if [[ -n "${KB_SINCE:-}" ]]; then date -d "$KB_SINCE ago" +%s 2>/dev/null && return; fi
+  wm="$(kb_watermark_get "$root")"
+  if [[ "$wm" -gt 0 ]]; then echo "$wm"; return; fi
+  date -d '7 days ago' +%s
+}
+
 # Target roots: an explicit --root id, else every resolved root.
 kb_targets() {
   if [[ -n "${KB_ROOT:-}" ]]; then printf '%s\n' "$KB_ROOT"
