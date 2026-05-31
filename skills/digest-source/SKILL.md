@@ -87,8 +87,8 @@ and not a silent guess. On **ambiguity, ask; never guess.**
 
 ## Step 4 — Grounded 6-field extraction
 
-Extract the digest contract: **Status por frente · Impedimentos+dono · Decisões ·
-Mapa de sistemas/áreas · Ações+owners · Riscos políticos**. Each extracted line ends
+Extract the digest contract: **Status by workstream · Blockers+owner · Decisions ·
+System & area map · Actions+owners · Political risk**. Each extracted line ends
 with a `(src: sources/…#Ln)` anchor pointing at the snapshot.
 
 **Strict grounding — reuses `audit-grounding`:** assert **only what is explicit in the

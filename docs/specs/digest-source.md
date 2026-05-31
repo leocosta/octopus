@@ -103,8 +103,8 @@ guess. (Routing is manual-by-confirmation, assisted by inference — not a flat 
 
 #### Step 4 — Grounded 6-field extraction
 
-Extract **Status por frente · Impedimentos+dono · Decisões · Mapa de sistemas/áreas ·
-Ações+owners · Riscos políticos**. Each extracted line ends with `(src: sources/…#Ln)`
+Extract **Status by workstream · Blockers+owner · Decisions · System & area map ·
+Actions+owners · Political risk**. Each extracted line ends with `(src: sources/…#Ln)`
 pointing at the snapshot. **Strict grounding (reuses `audit-grounding`):** assert only
 what is explicit in the snapshot; mark inferences as such or ask; never invent a
 blocker or a decision.
