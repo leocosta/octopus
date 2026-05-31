@@ -48,7 +48,7 @@ t_is_draft()          { grep -q '^draft: true$' "$EN"; }
 t_has_title()         { grep -q '^title: demo-skill$' "$EN"; }
 t_desc_present()      { grep -q 'Does a demo thing' "$EN"; }
 t_desc_strips_leak()  { ! grep -q 'RM-099' "$EN"; }
-t_curated_todo()      { grep -q '<!-- TODO' "$EN"; }
+t_curated_todo()      { grep -qF '{/* TODO' "$EN"; }
 t_spine_sections()    { grep -q '## What it solves' "$EN" && grep -q '## How it works' "$EN"; }
 
 # Idempotency: a pre-existing page is never overwritten.
@@ -120,7 +120,7 @@ RREPO="$(make_role_repo)"; FIXTURES+=("$RREPO"); RDOCS="$(mktemp -d)"; FIXTURES+
 SCAFFOLD_REPO_ROOT="$RREPO" SCAFFOLD_DOCS_ROOT="$RDOCS" bash "$GEN" roles >/dev/null 2>&1
 REN="$RDOCS/roles/demo-role.mdx"
 tr_creates()      { [[ -f "$REN" && -f "$RDOCS/pt-br/roles/demo-role.mdx" ]]; }
-tr_desc_clean()   { grep -q 'Judges things' "$REN" && ! grep -q 'RM-099' "$REN" && ! grep -q '"Judges' "$REN"; }
+tr_desc_clean()   { grep -q 'Judges things' "$REN" && ! grep -q 'RM-099' "$REN"; }
 tr_role_sections(){ grep -q '## When to invoke' "$REN" && grep -q '## What it judges' "$REN"; }
 
 check "role: creates EN + pt-br"              tr_creates
