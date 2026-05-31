@@ -38,9 +38,28 @@ kr_expand_path() {
   esac
 }
 
+# Per-user roots: their path comes from user config ($VAR), so a path override
+# in the *project* manifest would leak a private path into the team repo.
+kr_per_user_ids() {
+  awk -F'|' '/^[^#]/ && NF>=2 && $2 ~ /^\$/ {print $1}' "$KR_DEFAULTS"
+}
+
+# ADR-009 guard: fail if the project manifest sets `path:` for a per-user root.
+# Scalar overrides (e.g. staleness_days) there are allowed.
+kr_guard_project_overrides() {
+  local id
+  for id in $(kr_per_user_ids); do
+    if [[ -n "$(kr_override "$KR_PROJECT_YML" "$id" path)" ]]; then
+      echo "path override not allowed in project .octopus.yml: $id" >&2
+      return 1
+    fi
+  done
+}
+
 # Emit one resolved line per present root:
 #   id|abs_path|link_convention|archive_dir|staleness_days|lens_profile|write_policy
 kr_load() {
+  kr_guard_project_overrides || return 1
   awk -F'|' '/^[^#]/ && NF>=2' "$KR_DEFAULTS" \
   | while IFS='|' read -r id path conv archive days lens policy; do
       local resolved; resolved="$(kr_expand_path "$path")"

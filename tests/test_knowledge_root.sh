@@ -73,6 +73,26 @@ t2_untouched_field_falls_back_to_default() {
 check "kr meta: user override wins over project and default"  t2_user_overrides_project
 check "kr meta: untouched field falls back to default"        t2_untouched_field_falls_back_to_default
 
+# ---------------------------------------------------------------------------
+# Task 3 — load-time guard (ADR-009): reject a `path:` override for a per-user
+# root in the PROJECT manifest; allow scalar overrides there.
+# ---------------------------------------------------------------------------
+REPO3="$(make_fixture)"; FIXTURES+=("$REPO3")
+printf 'knowledge_roots:\n  consigliere:\n    path: /home/x/private-ws\n' >"$REPO3/.octopus.yml"
+
+REPO3B="$(make_fixture)"; FIXTURES+=("$REPO3B")
+printf 'knowledge_roots:\n  consigliere:\n    staleness_days: 50\n' >"$REPO3B/.octopus.yml"
+
+t3_rejects_private_path() {
+  local out rc
+  out="$(kr "$REPO3" list 2>&1)"; rc=$?
+  [[ $rc -ne 0 ]] && grep -q "path override not allowed in project .octopus.yml: consigliere" <<<"$out"
+}
+t3_allows_scalar_override() { kr "$REPO3B" list >/dev/null 2>&1; }
+
+check "kr guard: rejects per-user path override in project manifest"  t3_rejects_private_path
+check "kr guard: allows scalar override for per-user root in project"  t3_allows_scalar_override
+
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]
