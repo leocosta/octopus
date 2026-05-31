@@ -112,6 +112,29 @@ t3_no_flag_when_import_resolves() {
 check "unresolved-ref: missing import queues even when a run ran"  t3_flags_missing_import
 check "unresolved-ref: resolved import + run stays suppressed"      t3_no_flag_when_import_resolves
 
+# ---------------------------------------------------------------------------
+# Task 4 — registration: hooks.json + SKILL.md + command + bundle (structural)
+# ---------------------------------------------------------------------------
+SKILL="$OCTOPUS_DIR/skills/audit-verification/SKILL.md"
+
+t4_hook_registered()  { grep -q 'verification-check' "$OCTOPUS_DIR/hooks/hooks.json"; }
+t4_skill_frontmatter() { [[ -f "$SKILL" ]] && head -5 "$SKILL" | grep -q '^name: audit-verification$'; }
+t4_skill_findings() {
+  grep -q 'unverified-completion-claim' "$SKILL" && grep -q 'unresolved-reference' "$SKILL"
+}
+t4_skill_signal_only() { grep -qiE 'signal.only|never block' "$SKILL"; }
+t4_skill_cheap_tier()  { grep -qiE 'cheap|haiku|fastest' "$SKILL"; }
+t4_skill_review_path() { grep -q 'review-proposals' "$SKILL"; }
+t4_registered_in_bundle() { grep -rqE '^ *- audit-verification( |$)' "$OCTOPUS_DIR/bundles"; }
+
+check "registration: hook in hooks.json"        t4_hook_registered
+check "skill: valid frontmatter"                 t4_skill_frontmatter
+check "skill: documents both findings"           t4_skill_findings
+check "skill: signal-only / never blocks"        t4_skill_signal_only
+check "skill: marks judgment cheap-tier"         t4_skill_cheap_tier
+check "skill: routes via review-proposals"       t4_skill_review_path
+check "skill: registered in a bundle"            t4_registered_in_bundle
+
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]

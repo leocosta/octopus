@@ -175,6 +175,17 @@
       "hooks": [
         {
           "type": "command",
+          "command": "octopus/hooks/stop/verification-check.sh",
+          "id": "verification-check",
+          "timeout": 10000
+        }
+      ]
+    },
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
           "command": "octopus/hooks/stop/review-log-capture.sh",
           "id": "review-log-capture",
           "timeout": 10000
