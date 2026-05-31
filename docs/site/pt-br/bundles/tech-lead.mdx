@@ -7,15 +7,15 @@ source_hash: "sha256:2462b78ebf6eb78fde5cae7ca03f156dcfcb86c3686e5de814401102634
 needs_retranslation: false
 ---
 
-`tech-lead` (RM-096) é o **ponto de entrada do manager**: um install que
-empacota o kit manager-multiplicador do Cluster 16, pra que um tech lead
+`tech-lead` é o **ponto de entrada do manager**: um install que
+empacota o kit manager-multiplicador, pra que um tech lead
 adotando Octopus não tenha que escolher a dedo as roles e skills certas no
 catálogo. É o bundle que responde *"estou liderando um time — me dê o aparato
 pra subir a régua e a autonomia nos meus repos."*
 
 ## Por que existe
 
-Os outros sete itens do Cluster 16 entregam cada um uma peça — `mentor` ensina
+Os outros sete itens entregam cada um uma peça — `mentor` ensina
 o porquê, `onboarding` rampa um hire, `definition-of-done` torna o "pronto"
 explícito, `standards` responde "qual nossa regra pra X", `continuous-learning`
 (team mode) transforma feedback recorrente de review em regras, `audit-fleet`
@@ -42,14 +42,14 @@ Os membros **por-repo** — `mentor`, `onboarding`, `definition-of-done`,
 
 ```yaml
 skills:
-  - standards            # RM-092 — self-serve "what's our standard for X, and why"
-  - onboarding           # RM-090 — ramp a new engineer onto standards + code + flow
-  - definition-of-done   # RM-091 — first-class team DoD + validate
-  - continuous-learning  # RM-093 — team mode: recurring review feedback → rule candidates
-  - audit-fleet          # RM-094 — cross-repo adoption + drift audit (control-plane)
-  - fleet-bootstrap      # RM-095 — converge the fleet onto a layered standard (control-plane)
+  - standards            # self-serve "what's our standard for X, and why"
+  - onboarding           # ramp a new engineer onto standards + code + flow
+  - definition-of-done   # first-class team DoD + validate
+  - continuous-learning  # team mode: recurring review feedback → rule candidates
+  - audit-fleet          # cross-repo adoption + drift audit (control-plane)
+  - fleet-bootstrap      # converge the fleet onto a layered standard (control-plane)
 roles:
-  - mentor               # RM-089 — teaches the why (pairs with architect's gate)
+  - mentor               # teaches the why (pairs with architect's gate)
   - architect            # gates technical quality / ADR compliance
   - security             # gates auth/secret-sensitive diffs
 ```
