@@ -31,7 +31,7 @@ code_changed=$(grep -vE '\.(md|mdx|txt|rst)$|^docs/' <<<"$changed" || true)
 # unresolved-reference (deterministic, zero LLM): a changed code file whose
 # relative import names a file path that does not resolve on disk — what the
 # build would reject. Reliable + language-agnostic for the missing-file case.
-kr_resolve_exists() {  # importing-file relpath
+vc_resolve_exists() {  # importing-file relpath
   local base p cand
   base="$(dirname "$1")"; p="$base/$2"
   for cand in "$p" "$p.ts" "$p.tsx" "$p.js" "$p.jsx" "$p.mjs" "$p/index.ts" "$p/index.js"; do
@@ -44,7 +44,7 @@ while IFS= read -r f; do
   [[ -n "$f" && -f "$project_root/$f" ]] || continue
   while IFS= read -r rel; do
     [[ -n "$rel" ]] || continue
-    kr_resolve_exists "$project_root/$f" "$rel" || unresolved+="$f → $rel"$'\n'
+    vc_resolve_exists "$project_root/$f" "$rel" || unresolved+="$f → $rel"$'\n'
   done < <(grep -oE "['\"]\.\.?/[^'\"]+['\"]" "$project_root/$f" 2>/dev/null \
              | tr -d "'\"" | sort -u)
 done <<<"$code_changed"
