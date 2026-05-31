@@ -13,6 +13,10 @@ case "$kr_sub" in
   list)
     kr_load | cut -d'|' -f1
     ;;
+  meta)
+    [[ $# -ge 2 ]] || { echo "usage: octopus kr meta <id> <field>" >&2; exit 1; }
+    kr_field "$1" "$2"
+    ;;
   ""|-h|--help)
     echo "usage: octopus kr <list|meta|nodes|links|archive>" >&2
     [[ "$kr_sub" == "" ]] && exit 1 || exit 0
