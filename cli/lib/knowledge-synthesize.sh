@@ -20,11 +20,13 @@ ks_targets() {
 # Extract candidate entities from a node, one per line, deduped:
 #   [[mentions]], `code` spans, and Capitalized Multiword phrases.
 # Filtered by a min length and a small stopword list. Root-agnostic.
+# Each grep may legitimately find nothing — guard with `|| true` so a no-match
+# (exit 1) does not trip the caller's set -e.
 ks_entities() {
   local f="$1"
-  { grep -oE '\[\[[^]]+\]\]' "$f" | sed -E 's/\[\[|\]\]//g'
-    grep -oE '`[^`]+`' "$f" | tr -d '`'
-    grep -oE '([A-Z][a-z]+ )+[A-Z][a-z]+' "$f"
+  { grep -oE '\[\[[^]]+\]\]' "$f" | sed -E 's/\[\[|\]\]//g' || true
+    grep -oE '`[^`]+`' "$f" | tr -d '`' || true
+    grep -oE '([A-Z][a-z]+ )+[A-Z][a-z]+' "$f" || true
   } | awk 'length($0)>=3 && $0 !~ /^(The|A|An|This|That|For|And|But|With|Of|In|On|To)$/' \
     | sort -u
 }
@@ -49,11 +51,25 @@ ks_shared_target() {
     }' <<<"$rows"
 }
 
+# co-mention: an entity appearing in >=2 nodes with no node of its own.
+ks_co_mention() {
+  local root="$1" node titles count ent
+  titles="$(while read -r node; do basename "$node" .md; done < <(kr_nodes "$root"))"
+  while read -r node; do ks_entities "$node"; done < <(kr_nodes "$root") \
+  | sort | uniq -c \
+  | while read -r count ent; do
+      [[ "$count" -ge 2 ]] || continue
+      grep -qixF "$ent" <<<"$titles" && continue   # has a home node → not a co-mention
+      echo "co-mention|$root|$ent||$count"
+    done
+}
+
 # Emit the connection candidates for each target root, grouped by root.
 ks_run() {
   local root
   for root in $(ks_targets); do
     echo "## $root"
     ks_shared_target "$root"
+    ks_co_mention "$root"
   done
 }

@@ -73,6 +73,20 @@ t3_shared_target() {
 
 check "shared-target: pairs nodes linking the same third"  t3_shared_target
 
+# ---------------------------------------------------------------------------
+# Task 4 — co-mention signal (entity in >=2 nodes with no home node)
+# ---------------------------------------------------------------------------
+REPO4="$(make_fixture)"; FIXTURES+=("$REPO4")
+printf 'about [[Fiscal Engine]]\n' >"$REPO4/docs/x.md"
+printf 'also [[Fiscal Engine]]\n' >"$REPO4/docs/y.md"
+
+t4_co_mention() {
+  local o; o="$(synthesize "$REPO4" --root docs 2>/dev/null)"
+  grep -q 'co-mention|docs|Fiscal Engine||2' <<<"$o"
+}
+
+check "co-mention: recurring entity with no home node"  t4_co_mention
+
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]
