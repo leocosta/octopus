@@ -64,7 +64,7 @@ kh_orphans() {
   allow="$(kh_config "$root" orphan_allowlist)"
   inbound="$(while read -r node; do kr_links "$root" "$node"; done < <(kr_nodes "$root") | sort -u)"
   while read -r node; do
-    if grep -qE "$KH_ENTRY_RE" <<<"$node"; then continue; fi
+    if grep -qiE "$KH_ENTRY_RE" <<<"$node"; then continue; fi
     if [[ -n "$allow" && ",$allow," == *",$(basename "$node"),"* ]]; then continue; fi
     if ! grep -qxF "$node" <<<"$inbound"; then echo "info|$root|orphan|$node|no inbound links"; fi
   done < <(kr_nodes "$root")
