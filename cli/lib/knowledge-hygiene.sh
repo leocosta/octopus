@@ -18,11 +18,17 @@ kh_targets() {
   else kr_load | cut -d'|' -f1; fi
 }
 
+# Read a frontmatter scalar field's value (empty if absent), stopping at the
+# closing `---`.
+kh_frontmatter() {
+  awk -F': *' -v k="$2" '$1==k {print $2; exit} /^---/ && NR>1 {exit}' "$1"
+}
+
 # Last-update epoch of a node, by cascade: frontmatter `updated:` → git
 # last-commit → filesystem mtime. The first that resolves wins.
 kh_last_update() {
   local f="$1" v
-  v="$(awk -F': *' '/^updated:/{print $2; exit} /^---/ && NR>1 {exit}' "$f")"
+  v="$(kh_frontmatter "$f" updated)"
   if [[ -n "$v" ]] && v="$(date -d "$v" +%s 2>/dev/null)"; then printf '%s' "$v"; return; fi
   v="$(git -C "$(dirname "$f")" log -1 --format=%ct -- "$f" 2>/dev/null)"
   [[ -n "$v" ]] && { printf '%s' "$v"; return; }
@@ -82,7 +88,7 @@ kh_archive_drift() {
   terminal="$(kh_config "$root" terminal_status)"; terminal="${terminal:-done,closed,archived}"
   while read -r node; do
     [[ "$node" == "$arch"* ]] && continue
-    status="$(awk -F': *' '/^status:/{print $2; exit} /^---/ && NR>1 {exit}' "$node")"
+    status="$(kh_frontmatter "$node" status)"
     if [[ -n "$status" && ",$terminal," == *",$status,"* ]]; then
       echo "info|$root|archive-drift|$node|status=$status"
     fi
