@@ -32,11 +32,17 @@ check "lists skill consigliere-bootstrap" \
 check "lists skill digest-source" \
   grep -qE "^[[:space:]]*-[[:space:]]*digest-source([[:space:]]|$|#)" "$B"
 
+# --- members: roles (RM-101) --------------------------------------------
+check "lists role consigliere" \
+  grep -qE "^[[:space:]]*-[[:space:]]*consigliere([[:space:]]|$|#)" "$B"
+
 # --- no-loose convention: every listed member exists --------------------
 check "member skill consigliere-bootstrap exists" \
   test -f "$OCTOPUS_DIR/skills/consigliere-bootstrap/SKILL.md"
 check "member skill digest-source exists" \
   test -f "$OCTOPUS_DIR/skills/digest-source/SKILL.md"
+check "member role consigliere exists" \
+  test -f "$OCTOPUS_DIR/roles/consigliere.md"
 
 # --- ADR-008: separate from tech-lead -----------------------------------
 check "tech-lead.yml does NOT list consigliere-bootstrap" \
