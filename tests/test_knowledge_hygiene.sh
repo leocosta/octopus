@@ -65,6 +65,26 @@ t3_flags_broken_link() {
 
 check "broken-link: flags missing link target"  t3_flags_broken_link
 
+# ---------------------------------------------------------------------------
+# Task 4 — orphan check (entry patterns + allowlist excluded)
+# ---------------------------------------------------------------------------
+REPO4="$(make_fixture)"; FIXTURES+=("$REPO4")
+: >"$REPO4/docs/hub.md"                                   # no inbound → orphan
+: >"$REPO4/docs/README.md"                                # entry pattern → excluded
+printf '[b](./b.md)\n' >"$REPO4/docs/a.md"; : >"$REPO4/docs/b.md"   # b has inbound
+
+t4_flags_orphan() {
+  local o; o="$(hygiene "$REPO4" --root docs 2>/dev/null)"
+  grep -q "info|docs|orphan|$REPO4/docs/hub.md" <<<"$o"
+}
+t4_excludes_entry_node() {
+  local o; o="$(hygiene "$REPO4" --root docs 2>/dev/null)"
+  ! grep -q "orphan|$REPO4/docs/README.md" <<<"$o"
+}
+
+check "orphan: flags node with no inbound links"  t4_flags_orphan
+check "orphan: excludes entry-pattern node"       t4_excludes_entry_node
+
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]

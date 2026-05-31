@@ -39,6 +39,31 @@ kh_staleness() {
   done < <(kr_nodes "$root")
 }
 
+# Read hygiene-specific per-root config (orphan_allowlist, terminal_status, …)
+# directly from the override layers — these keys are not part of the kr schema.
+kh_config() {
+  local root="$1" field="$2" v u
+  v="$(kr_override "$KR_PROJECT_YML" "$root" "$field")"
+  u="$(kr_override "$KR_USER_YML" "$root" "$field")"; [[ -n "$u" ]] && v="$u"
+  printf '%s' "$v"
+}
+
+# Entry nodes are legitimately unlinked-to and must not count as orphans.
+KH_ENTRY_RE='/(README|index|roadmap)[^/]*$'
+
+# Flag nodes with no inbound links, excluding entry patterns and the root's
+# comma-separated orphan_allowlist.
+kh_orphans() {
+  local root="$1" allow inbound node
+  allow="$(kh_config "$root" orphan_allowlist)"
+  inbound="$(while read -r node; do kr_links "$root" "$node"; done < <(kr_nodes "$root") | sort -u)"
+  while read -r node; do
+    if grep -qE "$KH_ENTRY_RE" <<<"$node"; then continue; fi
+    if [[ -n "$allow" && ",$allow," == *",$(basename "$node"),"* ]]; then continue; fi
+    if ! grep -qxF "$node" <<<"$inbound"; then echo "info|$root|orphan|$node|no inbound links"; fi
+  done < <(kr_nodes "$root")
+}
+
 # Flag link targets that do not exist on disk.
 kh_broken_links() {
   local root="$1" node target
@@ -56,5 +81,6 @@ kh_run() {
     echo "## $root"
     kh_staleness "$root"
     kh_broken_links "$root"
+    kh_orphans "$root"
   done
 }
