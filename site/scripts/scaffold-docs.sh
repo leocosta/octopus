@@ -12,6 +12,10 @@ set -euo pipefail
 REPO="${SCAFFOLD_REPO_ROOT:-.}"
 DOCS="${SCAFFOLD_DOCS_ROOT:-$REPO/docs/site}"
 
+# `_`-prefixed artifacts (_shared/, _base.md) are templates/fragments, not
+# documentable artifacts — never scaffold them.
+is_internal() { [[ "$1" == _* ]]; }
+
 # Pull a YAML `description:` (plain or `>`-folded) from a SKILL.md, join it to a
 # single line, and strip implementation leakage (RM-NNN / Cluster N / (#NNN) /
 # shipped in vX) so the public page is born clean.
@@ -23,7 +27,16 @@ pull_description() {
     d { gsub(/^[[:space:]]+/, ""); buf=(buf=="") ? $0 : buf " " $0 }
     END { print buf }
   ' "$1" \
-  | sed -E 's/^\(Octopus\) //; s/\(?RM-[0-9]+\)?//g; s/Cluster [0-9]+//g; s/\(#[0-9]+\)//g; s/shipped in v[0-9.]+//g; s/[[:space:]]+/ /g; s/^ //; s/ $//'
+  | sed -E 's/^"//; s/"$//; s/^\(Octopus\) //; s/\(?RM-[0-9]+\)?//g; s/Cluster [0-9]+//g; s/\(#[0-9]+\)//g; s/shipped in v[0-9.]+//g; s/[[:space:]]+/ /g; s/^ //; s/ $//'
+}
+
+# A bundle's skills + roles, one `- name` per line (mechanical, from the .yml).
+pull_bundle_members() {
+  awk '
+    /^(skills|roles):/ { s=1; next }
+    /^[a-z_]+:/ { s=0 }
+    s && /^[[:space:]]*-/ { sub(/#.*/, ""); gsub(/^[[:space:]]*-[[:space:]]*/, ""); gsub(/[[:space:]]+$/, ""); if ($0) print "- `" $0 "`" }
+  ' "$1"
 }
 
 # The fenced code block under a command's `## Usage` heading (fences included),
@@ -62,7 +75,7 @@ scaffold_skills() {
   local dir name desc
   for dir in "$REPO"/skills/*/; do
     [[ -f "$dir/SKILL.md" ]] || continue
-    name="$(basename "$dir")"
+    name="$(basename "$dir")"; is_internal "$name" && continue
     desc="$(pull_description "$dir/SKILL.md")"
     for prefix in "" "pt-br/"; do
       local dest="$DOCS/${prefix}skills/$name.mdx"
@@ -109,7 +122,7 @@ scaffold_commands() {
   local f name desc usage
   for f in "$REPO"/commands/*.md; do
     [[ -f "$f" ]] || continue
-    name="$(basename "$f" .md)"
+    name="$(basename "$f" .md)"; is_internal "$name" && continue
     desc="$(pull_description "$f")"
     usage="$(pull_usage_block "$f")"
     for prefix in "" "pt-br/"; do
@@ -121,8 +134,60 @@ scaffold_commands() {
   done
 }
 
+write_role_page() {  # <name> <description> <dest>
+  local name="$1" desc="$2" dest="$3"
+  mkdir -p "$(dirname "$dest")"
+  {
+    echo "---"; echo "title: $name"; echo "description: $desc"; echo "draft: true"; echo "---"; echo
+    echo "<!-- TODO: Introduction — the hook (1–2 sentences) -->"; echo
+    echo "## What it solves"; echo; echo "<!-- TODO: the concrete pain this role addresses -->"; echo
+    echo "## How it works"; echo; echo "<!-- TODO: the mechanism -->"; echo
+    echo "## When to invoke"; echo; echo "<!-- TODO: the situations this role is for -->"; echo
+    echo "## What it judges"; echo; echo "<!-- TODO: what the role produces / the verdict it gives -->"
+  } > "$dest"
+}
+
+write_bundle_page() {  # <name> <description> <members> <dest>
+  local name="$1" desc="$2" members="$3" dest="$4"
+  mkdir -p "$(dirname "$dest")"
+  {
+    echo "---"; echo "title: $name"; echo "description: $desc"; echo "draft: true"; echo "---"; echo
+    echo "<!-- TODO: Introduction — the hook (1–2 sentences) -->"; echo
+    echo "## What it solves"; echo; echo "<!-- TODO: the concrete pain enabling this bundle removes -->"; echo
+    echo "## How it works"; echo; echo "<!-- TODO: the mechanism -->"; echo
+    echo "## What's included"; echo; printf '%s\n' "$members"; echo
+    echo "## When to enable"; echo; echo "<!-- TODO: the team/situation this bundle is for -->"
+  } > "$dest"
+}
+
+scaffold_roles() {
+  local f name desc
+  for f in "$REPO"/roles/*.md; do
+    [[ -f "$f" ]] || continue
+    name="$(basename "$f" .md)"; is_internal "$name" && continue; desc="$(pull_description "$f")"
+    for prefix in "" "pt-br/"; do
+      local dest="$DOCS/${prefix}roles/$name.mdx"; [[ -f "$dest" ]] && continue
+      write_role_page "$name" "$desc" "$dest"; echo "scaffold: created ${prefix}roles/$name.mdx" >&2
+    done
+  done
+}
+
+scaffold_bundles() {
+  local f name desc members
+  for f in "$REPO"/bundles/*.yml; do
+    [[ -f "$f" ]] || continue
+    name="$(basename "$f" .yml)"; is_internal "$name" && continue; desc="$(pull_description "$f")"; members="$(pull_bundle_members "$f")"
+    for prefix in "" "pt-br/"; do
+      local dest="$DOCS/${prefix}bundles/$name.mdx"; [[ -f "$dest" ]] && continue
+      write_bundle_page "$name" "$desc" "$members" "$dest"; echo "scaffold: created ${prefix}bundles/$name.mdx" >&2
+    done
+  done
+}
+
 case "${1:-}" in
   skills)   scaffold_skills ;;
   commands) scaffold_commands ;;
-  *) echo "usage: scaffold-docs.sh <skills|commands>" >&2; exit 1 ;;
+  roles)    scaffold_roles ;;
+  bundles)  scaffold_bundles ;;
+  *) echo "usage: scaffold-docs.sh <skills|commands|roles|bundles>" >&2; exit 1 ;;
 esac
