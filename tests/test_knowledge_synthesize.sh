@@ -122,6 +122,31 @@ t6_fix_seeds_link() {
 
 check "fix: seeds link for exact single-target mention"  t6_fix_seeds_link
 
+# ---------------------------------------------------------------------------
+# Task 7 — SKILL.md wrapper documents signals, invocation, and judgment
+# (structural, mirrors tests/test_knowledge_hygiene.sh)
+# ---------------------------------------------------------------------------
+SKILL="$OCTOPUS_DIR/skills/knowledge-synthesize/SKILL.md"
+
+t7_skill_frontmatter() { [[ -f "$SKILL" ]] && head -5 "$SKILL" | grep -q '^name: knowledge-synthesize$'; }
+t7_documents_invocation() {
+  grep -q '^## Invocation$' "$SKILL" || return 1
+  local f; for f in --root --node --fix; do grep -q -- "$f" "$SKILL" || return 1; done
+}
+t7_documents_signals() {
+  local c; for c in shared-target co-mention relevant contradiction; do grep -q "$c" "$SKILL" || return 1; done
+}
+t7_delegates_to_kr()    { grep -q 'octopus kr' "$SKILL"; }
+t7_report_template()    { [[ -f "$OCTOPUS_DIR/skills/knowledge-synthesize/templates/report.md" ]]; }
+t7_registered_in_bundle() { grep -rqx ' *- knowledge-synthesize' "$OCTOPUS_DIR/bundles"; }
+
+check "skill: valid frontmatter"             t7_skill_frontmatter
+check "skill: documents invocation + flags"   t7_documents_invocation
+check "skill: documents signals + judgment"   t7_documents_signals
+check "skill: delegates mechanics to kr"      t7_delegates_to_kr
+check "skill: report template present"        t7_report_template
+check "skill: registered in a bundle"         t7_registered_in_bundle
+
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]
