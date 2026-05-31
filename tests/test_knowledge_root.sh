@@ -111,6 +111,36 @@ check "kr nodes: excludes archived node"          t4_nodes_excludes_archive
 check "kr archive: returns root-relative path"    t4_archive_docs_path
 check "kr archive: empty when root declares none"  t4_archive_standards_empty
 
+# ---------------------------------------------------------------------------
+# Task 5 — kr links: one resolver per link_convention
+# ---------------------------------------------------------------------------
+REPO5="$(make_fixture)"; FIXTURES+=("$REPO5")
+printf '[x](./b.md)\n' >"$REPO5/docs/a.md"; : >"$REPO5/docs/b.md"
+: >"$REPO5/knowledge/x.md"
+
+MEM5="$(mktemp -d)"; FIXTURES+=("$MEM5")
+printf 'see [[other]]\n' >"$MEM5/note.md"; : >"$MEM5/other.md"
+
+WS5="$(mktemp -d)"; FIXTURES+=("$WS5")
+mkdir -p "$WS5/projects" "$WS5/contexts/payments"
+printf '[ctx](../contexts/payments/state.md)\n' >"$WS5/projects/p.md"; : >"$WS5/contexts/payments/state.md"
+
+t5_relative() { kr "$REPO5" links docs "$REPO5/docs/a.md" | grep -q '/docs/b\.md$'; }
+t5_none()     { [[ -z "$(kr "$REPO5" links standards "$REPO5/knowledge/x.md")" ]]; }
+t5_wikilink() {
+  ( cd "$REPO5" && env -u CONSIGLIERE_WORKSPACE OCTOPUS_MEMORY_DIR="$MEM5" \
+      bash "$OCTOPUS_DIR/cli/octopus.sh" kr links memory "$MEM5/note.md" ) | grep -q "^$MEM5/other\.md$"
+}
+t5_fanout() {
+  ( cd "$REPO5" && env -u OCTOPUS_MEMORY_DIR CONSIGLIERE_WORKSPACE="$WS5" \
+      bash "$OCTOPUS_DIR/cli/octopus.sh" kr links consigliere "$WS5/projects/p.md" ) | grep -q '/contexts/payments/state\.md$'
+}
+
+check "kr links: relative resolver"   t5_relative
+check "kr links: none resolver empty"  t5_none
+check "kr links: wikilink resolver"    t5_wikilink
+check "kr links: fanout resolver"      t5_fanout
+
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]

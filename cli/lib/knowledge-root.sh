@@ -117,6 +117,32 @@ kr_archive() {
   printf '%s%s\n' "$path" "$arch"
 }
 
+# Resolve the outbound link targets of a node, per its root's link_convention:
+#   relative / fanout — markdown link targets resolved against the node's dir
+#   wikilink          — [[name]] resolved to <root>/name.md
+#   none              — no links
+# (fanout currently reuses relative markdown-link resolution; RM-110 refines it
+#  against the consigliere workspace's pointer format when it wires that root.)
+kr_links() {
+  local id="$1" node="$2" conv root
+  [[ -f "$node" ]] || return 0
+  conv="$(kr_field "$id" link_convention)"
+  case "$conv" in
+    relative|fanout)
+      { grep -oE '\]\([^)]+\)' "$node" || true; } \
+        | sed -E 's/^\]\(//; s/\)$//' \
+        | while read -r target; do ( cd "$(dirname "$node")" && realpath -m "$target" ); done
+      ;;
+    wikilink)
+      root="$(kr_field "$id" path)"
+      { grep -oE '\[\[[^]]+\]\]' "$node" || true; } \
+        | sed -E 's/\[\[//; s/\]\]//' \
+        | while read -r name; do printf '%s/%s.md\n' "${root%/}" "$name"; done
+      ;;
+    none|*) : ;;
+  esac
+}
+
 # Absolute path of every markdown node in a root, excluding its archive dir.
 kr_nodes() {
   local id="$1" path arch

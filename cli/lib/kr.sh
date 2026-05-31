@@ -25,6 +25,10 @@ case "$kr_sub" in
     [[ $# -ge 1 ]] || { echo "usage: octopus kr archive <id>" >&2; exit 1; }
     kr_archive "$1"
     ;;
+  links)
+    [[ $# -ge 2 ]] || { echo "usage: octopus kr links <id> <node>" >&2; exit 1; }
+    kr_links "$1" "$2"
+    ;;
   ""|-h|--help)
     echo "usage: octopus kr <list|meta|nodes|links|archive>" >&2
     [[ "$kr_sub" == "" ]] && exit 1 || exit 0
