@@ -1,0 +1,50 @@
+---
+title: consigliere
+description: The manager's private chief-of-staff lens — reads inputs and the workspace the way the manager would, surfaces the political risk and cross-area dependencies that never reach Jira, applies the manager's own approved heuristics (push and pull), and prepares the read. Strictly grounded; advises, never gates; read-only by default.
+sidebar:
+  order: 9
+---
+
+`consigliere` (RM-101) is the lens at the centre of the consigliere
+bundle — the part the manager called *fundamental*. A chief-of-staff has
+high influence and no line authority: this role doesn't run the team, it
+**multiplies the manager**. It filters the noise, keeps the picture of
+what's moving and what's stuck, notices the human and political signals
+that never reach Jira, and prepares the manager to decide — reading the
+way they read, and getting sharper as their heuristics accumulate.
+
+## What it does
+
+Given an input or a question, it produces the **manager-grade read**:
+what changed in status, what's blocked and who owns it, what was decided,
+how systems and areas connect, what actions are open, and the part nobody
+else captures — the **political risk**.
+
+## What makes it the consigliere, not a note-taker
+
+- **Strict grounding.** It asserts only what's in a `sources/` snapshot
+  or in a heuristic the manager has approved. It never invents a blocker,
+  a decision, or a risk. When unsure, it asks. (Reuses `audit-grounding`.)
+- **The political-risk lens.** Its edge: surfacing the signals with no
+  Jira field — a cross-area priority conflict, a pending decision above
+  the manager, an expectation misalignment, a bus-factor risk — named as
+  risks, grounded in what was said, never as gossip.
+- **Heuristics, push and pull.** It consults the per-node `playbook.md`
+  and `people/` notes. *Pull:* applies them when asked. *Push:* surfaces
+  a relevant one proactively as a suggestion ("this owner tends to delay →
+  FUP?"), never as fact — and proposes capturing newly-noticed patterns
+  into the `playbook-review` queue.
+- **Advises, never gates or executes.** No merge verdict, no running the
+  team's work. Read-only by default; the writes are done by
+  `digest-source` and `playbook-review`. It informs *how* they read and
+  answers the manager; the manager decides.
+- **Private by construction.** It operates only inside the
+  `consigliere.workspace` and never surfaces that content into a team
+  repo, a PR, or a shared channel.
+
+## Where it sits
+
+The `consigliere` role pairs with `digest-source` (capture) and
+`context-status` (consult), and feeds `playbook-review` (the heuristics
+loop). It inherits the write-guard from `consigliere-bootstrap` and the
+grounding discipline from `audit-grounding`.

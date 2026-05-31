@@ -1,0 +1,52 @@
+---
+title: consigliere
+description: A lente privada de chief-of-staff do manager — lê insumos e o workspace do jeito que o manager leria, levanta o risco político e as dependências entre áreas que nunca chegam ao Jira, aplica as heurísticas aprovadas do próprio manager (push e pull) e prepara a leitura. Estritamente ancorado; aconselha, nunca faz gate; read-only por padrão.
+sidebar:
+  order: 9
+source_hash: "sha256:be07e4d4f949645d53e301f4baa480f8dae60dabb78ec6818eb8aae980c5ab0d"
+needs_retranslation: false
+---
+
+`consigliere` (RM-101) é a lente no centro do bundle consigliere — a
+parte que o manager chamou de *fundamental*. Um chief-of-staff tem alta
+influência e nenhuma autoridade de linha: este role não toca o time, ele
+**multiplica o manager**. Filtra o ruído, mantém o quadro do que está
+andando e do que travou, percebe os sinais humanos e políticos que nunca
+chegam ao Jira e prepara o manager pra decidir — lendo do jeito que ele
+lê, e ficando mais afiado conforme as heurísticas dele acumulam.
+
+## O que faz
+
+Dado um insumo ou uma pergunta, produz a **leitura no nível do manager**:
+o que mudou no status, o que travou e quem é dono, o que foi decidido,
+como sistemas e áreas se conectam, quais ações estão abertas e a parte
+que ninguém mais captura — o **risco político**.
+
+## O que o torna o consigliere, e não um anotador
+
+- **Grounding estrito.** Afirma só o que está num snapshot de `sources/`
+  ou numa heurística que o manager aprovou. Nunca inventa impedimento,
+  decisão ou risco. Na dúvida, pergunta. (Reusa o `audit-grounding`.)
+- **A lente de risco político.** Sua vantagem: levantar os sinais sem
+  campo no Jira — conflito de prioridade entre áreas, decisão pendente
+  acima do manager, expectativa desalinhada, risco de bus-factor —
+  nomeados como riscos, ancorados no que foi dito, nunca como fofoca.
+- **Heurísticas, push e pull.** Consulta o `playbook.md` por nó e as
+  notas em `people/`. *Pull:* aplica quando perguntado. *Push:* levanta
+  uma relevante proativamente como sugestão ("esse owner tende a atrasar →
+  FUP?"), nunca como fato — e propõe capturar padrões recém-notados na
+  fila do `playbook-review`.
+- **Aconselha, nunca faz gate nem executa.** Sem veredito de merge, sem
+  tocar o trabalho do time. Read-only por padrão; as escritas são feitas
+  pelo `digest-source` e pelo `playbook-review`. Ele informa *como* eles
+  leem e responde ao manager; o manager decide.
+- **Privado por construção.** Opera só dentro do `consigliere.workspace`
+  e nunca leva esse conteúdo pra um repo do time, um PR ou um canal
+  compartilhado.
+
+## Onde se encaixa
+
+O role `consigliere` pareia com o `digest-source` (captura) e o
+`context-status` (consulta), e alimenta o `playbook-review` (o loop de
+heurísticas). Herda o write-guard do `consigliere-bootstrap` e a
+disciplina de grounding do `audit-grounding`.
