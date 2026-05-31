@@ -114,6 +114,13 @@ with open(path) as f:
 
 section = None
 out = {"skills": [], "roles": [], "rules": [], "mcp": []}
+
+def clean(value):
+    # Strip a trailing inline YAML comment (whitespace + '#' ... end of line),
+    # then surrounding quotes/whitespace. Member names never contain '#'.
+    value = re.sub(r"\s+#.*$", "", value)
+    return value.strip().strip('"').strip("'")
+
 for raw in lines:
     line = raw.rstrip()
     if not line or line.lstrip().startswith("#"):
@@ -123,14 +130,15 @@ for raw in lines:
         key, val = m.group(1), m.group(2)
         if key in out:
             section = key
-            if val and val.strip() != "[]":
-                out[key].append(val.strip().strip('"').strip("'"))
+            cleaned = clean(val)
+            if cleaned and cleaned != "[]":
+                out[key].append(cleaned)
         else:
             section = None
         continue
     m = re.match(r"^\s+-\s+(.+)$", line)
     if m and section:
-        out[section].append(m.group(1).strip().strip('"').strip("'"))
+        out[section].append(clean(m.group(1)))
 
 for key in ("skills", "roles", "rules", "mcp"):
     for item in out[key]:
@@ -428,6 +436,10 @@ parse_octopus_yml() {
     # Handle list items (  - value)
     if [[ "$line" =~ ^[[:space:]]+-[[:space:]]+(.+)$ ]]; then
       local value="${BASH_REMATCH[1]}"
+      # Strip a trailing inline YAML comment (whitespace + '#' ... to end of line)
+      if [[ "$value" =~ ^(.*[^[:space:]])[[:space:]]+#.*$ ]]; then
+        value="${BASH_REMATCH[1]}"
+      fi
 
       # Check if it's a "name: value" entry
       if [[ "$value" =~ ^name:[[:space:]]+(.+)$ ]]; then
