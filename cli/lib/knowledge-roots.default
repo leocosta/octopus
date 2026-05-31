@@ -1,0 +1,10 @@
+# Built-in knowledge roots (RM-106). One root per line, pipe-delimited.
+# Fields: id|path|link_convention|archive_dir|staleness_days|lens_profile|write_policy
+#   path: repo-relative (resolved against the project root) or a $VAR resolved
+#         from user config; a root whose path is empty/absent is omitted at load.
+#   link_convention: relative | wikilink | fanout | none
+# Shallow per-id overrides live in .octopus.yml under `knowledge_roots:`.
+docs|docs/|relative|plans/archive/|90||rw
+standards|knowledge/|none||120||rw
+memory|$OCTOPUS_MEMORY_DIR|wikilink||120||rw
+consigliere|$CONSIGLIERE_WORKSPACE|fanout|archive/|30|consigliere|adr-007
