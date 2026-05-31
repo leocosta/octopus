@@ -25,6 +25,7 @@ if [[ -z "$COMMAND" ]]; then
   echo "  kr             Query the knowledge-root registry (list/meta/nodes/links/archive)"
   echo "  hygiene        Audit a knowledge root (staleness/orphans/links/archive)"
   echo "  synthesize     Surface cross-node connections in a knowledge root"
+  echo "  briefing       Proactive cadence summary over a knowledge root"
   echo ""
   echo "Global commands (via bin/octopus shim): install, update, doctor."
   exit 1
