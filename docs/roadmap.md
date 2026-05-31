@@ -131,6 +131,8 @@ _All items **proposed** (added 2026-05-31). Seeds from [research](research/2026-
 | RM-103 | `playbook-review` skill + learning loop — seed + capture heuristics from digests, promote to `playbook.md` (reuses continuous-learning / review-proposals) | knowledge loop |
 | RM-104 | Atlassian MCP integration — Confluence read + richer Jira; fallback export-PDF until present | integration |
 
+_The workspace's proactive / cross-node / maintenance layer is **not** consigliere-specific — those are operations over any linked markdown tree. They live in **Cluster 19** (knowledge-root operations); the consigliere is one registered root + lens profile (RM-110)._
+
 _Architecture decisions: artifacts generic-in-Octopus + data-in-private-workspace ([ADR-007](adr/007-consigliere-artifact-location.md)); `consigliere` as a separate bundle ([ADR-008](adr/008-consigliere-bundle-separation.md)). Still open → settle in RM-103 spec: playbook scope (per-context vs central)._
 
 ---
@@ -142,6 +144,22 @@ _Proposed (added 2026-05-31). Seeded by a real incident on a downstream project:
 | RM | Item | Theme |
 |----|------|-------|
 | RM-105 | Pre-push hook that rejects `git push --tags` when a release tag (`v*` by default) is not reachable from the main branch (`main` by default). Configurable via `.octopus.yml` (default branch and tag pattern). Explicit bypass via env var for emergencies. Pairs with the consumer runbook as the programmatic layer | hooks |
+
+---
+
+### Cluster 19 — Knowledge-root operations (briefing / synthesize / hygiene)
+
+_Proposed (added 2026-05-31). Seeds from [research](research/2026-05-31-knowledge-root-operations.md): "summarize a base on a cadence", "surface connections that cross nodes", and "audit staleness/orphans/archive" are operations over **any linked markdown tree**, not a manager-specific need. Octopus already has four such roots (`docs/`, the standards set, auto-memory, the consigliere workspace) and already does fragments of this in `plan-backlog-hygiene` / `audit-config` / `doc-align`. One generic engine parameterized by a **knowledge root** replaces that fragmentation; the consigliere becomes one root + lens profile. Build order: RM-106 → RM-107/108/109 (independent) → RM-110._
+
+| RM | Item | Theme |
+|----|------|-------|
+| RM-106 | knowledge-root abstraction — config-declared registry: each root declares path, link convention (`relative` / `[[ ]]` / fan-out / none), archive dir, staleness threshold, optional lens profile, optional read-only source adapter (e.g. Obsidian vault, mirroring `consigliere-connect-atlassian`). Built-in roots: `docs/`, standards set, auto-memory, consigliere workspace. Solves: stops the three engines from each re-implementing "what tree, how linked, where archive" | foundation |
+| RM-107 | `knowledge-hygiene` skill — staleness + coverage + broken-link + archive audit over a target root; report + reversible `--fix`. `--gaps` mode adds documentation-coverage detection: nodes missing a known field *and* recurring entities that appear across journals/sources but never got their own node ("what do I talk about and never documented?"). Subsumes the staleness/orphan/link concern that `plan-backlog-hygiene` + `audit-config` cover partially (spec decides fold-as-target vs keep-specialized — no third silo). Solves: bases decay silently; stale state read as current is worse than none, and undocumented topics stay invisible | maintenance |
+| RM-108 | `knowledge-synthesize` skill — surface connections that cross nodes of a root (shared blocker, doc contradicting an ADR, forgotten-but-relevant note); seeds/repairs the link convention where missing. Strongest targets: auto-memory (`[[ ]]`, built to be linked) and `docs/` (specs vs ADRs). Solves: every root is a silo; cross-node patterns only surface if you already suspect them | cross-node traversal |
+| RM-109 | `knowledge-briefing` skill — generated summary over a target root on a cadence; `--daily` (attention deltas), `--weekly` (rollup). Read-only, grounded; cadence hosted by `/schedule`/`/loop`. Strongest targets: consigliere workspace, `docs/`+roadmap. Solves: a base only speaks when spoken to — nothing surfaces "what changed / what needs you today" | proactive output |
+| RM-110 | consigliere lens profile — register the private workspace as a root (fan-out links, archive, threshold) + attach the consigliere lens (political-risk surfacing, per-node `playbook.md`, "thinks like you" voice) so RM-107…109 output reads like the consigliere when target = workspace; honors ADR-007 write-guard. Solves: delivers the manager proactive/synthesis/maintenance layer by reusing the engines, not duplicating them | consigliere |
+
+_RM-106 has a [spec](specs/knowledge-root-registry.md). Architecture decisions settled: config scoping per-repo/per-user with a load-time guard ([ADR-009](adr/009-knowledge-root-config-scoping.md)); hygiene boundary — fold `plan-backlog-hygiene`, keep `audit-config` separate ([ADR-010](adr/010-knowledge-hygiene-boundary.md))._
 
 ---
 
