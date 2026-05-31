@@ -87,6 +87,26 @@ t4_co_mention() {
 
 check "co-mention: recurring entity with no home node"  t4_co_mention
 
+# ---------------------------------------------------------------------------
+# Task 5 — relevant signal (--node lexical overlap, top-N)
+# ---------------------------------------------------------------------------
+REPO5="$(make_fixture)"; FIXTURES+=("$REPO5")
+printf 'about [[Stock Ledger]] and [[Reorder Policy]]\n' >"$REPO5/docs/focus.md"
+printf 'the [[Stock Ledger]] design\n' >"$REPO5/docs/match.md"
+: >"$REPO5/docs/unrelated.md"
+
+t5_relevant_ranks_match() {
+  local o; o="$(synthesize "$REPO5" --root docs --node "$REPO5/docs/focus.md" 2>/dev/null)"
+  grep -q "relevant|docs|$REPO5/docs/focus.md|$REPO5/docs/match.md" <<<"$o"
+}
+t5_relevant_skips_unrelated() {
+  local o; o="$(synthesize "$REPO5" --root docs --node "$REPO5/docs/focus.md" 2>/dev/null)"
+  ! grep -q "unrelated.md" <<<"$o"
+}
+
+check "relevant: ranks node sharing an entity"  t5_relevant_ranks_match
+check "relevant: skips node with no overlap"     t5_relevant_skips_unrelated
+
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]

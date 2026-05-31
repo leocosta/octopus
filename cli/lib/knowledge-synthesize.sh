@@ -64,12 +64,30 @@ ks_co_mention() {
     done
 }
 
+# relevant: rank other nodes by shared-entity overlap with a focus node
+# (the "forgotten-but-relevant" lookup), top-N.
+KS_TOPN="${KS_TOPN:-10}"
+ks_relevant() {
+  local root="$1" focus="$2" node shared fents
+  fents="$(ks_entities "$focus")"
+  while read -r node; do
+    [[ "$node" == "$focus" ]] && continue
+    shared="$(comm -12 <(printf '%s\n' "$fents") <(ks_entities "$node") | wc -l)"
+    if [[ "$shared" -gt 0 ]]; then echo "$shared|relevant|$root|$focus|$node|${shared} shared"; fi
+  done < <(kr_nodes "$root") \
+  | sort -t'|' -k1 -rn | head -n "$KS_TOPN" | cut -d'|' -f2-
+}
+
 # Emit the connection candidates for each target root, grouped by root.
 ks_run() {
   local root
   for root in $(ks_targets); do
     echo "## $root"
-    ks_shared_target "$root"
-    ks_co_mention "$root"
+    if [[ -n "${KS_NODE:-}" ]]; then
+      ks_relevant "$root" "$KS_NODE"
+    else
+      ks_shared_target "$root"
+      ks_co_mention "$root"
+    fi
   done
 }
