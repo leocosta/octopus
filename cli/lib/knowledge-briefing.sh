@@ -53,6 +53,20 @@ kb_changed() {
   done < <(kr_nodes "$root")
 }
 
+OCTOPUS_BIN="$KB_DIR/../octopus.sh"
+
+# attention: fold knowledge-hygiene's warn-tier findings (overdue/stale/broken).
+kb_attention() {
+  "$OCTOPUS_BIN" hygiene --root "$1" 2>/dev/null \
+  | awk -F'|' -v r="$1" '$1=="warn"{print "attention|" r "|" $4 "|" $3 " " $5}'
+}
+
+# connection: weekly only — fold knowledge-synthesize's cross-node candidates.
+kb_connections() {
+  "$OCTOPUS_BIN" synthesize --root "$1" 2>/dev/null \
+  | awk -F'|' -v r="$1" '$1=="shared-target" || $1=="co-mention" {print "connection|" r "|" $3 "|" $1}'
+}
+
 # Emit the briefing sections for each target root, grouped by root.
 kb_run() {
   local root since
@@ -60,5 +74,7 @@ kb_run() {
     echo "## $root"
     since="$(kb_since "$root")"
     kb_changed "$root" "$since"
+    kb_attention "$root"
+    if [[ "$KB_MODE" == weekly ]]; then kb_connections "$root"; fi
   done
 }

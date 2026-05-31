@@ -79,6 +79,19 @@ t3_skips_old() {
 check "change-delta: flags node updated after watermark"  t3_flags_changed
 check "change-delta: skips node older than watermark"     t3_skips_old
 
+# ---------------------------------------------------------------------------
+# Task 4 — compose attention (hygiene warn-tier) + weekly connections
+# ---------------------------------------------------------------------------
+REPO4="$(make_fixture)"; FIXTURES+=("$REPO4")
+printf -- '---\nupdated: 2000-01-01\n---\n# stale\n' >"$REPO4/docs/stale.md"
+
+t4_attention_folds_hygiene() {
+  local o; o="$(briefing "$REPO4" --root docs 2>/dev/null)"
+  grep -q "attention|docs|$REPO4/docs/stale.md" <<<"$o"
+}
+
+check "attention: folds hygiene warn-tier"  t4_attention_folds_hygiene
+
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]
