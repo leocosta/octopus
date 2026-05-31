@@ -42,6 +42,22 @@ t1_names_docs_root() { local o; o="$(synthesize "$REPO1" 2>/dev/null)"; grep -q 
 check "synthesize runs with zero exit"  t1_runs_zero_exit
 check "synthesize names the docs root"  t1_names_docs_root
 
+# ---------------------------------------------------------------------------
+# Task 2 — ks_entities extractor (wikilink + capitalized phrase + code span)
+# ---------------------------------------------------------------------------
+ks_entities_of() { ( source "$OCTOPUS_DIR/cli/lib/knowledge-synthesize.sh" && ks_entities "$1" ); }
+
+REPO2="$(make_fixture)"; FIXTURES+=("$REPO2")
+printf 'see [[Payments Gateway]] and `kr_load`. The Tech Manager owns it.\n' >"$REPO2/docs/n.md"
+
+t2_extracts_wikilink() { grep -q 'Payments Gateway' <<<"$(ks_entities_of "$REPO2/docs/n.md")"; }
+t2_extracts_code_span() { grep -q 'kr_load' <<<"$(ks_entities_of "$REPO2/docs/n.md")"; }
+t2_extracts_capitalized_phrase() { grep -q 'Tech Manager' <<<"$(ks_entities_of "$REPO2/docs/n.md")"; }
+
+check "entities: extracts wikilink"            t2_extracts_wikilink
+check "entities: extracts code span"           t2_extracts_code_span
+check "entities: extracts capitalized phrase"  t2_extracts_capitalized_phrase
+
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]

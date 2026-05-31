@@ -17,6 +17,18 @@ ks_targets() {
   else kr_load | cut -d'|' -f1; fi
 }
 
+# Extract candidate entities from a node, one per line, deduped:
+#   [[mentions]], `code` spans, and Capitalized Multiword phrases.
+# Filtered by a min length and a small stopword list. Root-agnostic.
+ks_entities() {
+  local f="$1"
+  { grep -oE '\[\[[^]]+\]\]' "$f" | sed -E 's/\[\[|\]\]//g'
+    grep -oE '`[^`]+`' "$f" | tr -d '`'
+    grep -oE '([A-Z][a-z]+ )+[A-Z][a-z]+' "$f"
+  } | awk 'length($0)>=3 && $0 !~ /^(The|A|An|This|That|For|And|But|With|Of|In|On|To)$/' \
+    | sort -u
+}
+
 # Emit the connection candidates for each target root, grouped by root.
 ks_run() {
   local root
