@@ -9,6 +9,7 @@ skills:
   - context-status            # RM-102 — read-only NL consult over the materialized state
   - playbook-review           # RM-103 — curate the heuristics loop: promote proposals, seed directly
   - consigliere-connect-atlassian  # RM-104 — one-time OAuth setup: read-only Jira + Confluence
+  - consigliere-lens          # RM-110 — reframe the knowledge engines through the consigliere lens (read-only)
 roles:
   - consigliere               # RM-101 — the lens/voice: political-risk read, heuristics push/pull
 rules: []

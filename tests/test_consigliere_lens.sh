@@ -70,6 +70,28 @@ check "lens context: surfaces sibling playbook"   t2_context_playbook
 check "lens context: surfaces political risk"     t2_context_risk
 check "lens context: surfaces blockers"           t2_context_blocker
 
+# ---------------------------------------------------------------------------
+# Task 3 — SKILL.md wrapper documents the lens (structural)
+# ---------------------------------------------------------------------------
+SKILL="$OCTOPUS_DIR/skills/consigliere-lens/SKILL.md"
+
+t3_frontmatter()    { [[ -f "$SKILL" ]] && head -5 "$SKILL" | grep -q '^name: consigliere-lens$'; }
+t3_invocation() {
+  grep -q '^## Invocation$' "$SKILL" || return 1
+  local f; for f in --engine --daily --weekly; do grep -q -- "$f" "$SKILL" || return 1; done
+}
+t3_names_consigliere_role() { grep -q 'consigliere' "$SKILL" && grep -qi 'opus' "$SKILL"; }
+t3_requires_grounding()     { grep -q 'src:' "$SKILL"; }
+t3_read_only_adr007()       { grep -qiE 'ADR-007|read-only|never write' "$SKILL"; }
+t3_registered_in_bundle()   { grep -rqE '^ *- consigliere-lens( |$)' "$OCTOPUS_DIR/bundles"; }
+
+check "skill: valid frontmatter"             t3_frontmatter
+check "skill: documents invocation + flags"   t3_invocation
+check "skill: names consigliere role + opus"  t3_names_consigliere_role
+check "skill: requires (src:) grounding"      t3_requires_grounding
+check "skill: read-only / ADR-007 write-guard" t3_read_only_adr007
+check "skill: registered in a bundle"         t3_registered_in_bundle
+
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]
