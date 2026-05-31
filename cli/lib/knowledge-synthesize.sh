@@ -53,9 +53,10 @@ ks_shared_target() {
 
 # co-mention: an entity appearing in >=2 nodes with no node of its own.
 ks_co_mention() {
-  local root="$1" node titles count ent
-  titles="$(while read -r node; do basename "$node" .md; done < <(kr_nodes "$root"))"
-  while read -r node; do ks_entities "$node"; done < <(kr_nodes "$root") \
+  local root="$1" node nodes titles count ent
+  nodes="$(kr_nodes "$root")"
+  titles="$(while read -r node; do basename "$node" .md; done <<<"$nodes")"
+  while read -r node; do ks_entities "$node"; done <<<"$nodes" \
   | sort | uniq -c \
   | while read -r count ent; do
       [[ "$count" -ge 2 ]] || continue
