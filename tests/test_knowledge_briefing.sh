@@ -112,6 +112,33 @@ t5_weekly_does_not_advance() {
 check "daily: advances the watermark"        t5_daily_advances_watermark
 check "weekly: leaves the watermark untouched"  t5_weekly_does_not_advance
 
+# ---------------------------------------------------------------------------
+# Task 6 — SKILL.md wrapper documents invocation, sections, grounding, cadence
+# (structural, mirrors tests/test_knowledge_hygiene.sh)
+# ---------------------------------------------------------------------------
+SKILL="$OCTOPUS_DIR/skills/knowledge-briefing/SKILL.md"
+
+t6_skill_frontmatter() { [[ -f "$SKILL" ]] && head -5 "$SKILL" | grep -q '^name: knowledge-briefing$'; }
+t6_documents_invocation() {
+  grep -q '^## Invocation$' "$SKILL" || return 1
+  local f; for f in --root --daily --weekly --since; do grep -q -- "$f" "$SKILL" || return 1; done
+}
+t6_documents_sections() {
+  local c; for c in changed attention connection; do grep -q "$c" "$SKILL" || return 1; done
+}
+t6_requires_grounding()  { grep -q 'src:' "$SKILL"; }
+t6_marks_cheap_tier()    { grep -qiE 'cheap|haiku|fastest' "$SKILL"; }
+t6_report_template()     { [[ -f "$OCTOPUS_DIR/skills/knowledge-briefing/templates/report.md" ]]; }
+t6_registered_in_bundle() { grep -rqx ' *- knowledge-briefing' "$OCTOPUS_DIR/bundles"; }
+
+check "skill: valid frontmatter"            t6_skill_frontmatter
+check "skill: documents invocation + flags"  t6_documents_invocation
+check "skill: documents sections"            t6_documents_sections
+check "skill: requires (src:) grounding"     t6_requires_grounding
+check "skill: marks narration cheap-tier"    t6_marks_cheap_tier
+check "skill: report template present"       t6_report_template
+check "skill: registered in a bundle"        t6_registered_in_bundle
+
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]
