@@ -52,6 +52,19 @@ t2_flags_stale_by_frontmatter() {
 
 check "staleness: flags node stale by frontmatter date"  t2_flags_stale_by_frontmatter
 
+# ---------------------------------------------------------------------------
+# Task 3 — broken-link check
+# ---------------------------------------------------------------------------
+REPO3="$(make_fixture)"; FIXTURES+=("$REPO3")
+printf '[gone](./missing.md)\n' >"$REPO3/docs/a.md"
+
+t3_flags_broken_link() {
+  local o; o="$(hygiene "$REPO3" --root docs 2>/dev/null)"
+  grep -q "warn|docs|broken-link|$REPO3/docs/a.md" <<<"$o"
+}
+
+check "broken-link: flags missing link target"  t3_flags_broken_link
+
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]

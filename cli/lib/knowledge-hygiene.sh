@@ -35,7 +35,17 @@ kh_staleness() {
   days="$(kr_field "$root" staleness_days)"; now="$(date +%s)"
   while read -r node; do
     age=$(( (now - $(kh_last_update "$node")) / 86400 ))
-    (( age > days )) && echo "warn|$root|staleness|$node|${age}d > ${days}d"
+    if (( age > days )); then echo "warn|$root|staleness|$node|${age}d > ${days}d"; fi
+  done < <(kr_nodes "$root")
+}
+
+# Flag link targets that do not exist on disk.
+kh_broken_links() {
+  local root="$1" node target
+  while read -r node; do
+    while read -r target; do
+      [[ -z "$target" || -e "$target" ]] || echo "warn|$root|broken-link|$node|$target"
+    done < <(kr_links "$root" "$node")
   done < <(kr_nodes "$root")
 }
 
@@ -45,5 +55,6 @@ kh_run() {
   for root in $(kh_targets); do
     echo "## $root"
     kh_staleness "$root"
+    kh_broken_links "$root"
   done
 }
