@@ -55,6 +55,10 @@ The core does **not** decide contradictions — it surfaces a node together with
 
 `--fix` seeds a relative link only when a mention's entity resolves to **exactly one** node title (unambiguous) and the link is not already present. Multi-target or fuzzy matches stay report-only. The edit is a plain append the user can `git revert`.
 
-## Entity Extraction
+## Entity Extraction (language-neutral core + LLM free-text pass)
 
-The core's `ks_entities` reads `[[mentions]]`, `` `code` `` spans, and Capitalized Multiword phrases (stopword/min-length filtered) — richer on wikilinked roots (memory), still useful on `docs/`.
+The deterministic core's `ks_entities` extracts only **structural, language-neutral** entities — `[[mentions]]` and `` `code` `` spans. It does **not** guess free-text entities: a hardcoded English regex + stopword list would miss accented entities (`[[Política Fiscal]]`, `Gestão de Estoque`) and silo every non-English root.
+
+**Free-text / multilingual entity detection is yours (the LLM).** When a root is not wikilinked (e.g. `docs/` with relative links), read the nodes and identify the proper nouns / domain terms in **whatever language they are written in** — pt-br, en, etc. This linguistic step is exactly what the model layer is for.
+
+**Run this free-text pass on the cheapest model tier.** It is light NLP, not reasoning — the costly structural work already happened for free in bash. When dispatching it through Octopus, route to the cheapest model (Claude: `octopus ask <role> --skill knowledge-synthesize --model haiku "…"`; other assistants: their fastest/cheapest model). Do not spend a frontier model on entity tokenization.

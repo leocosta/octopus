@@ -20,15 +20,19 @@ ks_targets() {
 # Extract candidate entities from a node, one per line, deduped:
 #   [[mentions]], `code` spans, and Capitalized Multiword phrases.
 # Filtered by a min length and a small stopword list. Root-agnostic.
+# Extract candidate entities — deduped, one per line. Structural and
+# language-neutral only: [[mentions]] and `code` spans. Free-text / multilingual
+# entity detection (capitalized phrases, any-language proper nouns) is the
+# SKILL.md's job (LLM), NOT the deterministic core — a hardcoded English regex
+# and stopword list would miss accented pt-br entities (e.g. "Política Fiscal")
+# and silo every other language.
 # Each grep may legitimately find nothing — guard with `|| true` so a no-match
 # (exit 1) does not trip the caller's set -e.
 ks_entities() {
   local f="$1"
   { grep -oE '\[\[[^]]+\]\]' "$f" | sed -E 's/\[\[|\]\]//g' || true
     grep -oE '`[^`]+`' "$f" | tr -d '`' || true
-    grep -oE '([A-Z][a-z]+ )+[A-Z][a-z]+' "$f" || true
-  } | awk 'length($0)>=3 && $0 !~ /^(The|A|An|This|That|For|And|But|With|Of|In|On|To)$/' \
-    | sort -u
+  } | awk 'length($0)>=2' | sort -u
 }
 
 # shared-target: node pairs whose link sets intersect (link the same third

@@ -43,20 +43,22 @@ check "synthesize runs with zero exit"  t1_runs_zero_exit
 check "synthesize names the docs root"  t1_names_docs_root
 
 # ---------------------------------------------------------------------------
-# Task 2 — ks_entities extractor (wikilink + capitalized phrase + code span)
+# Task 2 — ks_entities extractor: structural + language-neutral only
+# ([[mentions]] + `code` spans). Free-text entities are the SKILL.md's (LLM) job.
 # ---------------------------------------------------------------------------
 ks_entities_of() { ( source "$OCTOPUS_DIR/cli/lib/knowledge-synthesize.sh" && ks_entities "$1" ); }
 
 REPO2="$(make_fixture)"; FIXTURES+=("$REPO2")
-printf 'see [[Payments Gateway]] and `kr_load`. The Tech Manager owns it.\n' >"$REPO2/docs/n.md"
+# pt-br node: a wikilink with accents the core must keep verbatim (no ASCII regex)
+printf 'sobre [[Política Fiscal]] e `kr_load`. O Gestor de Estoque cuida disso.\n' >"$REPO2/docs/n.md"
 
-t2_extracts_wikilink() { grep -q 'Payments Gateway' <<<"$(ks_entities_of "$REPO2/docs/n.md")"; }
-t2_extracts_code_span() { grep -q 'kr_load' <<<"$(ks_entities_of "$REPO2/docs/n.md")"; }
-t2_extracts_capitalized_phrase() { grep -q 'Tech Manager' <<<"$(ks_entities_of "$REPO2/docs/n.md")"; }
+t2_extracts_accented_wikilink() { grep -q 'Política Fiscal' <<<"$(ks_entities_of "$REPO2/docs/n.md")"; }
+t2_extracts_code_span()         { grep -q 'kr_load' <<<"$(ks_entities_of "$REPO2/docs/n.md")"; }
+t2_ignores_free_text()          { ! grep -q 'Gestor de Estoque' <<<"$(ks_entities_of "$REPO2/docs/n.md")"; }
 
-check "entities: extracts wikilink"            t2_extracts_wikilink
-check "entities: extracts code span"           t2_extracts_code_span
-check "entities: extracts capitalized phrase"  t2_extracts_capitalized_phrase
+check "entities: extracts accented wikilink (pt-br)"  t2_extracts_accented_wikilink
+check "entities: extracts code span"                  t2_extracts_code_span
+check "entities: leaves free-text to the LLM layer"   t2_ignores_free_text
 
 # ---------------------------------------------------------------------------
 # Task 3 — shared-target signal (two nodes linking the same third)
