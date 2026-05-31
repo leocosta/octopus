@@ -1,0 +1,52 @@
+---
+title: context-status
+description: O lado de leitura do consigliere — responde uma pergunta em linguagem natural do manager ("como tá o payments? o que travou?") a partir do estado materializado, estritamente ancorado e read-only, aplicando a lente do consigliere pra risco político e heurísticas aprovadas.
+sidebar:
+  order: 27
+source_hash: "sha256:8b32e18067b7314e15f590ae6aaea51e08a1d8adf2a5fd339f96441766808a33"
+needs_retranslation: false
+---
+
+`context-status` (RM-102) é como você lê o workspace do consigliere. O
+`digest-source` preenche; este responde perguntas sobre ele. Duas
+semanas depois de uma reunião você pergunta "como tá o payments? o que
+travou?" e recebe uma resposta ancorada montada a partir do estado
+materializado — não uma releitura de cada transcrição. É **read-only** e
+**estritamente ancorado**.
+
+## Um comando
+
+```
+/octopus:context-status "<pergunta em linguagem natural>"
+# ou um caminho: /octopus:context-status payments
+```
+
+## Como ele responde
+
+1. **Resolve + escopo de leitura.** Lê `consigliere.workspace`; toda
+   leitura fica dentro dele. Nunca escreve.
+2. **Interpreta + roteia.** Mapeia sua pergunta pra um contexto ou
+   projeto a partir da árvore — o mesmo roteamento do `digest-source`.
+   Ambíguo? Ele pergunta, não chuta.
+3. **Lê o estado materializado.** Lê o `state.md` do nó (as seis seções
+   fixas). Segue um ponteiro de fan-out pro detalhe de um projeto, ou lê
+   o histórico do `journal.md`, **só quando a pergunta precisa** — nada
+   além disso.
+4. **Responde, ancorado, com a lente do consigliere.** Lidera com
+   exatamente o que você perguntou — status, impedimento, dono, risco —
+   cada afirmação carregando sua proveniência `(src: …)`. Levanta um
+   **risco político** relevante ou uma **heurística aprovada** ("owner
+   tende a atrasar → considerar um FUP") como nota ancorada, nunca como
+   fato inventado.
+
+## Não registrado é não registrado
+
+Se a resposta não está no estado registrado, ele diz isso claramente e
+te aponta pro `/octopus:digest-source` — nunca preenche a lacuna de fora
+do workspace, e nunca chuta (reusa o `audit-grounding`).
+
+## Onde se encaixa
+
+`context-status` é o membro de consulta do bundle **consigliere**, lendo
+o estado que o `digest-source` escreve e aplicando o role `consigliere`.
+Não devolve nada — o loop de heurísticas é o `playbook-review`.

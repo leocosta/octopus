@@ -1,0 +1,48 @@
+---
+title: context-status
+description: The read side of the consigliere — answers a manager's natural-language question ("how's payments? what's blocked?") from the materialized state, strictly grounded and read-only, applying the consigliere lens for political risk and approved heuristics.
+sidebar:
+  order: 27
+---
+
+`context-status` (RM-102) is how you read the consigliere workspace.
+`digest-source` fills it; this answers questions over it. Two weeks
+after a meeting you ask "how's payments? what's blocked?" and get a
+grounded answer assembled from the materialized state — not a re-read of
+every transcript. It is **read-only** and **strictly grounded**.
+
+## One command
+
+```
+/octopus:context-status "<natural-language question>"
+# or a path: /octopus:context-status payments
+```
+
+## How it answers
+
+1. **Resolve + read scope.** Reads `consigliere.workspace`; every read
+   stays inside it. It never writes.
+2. **Interpret + route.** Maps your question to a context or project from
+   the tree — the same routing as `digest-source`. Ambiguous? It asks,
+   it doesn't guess.
+3. **Read the materialized state.** Reads the node's `state.md` (the six
+   fixed sections). It follows a fan-out pointer into a project's detail,
+   or reads `journal.md` history, **only when the question needs it** —
+   nothing more.
+4. **Answer, grounded, with the consigliere lens.** Leads with exactly
+   what you asked — status, blocker, owner, risk — each claim carrying its
+   `(src: …)` provenance. It surfaces a relevant **political risk** or an
+   **approved heuristic** ("owner tends to delay → consider a FUP") as a
+   grounded note, never as invented fact.
+
+## Not recorded means not recorded
+
+If the answer isn't in the recorded state, it says so plainly and points
+you at `/octopus:digest-source` — it never fills the gap from outside the
+workspace, and it never guesses (it reuses `audit-grounding`).
+
+## Where it sits
+
+`context-status` is the consult member of the **consigliere** bundle,
+reading the state `digest-source` writes and applying the `consigliere`
+role. It feeds nothing back — the heuristics loop is `playbook-review`.
