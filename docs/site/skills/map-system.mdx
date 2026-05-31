@@ -7,8 +7,8 @@ sidebar:
 
 `map-system` answers *"what is this — in our own words?"* at two depths.
 The original skill was a deliberately tiny one: a ~30-line textual
-orientation map, anti-exhaustive by design. RM-098 keeps that as the
-`simplified` mode and adds a `complete` mode — now the **default** — that
+orientation map, anti-exhaustive by design. That survives as the
+`simplified` mode; a `complete` mode — now the **default** — adds one that
 renders a **self-contained, themed HTML deck** of the whole repository.
 
 ## Two modes
@@ -20,7 +20,7 @@ renders a **self-contained, themed HTML deck** of the whole repository.
   human-facing *"what is this project"* artifact: cover, project overview
   and business insights, an architecture/module map as inline SVG diagrams
   (Mermaid pre-rendered), API contracts (when an API is detected), the data model, and
-  the decisions of record. `onboarding` (RM-090) walks a new engineer
+  the decisions of record. `onboarding` walks a new engineer
   through this deck.
 
 ## Three orthogonal axes
@@ -73,6 +73,6 @@ falls back to a preset). The rationale is recorded in
   for `--design-from`; an enhancer, not required for preset decks.
 - **[review-contracts](/octopus/skills/review-contracts/)** — the
   API-detection heuristics for the contracts section.
-- **onboarding** (RM-090) — presents the `complete` deck during the ramp.
+- **onboarding** — presents the `complete` deck during the ramp.
 
 [Source: `skills/map-system/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/map-system/SKILL.md)
