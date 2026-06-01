@@ -1,0 +1,45 @@
+---
+title: exceptions
+description: "The discipline for custom exceptions — treat one as a contract you owe the caller and the operator, not a stylistic upgrade. Default to typed results or stdlib types; create a custom class only when a real catch site or operational consumer justifies it. Override: a repo may replace it entirely."
+sidebar:
+  order: 5
+---
+
+`exceptions` is the rule that stops a codebase from filling up with throw-once
+exception classes nobody catches. Its core claim: a custom exception is a
+contract you owe the caller and the operator — so you only create one when that
+contract genuinely exists.
+
+## What it governs
+
+- **Default to not creating one** — reach first for a typed result (for expected
+  failures), the closest stdlib/framework exception with a precise message, or a
+  fail-fast assert for impossible states.
+- **The creation gate** — a custom exception is justified only when at least one
+  holds, written down: a **domain contract** (2+ call sites catch the specific
+  type, or it's part of a published API), an **operational diagnostic**
+  (structured fields a real consumer queries), or a **trust-boundary wrap** (an
+  infrastructure exception rethrown with domain context and the cause preserved).
+- **The forbidden set** — `FooNotFoundException` mirroring stdlib semantics, one
+  throw site with zero catch sites, wrappers that hide the cause, speculative
+  subtype hierarchies, exceptions used for control flow, one exception per
+  validation rule.
+- **Messages for 2 AM** — state what was expected, what was received, and the
+  identifiers an operator needs; always preserve the cause.
+
+## Why it matters
+
+Custom exceptions feel like good engineering, so they proliferate — and most
+add nothing a precise stdlib type wouldn't, while polluting the domain with
+contracts no code honors. The rule reframes the question from "is this a nice
+name?" to "does anyone catch this type, and does an operator read its fields?"
+That gate keeps the exception surface small and meaningful. It includes
+per-language guidance (C#, Python, TypeScript) and a four-question self-check.
+
+## How to override
+
+**Override.** Create `exceptions.local.md` in the rules directory to *replace*
+this convention entirely — the local file takes full precedence if your team
+runs a different error-handling philosophy.
+
+[Source: `rules/common/exceptions.md`](https://github.com/leocosta/octopus/blob/main/rules/common/exceptions.md)

@@ -1,0 +1,42 @@
+---
+title: coding-style
+description: "The baseline code-craft conventions — readability over cleverness, KISS / DRY / YAGNI, short single-responsibility functions, intent-revealing names, and the anti-patterns to avoid. Override: a repo may replace them entirely with a local file."
+sidebar:
+  order: 6
+---
+
+`coding-style` is the set of craft conventions Octopus applies to how code is
+written line by line: the principles, structure, and naming that make a diff
+easy to read and the anti-patterns that make it hard. It's the taste layer —
+the things a thoughtful reviewer would flag on style grounds.
+
+## What it governs
+
+- **Principles** — readability over cleverness, KISS, DRY (but no premature
+  abstraction — three occurrences before extracting), YAGNI, single
+  responsibility, fail fast.
+- **Code structure** — short focused functions (extract anything that needs a
+  comment to explain a section), limited parameters (an options object past
+  three), guard clauses over nesting, group what changes together, delete dead
+  code instead of commenting it out, one concept per file.
+- **Naming** — names reveal intent (`getActiveStudents()`, not `getData()`);
+  booleans start with `is`/`has`/`can`/`should`; collections are plural;
+  constants in the language's convention; no obscure abbreviations.
+- **Anti-patterns** — god objects, premature optimization, magic numbers/strings,
+  catch-and-ignore, copy-paste programming, over-engineering, boolean parameters.
+
+## Why it matters
+
+Style disagreements are where review time goes to die, and an assistant with no
+stated taste produces code that's technically correct but inconsistent — a
+`getData()` here, a five-boolean-parameter function there. Codifying the
+conventions moves these decisions out of review and into generation, so the diff
+arrives already in the house style.
+
+## How to override
+
+**Override.** Create `coding-style.local.md` in the rules directory to *replace*
+these conventions entirely — the local file takes full precedence. Use it when
+your team's style guide differs from the defaults.
+
+[Source: `rules/common/coding-style.md`](https://github.com/leocosta/octopus/blob/main/rules/common/coding-style.md)

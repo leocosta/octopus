@@ -1,0 +1,42 @@
+---
+title: language
+description: "A regra que decide qual idioma natural os artefatos gerados usam — sempre o do próprio projeto, detectado dos seus docs, histórico de commits e arquivos de i18n, nunca o idioma do chat. Identificadores de código continuam em inglês. Um arquivo local pode fixar a escolha explicitamente."
+sidebar:
+  order: 8
+---
+
+`language` resolve uma questão que pega todo assistente: quando você e o agente
+estão conversando num idioma mas o repo é escrito em outro, qual idioma os novos
+docs, specs e comentários usam? A resposta é sempre o do projeto, nunca o da
+conversa.
+
+## O que governa
+
+- **Combinar com o projeto, não com o chat** — o idioma da conversa nunca
+  determina o idioma dos artefatos criados. Determine-o lendo o próprio projeto.
+- **Sinais de detecção (ordem de prioridade)** — um override `language.local.md`
+  primeiro; depois docs existentes (specs em `docs/`, ADRs, READMEs); depois
+  histórico de commits (`git log`); depois arquivos de UI/i18n (`locales/`,
+  `i18n/`). Nenhum sinal encontrado → padrão inglês.
+- **Inegociáveis** — identificadores de código (nomes de função/classe/variável/
+  arquivo) são **sempre inglês**, independente do idioma do artefato; o idioma da
+  conversa nunca influencia o idioma do artefato.
+
+## Por que importa
+
+Um assistente naturalmente espelha o idioma que você fala — então um time cujo
+repo é documentado num idioma ganha uma spec escrita em outro no momento em que um
+contribuidor troca o idioma do chat, e os docs derivam pra uma bagunça bilíngue.
+Pior, identificadores são traduzidos e o código deixa de se ler de forma
+consistente. Esta regra fixa o idioma do artefato à própria evidência do repo, pra
+que contribuições fiquem coerentes não importa quem está digitando ou em que
+idioma.
+
+## Como sobrescrever
+
+**Detecção primeiro, com pin explícito.** A política é normalmente derivada dos
+sinais do próprio projeto. Pra forçar uma escolha específica, crie
+`language.local.md` no diretório de regras — ele toma precedência sobre todos os
+sinais de detecção.
+
+[Source: `rules/common/language.md`](https://github.com/leocosta/octopus/blob/main/rules/common/language.md)

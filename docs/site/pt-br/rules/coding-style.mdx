@@ -1,0 +1,44 @@
+---
+title: coding-style
+description: "As convenções baseline de craft de código — legibilidade sobre esperteza, KISS / DRY / YAGNI, funções curtas de responsabilidade única, nomes que revelam intenção, e os anti-padrões a evitar. Override: um repo pode substituí-las inteiras com um arquivo local."
+sidebar:
+  order: 6
+---
+
+`coding-style` é o conjunto de convenções de craft que o Octopus aplica a como o
+código é escrito linha a linha: os princípios, a estrutura e a nomenclatura que
+tornam um diff fácil de ler e os anti-padrões que o tornam difícil. É a camada de
+gosto — as coisas que um revisor atento sinalizaria por motivo de estilo.
+
+## O que governa
+
+- **Princípios** — legibilidade sobre esperteza, KISS, DRY (mas sem abstração
+  prematura — três ocorrências antes de extrair), YAGNI, responsabilidade única,
+  fail fast.
+- **Estrutura de código** — funções curtas e focadas (extraia qualquer coisa que
+  precise de um comentário pra explicar uma seção), parâmetros limitados (um
+  objeto de options depois de três), guard clauses no lugar de aninhamento,
+  agrupe o que muda junto, delete código morto em vez de comentá-lo, um conceito
+  por arquivo.
+- **Nomenclatura** — nomes revelam intenção (`getActiveStudents()`, não
+  `getData()`); booleanos começam com `is`/`has`/`can`/`should`; coleções são
+  plurais; constantes na convenção da linguagem; sem abreviações obscuras.
+- **Anti-padrões** — god objects, otimização prematura, números/strings mágicos,
+  catch-and-ignore, programação copy-paste, over-engineering, parâmetros
+  booleanos.
+
+## Por que importa
+
+Discordâncias de estilo são onde o tempo de review vai morrer, e um assistente sem
+gosto declarado produz código tecnicamente correto mas inconsistente — um
+`getData()` aqui, uma função de cinco parâmetros booleanos ali. Codificar as
+convenções move essas decisões pra fora do review e pra dentro da geração, pra que
+o diff chegue já no estilo da casa.
+
+## Como sobrescrever
+
+**Override.** Crie `coding-style.local.md` no diretório de regras pra *substituir*
+estas convenções inteiras — o arquivo local toma precedência total. Use quando o
+style guide do seu time difere dos defaults.
+
+[Source: `rules/common/coding-style.md`](https://github.com/leocosta/octopus/blob/main/rules/common/coding-style.md)

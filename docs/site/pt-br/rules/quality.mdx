@@ -1,0 +1,41 @@
+---
+title: quality
+description: "O checklist de qualidade pré-commit — rodar o formatter e o type checker, nunca burlar hooks, remover statements de debug, manter design docs em docs/ — que todo repo Octopus cobra do agente antes do código entrar. Extend-only: um repo pode somar checks, não remover defaults."
+sidebar:
+  order: 3
+---
+
+`quality` é o checklist que roda na cabeça do agente antes do código ser
+commitado: a higiene mecânica e inegociável que mantém uma branch verde e um diff
+limpo. É curto de propósito — todo item é algo barato de fazer e caro de pular.
+
+## O que governa
+
+- **Antes de commitar** — nunca use `--no-verify`; sempre rode os hooks de
+  pre-commit; varra por segredos hardcoded (API keys, JWT tokens, senhas, tokens
+  de cloud/provider); revise o diff inteiro antes de dar push.
+- **Depois de editar arquivos** — rode o formatter do projeto (biome/prettier pra
+  JS/TS, `dotnet format` pra C#, ruff/black pra Python) e o type checker
+  (`tsc --noEmit`, `dotnet build`, mypy/pyright).
+- **Statements de debug** — nenhum `console.log` ou `print()` deixado em código de
+  produção; varra os arquivos modificados antes de finalizar.
+- **Documentação** — design docs (`*-design.md`, `*-spec.md`, `*-plan.md`)
+  pertencem a `docs/`.
+
+## Por que importa
+
+O modo de falha de um assistente rápido é deixar pequenas bagunças: um arquivo
+sem formatar, um `console.log` perdido, um erro de tipo que só o CI pega, um
+`--no-verify` que pula justamente os checks que deveriam barrar tudo isso. Cada um
+é trivial sozinho; juntos, erodem a confiança na branch e atrasam todo review.
+Codificar o checklist significa que ele roda toda vez, não só quando alguém
+lembra.
+
+## Como sobrescrever
+
+**Extend-only.** Crie `quality.local.md` no diretório de regras pra *adicionar*
+checks específicos do projeto (um linter extra, um gate específico do repo).
+Remover um default do Octopus via arquivo local não é recomendado — o checklist é
+um piso.
+
+[Source: `rules/common/quality.md`](https://github.com/leocosta/octopus/blob/main/rules/common/quality.md)

@@ -1,0 +1,45 @@
+---
+title: patterns
+description: "As convenções de design pattern padrão — arquitetura por feature, envelopes de API consistentes, as camadas de repository e service, tratamento de erro estilo Result, e desacoplamento via eventos — que moldam como um repo Octopus é estruturado. Override: um repo pode substituí-las inteiras com um arquivo local."
+sidebar:
+  order: 4
+---
+
+`patterns` é o conjunto de convenções arquiteturais que o Octopus sugere por
+padrão: como organizar código, moldar APIs, separar persistência de lógica e
+tratar falhas esperadas. Diferente de `security` e `quality`, estas são pontos de
+partida, não pisos — um repo com arquitetura própria já estabelecida deve
+substituí-las.
+
+## O que governa
+
+- **Arquitetura** — organização por feature (agrupar por domínio, não por
+  camada), composição sobre herança, inversão de dependência nas fronteiras,
+  separação de responsabilidades.
+- **Design de API** — um envelope consistente `{ data, error, metadata }`, status
+  codes HTTP corretos, versionamento pra mudanças breaking, paginação pra listas.
+- **Repository pattern** — acesso a dados atrás de uma interface uniforme
+  (`findAll`/`findById`/`create`/`update`/`delete`), sem lógica de negócio dentro.
+- **Camada de service** — orquestração stateless entre repositories e serviços
+  externos, um service por bounded context, transações no nível do service.
+- **Tratamento de erros** — o Result pattern pra falhas esperadas, guard clauses,
+  o Null Object pattern, retry-com-backoff pra chamadas externas transientes.
+- **Padrões event-driven** — eventos pra comunicação cross-boundary, dados de
+  evento imutáveis, handlers idempotentes.
+
+## Por que importa
+
+Um assistente de código sem orientação arquitetural cai no que viu mais no
+treinamento — muitas vezes um emaranhado de camadas que briga com a base em que
+foi solto. Declarar os padrões pretendidos dá ao agente um alvo coerente, pra que
+código novo se leia como o resto do sistema em vez de importar uma estrutura
+estranha.
+
+## Como sobrescrever
+
+**Override.** Crie `patterns.local.md` no diretório de regras pra *substituir*
+estas convenções inteiras — o arquivo local toma precedência total. É o movimento
+certo quando seu repo tem seu próprio padrão arquitetural; documente-o uma vez
+localmente e o agente segue o seu em vez dos defaults.
+
+[Source: `rules/common/patterns.md`](https://github.com/leocosta/octopus/blob/main/rules/common/patterns.md)

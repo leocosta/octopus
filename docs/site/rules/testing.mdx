@@ -1,0 +1,46 @@
+---
+title: testing
+description: "The testing conventions — test behavior not implementation, the AAA structure, descriptive scenario names, what to test and what not to, factory-built independent test data, and coverage as a guideline not a target. Override: a repo may replace them entirely with a local file."
+sidebar:
+  order: 7
+---
+
+`testing` is the set of conventions for how tests are written and what they
+should cover. Its through-line: a test exists to catch a real regression and to
+explain what broke when it fails — not to chase a coverage number or pin down
+implementation details that are meant to change.
+
+## What it governs
+
+- **Principles** — test behavior, not implementation; a failing test should make
+  the cause obvious; name tests for the scenario and expected outcome; prefer
+  integration tests for critical paths, unit tests for complex logic; keep tests
+  independent.
+- **Structure** — the AAA pattern (Arrange, Act, Assert); one logical assertion
+  per test; descriptive names like `should_return_error_when_email_is_invalid`.
+- **What to test** — happy paths for critical flows, edge cases (empty,
+  boundary, null), error paths, business rules, state transitions and side
+  effects.
+- **What not to test** — framework internals, third-party behavior, trivial
+  getters/setters, private implementation details, exact UI layout.
+- **Test data** — factories/builders over hardcoded fixtures; each test creates
+  its own data; clean up after integration tests.
+- **Coverage** — a guideline (80% is not a goal); uncovered code should be a
+  conscious decision; critical paths (auth, payments, mutations) need
+  integration tests.
+
+## Why it matters
+
+An assistant optimizing for green tests will happily write brittle ones — bound
+to implementation, asserting internal state, passing for the wrong reasons.
+Those tests cost more than they save: they break on every refactor and catch no
+real bugs. Stating what *good* looks like keeps the suite a safety net rather
+than a maintenance tax.
+
+## How to override
+
+**Override.** Create `testing.local.md` in the rules directory to *replace*
+these conventions entirely — the local file takes full precedence when your
+team's testing strategy differs.
+
+[Source: `rules/common/testing.md`](https://github.com/leocosta/octopus/blob/main/rules/common/testing.md)

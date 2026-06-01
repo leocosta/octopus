@@ -1,0 +1,58 @@
+---
+title: Rules
+description: "The prose conventions Octopus loads into the agent's context — coding style, security, testing, error handling — layered as a common baseline plus per-stack rules plus per-repo overrides, so every assistant in the repo writes to the same standard."
+sidebar:
+  order: 1
+---
+
+Rules are the written conventions Octopus feeds into the agent's context on
+every task: how to name things, how to handle errors, what "done" means for a
+test, what never to do with a secret. They're the same guidelines a senior
+engineer would hold a teammate to — written once, applied by every assistant
+(Claude Code, Copilot, Codex, Gemini, OpenCode) working in the repo.
+
+## Why rules exist alongside hooks and skills
+
+The three layers do different jobs:
+
+- **Skills** tell the agent *how to approach a task* — a procedure to follow.
+- **Hooks** enforce *what the runtime does regardless of the agent* —
+  deterministic shell scripts that can't be talked out of.
+- **Rules** are the *standing conventions* the agent writes to — prose, loaded
+  into context, shaping every line it produces.
+
+A hook can block a bad commit; a rule shapes the code before it's written.
+Rules are advisory in mechanism but authoritative in intent: they're the
+team's taste and hard-won lessons, made legible to the model.
+
+## Layering & precedence
+
+Rules compose in layers, from general to specific:
+
+1. **Common baseline** — `rules/common/`: stack-agnostic conventions that apply
+   to every project (coding style, security, testing, patterns, exceptions,
+   language policy, quality).
+2. **Per-stack rules** — `rules/<lang>/`: language-specific conventions layered
+   on top, for `csharp`, `python`, and `typescript` (naming, testing,
+   architecture, framework patterns, tooling). They refine the baseline for the
+   stack a repo actually uses.
+3. **Per-repo overrides** — `*.local.md`: a repo drops a local file next to a
+   rule to adapt it to its own context. The local file is the highest-precedence
+   layer.
+
+## Override vs extend
+
+How a `*.local.md` file behaves depends on the rule it sits beside — each rule
+states its own contract at the top:
+
+- **Extend-only** (`security`, `quality`) — a local file may *add* rules, never
+  remove or weaken the Octopus defaults. These are the floors you don't lower.
+- **Override** (`patterns`, `exceptions`, `coding-style`, `testing`) — a local
+  file *replaces* the convention entirely and takes full precedence. These are
+  defaults you're meant to tailor.
+- **Detection-first** (`language`) — a `language.local.md` takes precedence over
+  the automatic signals, but the policy is otherwise derived from the project
+  itself.
+
+The pages in this section explain each of the seven common rules: what it
+governs, why it matters, and how to adapt it for your repo.

@@ -1,0 +1,59 @@
+---
+title: Regras
+description: "As convenções em prosa que o Octopus carrega no contexto do agente — estilo de código, segurança, testes, tratamento de erros — em camadas: um baseline comum, mais regras por stack, mais overrides por repo, pra que todo assistente no repo escreva no mesmo padrão."
+sidebar:
+  order: 1
+---
+
+Regras são as convenções escritas que o Octopus injeta no contexto do agente em
+toda task: como nomear coisas, como tratar erros, o que "pronto" significa pra um
+teste, o que nunca fazer com um segredo. São as mesmas diretrizes que um engenheiro
+sênior cobraria de um colega — escritas uma vez, aplicadas por todo assistente
+(Claude Code, Copilot, Codex, Gemini, OpenCode) trabalhando no repo.
+
+## Por que regras existem ao lado de hooks e skills
+
+As três camadas fazem trabalhos diferentes:
+
+- **Skills** dizem ao agente *como abordar uma task* — um procedimento a seguir.
+- **Hooks** impõem *o que o runtime faz independente do agente* — scripts shell
+  determinísticos que não dá pra convencer do contrário.
+- **Regras** são as *convenções permanentes* que o agente segue ao escrever —
+  prosa, carregada no contexto, moldando cada linha que ele produz.
+
+Um hook pode bloquear um commit ruim; uma regra molda o código antes dele ser
+escrito. Regras são advisory no mecanismo mas autoritativas na intenção: são o
+gosto do time e as lições aprendidas no osso, tornadas legíveis pro modelo.
+
+## Camadas & precedência
+
+Regras se compõem em camadas, do geral ao específico:
+
+1. **Baseline comum** — `rules/common/`: convenções agnósticas de stack que valem
+   pra todo projeto (estilo de código, segurança, testes, padrões, exceções,
+   política de idioma, qualidade).
+2. **Regras por stack** — `rules/<lang>/`: convenções específicas de linguagem
+   empilhadas por cima, pra `csharp`, `python` e `typescript` (nomenclatura,
+   testes, arquitetura, padrões de framework, tooling). Elas refinam o baseline
+   pra stack que o repo de fato usa.
+3. **Overrides por repo** — `*.local.md`: um repo solta um arquivo local ao lado
+   de uma regra pra adaptá-la ao seu próprio contexto. O arquivo local é a camada
+   de maior precedência.
+
+## Override vs extend
+
+Como um arquivo `*.local.md` se comporta depende da regra ao lado da qual ele
+fica — cada regra declara seu próprio contrato no topo:
+
+- **Extend-only** (`security`, `quality`) — um arquivo local pode *adicionar*
+  regras, nunca remover ou enfraquecer os defaults do Octopus. São os pisos que
+  você não abaixa.
+- **Override** (`patterns`, `exceptions`, `coding-style`, `testing`) — um arquivo
+  local *substitui* a convenção inteira e toma precedência total. São defaults que
+  você deve ajustar.
+- **Detecção primeiro** (`language`) — um `language.local.md` toma precedência
+  sobre os sinais automáticos, mas a política é, de resto, derivada do próprio
+  projeto.
+
+As páginas desta seção explicam cada uma das sete regras common: o que governa,
+por que importa, e como adaptá-la pro seu repo.

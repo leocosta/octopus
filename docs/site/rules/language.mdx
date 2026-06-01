@@ -1,0 +1,41 @@
+---
+title: language
+description: "The rule that decides what natural language generated artifacts use — always the project's own, detected from its docs, commit history, and i18n files, never the language of the chat. Code identifiers stay English. A local file can pin the choice explicitly."
+sidebar:
+  order: 8
+---
+
+`language` settles a question that trips up every assistant: when you and the
+agent are chatting in one language but the repo is written in another, which
+language do new docs, specs, and comments use? The answer is always the
+project's, never the conversation's.
+
+## What it governs
+
+- **Match the project, not the chat** — the language of conversation never
+  determines the language of created artifacts. Determine it by reading the
+  project itself.
+- **Detection signals (priority order)** — a `language.local.md` override first;
+  then existing docs (`docs/` specs, ADRs, READMEs); then commit history
+  (`git log`); then UI/i18n files (`locales/`, `i18n/`). No signal found →
+  default to English.
+- **Non-negotiables** — code identifiers (function/class/variable/file names) are
+  **always English**, regardless of artifact language; the conversation language
+  never influences artifact language.
+
+## Why it matters
+
+An assistant naturally mirrors the language you're speaking — so a team whose
+repo is documented in one language gets a spec written in another the moment a
+contributor switches chat languages, and the docs drift into a bilingual mess.
+Worse, identifiers get translated and the code stops reading consistently. This
+rule pins artifact language to the repo's own evidence, so contributions stay
+coherent no matter who's typing or in what language.
+
+## How to override
+
+**Detection-first, with an explicit pin.** The policy is normally derived from
+the project's own signals. To force a specific choice, create `language.local.md`
+in the rules directory — it takes precedence over all detection signals.
+
+[Source: `rules/common/language.md`](https://github.com/leocosta/octopus/blob/main/rules/common/language.md)

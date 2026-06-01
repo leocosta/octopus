@@ -1,0 +1,47 @@
+---
+title: security
+description: "O baseline de segurança agnóstico de stack — gestão de segredos, validação de input, prevenção de injection, auth, higiene de dependências e tratamento seguro de erros — que todo repo Octopus cobra do agente. Extend-only: um repo pode somar a ele, nunca enfraquecê-lo."
+sidebar:
+  order: 2
+---
+
+`security` é o conjunto baseline de convenções de segurança que o Octopus carrega
+em toda task. É deliberadamente amplo e inegociável: as práticas que, quando
+puladas, viram os incidentes que ninguém quer debugar às 2 da manhã.
+
+## O que governa
+
+As regras permanentes pelas superfícies de segurança que uma aplicação toca:
+
+- **Segredos** — nunca hardcode; use variáveis de ambiente ou um secret manager;
+  mantenha `.env*.local` fora do controle de versão; falhe rápido quando um
+  segredo obrigatório está faltando.
+- **Validação de input** — valide e sanitize todo input externo nas fronteiras do
+  sistema com validação baseada em schema; rejeite input inválido cedo.
+- **Prevenção de injection** — queries parametrizadas, saída HTML sanitizada,
+  argumentos de shell escapados, caminhos de arquivo validados.
+- **Auth** — menor privilégio, endpoints protegidos por padrão, tokens de vida
+  curta, endpoints de auth com rate limit.
+- **Dependências** — mantê-las atualizadas, pinar em produção, revisar antes de
+  adicionar.
+- **Tratamento de erros** — nunca vaze stack traces, SQL ou caminhos internos;
+  logue detalhe no servidor, retorne mensagens seguras, nunca logue segredos ou
+  PII.
+
+## Por que importa
+
+Falhas de segurança são assimétricas: baratas de prevenir no review, ruinosas em
+produção. Um assistente de código gerando código plausível vai alegremente
+concatenar input do usuário numa query ou ecoar um stack trace pro cliente a
+menos que o padrão diga pra não fazer. Esta regra torna o piso explícito pra que
+seja aplicado de forma uniforme, não deixado a critério de quem por acaso estiver
+revisando.
+
+## Como sobrescrever
+
+**Extend-only.** Crie `security.local.md` no diretório de regras pra *adicionar*
+regras específicas do projeto. Você não pode usar um arquivo local pra remover ou
+enfraquecer um default de segurança do Octopus — o baseline é um piso, não uma
+sugestão inicial.
+
+[Source: `rules/common/security.md`](https://github.com/leocosta/octopus/blob/main/rules/common/security.md)
