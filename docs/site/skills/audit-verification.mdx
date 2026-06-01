@@ -1,19 +1,55 @@
 ---
 title: audit-verification
-description: "Signal-only audit that confronts a finished agent task against its run evidence — the third side of the local-guardrail triad, beside the syntactic block (guardrails bundle) and the semantic signal (audit-grounding). It surfaces two failure modes deferred: a completion claimed without the build/test/typecheck ever running (unverified-completion-claim), and a diff that references a file the build would reject (unresolved-reference). Never blocks; runs on demand via /octopus:review-proposals, on the cheapest model tier. Queued by the deterministic, zero-LLM verification-check Stop hook."
-draft: true
+description: "Signal-only audit that confronts a finished agent task against its run evidence — the third side of the local-guardrail triad, beside the syntactic block (guardrails bundle) and the semantic signal (audit-grounding). It surfaces two failure modes: a completion claimed without the build/test/typecheck ever running (unverified-completion-claim), and a diff that references a file the build would reject (unresolved-reference). Never blocks; runs on demand via /octopus:review-proposals, on the cheapest model tier. Queued by the deterministic, zero-LLM verification-check Stop hook."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+An agent finishes a task and says "done — tests pass." It never ran them. Or it
+writes code that calls a function nobody defined. `audit-verification` is the
+signal that catches exactly that: a completion claimed without the work being
+verified.
 
 ## What it solves
 
-{/* TODO: the concrete pain this skill removes */}
+Octopus already guards two of the three ways an agent's "done" can be a lie:
+
+- the **syntactic block** (the `guardrails` bundle) stops unformatted, untyped,
+  or secret-bearing code — but only *at commit*, and an agent can stop without
+  committing;
+- the **semantic signal** (`audit-grounding`) flags invented conventions and
+  unsupported domain facts — but it judges *meaning*, not whether the work was
+  run.
+
+That leaves the third gap: *claimed done without running*. The type checker
+would catch a call to a function that doesn't exist — but only if it is actually
+invoked. `audit-verification` is the side of the triad that asks "was this
+verified?" and reports when the answer is no.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+The design keeps the recurring cost at zero.
+
+- A **pure-bash Stop hook** (`verification-check`) runs at the end of every task
+  — no LLM, no tokens. On a code diff it scans the session transcript for run
+  evidence (did a `test` / `build` / `typecheck` actually execute?), detects
+  **missing-file references** deterministically, and queues a proposal to
+  `.octopus/proposals/` **only when the work looks unverified**.
+- The fuzzy **`unverified-completion-claim`** judgment — comparing what the
+  session *claimed* against what actually ran — is this skill, run **on demand**
+  via `/octopus:review-proposals`, on the **cheapest model tier**. Confronting a
+  claim with evidence is mechanical, not reasoning.
+
+It is **signal-only** — it never blocks a commit, task, or merge. The syntactic
+gate already blocks; this surfaces the gap and leaves the call to you.
 
 ## Usage
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+The trigger is automatic — the `verification-check` Stop hook queues a
+`*-verification.md` proposal whenever a task ends with unverified work. You reach
+the audit through the proposal queue:
+
+```
+/octopus:review-proposals
+```
+
+There is no per-task LLM call: the hook is deterministic, and the skill runs only
+when you review the queue.
