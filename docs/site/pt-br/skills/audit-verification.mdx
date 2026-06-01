@@ -1,19 +1,55 @@
 ---
 title: audit-verification
-description: "Signal-only audit that confronts a finished agent task against its run evidence — the third side of the local-guardrail triad, beside the syntactic block (guardrails bundle) and the semantic signal (audit-grounding). It surfaces two failure modes deferred: a completion claimed without the build/test/typecheck ever running (unverified-completion-claim), and a diff that references a file the build would reject (unresolved-reference). Never blocks; runs on demand via /octopus:review-proposals, on the cheapest model tier. Queued by the deterministic, zero-LLM verification-check Stop hook."
-draft: true
+description: "Auditoria signal-only que confronta uma task de agente concluída contra a evidência de que rodou — o terceiro lado do tripé de guardrails locais, ao lado do bloqueio sintático (bundle guardrails) e do sinal semântico (audit-grounding). Revela dois modos de falha: uma conclusão alegada sem nunca rodar build/test/typecheck (unverified-completion-claim), e um diff que referencia um arquivo que o build rejeitaria (unresolved-reference). Nunca bloqueia; roda sob demanda via /octopus:review-proposals, no tier de modelo mais barato. Enfileirada pelo Stop hook determinístico e zero-LLM verification-check."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+Um agente termina uma task e diz "pronto — os testes passam." Ele nunca rodou.
+Ou escreve código que chama uma função que ninguém definiu. `audit-verification`
+é o sinal que pega exatamente isso: uma conclusão alegada sem o trabalho ter sido
+verificado.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this skill removes */}
+O Octopus já guarda dois dos três jeitos do "pronto" de um agente ser mentira:
 
-## How it works
+- o **bloqueio sintático** (o bundle `guardrails`) barra código sem formatar, sem
+  tipo ou com segredo — mas só *no commit*, e um agente pode parar sem commitar;
+- o **sinal semântico** (`audit-grounding`) sinaliza convenções inventadas e
+  fatos de domínio sem suporte — mas julga *significado*, não se o trabalho
+  rodou.
 
-{/* TODO: the mechanism */}
+Sobra a terceira lacuna: *alegou pronto sem rodar*. O type checker pegaria uma
+chamada a uma função inexistente — mas só se for de fato invocado.
+`audit-verification` é o lado do tripé que pergunta "isto foi verificado?" e
+relata quando a resposta é não.
 
-## Usage
+## Como resolve
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+O design mantém o custo recorrente em zero.
+
+- Um **Stop hook em bash puro** (`verification-check`) roda no fim de toda task —
+  sem LLM, sem tokens. Num diff de código, varre o transcript da sessão por
+  evidência de execução (um `test` / `build` / `typecheck` realmente rodou?),
+  detecta **referências a arquivo inexistente** de forma determinística, e
+  enfileira uma proposal em `.octopus/proposals/` **só quando o trabalho parece
+  não-verificado**.
+- O julgamento fuzzy **`unverified-completion-claim`** — comparar o que a sessão
+  *alegou* contra o que de fato rodou — é esta skill, rodada **sob demanda** via
+  `/octopus:review-proposals`, no **tier de modelo mais barato**. Confrontar uma
+  alegação com evidência é mecânico, não raciocínio.
+
+É **signal-only** — nunca bloqueia commit, task ou merge. O gate sintático já
+bloqueia; isto revela a lacuna e deixa a decisão com você.
+
+## Uso
+
+O gatilho é automático — o Stop hook `verification-check` enfileira uma proposal
+`*-verification.md` sempre que uma task termina com trabalho não-verificado. Você
+chega na auditoria pela fila de proposals:
+
+```
+/octopus:review-proposals
+```
+
+Não há chamada de LLM por task: o hook é determinístico, e a skill só roda quando
+você revisa a fila.
