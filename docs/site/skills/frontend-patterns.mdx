@@ -1,19 +1,38 @@
 ---
 title: frontend-patterns
 description: "Frontend architecture decision patterns for component-based UIs (React, Next.js, Vue). Component composition, state vs. server cache, data fetching, styling conventions, and accessibility as a first-class concern. Pairs with the frontend-developer role and the test-component / test-e2e skills."
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`frontend-patterns` is the agent's reference for the architecture decisions of a
+component-based UI — how to compose components, where state should live, how to
+fetch data, how to style, and how to keep accessibility from being an
+afterthought — consistently across React, Next.js, and Vue.
 
 ## What it solves
 
-{/* TODO: the concrete pain this skill removes */}
+Front-end codebases rot in characteristic ways: server data shoved into local
+state and re-synced by hand, a component that knows about everything, styling
+done five different ways, accessibility bolted on at the end (or never). Each is
+a small decision made in isolation; together they make a UI that's hard to change
+and excludes real users. The skill turns those scattered calls into a shared
+default.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+It encodes the recurring decisions with **decision trees**:
 
-## Usage
+- **Component composition** — small, composable pieces over deep prop-drilling or
+  god components.
+- **State vs. server cache** — local state at the *narrowest* scope; server data
+  belongs in a cache (query layer), not copied into component state.
+- **Data fetching** — a consistent pattern for loading, error, and empty states
+  rather than ad-hoc handling per screen.
+- **Styling conventions** — one way to style, not five.
+- **Accessibility first-class** — semantic roles and keyboard/screen-reader
+  support as part of building the component, not a polish pass.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+## When to use
+
+Designing or reviewing a component, screen, or front-end feature. It pairs with
+the `frontend-developer` role and with `test-component` / `test-e2e` — the
+patterns built here are exactly what those tests verify.

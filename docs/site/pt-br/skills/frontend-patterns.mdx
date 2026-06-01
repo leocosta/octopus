@@ -1,19 +1,39 @@
 ---
 title: frontend-patterns
-description: "Frontend architecture decision patterns for component-based UIs (React, Next.js, Vue). Component composition, state vs. server cache, data fetching, styling conventions, and accessibility as a first-class concern. Pairs with the frontend-developer role and the test-component / test-e2e skills."
-draft: true
+description: "Padrões de decisão de arquitetura frontend para UIs baseadas em componentes (React, Next.js, Vue). Composição de componentes, estado vs. cache de servidor, data fetching, convenções de styling, e acessibilidade como preocupação de primeira classe. Faz par com a role frontend-developer e as skills test-component / test-e2e."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`frontend-patterns` é a referência do agente pras decisões de arquitetura de uma
+UI baseada em componentes — como compor componentes, onde o estado deve viver,
+como buscar dados, como estilizar, e como impedir que a acessibilidade vire um
+detalhe de última hora — de forma consistente entre React, Next.js e Vue.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this skill removes */}
+Codebases de front-end apodrecem de jeitos característicos: dado de servidor
+empurrado pra estado local e re-sincronizado à mão, um componente que sabe de
+tudo, styling feito de cinco jeitos, acessibilidade colada no fim (ou nunca).
+Cada um é uma pequena decisão tomada isolada; juntas, fazem uma UI difícil de
+mudar e que exclui usuários reais. A skill transforma essas decisões espalhadas
+num default compartilhado.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+Codifica as decisões recorrentes com **árvores de decisão**:
 
-## Usage
+- **Composição de componentes** — peças pequenas e componíveis em vez de
+  prop-drilling profundo ou god components.
+- **Estado vs. cache de servidor** — estado local no escopo *mais estreito*; dado
+  de servidor pertence a um cache (camada de query), não copiado pro estado do
+  componente.
+- **Data fetching** — um padrão consistente pra estados de loading, erro e vazio
+  em vez de tratamento ad-hoc por tela.
+- **Convenções de styling** — um jeito de estilizar, não cinco.
+- **Acessibilidade de primeira classe** — roles semânticas e suporte a
+  teclado/leitor de tela como parte de construir o componente, não um polimento.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+## Quando usar
+
+Projetando ou revisando um componente, tela ou feature de front-end. Faz par com
+a role `frontend-developer` e com `test-component` / `test-e2e` — os padrões
+construídos aqui são exatamente o que esses testes verificam.
