@@ -1,19 +1,40 @@
 ---
 title: dba-mssql
 description: "MSSQL heuristics catalogue for the dba role. Detects indexing, modeling, query, migration, retention, capacity, security, and concurrency problems specific to SQL Server. Every finding ships with a T-SQL fix."
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`dba-mssql` is the SQL Server heuristics catalogue that gives the `dba` role a
+database expert's eye on a change. A generalist agent writes queries that *run*;
+this one knows the SQL Server–specific ways they'll hurt at scale — and ships a
+T-SQL fix with every finding.
 
 ## What it solves
 
-{/* TODO: the concrete pain this skill removes */}
+Most database damage is invisible at review time and expensive in production: a
+missing index that's fine on a hundred rows and fatal on ten million, a migration
+that locks a hot table, a query that scans because of an implicit conversion. A
+reviewer who isn't a SQL Server specialist won't catch these. This skill encodes
+that specialist knowledge so the footgun is named *before* it ships, not
+diagnosed after an incident.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+It runs a catalogue of heuristics across the dimensions that actually bite on SQL
+Server:
 
-## Usage
+- **indexing** — missing, redundant, or non-covering indexes;
+- **modeling** — schema choices that fight the query patterns;
+- **query** — scans, implicit conversions, non-SARGable predicates;
+- **migration** — changes that lock or rewrite a table under load;
+- **retention, capacity, security, concurrency** — growth, sizing, exposure, and
+  locking/isolation hazards.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+Each finding is mapped to a **severity** and ships with a concrete **T-SQL fix**,
+so the output is actionable, not just a warning. It can optionally connect to a
+database for live checks, or work from the diff alone.
+
+## When to use
+
+On any change touching the data layer for a SQL Server project — a migration, a
+new query, a schema change. It is the `dba` role's SQL Server catalogue, alongside
+`dba-postgres`, `dba-mongodb`, and `dba-redis` for the other engines.

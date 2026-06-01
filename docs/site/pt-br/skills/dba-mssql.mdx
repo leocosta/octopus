@@ -1,19 +1,39 @@
 ---
 title: dba-mssql
-description: "MSSQL heuristics catalogue for the dba role. Detects indexing, modeling, query, migration, retention, capacity, security, and concurrency problems specific to SQL Server. Every finding ships with a T-SQL fix."
-draft: true
+description: "Catálogo de heurísticas MSSQL para a role dba. Detecta problemas de indexação, modelagem, query, migração, retenção, capacidade, segurança e concorrência específicos do SQL Server. Todo achado vem com um fix em T-SQL."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`dba-mssql` é o catálogo de heurísticas do SQL Server que dá à role `dba` o olho
+de um especialista de banco sobre uma mudança. Um agente generalista escreve
+queries que *rodam*; este conhece os jeitos específicos do SQL Server de elas
+machucarem em escala — e entrega um fix em T-SQL com cada achado.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this skill removes */}
+A maior parte do dano de banco é invisível no review e cara em produção: um índice
+faltando que é ok em cem linhas e fatal em dez milhões, uma migração que trava uma
+tabela quente, uma query que faz scan por uma conversão implícita. Um revisor que
+não é especialista em SQL Server não pega isso. Esta skill codifica esse
+conhecimento de especialista pra que o footgun seja nomeado *antes* de ir pro ar,
+não diagnosticado depois de um incidente.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+Roda um catálogo de heurísticas pelas dimensões que de fato mordem no SQL Server:
 
-## Usage
+- **indexação** — índices faltando, redundantes ou não-cobertura;
+- **modelagem** — escolhas de schema que brigam com os padrões de query;
+- **query** — scans, conversões implícitas, predicados não-SARGable;
+- **migração** — mudanças que travam ou reescrevem uma tabela sob carga;
+- **retenção, capacidade, segurança, concorrência** — crescimento, dimensionamento,
+  exposição, e riscos de lock/isolamento.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+Cada achado é mapeado pra uma **severidade** e vem com um **fix em T-SQL**
+concreto, então a saída é acionável, não só um aviso. Pode opcionalmente conectar
+a um banco pra checks ao vivo, ou trabalhar só do diff.
+
+## Quando usar
+
+Em qualquer mudança que toca a camada de dados de um projeto SQL Server — uma
+migração, uma query nova, uma mudança de schema. É o catálogo SQL Server da role
+`dba`, ao lado de `dba-postgres`, `dba-mongodb` e `dba-redis` pros outros engines.
