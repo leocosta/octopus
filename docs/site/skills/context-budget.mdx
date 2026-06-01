@@ -1,19 +1,35 @@
 ---
 title: context-budget
 description: "Audit and optimize AI agent context window usage to reduce token overhead and improve response quality"
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`context-budget` audits how an agent is spending its scarcest resource — the
+context window — and trims the overhead. Less noise in the window is not just
+cheaper; it measurably improves the quality of what the agent produces.
 
 ## What it solves
 
-{/* TODO: the concrete pain this skill removes */}
+A degrading agent is usually a *full* agent. As the window fills with stale
+output, re-read files, and verbose configuration, the signal-to-noise ratio
+drops and responses get vaguer, slower, and more likely to lose the thread. The
+failure looks like the model getting worse; it's actually the context getting
+worse. This skill finds where the tokens are going and reclaims them.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+It treats the context window as a budget to audit, not an infinite buffer:
 
-## Usage
+- **Measure** — identify what is actually consuming the window: oversized
+  configuration, repeated file reads, verbose tool output, instructions that
+  could be a rule instead.
+- **Trim** — cut the overhead that doesn't earn its place, so the working set is
+  the relevant material and not the accumulated exhaust.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+The payoff is twofold: lower token cost, and higher answer quality — a focused
+window keeps the model on the actual task.
+
+## When to use
+
+When responses start degrading (the tell-tale sign of context pressure), or
+proactively when setting up a project so the per-session overhead is low from the
+start. It sits in the `context-*` family next to `context-handoff`.

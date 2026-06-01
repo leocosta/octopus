@@ -1,19 +1,47 @@
 ---
 title: compress-skill
-description: "Shrink a SKILL.md without changing its meaning. Deterministic cleanup pass first, LLM rewrite pass only if the target is not met. Anchors extracted from the skill's test file are preserved; frontmatter, headings, and code blocks are never modified. Dry-run by default; `--apply` writes the result."
-draft: true
+description: "Encolhe um SKILL.md sem mudar o significado. Passe de limpeza determinística primeiro, passe de reescrita por LLM só se a meta não for atingida. Âncoras extraídas do arquivo de teste da skill são preservadas; frontmatter, headings e blocos de código nunca são modificados. Dry-run por padrão; `--apply` escreve o resultado."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`compress-skill` encolhe um `SKILL.md` sem mudar o que ele significa. Uma skill que
+carrega em toda sessão relevante é um imposto recorrente na janela de contexto —
+esta skill paga esse imposto, com segurança, garantindo que o comportamento que a
+skill codifica fique intocado.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this skill removes */}
+Skills crescem. Um SKILL.md acumula frases redundantes, ressalvas repetidas e prosa
+que poderia ter metade do tamanho — e cada linha extra é carregada de novo em toda
+ativação. Mas comprimir à mão é arriscado: é fácil dropar a única frase que era
+load-bearing. `compress-skill` torna o encolhimento **seguro**, então você tem o
+footprint menor sem apostar no significado.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+Comprime em dois passes, o mais barato primeiro:
 
-## Usage
+- Um **passe de limpeza determinística** remove inchaço mecânico (espaços,
+  redundância) sem modelo envolvido.
+- Um **passe de reescrita por LLM** roda *só se* o passe determinístico não atingiu
+  a meta de tamanho — então o modelo é gasto só quando necessário.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+Durante todo o processo, o significado é protegido por invariantes duras:
+**âncoras de teste** extraídas do arquivo de teste da skill são preservadas, e
+**frontmatter, headings e blocos de código nunca são modificados**. É **dry-run
+por padrão** — você vê o resultado antes de qualquer escrita.
+
+## Uso & parâmetros
+
+```
+compress-skill <skill> [--apply]
+```
+
+| Flag | O que faz | Default |
+|---|---|---|
+| `--apply` | Escreve o resultado comprimido no arquivo. | dry-run (só mostra) |
+
+## Quando usar
+
+Quando um SKILL.md cresceu o bastante pra pesar na janela de contexto, ou como um
+passe periódico pelo catálogo de skills. Faz par com `context-budget` — ambos
+recuperam a janela, este no nível por-skill.

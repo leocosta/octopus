@@ -1,19 +1,36 @@
 ---
 title: context-handoff
-description: "Compact the current conversation into a handoff document another agent can pick up — with explicit suggested-skills section, saved to the OS tmp dir (not the workspace), referencing existing PRDs / plans / ADRs / issues / commits by path rather than duplicating, with mandatory redaction of secrets and PII. Sits in the starter bundle in the context-* family next to context-budget."
-draft: true
+description: "Compacta a conversa atual num documento de handoff que outro agente pode pegar — com seção explícita de skills sugeridas, salvo no diretório tmp do OS (não no workspace), referenciando PRDs / plans / ADRs / issues / commits existentes por caminho em vez de duplicar, com redação obrigatória de segredos e PII. Fica no bundle starter, na família context-* ao lado de context-budget."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`context-handoff` compacta a conversa em que você está num documento que o próximo
+agente pega e toca — o estado do trabalho sem os megabytes de transcript que te
+trouxeram até aqui. É como você cruza uma fronteira de contexto (uma sessão nova,
+um agente diferente) de forma barata, sem perder o fio.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this skill removes */}
+Quando uma sessão termina ou o trabalho passa pra outro agente, todo o contexto
+vive numa conversa que não pode viajar — re-lê-la é caro e re-derivá-la é pior.
+Handoffs feitos à mão tendem a duas falhas: duplicam documentos que já existem
+(ficando obsoletos na hora), e vazam segredos ou PII numa nota que cai onde não
+devia. Esta skill produz um handoff pequeno, atual e seguro.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+- **Compactar, não despejar** — destila o estado de trabalho, não o transcript
+  inteiro.
+- **Referenciar, não duplicar** — PRDs, plans, ADRs, issues e commits existentes
+  são linkados **por caminho**, então o handoff aponta pra fonte da verdade em vez
+  de copiá-la.
+- **Skills sugeridas** — uma seção explícita diz ao agente que recebe quais skills
+  o próximo passo precisa, pra que ele comece orientado.
+- **Seguro por padrão** — redação de segredo e PII é obrigatória, e o documento é
+  salvo no **diretório tmp do OS, não no workspace**, então nunca é commitado por
+  acidente.
 
-## Usage
+## Quando usar
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+Quando uma sessão está encerrando com trabalho inacabado, ou ao passar uma task
+pra outro agente. Fica no bundle `starter`, na família `context-*` ao lado de
+`context-budget`.

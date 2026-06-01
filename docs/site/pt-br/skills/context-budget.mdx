@@ -1,19 +1,35 @@
 ---
 title: context-budget
-description: "Audit and optimize AI agent context window usage to reduce token overhead and improve response quality"
-draft: true
+description: "Audita e otimiza o uso da janela de contexto de um agente de IA para reduzir overhead de tokens e melhorar a qualidade das respostas"
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`context-budget` audita como um agente gasta seu recurso mais escasso — a janela
+de contexto — e corta o overhead. Menos ruído na janela não é só mais barato:
+melhora mensuravelmente a qualidade do que o agente produz.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this skill removes */}
+Um agente que degrada geralmente é um agente *cheio*. Conforme a janela enche de
+output obsoleto, arquivos re-lidos e configuração verbosa, a relação sinal-ruído
+cai e as respostas ficam mais vagas, mais lentas e mais propensas a perder o fio.
+A falha parece o modelo piorando; na verdade é o contexto piorando. Esta skill
+acha pra onde os tokens estão indo e os recupera.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+Trata a janela de contexto como um orçamento a auditar, não um buffer infinito:
 
-## Usage
+- **Medir** — identificar o que de fato consome a janela: configuração grande
+  demais, leituras repetidas de arquivo, output verboso de ferramenta, instruções
+  que poderiam ser uma rule.
+- **Cortar** — eliminar o overhead que não merece seu lugar, pra que o working set
+  seja o material relevante e não o exausto acumulado.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+O ganho é duplo: custo de token menor, e qualidade de resposta maior — uma janela
+focada mantém o modelo na tarefa real.
+
+## Quando usar
+
+Quando as respostas começam a degradar (o sinal clássico de pressão de contexto),
+ou proativamente ao montar um projeto pra que o overhead por sessão seja baixo
+desde o início. Fica na família `context-*` ao lado de `context-handoff`.
