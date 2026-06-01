@@ -1,19 +1,37 @@
 ---
 title: interview
 description: "Interactive requirements interview — one question at a time, walking the decision tree of a new feature or problem until shared understanding is reached. No dependency on CONTEXT.md or docs/adr/. Produces a summary the user confirms, ready as input for doc-align, doc-prd, or implement. The greenfield counterpart to doc-align (which validates an existing plan against existing docs); pairs with doc-research (area-level exploration that generates multiple backlog items, while interview scopes one feature)."
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`interview` scopes one feature or problem by asking — one question at a time —
+until you and the agent actually share the same picture. It is the greenfield
+intake: no existing plan, no docs assumed, just a conversation that walks the
+decision tree until the intent is concrete enough to build on.
 
 ## What it solves
 
-{/* TODO: the concrete pain this skill removes */}
+Most underspecified work isn't underspecified on purpose — the gaps are simply
+invisible until someone asks. A wall of questions at once gets skimmed and
+half-answered; a vague "build X" turns into the agent guessing the requirements
+and you discovering the wrong guess in review. `interview` removes the guessing
+by making the unknowns explicit, one decision at a time, before any code or spec.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+- **One question at a time** — each answer narrows the next question, so the
+  conversation walks the decision tree instead of dumping a checklist.
+- **No document dependency** — it doesn't need a `CONTEXT.md` or ADRs to exist;
+  it works on a blank slate, which is what makes it the greenfield tool.
+- **Confirmed summary** — it ends with a summary you approve, which becomes clean
+  input for the next step: `doc-prd` to publish it, `doc-align` to stress-test it
+  against existing docs, or `implement` to build it.
 
-## Usage
+It sits next to two siblings: `doc-align` is the counterpart for an *existing*
+plan (validated against the project's docs), and `doc-research` explores a whole
+*area* and produces several backlog items, where `interview` scopes a single one.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+## When to use
+
+At the start of a feature or problem that isn't concrete yet — before writing a
+spec, a PRD, or code. When the plan already exists and needs checking against the
+project's decisions, reach for `doc-align` instead.

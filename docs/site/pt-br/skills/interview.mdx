@@ -1,19 +1,38 @@
 ---
 title: interview
-description: "Interactive requirements interview — one question at a time, walking the decision tree of a new feature or problem until shared understanding is reached. No dependency on CONTEXT.md or docs/adr/. Produces a summary the user confirms, ready as input for doc-align, doc-prd, or implement. The greenfield counterpart to doc-align (which validates an existing plan against existing docs); pairs with doc-research (area-level exploration that generates multiple backlog items, while interview scopes one feature)."
-draft: true
+description: "Entrevista de requisitos interativa — uma pergunta por vez, percorrendo a árvore de decisão de uma feature ou problema novo até alcançar entendimento compartilhado. Sem dependência de CONTEXT.md ou docs/adr/. Produz um resumo que o usuário confirma, pronto como entrada pra doc-align, doc-prd ou implement. A contraparte greenfield do doc-align (que valida um plano existente contra docs existentes); faz par com doc-research (exploração em nível de área que gera vários itens de backlog, enquanto interview escopa uma feature)."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`interview` escopa uma feature ou problema perguntando — uma pergunta por vez —
+até você e o agente de fato compartilharem o mesmo quadro. É o intake greenfield:
+sem plano existente, sem docs assumidos, só uma conversa que percorre a árvore de
+decisão até a intenção ficar concreta o bastante pra construir em cima.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this skill removes */}
+A maior parte do trabalho mal-especificado não é mal-especificado de propósito —
+as lacunas são simplesmente invisíveis até alguém perguntar. Um muro de perguntas
+de uma vez é lido por cima e respondido pela metade; um "construa X" vago vira o
+agente chutando os requisitos e você descobrindo o chute errado no review.
+`interview` tira o chute tornando os desconhecidos explícitos, uma decisão por
+vez, antes de qualquer código ou spec.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+- **Uma pergunta por vez** — cada resposta estreita a próxima pergunta, então a
+  conversa percorre a árvore de decisão em vez de despejar um checklist.
+- **Sem dependência de documento** — não precisa de `CONTEXT.md` ou ADRs; funciona
+  do zero, o que o torna a ferramenta greenfield.
+- **Resumo confirmado** — termina com um resumo que você aprova, que vira entrada
+  limpa pro próximo passo: `doc-prd` pra publicar, `doc-align` pra testar contra
+  docs existentes, ou `implement` pra construir.
 
-## Usage
+Fica ao lado de dois irmãos: `doc-align` é a contraparte pra um plano *existente*
+(validado contra os docs do projeto), e `doc-research` explora uma *área* inteira
+e produz vários itens de backlog, onde `interview` escopa um só.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+## Quando usar
+
+No início de uma feature ou problema que ainda não está concreto — antes de
+escrever spec, PRD ou código. Quando o plano já existe e precisa ser checado
+contra as decisões do projeto, use `doc-align`.
