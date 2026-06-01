@@ -1,23 +1,49 @@
 ---
 title: dba
-description: "Staff DBA specialist — reviews schemas, queries, migrations, and data modeling across MSSQL/Postgres/MongoDB/Redis with indexing and modeling heuristics; emits findings ranked by severity with ready-to-apply fix DDL"
-draft: true
+description: "Especialista DBA Staff — revisa schemas, queries, migrações e modelagem de dados em MSSQL, Postgres, MongoDB e Redis com heurísticas de indexação e modelagem, emitindo achados ordenados por severidade com DDL de correção pronto pra aplicar. Um portão de review adicional ao lado do architect em qualquer mudança que toca a camada de dados."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`dba` é uma persona de review de Engenheiro de Banco Staff. Ela não implementa
+features — revisa, questiona e aprova mudanças que tocam a camada de dados, e todo
+achado que levanta vem com um fix que você cola e roda. Num PR de banco ela atua
+como um segundo portão obrigatório, ao lado do `architect`.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this role addresses */}
+A maior parte do dano de banco é invisível no review e cara em produção: um índice
+faltando que é ok nos dados de teste e fatal em escala, uma migração que trava uma
+tabela quente, um schema que modela o domínio errado, PII que vaza por um índice
+ou um log. Um revisor generalista — humano ou agente — não pega isso. Esta role
+põe o olho de um especialista exatamente nas mudanças onde esse julgamento
+compensa.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+Revisa mudanças na camada de dados contra as preocupações que mordem em produção:
 
-## When to invoke
+- **Indexação & queries** — queries usam índices que existem e na ordem certa; sem
+  scans escondidos.
+- **Modelagem & migrações** — schemas modelam o domínio com precisão e evoluem com
+  segurança; migrações rodam contra um banco quente sem tempestade de locks ou
+  rollbacks não-idempotentes.
+- **Retenção & capacidade** — crescimento é limitado por design, não por
+  esperança.
+- **Segurança & concorrência** — dados sensíveis não são expostos por índices,
+  logs ou replicação; escolhas de isolamento combinam com a carga.
 
-{/* TODO: the situations this role is for */}
+Ela usa os catálogos de heurística por engine (`dba-mssql`, `dba-postgres`,
+`dba-mongodb`, `dba-redis`), e **todo achado vem com um DDL de correção concreto**
+ordenado por severidade.
 
-## What it judges
+## Quando invocar
 
-{/* TODO: what the role produces / the verdict it gives */}
+Em qualquer mudança que cruza pra camada de dados — uma migração, uma query nova,
+uma mudança de schema ou índice — em MSSQL, Postgres, MongoDB ou Redis. PRs de
+banco exigem a aprovação dela **além** do `architect`: o architect é dono da base
+mais ampla, o `dba` é dono de tudo que toca dados.
+
+## O que julga
+
+Uma lista de achados, cada um ordenado por severidade e pareado com DDL de
+correção pronto pra aplicar — não um aviso vago, mas a mudança exata a fazer.
+Aprova só quando as preocupações da camada de dados estão resolvidas.

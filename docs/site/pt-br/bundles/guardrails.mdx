@@ -1,24 +1,48 @@
 ---
 title: guardrails
-description: "Deterministic enforcement against code-assistant drift — pairs Octopus default hooks (loop-level) with pre-commit (git-level) and IDE configs (editor-level). Pre-merge surface is closed by the qualityWorkflow CI template (set qualityWorkflow:true in .octopus.yml)."
-draft: true
+description: "Enforcement determinístico contra a deriva de assistentes de código — combina os hooks default do Octopus (nível do loop) com pre-commit (nível do git) e configs de IDE (nível do editor), pra que conformidade de formatter, linter, mensagem de commit e diretrizes se mantenha não importa como a mudança foi feita. A superfície pré-merge é fechada pelo workflow de quality no CI."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`guardrails` é o bundle que faz suas convenções valerem não importa quem — ou o
+quê — está escrevendo o código. Ele empilha enforcement determinístico em cada
+ponto por onde uma mudança passa, pra que um assistente de código (Claude,
+Copilot) não possa derivar silenciosamente em formatação, lint, mensagens de
+commit ou suas diretrizes.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain enabling this bundle removes */}
+Assistentes de código são rápidos e quase sempre certos, mas derivam: um formatter
+pulado aqui, uma mensagem de commit que ignora a convenção ali, uma regra de lint
+violada em silêncio. Qualquer checkpoint isolado pode ser contornado — um hook que
+só dispara numa ferramenta, um pre-commit que alguém roda com `--no-verify`.
+Deriva que não é pega deterministicamente é pega no review, ou não é pega. Este
+bundle fecha as brechas aplicando os mesmos padrões em mais de um lugar.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+É defesa em profundidade — as mesmas convenções aplicadas em camadas sucessivas:
 
-## What's included
+- **Nível do loop** — os hooks default do Octopus (auto-format, typecheck, bloquear
+  `--no-verify`, …) disparam durante o loop de edição do assistente. Este bundle
+  assume `hooks: true` na raiz do manifesto; o `setup.sh` avisa se `guardrails` for
+  selecionado sem isso.
+- **Nível do git** — `enforce-precommit` liga os padrões ao hook de pre-commit, pra
+  que rodem em todo commit independente de qual ferramenta o autorou.
+- **Nível do editor** — `enforce-ide` escreve configs de IDE pra que o editor
+  formate e sinalize enquanto você digita.
+- **Nível do CI** — definir `qualityWorkflow: true` no `.octopus.yml` materializa o
+  workflow de quality no CI, fechando a superfície pré-merge.
 
-- `enforce-precommit`
-- `enforce-ide`
+Uma mudança tem que passar a mesma régua no loop, no commit, no editor e no CI —
+então não há um ponto único pra escapar.
 
-## When to enable
+## O que inclui
 
-{/* TODO: the team/situation this bundle is for */}
+- `enforce-precommit` — padrões aplicados na camada do git.
+- `enforce-ide` — padrões aplicados na camada do editor.
+
+## Quando habilitar
+
+Quando seu time usa assistentes de código e quer garantias determinísticas — não
+esperança — de que conformidade de formatter, linter, mensagem de commit e
+diretrizes se mantém em toda mudança, não importa como foi feita.

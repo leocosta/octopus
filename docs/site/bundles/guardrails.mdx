@@ -1,24 +1,47 @@
 ---
 title: guardrails
-description: "Deterministic enforcement against code-assistant drift — pairs Octopus default hooks (loop-level) with pre-commit (git-level) and IDE configs (editor-level). Pre-merge surface is closed by the qualityWorkflow CI template (set qualityWorkflow:true in .octopus.yml)."
-draft: true
+description: "Deterministic enforcement against code-assistant drift — pairs Octopus default hooks (loop-level) with pre-commit (git-level) and IDE configs (editor-level), so formatter, linter, commit-message, and guideline conformance hold however a change is made. The pre-merge surface is closed by the quality CI workflow."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`guardrails` is the bundle that makes your conventions hold no matter who — or
+what — is writing the code. It layers deterministic enforcement at every point a
+change passes through, so a code assistant (Claude, Copilot) can't quietly drift
+on formatting, linting, commit messages, or your guidelines.
 
 ## What it solves
 
-{/* TODO: the concrete pain enabling this bundle removes */}
+Code assistants are fast and mostly right, but they drift: a formatter skipped
+here, a commit message that ignores the convention there, a lint rule quietly
+violated. Any single checkpoint can be bypassed — a hook that only fires in one
+tool, a pre-commit someone runs with `--no-verify`. Drift that isn't caught
+deterministically gets caught in review, or not at all. This bundle closes the
+gaps by enforcing the same standards in more than one place.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+It's defense in depth — the same conventions enforced at successive layers:
+
+- **Loop level** — Octopus default hooks (auto-format, typecheck, block
+  `--no-verify`, …) fire during the assistant's edit loop. This bundle assumes
+  `hooks: true` at the manifest root; `setup.sh` warns if `guardrails` is selected
+  without it.
+- **Git level** — `enforce-precommit` wires standards into the pre-commit hook, so
+  they run on every commit regardless of which tool authored it.
+- **Editor level** — `enforce-ide` writes IDE configs so the editor formats and
+  flags as you type.
+- **CI level** — setting `qualityWorkflow: true` in `.octopus.yml` materializes the
+  quality CI workflow, closing the pre-merge surface.
+
+A change has to pass the same bar at the loop, the commit, the editor, and CI —
+so there's no single point to slip through.
 
 ## What's included
 
-- `enforce-precommit`
-- `enforce-ide`
+- `enforce-precommit` — standards enforced at the git layer.
+- `enforce-ide` — standards enforced at the editor layer.
 
 ## When to enable
 
-{/* TODO: the team/situation this bundle is for */}
+When your team uses code assistants and wants deterministic guarantees — not
+hope — that formatter, linter, commit-message, and guideline conformance hold on
+every change, however it was made.
