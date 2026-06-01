@@ -1,23 +1,57 @@
 ---
 title: doc-subcontext
-description: "Create a scoped CLAUDE.md at a subdirectory — captures conventions unique to one module without duplicating the parent."
-draft: true
+description: "Cria um CLAUDE.md com escopo em um subdiretório — captura convenções únicas de um módulo sem duplicar o contexto do pai."
+sidebar:
+  order: 20
+source_hash: "sha256:doc-subcontext-en-v1"
+needs_retranslation: false
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:doc-subcontext` escreve um `CLAUDE.md` focado pra um único
+subdiretório num monorepo. Ele captura as convenções, restrições e
+padrões específicos daquele módulo sem repetir nada que o `CLAUDE.md`
+raiz já cobre.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this command removes */}
+Num monorepo grande, subdiretórios diferentes operam sob regras
+diferentes. O módulo de pagamentos pode usar um padrão de
+tratamento de erros diferente do motor de fulfillment. A camada de
+API pode ter convenções rígidas de validação de entrada que não se
+aplicam a utilitários internos. Quando todo esse contexto fica só no
+`CLAUDE.md` raiz — ou pior, em lugar nenhum — agentes e colaboradores
+novos aplicam as convenções erradas no código errado.
 
-## How it works
+Um `CLAUDE.md` por subdiretório resolve isso escopando o contexto
+onde ele se aplica. O subcontexto faz referência cruzada ao pai em
+vez de duplicá-lo, então há um único lugar pra atualizar regras
+compartilhadas e um lugar separado pra capturar as específicas do
+módulo.
 
-{/* TODO: the mechanism */}
+## Como funciona
 
-## Usage & parameters
+O comando delega pra a skill `doc-subcontext`, que gerencia toda a
+disciplina de autoria:
+
+1. Lê os arquivos `CLAUDE.md` da cadeia de pais (da raiz do repo
+   até o diretório alvo) pra entender o que já está coberto.
+2. Conduz uma entrevista de uma-pergunta-por-vez pra expor
+   convenções que são genuinamente locais ao subdiretório.
+3. Escreve um `CLAUDE.md` enxuto (50–100 linhas) que faz referência
+   cruzada ao pai e captura apenas o que é aditivo ou sobrescreve.
+
+**Pré-requisito:** um `CLAUDE.md` raiz deve existir. Se não existir,
+o comando recusa e te direciona pra rodar `octopus update` primeiro.
+Um subcontexto só faz sentido em cima de um contexto raiz.
+
+## Uso & parâmetros
 
 ```
-/octopus:doc-subcontext <subdirectory path>
+/octopus:doc-subcontext <caminho do subdiretório>
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `<caminho do subdiretório>` — obrigatório. Caminho pro subdiretório
+  alvo, relativo à raiz do repo (ex: `api/payments`, `packages/ui`).
+  O `CLAUDE.md` raiz já deve existir.
+
+[Source: `commands/doc-subcontext.md`](https://github.com/leocosta/octopus/blob/main/commands/doc-subcontext.md)

@@ -1,23 +1,57 @@
 ---
 title: doc-prd
-description: "Synthesise the current conversation into a PRD and publish it to the issue tracker, labelled ready-for-agent."
-draft: true
+description: "Sintetiza a conversa atual em um PRD pronto pro tracker e o publica com o label ready-for-agent."
+sidebar:
+  order: 19
+source_hash: "sha256:doc-prd-en-v1"
+needs_retranslation: false
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:doc-prd` embala uma conversa. Quando um brainstorm ou
+sessão de alinhamento produziu decisões consolidadas, este comando
+as empacota em um PRD e publica no tracker de issues — com o label
+`ready-for-agent` — sem te re-entrevistar.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this command removes */}
+Decisões tomadas num brainstorm costumam evaporar antes de virar
+trabalho acionável. Alguém precisa traduzir a conversa pra um ticket,
+e essa tradução introduz deriva: requisitos são suavizados, o
+rationale some, e o escopo que foi acordado fica ambíguo.
 
-## How it works
+`doc-prd` faz a tradução enquanto a conversa ainda está em contexto.
+Lê as decisões que já estão ali, as empacota num PRD estruturado e o
+publica. O resultado é um artefato pronto pro tracker que um agente
+ou um humano pode pegar sem precisar de uma reunião de follow-up.
 
-{/* TODO: the mechanism */}
+## Como funciona
 
-## Usage & parameters
+O comando delega pra a skill `doc-prd`, que possui o protocolo
+completo de síntese:
+
+1. Lê o vocabulário do repositório — `CONTEXT.md` e decisões
+   relevantes — pra que o PRD fale a linguagem do projeto.
+2. Esboça os módulos a serem construídos ou modificados e pede uma
+   rodada de validação antes de escrever.
+3. Escreve o corpo do PRD: problem statement, goals, non-goals,
+   breakdown de módulos e critérios de aceitação. Sem caminhos de
+   arquivo ou snippets de código, exceto quando um snippet encoda
+   uma decisão com mais precisão do que prosa.
+4. Publica o PRD no tracker de issues e aplica o label
+   `ready-for-agent`.
+
+**O comando recusa se decisões consolidadas não estiverem já no
+contexto da conversa.** Se a discussão ainda está em fase exploratória,
+use `superpowers:brainstorming` pra estabelecer as decisões primeiro.
+
+## Uso & parâmetros
 
 ```
-/octopus:doc-prd [optional title hint]
+/octopus:doc-prd [dica de título opcional]
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `[dica de título opcional]` — uma frase curta que o comando usa
+  pra alimentar o título do PRD (ex: `"politica de retry de pagamento"`).
+  Se omitido, o comando infere o título a partir da conversa.
+
+[Source: `commands/doc-prd.md`](https://github.com/leocosta/octopus/blob/main/commands/doc-prd.md)

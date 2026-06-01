@@ -1,18 +1,42 @@
 ---
 title: audit-all
 description: "Run all quality-audit skills in parallel against one ref — consolidated severity report with a cross-audit hotspots table."
-draft: true
+sidebar:
+  order: 10
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:audit-all` is the umbrella audit command. It runs `audit-security`,
+`audit-money`, `audit-tenant`, and `review-contracts` in parallel against a
+single ref, then merges their output into one consolidated severity report with
+a cross-audit hotspots table.
 
 ## What it solves
 
-{/* TODO: the concrete pain this command removes */}
+Running four separate audits by hand is slow and easy to skip under time
+pressure. More importantly, the output lives in four separate threads — so a
+file that trips both a money finding and a tenant finding never gets flagged as
+a priority. `audit-all` solves both problems: one command, shared file
+discovery, parallel execution, and a dedicated hotspots table that surfaces
+files flagged by more than one audit. Those are the files that need attention
+first.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+1. **Shared file discovery** — runs `git diff --name-only` once, tags each
+   changed file with domain labels (`money`, `tenant`, `auth`, `api-contract`,
+   etc.) using the same heuristics the individual audits use.
+2. **Parallel dispatch** — sends each audit skill only the files relevant to
+   its domain. `audit-money` sees money-tagged files; `audit-tenant` sees
+   tenant-tagged files; and so on.
+3. **Consolidation** — merges the four sub-reports under a single severity
+   structure. Files flagged by more than one audit appear in a hotspots table
+   at the top so reviewers know where to look first.
+4. **Optional persistence** — with `--write-report`, the full consolidated
+   report is saved to `docs/reviews/`.
+
+If an audit finds no domain-matching files in its slice, it emits a single
+`<audit>: no domain-matching files` line. If one audit errors, the rest
+continue and the summary notes the failure.
 
 ## Usage & parameters
 
@@ -20,4 +44,9 @@ draft: true
 /octopus:audit-all [ref] [--base=main] [--only=<audits>] [--write-report]
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `ref` — PR number (`#123`), URL, branch name, or commit SHA to audit. Default: current `HEAD` vs its upstream.
+- `--base=<branch>` — base branch for the diff. Default: `main`.
+- `--only=<list>` — comma-separated subset of `security,money,tenant,cross-stack`. Runs only the listed audits. Default: every installed audit.
+- `--write-report` — persists the consolidated report to `docs/reviews/YYYY-MM-DD-audit-all-<slug>.md`.
+
+[Source: `commands/audit-all.md`](https://github.com/leocosta/octopus/blob/main/commands/audit-all.md)

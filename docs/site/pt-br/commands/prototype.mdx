@@ -1,23 +1,66 @@
 ---
 title: prototype
-description: "Build a throwaway prototype to answer one design question — logic branch (terminal app) or UI branch (variants on one route)."
-draft: true
+description: "Constrói código descartável pra responder uma pergunta de design antes de se comprometer com ela — branch de lógica pra estado e algoritmos, branch de UI pra layout e feel de interação."
+sidebar:
+  order: 18
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:prototype` impõe a disciplina que separa exploração produtiva de
+features meio-prontas: declare a pergunta primeiro, construa o menor código que
+a responde, capture a resposta de forma durável, depois delete o código.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this command removes */}
+Sem uma pergunta, um protótipo é só uma feature não-comprometida. Times
+constroem protótipos pra evitar se comprometer com um desconhecido — mas
+pulam de enunciar o desconhecido explicitamente, e então deixam o protótipo
+ficar até ele virar a implementação default por inércia.
 
-## How it works
+`prototype` fecha esse loop. Exige uma pergunta antes de qualquer código ser
+escrito, bifurca a abordagem pelo tipo de pergunta, impõe o default de sem
+persistência, e termina com um passo explícito de captura pra que a resposta
+sobreviva à deleção do protótipo.
 
-{/* TODO: the mechanism */}
+## Como funciona
 
-## Usage & parameters
+O comando começa no bifurcation gate — o passo mais importante:
+
+| Tipo de pergunta | Branch | O que é construído |
+|---|---|---|
+| Estado, lógica, modelo de dados, algoritmo | **logic** | Terminal app executável — o menor executável que exercita a pergunta |
+| Visual, layout, feel de interação | **UI** | Rota única com múltiplas variantes togáveis numa tela |
+
+Se o tipo for ambíguo e você não estiver disponível, o comando usa o contexto
+como default (repo com forma de terminal → logic; web app → UI) e declara a
+premissa explicitamente no artefato.
+
+Duas regras que definem a disciplina de protótipo:
+
+**Sem persistência por padrão.** Protótipos não escrevem num banco de dados ou
+num file store real. Se o protótipo começa a escrever em persistência, a
+pergunta mudou — o comando pausa e reclassifica. Exceção: quando persistência
+*é* a pergunta (design de schema, shape de migration), um arquivo SQLite
+descartável no diretório do protótipo é aceitável; nunca o banco de dados real.
+
+**Capture antes de deletar.** Quando a pergunta é respondida, a resposta é
+escrita em algum lugar durável antes do código ser removido. O destino depende
+do que a resposta significa: corpo de commit message, um ADR, um issue ou PRD,
+ou um `NOTES.md` ao lado do protótipo. A transcrição do chat não conta — ela
+rola pra cima.
+
+Depois de capturar, o protótipo é deletado ou suas partes não-descartáveis são
+absorvidas no caminho de código real. Não existe terceira opção.
+
+## Uso & parâmetros
 
 ```
 /octopus:prototype <one-sentence question to answer>
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `<one-sentence question>` — a pergunta de design que o protótipo deve
+  responder. Obrigatório. Se não fornecido, o comando se recusa a começar —
+  um protótipo sem pergunta é uma feature meio-pronta.
+
+[Fonte: `commands/prototype.md`](https://github.com/leocosta/octopus/blob/main/commands/prototype.md)
+
+[Source: `commands/prototype.md`](https://github.com/leocosta/octopus/blob/main/commands/prototype.md)

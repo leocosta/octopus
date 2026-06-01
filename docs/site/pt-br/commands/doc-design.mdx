@@ -1,23 +1,77 @@
 ---
 title: doc-design
-description: "Interactive design session that fills a spec stub's Design, Implementation Plan, Testing, and adaptive sections one question at a time"
-draft: true
+description: "Sessão de design interativa que preenche as seções de Design, Implementation Plan, Testing Strategy e seções adaptativas do stub de spec, uma pergunta por vez."
+sidebar:
+  order: 16
+source_hash: "sha256:doc-design-en-v1"
+needs_retranslation: false
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:doc-design` é a passagem conversacional que transforma um
+stub de spec numa especificação completamente preenchida. Faz
+perguntas focadas, apresenta um rascunho de cada seção pra você
+aprovar, e escreve só o que você confirmar — uma seção por vez.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this command removes */}
+Stubs de spec criados pelo `/octopus:doc-spec` são intencionalmente
+vazios. O trabalho de design — entender os componentes, o fluxo de
+dados, os trade-offs, a abordagem de testes e a ordem de
+implementação — acontece nesta sessão. Sem uma passagem estruturada,
+os times ou pulam seções inteiras ou as preenchem com texto que não
+aguenta a implementação.
 
-## How it works
+`doc-design` torna a conversa de design explícita: cada seção
+importante passa por um ciclo de rascunho-apresentação-aprovação
+antes de ser escrita, então o spec resultante reflete decisões, não
+suposições.
 
-{/* TODO: the mechanism */}
+## Como funciona
 
-## Usage & parameters
+1. **Setup** — resolve o slug e lê o stub existente. Se não existe
+   nenhum stub, cria um via `/octopus:doc-spec` antes de continuar.
+2. **Scan de contexto** — lê silenciosamente o histórico recente do
+   git, o roadmap e skills adjacentes antes de fazer a primeira
+   pergunta.
+3. **Seções de Design** — percorre Overview e Detailed Design num
+   ciclo de pergunta-rascunho-aprovação. Escreve cada seção aprovada
+   diretamente no arquivo de spec.
+4. **Seções adaptativas** — avalia se Non-Goals, Risks ou Migration /
+   Backward Compatibility são necessários com base no que emergiu na
+   discussão de design. No máximo duas seções adaptativas por sessão;
+   o restante é adiado pra uma próxima execução.
+5. **Implementation Plan** — captura os passos ordenados no nível de
+   arquivo (3–7 itens). Este é o plano de alto nível, não a quebra
+   TDD granular — essa vem do `/octopus:doc-plan`.
+6. **Testing Strategy e Context for Agents** — valida a abordagem de
+   testes e infere os módulos de conhecimento, roles e skills
+   relevantes pra implementação.
+7. **Auto-revisão + commit** — varre o spec em busca de placeholders
+   restantes, remove linguagem vaga, e faz commit do spec em um
+   branch docs-only.
+
+A sessão é idempotente: rodar de novo em um spec parcialmente
+preenchido preenche só as seções ainda vazias, sem sobrescrever seu
+conteúdo.
+
+**Hard gate:** este comando não escreve código de produção, testes
+ou branches de implementação. O estado terminal é um spec commitado.
+
+## Posição no pipeline
+
+`doc-rfc` → `doc-spec` → **`doc-design`** → `doc-plan`
+
+Depois do `doc-design`, abra um PR pro spec. Uma vez mergeado, gere
+o plano de implementação com `/octopus:doc-plan`.
+
+## Uso & parâmetros
 
 ```
 /octopus:doc-design [slug]
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `[slug]` — slug do spec em kebab-case (ex: `checkout-revamp`). Se
+  omitido, o comando pergunta. Se o spec não existir, ele é criado
+  antes via `/octopus:doc-spec`.
+
+[Source: `commands/doc-design.md`](https://github.com/leocosta/octopus/blob/main/commands/doc-design.md)

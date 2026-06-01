@@ -1,23 +1,99 @@
 ---
 title: implement
 description: "Walk the Octopus implementation workflow explicitly — TDD, plan-before-code, verification, simplify, commit cadence."
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:implement` conduz o workflow de implementação explicitamente
+pra uma única tarefa que o usuário descreve inline — o mesmo protocolo
+de cinco práticas que o agente aplica automaticamente em toda tarefa
+de edição de código.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this command removes */}
+Codar sem um processo tende a produzir macro-commits que misturam
+mudanças não relacionadas, testes escritos depois (ou nunca), e
+declarações de "funciona" sem evidência de verificação. Nada disso é
+óbvio enquanto acontece — é só o caminho de menor resistência.
 
-## How it works
+O `implement` torna o caminho disciplinado o padrão: planejar antes
+de tocar arquivos, escrever o teste que falha primeiro, verificar
+antes de declarar pronto, limpar o código antes de commitar, e manter
+os commits atômicos. O comando é útil quando você quer controle
+explícito fase a fase sobre uma tarefa específica em vez de deixar a
+skill engajar implicitamente.
 
-{/* TODO: the mechanism */}
+## Como resolve
 
-## Usage & parameters
+A skill aplica cinco práticas em ordem:
+
+1. **Loop TDD** — pra qualquer mudança com comportamento observável:
+   escrever um teste que falha primeiro, confirmar o modo de falha,
+   depois escrever a implementação mínima que faz o teste passar.
+   Refatorar enquanto os testes ficam verdes. Pular TDD apenas pra
+   mudanças sem comportamento testável (renames, ajustes de config,
+   edições de doc) — mas ainda dividir essas em commits lógicos.
+
+2. **Gate plan-before-code** — pra tarefas que tocam mais de dois
+   arquivos, introduzem um novo conceito ou têm mais de uma abordagem
+   viável: apresentar um plano curto (arquivos que mudam, abordagem,
+   trade-offs, acceptance check) e aguardar aprovação antes de editar
+   código. Pra trabalho maior, escalar pra `/octopus:doc-spec`.
+
+3. **Verification-before-completion** — antes de declarar qualquer
+   trabalho pronto, rodar o comando de verificação relevante e incluir
+   o output na resposta: suite de testes, typecheck, formatter,
+   `git log -n 1`. "Deveria funcionar" sem evidência é uma violação do
+   protocolo.
+
+4. **Simplify pass** — após o último teste verde e antes de commitar,
+   reler o código alterado em busca de duplicação, código morto,
+   abstrações prematuras, nomes obscuros e comentários explicativos
+   que deveriam ser mensagens de commit.
+
+5. **Commit cadence** — um commit por etapa lógica, não um
+   macro-commit no final. TDD produz dois a três commits por
+   comportamento. Cada commit passa pelos pre-commit hooks;
+   `--no-verify` nunca é aceitável.
+
+## Uso & parâmetros
 
 ```
 /octopus:implement <task description>
+/octopus:implement --plan PATH
+/octopus:implement --plan PATH --resume-from TaskN
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `<task description>` — descrição em linguagem natural da tarefa a
+  implementar. A skill roda em modo single-task.
+- `--plan PATH` — entrar em walker mode. O comando parseia o arquivo
+  de plano em `PATH` (fallback: `docs/plans/<PATH>.md`), percorre seus
+  blocos `## Task N` de cima pra baixo e pausa pra revisão após cada
+  tarefa completar. Após cada tarefa um resumo é exibido — nome da
+  tarefa, arquivos alterados, testes passando, próxima tarefa — com um
+  prompt de continuar / parar / refazer.
+- `--resume-from TaskN` — usado com `--plan PATH`. Pula tarefas já
+  completas e começa a partir da tarefa nomeada.
+
+O walker nunca faz push, nunca abre PRs e nunca cria branches.
+Commits por tarefa acumulam no branch atual; o usuário abre o PR via
+`/octopus:pr-open` depois que o walker termina.
+
+## Relação com a skill
+
+A skill `implement` está ativa por padrão em toda tarefa de edição de
+código. Este comando a conduz explicitamente pra uma única tarefa
+descrita inline, ou executa o walker sobre um arquivo de plano pra
+execução multi-tarefa.
+
+## Pairing
+
+- `/octopus:debug` — quando a tarefa começa a partir de um bug report
+  ou teste que falha em vez de uma feature request.
+- `/octopus:codereview` — rodar após a implementação e antes de abrir
+  o PR, especialmente pra mudanças de billing, tenant ou cross-stack.
+- `/octopus:pr-open` — abrir o PR quando a implementação estiver
+  completa.
+
+[Fonte: `commands/implement.md`](https://github.com/leocosta/octopus/blob/main/commands/implement.md)
+
+[Source: `commands/implement.md`](https://github.com/leocosta/octopus/blob/main/commands/implement.md)

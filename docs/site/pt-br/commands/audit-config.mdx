@@ -1,23 +1,57 @@
 ---
 title: audit-config
-description: "Audit the Octopus configuration surface (rules, skills, hooks, commands, bundles) for model drift, stale dates, phantom skills, and deprecated paths. Severity-tiered report."
-draft: true
+description: "Audita a superfície de configuração do Octopus (rules, skills, hooks, commands, bundles) em busca de drift de modelo, datas obsoletas, skills fantasmas e caminhos depreciados. Relatório com severidade."
+sidebar:
+  order: 11
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:audit-config` é o check periódico de saúde da própria configuração do
+Octopus — não o código da aplicação, mas as rules, skills, hooks, commands e
+bundles que moldam como os agentes se comportam no seu time.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this command removes */}
+Configuração envelhece de forma diferente do código. Uma rule escrita pra um
+modelo mais antigo pode restringir silenciosamente um mais novo. Uma skill sem
+`triggers:` e sem dicas de roteamento na descrição vira um fantasma — presente
+no repo mas nunca acionada. Um hook anterior a uma mudança de família de modelo
+pode estar aplicando uma disciplina que não faz mais sentido. Nenhum desses
+problemas aparece sozinho; eles se acumulam silenciosamente até os agentes se
+comportarem de formas difíceis de rastrear. `audit-config` traz esse drift à
+superfície sob demanda, com rótulos de severidade, pra você resolver de forma
+deliberada.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+O comando executa cinco checks em todos os arquivos de `rules/`, `skills/`,
+`hooks/`, `commands/` e `bundles/`:
 
-## Usage & parameters
+1. **Premissas específicas de modelo** — grep por pins de versão a famílias
+   antigas (ex.: `Opus 3`, `Claude 3.5`). Severidade: warn.
+2. **Datas obsoletas** — encontra padrões de data e sinaliza os com mais de 9
+   meses sem comentário sucessor. Severidade: info / warn.
+3. **Skills fantasmas** — skills sem campo `triggers:` e sem dica de roteamento
+   na descrição são invisíveis para acionamento automático. Severidade: warn.
+4. **Hooks sem atualização desde mudança de família de modelo** — flag heurístico
+   pra revisar hooks que antecedem o último upgrade de modelo em mais de 6 meses.
+   Severidade: info.
+5. **Commands com caminhos depreciados** — caminhos que não existem mais no disco
+   (warn) ou que estão no gitignore (block). Severidade: warn / block.
+
+O relatório é **somente leitura**. Ele sugere próximos passos, mas nunca edita
+arquivos de configuração. Os fixes são aplicados como commits separados, pelo
+usuário.
+
+## Uso & parâmetros
 
 ```
 /octopus:audit-config
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+Esse comando não aceita flags. Execute sob demanda: a cada 3–6 meses, após uma
+mudança significativa de família de modelo, ou antes de começar um novo cluster
+de trabalho.
+
+[Fonte: `commands/audit-config.md`](https://github.com/leocosta/octopus/blob/main/commands/audit-config.md)
+
+[Source: `commands/audit-config.md`](https://github.com/leocosta/octopus/blob/main/commands/audit-config.md)

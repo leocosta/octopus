@@ -1,23 +1,58 @@
 ---
 title: context-handoff
-description: "Compact the current conversation into a handoff document in the OS tmp dir, with redacted secrets and a prescriptive suggested-skills section."
-draft: true
+description: "Compacta a conversa atual num documento de handoff no diretório tmp do OS, com redação de segredos e uma seção prescritiva de suggested-skills."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:context-handoff` compacta a sessão atual num documento de handoff
+estruturado que um agente successor — ou uma nova sessão — pode pegar sem
+precisar redescobrir o contexto do zero.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this command removes */}
+Quando o trabalho precisa continuar além da sessão atual — agente diferente,
+modelo diferente ou simplesmente uma nova janela de contexto — o contexto se
+perde a menos que seja transferido explicitamente. Descrever "onde estamos" em
+chat informal não é suficiente: o successor precisa saber o que foi decidido,
+quais artefatos já existem e — principalmente — quais skills invocar e em que
+ordem.
 
-## How it works
+Sem um handoff prescritivo, o próximo agente redescobre ferramentas, reler
+arquivos que poderiam ter sido apontados diretamente e corre o risco de
+re-discutir decisões já tomadas. `context-handoff` evita isso produzindo um
+documento compacto e estruturado que diz ao successor exatamente o que fazer.
 
-{/* TODO: the mechanism */}
+## Como resolve
 
-## Usage & parameters
+O handoff é **prescritivo, não apenas descritivo**. É organizado em cinco
+etapas:
+
+1. **Resumo da sessão** — o que foi tentado, o que foi decidido, o que está em
+   andamento e o que está bloqueado.
+2. **Referências duráveis** — todo artefato já produzido no repo é linkado por
+   path ou URL. Conteúdo nunca é duplicado: PRDs, planos, ADRs, specs, issues,
+   PRs e commits são referenciados, não copiados. Se uma decisão foi tomada em
+   chat mas nunca escrita, o handoff sinaliza como ausente em vez de registrá-la
+   como canon.
+3. **Suggested next skills** — a seção mais valiosa: uma lista prescritiva e
+   ordenada das skills que o successor deve invocar para o trabalho restante.
+4. **Redação** — antes de escrever, tokens, API keys, senhas e URLs internas com
+   identificadores de sessão são substituídos por `<REDACTED>`.
+5. **Path de saída** — o path absoluto do arquivo de handoff é impresso pra o
+   usuário passar ao agente successor diretamente.
+
+O handoff é salvo no **diretório tmp do OS** (`/tmp/` ou `$TMPDIR`), não no
+workspace. Handoffs são efêmeros de sessão — não devem aparecer em `git status`
+e não devem ser lidos meses depois como se fossem canon do projeto. Se o trabalho
+é genuinamente grande o suficiente pra merecer um registro durável, roteie pra
+`/octopus:doc-spec` ou `/octopus:doc-prd`.
+
+## Uso & parâmetros
 
 ```
 /octopus:context-handoff [optional focus for the next session]
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `[focus]` — hint opcional em texto livre sobre onde o successor deve direcionar
+  a atenção. Incluído literalmente na seção de abertura do handoff.
+
+[Source: `commands/context-handoff.md`](https://github.com/leocosta/octopus/blob/main/commands/context-handoff.md)

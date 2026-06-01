@@ -1,18 +1,50 @@
 ---
 title: launch-feature
-description: "Generate a multi-channel launch kit from a completed feature (RM/spec/PR)."
-draft: true
+description: "Turn a completed feature into a versioned, multi-channel launch kit — posts, email, landing-page copy, commercial changelog, video script, and optional images."
+sidebar:
+  order: 12
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:launch-feature` is the command that fires when a feature ships and
+someone needs to tell the world. It resolves the feature from a roadmap ID,
+spec path, or PR and produces a publish-ready launch kit under
+`docs/marketing/launches/`.
 
 ## What it solves
 
-{/* TODO: the concrete pain this command removes */}
+A shipped feature that nobody hears about is lost acquisition. Turning one
+completed feature into coherent copy across Instagram, LinkedIn, X, email,
+a landing page, a video script, and the commercial changelog usually means
+context-switching between tools, re-explaining the feature to each channel,
+and losing consistency along the way.
+
+`launch-feature` does the context assembly once — reading the spec, research
+docs, and commit history — then renders per-channel templates, optionally
+generates images, and writes every artifact to a single versioned directory
+you can hand to a reviewer.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+- **Ref resolution** — the command accepts a roadmap ID, a spec or research
+  file path, or a PR reference. It follows any cross-links in the roadmap entry
+  to pull in the spec and research context, and augments everything with
+  `git log` scoped to the affected files.
+- **Override cascade** — brand voice, audience definition, hashtags, hook
+  angles, and caption templates are resolved from the repo's
+  `docs/marketing/` overrides first, then fall back to the embedded Octopus
+  defaults. The kit's `README.md` records which source was used for each
+  override so reviewers know exactly where each style decision came from.
+- **Channel rendering** — each selected channel gets its own file populated
+  from a template. Placeholders are always filled; any that have no grounded
+  answer are removed and a inline comment flags what is missing, rather than
+  leaving the placeholder as-is.
+- **Image generation** — if `GEMINI_API_KEY` is set, images are generated via
+  Gemini and saved as PNGs in the `images/` subdirectory. Pollinations.ai is
+  the keyless fallback. When neither works, `image-prompts.md` is written so
+  images can be generated separately.
+
+All output lands in `docs/marketing/launches/YYYY-MM-DD-<slug>/`. Nothing is
+published automatically — the kit is a draft until a reviewer signs off.
 
 ## Usage & parameters
 
@@ -20,4 +52,24 @@ draft: true
 /octopus:launch-feature <ref> [--channels=a,b,c] [--dry-run] [--no-images] [--images-only] [--angle=<label>] [--force]
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `<ref>` — roadmap ID, spec/research path, or PR reference (`#123` / full
+  GitHub URL). Required.
+- `--channels=<list>` — comma-separated subset of
+  `instagram,linkedin,x,email,lp,changelog,video`. Default: all applicable
+  channels whose template or override is available.
+- `--dry-run` — print the generated content to chat without creating any files.
+- `--no-images` — skip image generation even when a provider is configured.
+- `--images-only` — regenerate only images; reuse existing text artifacts in
+  the launch directory.
+- `--angle=<label>` — force a specific hook angle from the brand overrides,
+  bypassing automatic selection.
+- `--force` — overwrite an existing launch directory for the same date/slug.
+
+## Pairing
+
+`/octopus:launch-feature` handles acquisition — speaking to new audiences
+about what changed. `/octopus:launch-release` handles retention — announcing
+the same release to existing users through themed, version-keyed channels.
+A full launch often uses both.
+
+[Source: `commands/launch-feature.md`](https://github.com/leocosta/octopus/blob/main/commands/launch-feature.md)

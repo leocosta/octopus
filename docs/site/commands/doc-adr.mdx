@@ -1,18 +1,43 @@
 ---
 title: doc-adr
-description: "Create a new ADR with auto-incrementing number"
-draft: true
+description: "Bootstrap a new Architecture Decision Record with an auto-incrementing number and today's date, ready to fill in."
+sidebar:
+  order: 18
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:doc-adr` creates a numbered Architecture Decision Record
+from the project template. Use it any time you make a non-trivial
+technical decision — during design, implementation, or after a
+post-mortem — so the reasoning is captured where future contributors
+can find it.
 
 ## What it solves
 
-{/* TODO: the concrete pain this command removes */}
+Technical decisions get made constantly, but the reasoning behind them
+is rarely written down. Six months later, someone reads the code and
+wonders why the team chose this data model, this library, or this
+protocol boundary. Without an ADR, the answer is a Slack search or a
+meeting invite.
+
+An ADR changes that. It's a short, durable record: what was the
+context, what was decided, what alternatives were rejected, and what
+the consequences are. `doc-adr` handles the mechanical work —
+numbering, dating, and placing the file — so the friction of
+capturing a decision is close to zero.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+1. Resolves the slug — from the argument you pass, or by asking you
+   to describe the decision in a few words.
+2. Scans `docs/adrs/` to find the current highest number and
+   increments it (zero-padded to three digits; starts at `001` for a
+   fresh project).
+3. Reads the ADR template, fills in the number, date, and title, and
+   writes the file to `docs/adrs/<number>-<slug>.md`.
+4. Reports the file path and ADR identifier, and reminds you to fill
+   in the Context, Decision, and Consequences sections.
+5. If a related spec exists in `docs/specs/`, suggests linking the
+   ADR from the spec's Context for Agents section.
 
 ## Usage & parameters
 
@@ -20,4 +45,8 @@ draft: true
 /octopus:doc-adr [slug]
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `[slug]` — kebab-case description of the decision (e.g.
+  `use-postgresql`, `parser-strategy`). If omitted, the command asks
+  before proceeding.
+
+[Source: `commands/doc-adr.md`](https://github.com/leocosta/octopus/blob/main/commands/doc-adr.md)

@@ -1,18 +1,46 @@
 ---
 title: knowledge-briefing
-description: "Proactive cadence summary over a knowledge root — what changed (since the watermark) + what needs attention; --daily advances, --weekly rolls up. Grounded, cheap-tier narration."
-draft: true
+description: "Proactive cadence summary over a knowledge root — what changed since the last run plus what needs attention today; --daily advances the watermark, --weekly rolls up without moving it."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:knowledge-briefing` comes to you on a cadence with "what changed and
+what needs attention today" — without you having to ask. It is the proactive
+counterpart to `hygiene` and `synthesize`, which answer only when invoked.
 
 ## What it solves
 
-{/* TODO: the concrete pain this command removes */}
+A knowledge base that only speaks when spoken to will always lag. Blockers
+recorded yesterday, stale nodes accumulating, new connections forming — none of
+it surfaces unless you go looking. For a growing knowledge root that changes
+daily, "go looking" is friction that does not scale.
+
+`knowledge-briefing` removes that friction by running on a schedule. Each run
+produces a compact, grounded summary of what changed since the last one, which
+nodes need attention, and — on the weekly cadence — which cross-node connections
+formed. The watermark mechanism means each run picks up exactly where the last
+one left off, with no overlap and no gaps.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+The change-delta computation and composition run deterministically in the
+`octopus briefing` core, which reads the per-root watermark, the node graph, and
+the outputs of `hygiene` (attention findings) and `synthesize` (connections, on
+the weekly cadence). The skill turns those structured lines into a readable,
+grounded briefing.
+
+The briefing is organized into three section types:
+
+- **changed** — a node updated since the last watermark.
+- **attention** — a `hygiene` warn-tier finding (overdue, stale, or broken link).
+- **connection** — (weekly only) a `synthesize` cross-node candidate.
+
+Every line cites its source node as `(src: <node>)`. Nothing is invented — if a
+claim cannot be traced to a core output line, it is not included. The narration
+itself runs on the cheapest model tier; the costly structural work already
+happened in the deterministic core.
+
+The watermark advances only on `--daily` runs. `--weekly` rolls up a 7-day
+window without moving it, so the next daily run is not disrupted.
 
 ## Usage & parameters
 
@@ -20,4 +48,16 @@ draft: true
 /octopus:knowledge-briefing [--root <id>] [--daily|--weekly] [--since <window>]
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `--root <id>` — one specific root (e.g. `docs`, `memory`, `consigliere`);
+  default: every resolved root.
+- `--daily` — attention briefing; advances the per-root watermark (default
+  mode).
+- `--weekly` — narrated rollup over a 7-day window; does **not** advance the
+  watermark.
+- `--since <window>` — override the window for a single run (e.g. `"3 days"`)
+  without touching the watermark.
+
+Pair with `/schedule` or `/loop` to make this briefing a recurring routine
+rather than a one-off invocation.
+
+[Source: `commands/knowledge-briefing.md`](https://github.com/leocosta/octopus/blob/main/commands/knowledge-briefing.md)

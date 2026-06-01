@@ -1,23 +1,82 @@
 ---
 title: debug
 description: "Walk the Octopus bug-fix protocol — reproduce, isolate, regression test, document non-obvious cause."
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:debug` conduz o protocolo de correção de bugs explicitamente
+pra um único bug que o usuário descreve inline — o mesmo workflow de
+quatro fases que o agente aplica automaticamente sempre que uma tarefa
+começa a partir de uma falha.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this command removes */}
+O caminho mais rápido num bug raramente é o caminho certo. Ir direto
+pra uma correção sem reproduzir a falha primeiro significa que você
+pode remendar o sintoma e perder a causa raiz. Commitar a correção sem
+um regression test significa que o mesmo bug pode voltar com um
+sintoma diferente seis meses depois.
 
-## How it works
+O `debug` impõe o loop completo: reproduzir de forma determinística,
+isolar a causa raiz, escrever o regression test antes da correção, e
+documentar tudo que não for óbvio pra que leitores futuros — e agentes
+futuros — não precisem redescobrir.
 
-{/* TODO: the mechanism */}
+## Como resolve
 
-## Usage & parameters
+O protocolo é quatro fases aplicadas em ordem:
+
+1. **Reproduzir deterministicamente** — antes de propor uma causa,
+   estabelecer um comando, test case ou script que dispara a falha
+   100% das vezes. "Acontece às vezes" é um sintoma de contexto
+   faltando, não um ponto de partida.
+
+2. **Isolar** — com uma reprodução determinística, estreitar a mudança
+   responsável. Técnicas: `git bisect` pra regressões; hipótese →
+   menor experimento falsificador → executar; estreitar por eixo
+   (input, variável de ambiente, code path, versão de dependência).
+   Pare de isolar quando a causa raiz for identificada — não quando um
+   sintoma superficial for corrigido.
+
+3. **Corrigir com regression test primeiro** — escrever o teste que
+   falha antes de escrever a correção. O teste precisa falhar no
+   código atual (com bug) e passar depois da correção. Ele vive na
+   suite de testes normal do projeto. Depois que o teste ficar verde,
+   um simplify pass revisa a mudança pra duplicação e clareza antes de
+   commitar.
+
+4. **Documentar causa não óbvia** — se a causa raiz não for óbvia pelo
+   diff, documente. Causas específicas do bug vão no corpo da mensagem
+   do commit; padrões recorrentes vão em `knowledge/<domain>/`;
+   problemas de ambiente ou processo viram um item rastreado.
+
+## Uso & parâmetros
 
 ```
 /octopus:debug <bug description or failing test name>
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `<bug description or failing test name>` — descrição em linguagem
+  natural da falha, nome do teste que falha ou trecho de stack trace.
+  A skill usa isso como sinal de reprodução inicial.
+
+## Relação com a skill
+
+A skill `debug` está ativa por padrão em toda tarefa de bug-triage —
+o agente a engaja automaticamente quando a tarefa começa a partir de
+uma falha (bug report, teste que falha, stack trace, regressão). Este
+comando a conduz explicitamente pra um único bug específico descrito
+inline, útil quando você quer controle deliberado fase a fase em vez
+de engajamento implícito.
+
+## Pairing
+
+- `/octopus:implement` — pra feature work e refactors. O `debug`
+  cuida do caminho reproduzir → isolar → corrigir; o loop TDD do
+  `implement` é reusado dentro da Fase 3 pra correção em si.
+- `/octopus:codereview` — rodar após uma correção não trivial antes de
+  abrir o PR, especialmente quando a correção toca billing, tenant
+  scope ou contratos cross-stack.
+
+[Fonte: `commands/debug.md`](https://github.com/leocosta/octopus/blob/main/commands/debug.md)
+
+[Source: `commands/debug.md`](https://github.com/leocosta/octopus/blob/main/commands/debug.md)

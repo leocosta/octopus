@@ -1,18 +1,43 @@
 ---
 title: audit-fleet
 description: "Cross-repo adoption + drift audit — reports each repo's Octopus config against its declared target (baseline + stack profile + adoption tier) from fleet.yml. Signal-only; feeds fleet-bootstrap --from-audit."
-draft: true
+sidebar:
+  order: 12
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:audit-fleet` is the cross-repo view of Octopus adoption. It reads
+your `fleet.yml`, inspects each repo's actual configuration against its
+declared target, and produces a per-repo table and a drift-hotspots rollup —
+without touching a single file.
 
 ## What it solves
 
-{/* TODO: the concrete pain this command removes */}
+`octopus setup` is per-repo, and workspace rules are shared — but a manager
+overseeing multiple repos has no way to see at a glance which repos lag the
+standard, which are below their declared adoption tier, or which are missing
+`CONTEXT.md` entirely. You find out gradually, through individual code reviews
+or broken workflows, not as a coherent signal. `audit-fleet` gives that
+coherent signal: one command, one report, widest gaps first.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+1. **Fleet resolution** — reads `fleet.yml` in the workspace repo for the repo
+   list and the declared targets (baseline, stack profile, adoption tier). Falls
+   back to an explicit `fleet:` list in `.octopus.yml`, then to passed local
+   paths.
+2. **Per-repo inspection** — for each repo, computes the target
+   (`baseline ∪ profile ∪ tier`) and compares it against what is actually
+   installed: adoption tier, enabled bundles, Octopus version, rules drift,
+   `CONTEXT.md` presence, and ADR count.
+3. **Report shape** — a per-repo table (target vs actual, drift flags) followed
+   by a drift-hotspots rollup that surfaces the widest gaps first, e.g. "5/7
+   repos behind the Octopus version" or "3/7 below their target tier".
+4. **Suggested action** — the report points at `fleet-bootstrap` for
+   remediation and notes that it can consume this report directly via
+   `--from-audit`.
+
+The audit is **signal-only**. It never mutates a repo. Remediation is
+`fleet-bootstrap`'s job.
 
 ## Usage & parameters
 
@@ -21,4 +46,7 @@ draft: true
 /octopus:audit-fleet <path> ...      # audit an explicit list of local repo paths
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `<path> ...` — one or more local repo paths to audit. When omitted, the fleet
+  is resolved from `fleet.yml` in the workspace repo.
+
+[Source: `commands/audit-fleet.md`](https://github.com/leocosta/octopus/blob/main/commands/audit-fleet.md)

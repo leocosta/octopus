@@ -1,18 +1,51 @@
 ---
 title: debug
 description: "Walk the Octopus bug-fix protocol — reproduce, isolate, regression test, document non-obvious cause."
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:debug` drives the bug-fix protocol explicitly for a single
+bug the user describes inline — the same four-phase workflow the agent
+applies automatically whenever a task starts from a failure.
 
 ## What it solves
 
-{/* TODO: the concrete pain this command removes */}
+The fastest path through a bug is rarely the right one. Jumping
+straight to a fix without reproducing the failure first means you
+might patch the symptom and miss the root cause. Committing the fix
+without a regression test means the same bug can come back under a
+different symptom six months later.
+
+`debug` enforces the complete loop: reproduce deterministically,
+isolate the root cause, write the regression test before the fix, and
+document anything non-obvious so future readers — and future agents —
+don't have to rediscover it.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+The protocol is four phases applied in order:
+
+1. **Reproduce deterministically** — before proposing a cause,
+   establish a command, test case, or script that triggers the
+   failure 100% of the time. "Sometimes happens" is a symptom of
+   missing context, not a starting point.
+
+2. **Isolate** — with a deterministic reproduction, narrow the
+   responsible change. Techniques: `git bisect` for regressions;
+   hypothesis → smallest falsifying experiment → run it; narrow by
+   axis (input, environment variable, code path, dependency version).
+   Stop isolating when the root cause is identified — not when a
+   superficial symptom is patched.
+
+3. **Fix with a regression test first** — write the failing test
+   before writing the fix. The test must fail against the current
+   buggy code and pass once the fix lands. It lives in the project's
+   normal test suite. After the test is green, a simplify pass reviews
+   the change for duplication and clarity before committing.
+
+4. **Document non-obvious cause** — if the root cause is not obvious
+   from the diff, write it down. Bug-specific causes go in the commit
+   message body; recurring patterns go into `knowledge/<domain>/`;
+   environment or process issues become a tracked item.
 
 ## Usage & parameters
 
@@ -20,4 +53,26 @@ draft: true
 /octopus:debug <bug description or failing test name>
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `<bug description or failing test name>` — a plain-language
+  description of the failure, a failing test name, or a stack trace
+  excerpt. The skill uses this as its starting reproduction signal.
+
+## Relationship to the skill
+
+The `debug` skill is active by default on every bug-triage task — the
+agent engages it automatically when the task starts from a failure
+(bug report, failing test, stack trace, regression). This command
+drives it explicitly for one specific bug the user describes inline,
+useful when you want deliberate phase-by-phase control rather than
+implicit engagement.
+
+## Pairing
+
+- `/octopus:implement` — for feature work and refactors. `debug`
+  handles the reproduce → isolate → fix path; `implement`'s TDD loop
+  is reused inside Phase 3 for the fix itself.
+- `/octopus:codereview` — run after a non-trivial fix before opening
+  the PR, especially when the fix touches billing, tenant scope, or
+  cross-stack contracts.
+
+[Source: `commands/debug.md`](https://github.com/leocosta/octopus/blob/main/commands/debug.md)

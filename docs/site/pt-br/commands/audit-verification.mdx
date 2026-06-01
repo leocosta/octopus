@@ -1,23 +1,56 @@
 ---
 title: audit-verification
-description: "Signal-only verification audit — confronts a finished task against run evidence (unverified-completion-claim) and flags missing-file references (unresolved-reference). Queued by the zero-LLM verification-check Stop hook; runs cheap-tier on demand. Never blocks."
-draft: true
+description: "Auditoria somente sinal — confronta uma task finalizada contra evidências de execução e sinaliza claims de conclusão não verificados e referências a arquivos inexistentes. Enfileirada automaticamente; executa sob demanda."
+sidebar:
+  order: 15
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:audit-verification` é o check que faz a pergunta mais simples sobre
+uma task finalizada: *ela foi realmente verificada?* Ele traz à tona dois modos
+de falha específicos — uma conclusão declarada sem build, teste ou typecheck ter
+executado, e um diff que referencia um arquivo ou símbolo que não existe no disco.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this command removes */}
+Um formatter e um type checker julgam a sintaxe. `audit-grounding` julga se o
+agente inventou convenções ou fatos sem suporte. Mas nenhum deles pergunta se o
+agente realmente rodou o build antes de declarar sucesso. Um agente pode fechar
+uma task com "pronto, todos os testes passam" sem jamais ter executado o test
+runner. Pode escrever código importando um módulo que nunca foi criado. O
+compilador pegaria o segundo problema — mas só se executado. `audit-verification`
+é esse catch, aplicado de forma consistente, com o menor custo possível.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+O componente recorrente, por task, é um hook bash puro
+(`hooks/stop/verification-check.sh`) que executa após cada task ser concluída.
+Ele faz um scan determinístico, sem LLM, da sessão e do diff:
 
-## Usage & parameters
+- **`unverified-completion-claim`** — a sessão contém uma asserção de conclusão
+  ("pronto", "testes passam", "corrigido") mas não há evidência de que um
+  comando de build, teste ou typecheck tenha sido executado. Quando esse padrão é
+  detectado, o hook enfileira uma proposta de verificação.
+- **`unresolved-reference`** — o diff importa um caminho relativo que não resolve
+  no disco. O hook detecta isso de forma determinística.
+
+Quando o hook enfileira uma proposta, `/octopus:audit-verification` (ou
+`/octopus:review-proposals`) a lê e contextualiza o finding. Esse skill executa
+no tier de modelo mais barato — confrontar um claim contra evidências de execução
+é mecânico, não raciocínio profundo.
+
+O skill é **somente sinal**. Ele nunca bloqueia um commit, task ou merge. Ele
+reporta; o humano decide. Bloquear é responsabilidade do bundle `guardrails`.
+
+## Uso & parâmetros
 
 ```
 /octopus:audit-verification
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+Esse comando não aceita flags. Normalmente é acessado via
+`/octopus:review-proposals` quando há uma proposta de verificação enfileirada,
+ou executado diretamente após uma task pra checar a sessão atual.
+
+[Fonte: `commands/audit-verification.md`](https://github.com/leocosta/octopus/blob/main/commands/audit-verification.md)
+
+[Source: `commands/audit-verification.md`](https://github.com/leocosta/octopus/blob/main/commands/audit-verification.md)

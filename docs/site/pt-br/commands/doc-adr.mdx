@@ -1,23 +1,54 @@
 ---
 title: doc-adr
-description: "Create a new ADR with auto-incrementing number"
-draft: true
+description: "Bootstrap um novo Architecture Decision Record com numeração automática e a data de hoje, pronto pra preencher."
+sidebar:
+  order: 18
+source_hash: "sha256:doc-adr-en-v1"
+needs_retranslation: false
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:doc-adr` cria um Architecture Decision Record numerado a
+partir do template do projeto. Use sempre que você tomar uma decisão
+técnica não trivial — durante o design, a implementação ou depois de
+um post-mortem — pra que o raciocínio fique registrado onde futuros
+colaboradores possam encontrar.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this command removes */}
+Decisões técnicas são tomadas o tempo todo, mas o raciocínio por
+trás delas raramente é documentado. Seis meses depois, alguém lê o
+código e se pergunta por que o time escolheu aquele modelo de dados,
+aquela biblioteca ou aquela fronteira de protocolo. Sem um ADR, a
+resposta é uma busca no histórico de chat ou uma reunião.
 
-## How it works
+Um ADR muda isso. É um registro curto e durável: qual era o contexto,
+o que foi decidido, quais alternativas foram rejeitadas e quais são as
+consequências. `doc-adr` cuida da parte mecânica — numeração,
+datação e posicionamento do arquivo — pra que o atrito de registrar
+uma decisão seja próximo de zero.
 
-{/* TODO: the mechanism */}
+## Como funciona
 
-## Usage & parameters
+1. Resolve o slug — a partir do argumento que você passa, ou
+   pedindo pra você descrever a decisão em poucas palavras.
+2. Varre `docs/adrs/` pra encontrar o número mais alto atual e
+   incrementa (com zero à esquerda pra três dígitos; começa em `001`
+   pra projetos sem nenhum ADR).
+3. Lê o template de ADR, preenche o número, a data e o título, e
+   escreve o arquivo em `docs/adrs/<numero>-<slug>.md`.
+4. Informa o caminho do arquivo e o identificador do ADR, e lembra
+   você de preencher as seções de Context, Decision e Consequences.
+5. Se existir um spec relacionado em `docs/specs/`, sugere linkar o
+   ADR na seção Context for Agents do spec.
+
+## Uso & parâmetros
 
 ```
 /octopus:doc-adr [slug]
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `[slug]` — descrição em kebab-case da decisão (ex: `usar-postgresql`,
+  `estrategia-de-parser`). Se omitido, o comando pergunta antes de
+  continuar.
+
+[Source: `commands/doc-adr.md`](https://github.com/leocosta/octopus/blob/main/commands/doc-adr.md)

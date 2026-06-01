@@ -1,18 +1,60 @@
 ---
 title: doc-plan
 description: "Turn a completed spec into a bite-sized, TDD-style implementation plan under docs/plans/<slug>.md"
-draft: true
+sidebar:
+  order: 17
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:doc-plan` reads a completed spec and produces a
+step-by-step implementation plan where every task follows the
+red-green-commit TDD cycle. The resulting plan file is ready to be
+executed by an agent or a human without further interpretation.
 
 ## What it solves
 
-{/* TODO: the concrete pain this command removes */}
+A spec's Implementation Plan section describes *what* to build and in
+what order. It doesn't describe *how* to build it safely in small,
+verifiable increments. Without that breakdown, implementation tends to
+drift: changes accumulate before being tested, tasks are ambiguous in
+scope, and the commit history doesn't map back to the original design.
+
+`doc-plan` bridges that gap. Each high-level spec item becomes one or
+more tasks with an explicit failing-test step, a minimal implementation
+step, a passing-test step, and a commit. The plan is a concrete
+executable artifact — not a restatement of the spec.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+1. **Setup** — reads `docs/specs/<slug>.md` and verifies the
+   Implementation Plan section is populated. Aborts with a clear
+   message if the spec is missing or the plan section is empty.
+2. **Context scan** — silently reads recent git history and the spec's
+   metadata, overview, detailed design, and testing strategy.
+3. **Plan header** — drafts the goal, architecture summary, tech
+   stack, spec link, and a file-structure table from the spec.
+   Shows the draft for approval before writing.
+4. **Pipeline frontmatter** — generates task IDs (`t1`, `t2`, …),
+   infers the responsible agent role, and infers dependencies between
+   tasks. Asks for approval before finalising.
+5. **Task decomposition** — maps each Implementation Plan item to one
+   or more TDD tasks. Items that are too large (touching many files or
+   doing many things) are split; items that are trivially small are
+   folded into the previous task.
+6. **Self-review** — scans the buffered plan for placeholder language,
+   naming inconsistencies, coverage gaps against the spec, and
+   excessive plan length before writing.
+7. **Write + commit** — writes `docs/plans/<slug>.md` to a docs-only
+   branch and commits. Prompts before overwriting an existing plan.
+
+**Hard gate:** this command does not write production code, tests, or
+implementation branches. The terminal state is a committed plan file.
+
+## Pipeline position
+
+`doc-rfc` → `doc-spec` → `doc-design` → **`doc-plan`**
+
+After the plan is merged, execute it with
+`superpowers:executing-plans` or `superpowers:subagent-driven-development`.
 
 ## Usage & parameters
 
@@ -20,4 +62,9 @@ draft: true
 /octopus:doc-plan <slug>
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `<slug>` — required. The kebab-case spec slug whose Implementation
+  Plan section will be decomposed (e.g. `checkout-revamp`). The spec
+  must already exist at `docs/specs/<slug>.md` with a populated
+  Implementation Plan.
+
+[Source: `commands/doc-plan.md`](https://github.com/leocosta/octopus/blob/main/commands/doc-plan.md)

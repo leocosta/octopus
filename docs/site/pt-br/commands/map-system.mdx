@@ -1,23 +1,66 @@
 ---
 title: map-system
-description: "Produce a higher-level map of the relevant modules and their callers in the project's domain vocabulary — manual-invocation only."
-draft: true
+description: "Produz um mapa de alto nível do codebase no vocabulário de domínio do projeto — um snapshot de orientação rápido ou um deck HTML temático completo."
+sidebar:
+  order: 14
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:map-system` responde "o que é essa área, nas nossas próprias
+palavras?" na profundidade que a situação exige. É de invocação manual apenas
+— o comando existe exatamente porque agentes não devem mapear por iniciativa
+própria.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this command removes */}
+Ler código no nível da pergunta é o erro de orientação mais comum. Quando você
+quer entender uma área de feature, ler funções individuais te diz *como*, não
+*o quê*. Um mapa útil fica um nível acima da pergunta e usa o vocabulário de
+domínio do projeto, não identificadores de código.
 
-## How it works
+`map-system` impõe essa disciplina de abstração. Ele lê `CONTEXT.md`, ADRs,
+a árvore de módulos e (quando presente) definições de API e modelo de dados,
+depois produz um mapa escrito nos termos que o time de fato usa. Para um
+engenheiro novo sendo integrado ou um manager revisando uma área desconhecida
+antes de um planning, a saída é o artefato pelo qual ele é guiado.
 
-{/* TODO: the mechanism */}
+## Como funciona
 
-## Usage & parameters
+O comando tem dois modos, selecionados com `--mode`:
+
+**`complete` (default)** — um crawl exaustivo do repositório que renderiza um
+deck HTML temático autocontido. O deck cobre: overview do projeto e propósito
+de negócio, um mapa de arquitetura e módulos com diagramas SVG inline,
+contratos de API e modelo de dados (quando detectáveis), e os ADRs que moldam
+o codebase. Salvo em `docs/system-map/<repo>.html` por padrão. Quando
+`frontend-design` está disponível, ele refina o design visual além do template
+base.
+
+**`simplified`** — um mapa textual de orientação de ~30 linhas em uma única
+passagem, renderizado inline. Faz amostragem em vez de crawl. O valor é a
+disciplina: uma tela, vocabulário de domínio, um nível acima da pergunta.
+
+Em ambos os modos, se `CONTEXT.md` estiver faltando o comando torna esse gap
+explicitamente visível — o mapa usa identificadores de código como fallback,
+que é um resultado utilizável mas mais fraco.
+
+## Uso & parâmetros
 
 ```
 /octopus:map-system <area or question>
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `<area or question>` — a área ou pergunta a mapear. Obrigatório. O comando
+  decide o nível de abstração certo a partir dessa entrada.
+- `--mode simplified | complete` — profundidade do conteúdo. Default: `complete`.
+- `--save` / `--no-save` — salva em arquivo ou retorna inline. Default: save
+  ativado. `--no-save` retorna o conteúdo inline independentemente de `--output`.
+- `--output markdown | html` — formato do arquivo salvo. Default: `html` (deck
+  temático). `markdown` escreve o mesmo conteúdo como documento plain sem tema.
+- `--theme <name>` — tema predefinido para o deck HTML. Default: `dark-blue`.
+- `--design-from "<prompt>"` — sintetiza um tema customizado via
+  `frontend-design`. Requer que `frontend-design` esteja disponível; faz
+  fallback para um preset quando não está.
+
+[Fonte: `commands/map-system.md`](https://github.com/leocosta/octopus/blob/main/commands/map-system.md)
+
+[Source: `commands/map-system.md`](https://github.com/leocosta/octopus/blob/main/commands/map-system.md)

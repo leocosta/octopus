@@ -1,18 +1,56 @@
 ---
 title: prototype
-description: "Build a throwaway prototype to answer one design question — logic branch (terminal app) or UI branch (variants on one route)."
-draft: true
+description: "Build throwaway code to answer one design question before committing to it — logic branch for state and algorithms, UI branch for layout and interaction feel."
+sidebar:
+  order: 18
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:prototype` enforces the discipline that separates productive
+exploration from half-built features: state the question first, build the
+smallest thing that answers it, capture the answer durably, then delete
+the code.
 
 ## What it solves
 
-{/* TODO: the concrete pain this command removes */}
+Without a question, a prototype is just an uncommitted feature. Teams build
+prototypes to avoid committing to an unknown — but skip stating the unknown
+explicitly, then let the prototype linger until it becomes the default
+implementation by inertia.
+
+`prototype` closes that loop. It requires a question before any code is
+written, bifurcates the approach by question type, enforces the no-persistence
+default, and ends with an explicit capture step so the answer survives the
+prototype's deletion.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+The command starts at the bifurcation gate — the most important step:
+
+| Question type | Branch | What gets built |
+|---|---|---|
+| State, logic, data model, algorithm | **logic** | Runnable terminal app — smallest executable that exercises the question |
+| Visual, layout, interaction feel | **UI** | Single route with multiple variants toggled from one screen |
+
+If the type is ambiguous and you are unavailable, the command defaults by
+context (terminal-shaped repo → logic; web app → UI) and declares the
+assumption explicitly in the artifact.
+
+Two rules that define prototype discipline:
+
+**No persistence by default.** Prototypes do not write to a database or a real
+file store. If the prototype starts writing to persistence, the question has
+shifted — the command pauses and reclassifies. Exception: when persistence
+*is* the question (schema design, migration shape), a throwaway SQLite file
+in the prototype directory is acceptable; never the real database.
+
+**Capture before delete.** When the question is answered, the answer is
+written somewhere durable before the code is removed. The destination depends
+on what the answer means: a commit message body, an ADR, an issue or PRD, or
+a `NOTES.md` next to the prototype. The chat transcript does not count — it
+scrolls away.
+
+After capturing, the prototype is either deleted or its non-throwaway parts
+are absorbed into the real code path. There is no third option.
 
 ## Usage & parameters
 
@@ -20,4 +58,8 @@ draft: true
 /octopus:prototype <one-sentence question to answer>
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `<one-sentence question>` — the design question the prototype must answer.
+  Required. If not supplied, the command refuses to start — a prototype
+  without a question is a half-built feature.
+
+[Source: `commands/prototype.md`](https://github.com/leocosta/octopus/blob/main/commands/prototype.md)

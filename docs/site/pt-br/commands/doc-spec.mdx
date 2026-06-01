@@ -1,23 +1,58 @@
 ---
 title: doc-spec
-description: "Create a new feature spec from template"
-draft: true
+description: "Cria um novo spec de feature a partir do template do projeto, com link opcional pra um RFC existente, e oferece continuar diretamente na sessão de design."
+sidebar:
+  order: 15
+source_hash: "sha256:doc-spec-en-v1"
+needs_retranslation: false
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:doc-spec` cria o stub de especificação que ancora todo o
+trabalho downstream — design, plano e implementação. É o ponto de
+entrada pra qualquer feature não trivial que precisa de um design
+escrito antes de o código ser tocado.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this command removes */}
+Implementar sem spec gera dois problemas recorrentes: os engenheiros
+partem de modelos mentais diferentes, e as decisões tomadas durante
+a implementação não ficam registradas em lugar nenhum. Um stub de
+spec criado no momento certo — depois do consenso, mas antes do
+trabalho de design — dá ao time um único documento pra preencher
+junto.
 
-## How it works
+`doc-spec` cuida da parte mecânica: achar o template certo, fazer
+link com um RFC existente se houver, e colocar o arquivo no caminho
+canônico. A sessão de design preenche o conteúdo.
 
-{/* TODO: the mechanism */}
+## Como funciona
 
-## Usage & parameters
+1. Resolve o slug — a partir do argumento que você passa, ou
+   perguntando.
+2. Verifica `docs/rfcs/` em busca de um RFC correspondente e o
+   linka nos metadados do spec, se encontrado.
+3. Escreve o stub em `docs/specs/<slug>.md` a partir do template
+   do projeto.
+4. Informa o caminho do arquivo, o link do RFC (quando encontrado),
+   e lembra você de preencher as seções de design.
+5. Em sessões interativas, oferece continuar direto na sessão de
+   design — responder `y` encadeia no `/octopus:doc-design`.
+
+## Posição no pipeline
+
+`doc-rfc` → **`doc-spec`** → `doc-design` → `doc-plan`
+
+O stub do spec é o ponto de handoff entre consenso e design
+detalhado. Use `/octopus:doc-design` pra popular as seções de
+Design, Implementation Plan, Testing Strategy e Context for Agents.
+
+## Uso & parâmetros
 
 ```
 /octopus:doc-spec [slug]
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `[slug]` — nome em kebab-case pro spec (ex: `checkout-revamp`).
+  Se omitido, o comando pede antes de continuar.
+
+[Source: `commands/doc-spec.md`](https://github.com/leocosta/octopus/blob/main/commands/doc-spec.md)

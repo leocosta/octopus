@@ -1,18 +1,46 @@
 ---
 title: audit-money
 description: "Pre-merge audit of money-touching code — types, rounding, cents tests, env drift, idempotency, webhook signatures, fee disclosure."
-draft: true
+sidebar:
+  order: 13
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:audit-money` scans the current branch (or any ref) for money-logic
+correctness issues before merge. It produces a severity-tiered report across
+seven inspection families, designed to paste directly into a PR comment.
 
 ## What it solves
 
-{/* TODO: the concrete pain this command removes */}
+Money bugs have a particular property: they are often invisible in code review
+because reviewers focus on logic, not on the subtle correctness requirements of
+financial computation. A `float` for a monetary field, a `Math.Round` without
+an explicit rounding mode, a new webhook endpoint without signature
+verification, or a fee-change that never got a disclosure spec — none of these
+look wrong at a glance. They look wrong in production, at 2 AM, after the
+accounting reconciliation fails. `audit-money` makes these patterns explicit and
+reviewable before the merge.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+The skill resolves the diff, identifies money-relevant files via keyword
+heuristics, and runs seven inspection families:
+
+- **T1 types** — flags `float`/`double` for monetary fields in C#; flags bare
+  `number` for currency values in TypeScript without a cents comment. Severity: warn.
+- **T2 rounding** — flags `Math.Round` without an explicit `MidpointRounding`
+  argument in C#; flags `.toFixed()` on money values in TypeScript. Also catches
+  inconsistent rounding modes across files in the same diff. Severity: warn.
+- **T3 tests** — requires that modified money files have accompanying test
+  changes, and that those tests exercise non-round cent values. Severity: warn / info.
+- **T4 env** — blocks when a new `*_PERCENT`/`*_FEE`/`*_RATE` env var exists in
+  one environment file but not another (sandbox vs production). Severity: block.
+- **T5 idempotency** — warns when an outbound POST to a payment provider URL
+  carries no idempotency key or external reference. Severity: warn.
+- **T6 webhook** — blocks when a new webhook endpoint lands without a signature
+  verification call before payload processing. Severity: block.
+- **T7 disclosure** — warns when a fee or rate change in the diff has no
+  corresponding mention of disclosure, consent, or disclaimer in the touched
+  specs or research documents. Severity: warn.
 
 ## Usage & parameters
 
@@ -20,4 +48,9 @@ draft: true
 /octopus:audit-money [ref] [--base=main] [--write-report] [--only=<families>]
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `ref` — PR number (`#123`), URL, branch name, or commit SHA. Default: current `HEAD` vs its upstream.
+- `--base=<branch>` — base branch for the diff. Default: `main`.
+- `--write-report` — persists the report to `docs/reviews/YYYY-MM-DD-money-<slug>.md`.
+- `--only=<list>` — comma-separated subset of `types,rounding,tests,env,idempotency,webhook,disclosure`. Runs only the listed families.
+
+[Source: `commands/audit-money.md`](https://github.com/leocosta/octopus/blob/main/commands/audit-money.md)

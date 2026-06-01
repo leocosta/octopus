@@ -1,23 +1,63 @@
 ---
 title: audit-money
-description: "Pre-merge audit of money-touching code — types, rounding, cents tests, env drift, idempotency, webhook signatures, fee disclosure."
-draft: true
+description: "Auditoria pré-merge de código que toca dinheiro — tipos, arredondamento, testes de centavos, drift de env, idempotência, assinaturas de webhook, disclosure de taxas."
+sidebar:
+  order: 13
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:audit-money` escaneia o branch atual (ou qualquer ref) em busca de
+problemas de corretude em lógica monetária antes do merge. Ele produz um
+relatório com severidade em sete famílias de inspeção, projetado pra colar
+direto em um comentário de PR.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this command removes */}
+Bugs de dinheiro têm uma propriedade particular: são frequentemente invisíveis
+em code review porque os revisores focam em lógica, não nos requisitos sutis de
+corretude de computação financeira. Um `float` pra um campo monetário, um
+`Math.Round` sem modo de arredondamento explícito, um novo endpoint de webhook
+sem verificação de assinatura, ou uma mudança de taxa que nunca ganhou uma spec
+de disclosure — nenhum desses parece errado à primeira vista. Parecem errados em
+produção, de madrugada, quando a reconciliação contábil falha. `audit-money`
+torna esses padrões explícitos e revisáveis antes do merge.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+O skill resolve o diff, identifica arquivos relevantes a dinheiro via heurísticas
+de palavras-chave e executa sete famílias de inspeção:
 
-## Usage & parameters
+- **T1 types** — sinaliza `float`/`double` pra campos monetários em C#; sinaliza
+  `number` simples pra valores de moeda em TypeScript sem comentário de centavos.
+  Severidade: warn.
+- **T2 rounding** — sinaliza `Math.Round` sem argumento `MidpointRounding` explícito
+  em C#; sinaliza `.toFixed()` em valores monetários em TypeScript. Também detecta
+  modos de arredondamento inconsistentes entre arquivos no mesmo diff.
+  Severidade: warn.
+- **T3 tests** — exige que arquivos de money modificados tenham mudanças em testes
+  correspondentes, e que esses testes exercitem valores de centavos não redondos.
+  Severidade: warn / info.
+- **T4 env** — bloqueia quando uma nova env var `*_PERCENT`/`*_FEE`/`*_RATE`
+  existe em um arquivo de ambiente mas não em outro (sandbox vs produção).
+  Severidade: block.
+- **T5 idempotency** — avisa quando um POST externo pra URL de provedor de pagamento
+  não carrega idempotency key ou referência externa. Severidade: warn.
+- **T6 webhook** — bloqueia quando um novo endpoint de webhook é criado sem
+  verificação de assinatura antes do processamento do payload. Severidade: block.
+- **T7 disclosure** — avisa quando uma mudança de taxa ou fee no diff não tem
+  menção correspondente a disclosure, consentimento ou aviso nos specs ou
+  documentos de pesquisa tocados. Severidade: warn.
+
+## Uso & parâmetros
 
 ```
 /octopus:audit-money [ref] [--base=main] [--write-report] [--only=<families>]
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `ref` — número de PR (`#123`), URL, nome do branch ou SHA do commit. Default: `HEAD` atual vs seu upstream.
+- `--base=<branch>` — branch base para o diff. Default: `main`.
+- `--write-report` — persiste o relatório em `docs/reviews/YYYY-MM-DD-money-<slug>.md`.
+- `--only=<lista>` — subconjunto separado por vírgula de `types,rounding,tests,env,idempotency,webhook,disclosure`. Executa apenas as famílias listadas.
+
+[Fonte: `commands/audit-money.md`](https://github.com/leocosta/octopus/blob/main/commands/audit-money.md)
+
+[Source: `commands/audit-money.md`](https://github.com/leocosta/octopus/blob/main/commands/audit-money.md)

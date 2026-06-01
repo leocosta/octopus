@@ -1,18 +1,53 @@
 ---
 title: knowledge-hygiene
 description: "Audit a knowledge root for staleness, broken links, orphans, and archive drift; --gaps for coverage, --fix for reversible remedies."
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:knowledge-hygiene` runs a structured decay audit over any registered
+knowledge root — `docs/`, the standards set, auto-memory, or the private
+consigliere workspace — and surfaces what has quietly rotted without you
+noticing.
 
 ## What it solves
 
-{/* TODO: the concrete pain this command removes */}
+Markdown knowledge bases decay silently. A node last touched eight months ago
+sits in the same list as one updated yesterday, with nothing to tell them apart.
+Internal links break when files move; concluded work stays in the active tree;
+topics accumulate across notes but never earn their own page. None of these
+problems announce themselves — you only discover them when you trust something
+stale.
+
+`knowledge-hygiene` runs the checks proactively so you don't have to audit by
+memory. It reports what decayed; with `--fix` it repairs the subset of problems
+that have a safe, reversible solution.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+The mechanical checks run in the `octopus hygiene` core, which reads node
+metadata, links, thresholds, and the archive directory from the knowledge root
+registry. The skill wraps those deterministic results with the fuzzy judgment the
+core defers to you.
+
+Four check types are reported, each as a single structured line:
+
+- **staleness** — node whose last update (frontmatter `updated:` → git
+  last-commit → mtime) is older than the root's configured threshold. Severity:
+  `warn`.
+- **broken-link** — a link target that does not exist on disk. Severity: `warn`.
+- **orphan** — node with no inbound links, excluding known entry points
+  (`README*`, `index*`, `roadmap*`) and any root-level allowlist. Severity:
+  `info`.
+- **archive-drift** — node whose frontmatter `status:` is terminal (`done`,
+  `closed`, `archived`) but still lives outside the archive directory. Severity:
+  `info`.
+
+`--gaps` adds a documentation-coverage pass: missing required fields on nodes,
+and recurring untracked entities — topics mentioned across multiple nodes that
+have never earned a page of their own.
+
+`--fix` applies only the reversible remedies: `git mv` for archive-drift, and
+link repair when exactly one unambiguous target exists. Everything else stays
+report-only, staged for your review before any commit.
 
 ## Usage & parameters
 
@@ -20,4 +55,12 @@ draft: true
 /octopus:knowledge-hygiene [--root <id>] [--gaps] [--fix] [--write-report]
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `--root <id>` — audit one specific root (e.g. `docs`, `memory`,
+  `consigliere`); default: every resolved root.
+- `--gaps` — also run the documentation-coverage judgment for missing fields and
+  recurring untracked entities.
+- `--fix` — apply reversible remedies (archive-drift moves, unambiguous link
+  repairs); default is report-only.
+- `--write-report` — write the report to a file instead of stdout.
+
+[Source: `commands/knowledge-hygiene.md`](https://github.com/leocosta/octopus/blob/main/commands/knowledge-hygiene.md)

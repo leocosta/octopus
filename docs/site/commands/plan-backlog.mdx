@@ -1,18 +1,48 @@
 ---
 title: plan-backlog
-description: "Scan planning directories + roadmap for orphan plans, concluded-but-not-archived, duplicates, broken links, roadmap orphans, and stale plans."
-draft: true
+description: "Scan the planning directories and roadmap for hygiene issues — orphan plans, concluded-but-not-archived, duplicates, broken links, roadmap orphans, and stale plans."
+sidebar:
+  order: 15
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:plan-backlog` audits your `plans/` directory and `docs/roadmap.md`
+for the six hygiene problems that accumulate silently over delivery cycles —
+and optionally fixes the ones that are safe to automate.
 
 ## What it solves
 
-{/* TODO: the concrete pain this command removes */}
+After a dozen delivery cycles, `plans/` grows to fifty-plus files. New
+contributors cannot tell which plans are alive, which completed features were
+never archived, which roadmap entries have no plan at all, and which plans
+point to specs that no longer exist. The planning surface becomes noise.
+
+`plan-backlog` makes the state visible with a severity-tiered report
+(`⚠ Warn` / `ℹ Info`) and — with `--fix` — moves concluded plans into a
+dated archive directory using `git mv` so history is preserved.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+The command discovers the plans directory automatically (`plans/` or
+`docs/plans/`; configurable via `.octopus.yml`), then runs six checks across
+every plan file and the roadmap:
+
+- **H1 orphan** — plan with no RM, PR, issue, or spec link. Usually a draft
+  that was never wired into the lifecycle. Severity: Info.
+- **H2 concluded** — plan for a completed RM that is still outside `archive/`.
+  Severity: Warn. Auto-fixed with `--fix` (moved to `archive/YYYY-MM/` via
+  `git mv`).
+- **H3 duplicate** — two or more plans reference the same RM. Severity: Warn.
+  Needs human judgment; no auto-fix.
+- **H4 broken-link** — plan cites a `docs/specs/`, `docs/rfcs/`,
+  `docs/research/`, or `docs/adrs/` path that does not exist. Severity: Warn.
+  No auto-fix.
+- **H5 roadmap-orphan** — an in-progress or proposed RM has no corresponding
+  plan file. Severity: Info.
+- **H6 stale** — plan unchanged for longer than `--stale-days` (default 90)
+  and not linked to a concluded RM. Severity: Info.
+
+The output format matches `audit-money` and `review-contracts` so reports from
+all three can be concatenated in a single hygiene PR comment.
 
 ## Usage & parameters
 
@@ -20,4 +50,13 @@ draft: true
 /octopus:plan-backlog [--fix] [--write-report] [--plans-dir=<path>] [--stale-days=<n>] [--only=<checks>]
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `--fix` — apply reversible moves for H2 (concluded plans to
+  `archive/YYYY-MM/`). Requires a clean working tree. Default: read-only
+  report.
+- `--write-report` — save the report to `docs/reviews/YYYY-MM-DD-hygiene.md`.
+- `--plans-dir=<path>` — override the plans directory lookup.
+- `--stale-days=<n>` — staleness threshold for H6. Default: `90`.
+- `--only=<list>` — run a subset of checks. Valid values:
+  `orphan,concluded,duplicate,broken-link,roadmap-orphan,stale`.
+
+[Source: `commands/plan-backlog.md`](https://github.com/leocosta/octopus/blob/main/commands/plan-backlog.md)

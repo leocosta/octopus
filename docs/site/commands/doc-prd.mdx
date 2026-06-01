@@ -1,18 +1,47 @@
 ---
 title: doc-prd
-description: "Synthesise the current conversation into a PRD and publish it to the issue tracker, labelled ready-for-agent."
-draft: true
+description: "Synthesise the current conversation into a tracker-ready PRD and publish it labelled ready-for-agent."
+sidebar:
+  order: 19
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:doc-prd` bottles a conversation. When a brainstorm or
+alignment session has produced pinned decisions, this command packages
+them into a PRD and publishes it to the issue tracker — labelled
+`ready-for-agent` — without re-interviewing you.
 
 ## What it solves
 
-{/* TODO: the concrete pain this command removes */}
+Decisions made in a brainstorm or alignment session often evaporate
+before they become actionable work. Someone has to translate the
+conversation into a ticket, and that translation step introduces
+drift: requirements are softened, the rationale is dropped, and the
+scope that was agreed on becomes ambiguous.
+
+`doc-prd` does the translation while the conversation is still in
+context. It reads the decisions that are already there, packages them
+into a structured PRD, and publishes it. The result is a
+tracker-ready artifact that an agent or a human can pick up without
+a follow-up meeting.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+The command delegates to the `doc-prd` skill, which owns the full
+synthesis protocol:
+
+1. Reads the repository's vocabulary — `CONTEXT.md` and relevant
+   decision records — so the PRD speaks the project's language.
+2. Sketches the modules to be built or modified and asks for one
+   round of validation before writing.
+3. Writes the PRD body: problem statement, goals, non-goals, module
+   breakdown, and acceptance criteria. No file paths or code snippets
+   except where a snippet encodes a decision more precisely than prose.
+4. Publishes the PRD to the issue tracker and labels it
+   `ready-for-agent`.
+
+**The command refuses if pinned decisions are not already in the
+conversation context.** If the discussion is still exploratory, use
+`superpowers:brainstorming` to establish the decisions first.
 
 ## Usage & parameters
 
@@ -20,4 +49,8 @@ draft: true
 /octopus:doc-prd [optional title hint]
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `[optional title hint]` — a short phrase the command uses to
+  seed the PRD title (e.g. `"payment retry policy"`). If omitted,
+  the command infers the title from the conversation.
+
+[Source: `commands/doc-prd.md`](https://github.com/leocosta/octopus/blob/main/commands/doc-prd.md)

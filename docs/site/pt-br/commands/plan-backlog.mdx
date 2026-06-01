@@ -1,23 +1,67 @@
 ---
 title: plan-backlog
-description: "Scan planning directories + roadmap for orphan plans, concluded-but-not-archived, duplicates, broken links, roadmap orphans, and stale plans."
-draft: true
+description: "Varre os diretórios de planejamento e o roadmap em busca de problemas de higiene — planos órfãos, concluídos mas não arquivados, duplicatas, links quebrados, órfãos do roadmap e planos stale."
+sidebar:
+  order: 15
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:plan-backlog` audita seu diretório `plans/` e o `docs/roadmap.md`
+em busca dos seis problemas de higiene que se acumulam silenciosamente ao
+longo dos ciclos de entrega — e opcionalmente corrige os que são seguros de
+automatizar.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this command removes */}
+Depois de uma dúzia de ciclos de entrega, `plans/` cresce pra cinquenta
+arquivos ou mais. Novos contribuidores não conseguem dizer quais planos estão
+vivos, quais features concluídas nunca foram arquivadas, quais entradas do
+roadmap não têm nenhum plano e quais planos apontam pra specs que não existem
+mais. A superfície de planejamento vira ruído.
 
-## How it works
+`plan-backlog` torna o estado visível com um relatório por severidade
+(`⚠ Warn` / `ℹ Info`) e — com `--fix` — move planos concluídos pra um
+diretório de arquivo com data usando `git mv` pra preservar o histórico.
 
-{/* TODO: the mechanism */}
+## Como funciona
 
-## Usage & parameters
+O comando descobre o diretório de planos automaticamente (`plans/` ou
+`docs/plans/`; configurável via `.octopus.yml`), depois roda seis checks em
+cada arquivo de plano e no roadmap:
+
+- **H1 orphan** — plano sem RM, PR, issue ou link de spec. Geralmente um
+  rascunho que nunca foi conectado ao ciclo de vida. Severidade: Info.
+- **H2 concluded** — plano de um RM concluído que ainda está fora de
+  `archive/`. Severidade: Warn. Auto-corrigido com `--fix` (movido para
+  `archive/YYYY-MM/` via `git mv`).
+- **H3 duplicate** — dois ou mais planos referenciam o mesmo RM. Severidade:
+  Warn. Precisa de julgamento humano; sem auto-fix.
+- **H4 broken-link** — plano cita um caminho em `docs/specs/`, `docs/rfcs/`,
+  `docs/research/` ou `docs/adrs/` que não existe. Severidade: Warn. Sem
+  auto-fix.
+- **H5 roadmap-orphan** — um RM em andamento ou proposto não tem nenhum
+  arquivo de plano correspondente. Severidade: Info.
+- **H6 stale** — plano sem alterações por mais tempo que `--stale-days`
+  (default 90) e não vinculado a um RM concluído. Severidade: Info.
+
+O formato de saída é o mesmo de `audit-money` e `review-contracts` para que
+relatórios dos três possam ser concatenados em um único comentário de PR de
+higiene mensal.
+
+## Uso & parâmetros
 
 ```
 /octopus:plan-backlog [--fix] [--write-report] [--plans-dir=<path>] [--stale-days=<n>] [--only=<checks>]
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `--fix` — aplica moves reversíveis para H2 (planos concluídos para
+  `archive/YYYY-MM/`). Requer working tree limpa. Default: relatório
+  somente-leitura.
+- `--write-report` — salva o relatório em `docs/reviews/YYYY-MM-DD-hygiene.md`.
+- `--plans-dir=<path>` — sobrescreve a descoberta do diretório de planos.
+- `--stale-days=<n>` — threshold de stale para H6. Default: `90`.
+- `--only=<lista>` — roda um subconjunto de checks. Valores válidos:
+  `orphan,concluded,duplicate,broken-link,roadmap-orphan,stale`.
+
+[Fonte: `commands/plan-backlog.md`](https://github.com/leocosta/octopus/blob/main/commands/plan-backlog.md)
+
+[Source: `commands/plan-backlog.md`](https://github.com/leocosta/octopus/blob/main/commands/plan-backlog.md)

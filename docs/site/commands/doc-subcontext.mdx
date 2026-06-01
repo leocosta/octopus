@@ -1,18 +1,45 @@
 ---
 title: doc-subcontext
 description: "Create a scoped CLAUDE.md at a subdirectory — captures conventions unique to one module without duplicating the parent."
-draft: true
+sidebar:
+  order: 20
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:doc-subcontext` writes a focused `CLAUDE.md` for a single
+subdirectory in a monorepo. It captures the conventions, constraints,
+and patterns that are specific to that module without repeating
+anything the root `CLAUDE.md` already covers.
 
 ## What it solves
 
-{/* TODO: the concrete pain this command removes */}
+In a large monorepo, different subdirectories operate under different
+rules. The payments module may use a different error-handling pattern
+than the fulfillment engine. The API layer may have strict input
+validation conventions that don't apply to internal utilities. When
+all of that context lives only in the root `CLAUDE.md` — or worse,
+nowhere — agents and new contributors apply the wrong conventions to
+the wrong code.
+
+A per-subdirectory `CLAUDE.md` solves this by scoping context to where
+it applies. The subcontext cross-references the parent rather than
+duplicating it, so there's a single place to update shared rules and
+a separate place to capture module-specific ones.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+The command delegates to the `doc-subcontext` skill, which manages the
+full authoring discipline:
+
+1. Reads the parent-chain `CLAUDE.md` files (from the repo root down
+   to the target directory) to understand what is already covered.
+2. Runs a one-question-at-a-time interview to surface conventions that
+   are genuinely local to the subdirectory.
+3. Writes a lean `CLAUDE.md` (50–100 lines) that cross-references the
+   parent and captures only what is additive or overriding.
+
+**Prerequisite:** a root `CLAUDE.md` must exist. If it doesn't, the
+command refuses and directs you to run `octopus update` first. A
+subcontext is only meaningful on top of a root context.
 
 ## Usage & parameters
 
@@ -20,4 +47,8 @@ draft: true
 /octopus:doc-subcontext <subdirectory path>
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `<subdirectory path>` — required. Path to the target subdirectory,
+  relative to the repo root (e.g. `api/payments`, `packages/ui`).
+  The root `CLAUDE.md` must already exist.
+
+[Source: `commands/doc-subcontext.md`](https://github.com/leocosta/octopus/blob/main/commands/doc-subcontext.md)

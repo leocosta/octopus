@@ -1,19 +1,49 @@
 ---
 title: update
-description: "Update the Octopus submodule to a newer version"
-draft: true
+description: "Update the Octopus submodule to a newer version and re-run setup to regenerate agent configs."
+sidebar:
+  order: 16
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:update` bumps the Octopus submodule in your project to the latest
+available version — or to a specific version you choose — and runs
+`octopus setup` automatically so agent configs reflect the new release
+immediately.
 
 ## What it solves
 
-{/* TODO: the concrete pain this command removes */}
+Keeping a submodule-based tool current by hand means checking for new releases,
+running the update command, and then remembering to re-run setup so the
+generated agent config files match the new version. Skipping the setup step
+leaves the old configs in place, which can cause agent behavior to diverge from
+the version that is actually installed.
+
+`update` bundles the three steps — check, update, regenerate — into one
+interactive command that shows you the version delta before committing to it.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+1. Run `octopus update --latest` to read the current installed version and the
+   latest available release, and present both to you.
+2. Confirm the target version — accept the latest or specify a different one
+   (e.g. `v1.2.0` to pin to a particular release).
+3. Fetch and install the target version.
+4. Run `octopus setup` automatically to regenerate all agent configs. If no
+   `.octopus.yml` is found in the repo, setup is skipped and a warning is
+   printed.
+5. Report the result: current → new version, configs regenerated. Any setup
+   warnings or errors are surfaced before the success message.
 
 ## Usage & parameters
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+```
+/octopus:update
+```
+
+- (no arguments) — interactive: shows current and latest version, asks for
+  confirmation or a specific target version, then updates and re-runs setup.
+
+After the update, if setup reports warnings or errors, run `octopus setup`
+manually to resolve them before using other commands.
+
+[Source: `commands/update.md`](https://github.com/leocosta/octopus/blob/main/commands/update.md)

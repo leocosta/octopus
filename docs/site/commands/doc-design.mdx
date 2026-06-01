@@ -1,18 +1,61 @@
 ---
 title: doc-design
-description: "Interactive design session that fills a spec stub's Design, Implementation Plan, Testing, and adaptive sections one question at a time"
-draft: true
+description: "Interactive design session that fills a spec stub's Design, Implementation Plan, Testing Strategy, and adaptive sections one question at a time."
+sidebar:
+  order: 16
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:doc-design` is the conversational pass that turns a spec
+stub into a fully populated specification. It asks focused questions,
+drafts each section for your approval, and writes only what you
+confirm — one section at a time.
 
 ## What it solves
 
-{/* TODO: the concrete pain this command removes */}
+Spec stubs created by `/octopus:doc-spec` are intentionally empty.
+The design work — understanding the components, data flow, trade-offs,
+testing approach, and implementation order — happens in this session.
+Without a structured pass, teams either skip sections entirely or fill
+them with prose that doesn't hold up under implementation.
+
+`doc-design` makes the design conversation explicit: every significant
+section goes through a draft-show-approve cycle before it's written,
+so the resulting spec reflects decisions rather than assumptions.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+1. **Setup** — resolves the slug and reads the existing stub. If no
+   stub exists yet, creates one via `/octopus:doc-spec` first.
+2. **Context scan** — silently reads recent git history, the roadmap,
+   and adjacent skills before asking the first question.
+3. **Design sections** — walks through Overview and Detailed Design
+   via a question-draft-approve cycle. Writes each approved section
+   directly into the spec file.
+4. **Adaptive sections** — evaluates whether Non-Goals, Risks, or
+   Migration / Backward Compatibility are warranted based on what
+   emerged in the design discussion. At most two adaptive sections per
+   session; the rest are deferred to a follow-up run.
+5. **Implementation Plan** — captures the ordered, file-level steps
+   (3–7 items). This is the high-level plan, not the bite-sized TDD
+   breakdown — that comes from `/octopus:doc-plan`.
+6. **Testing Strategy and Context for Agents** — validates the
+   testing approach and infers the knowledge modules, roles, and
+   skills relevant to implementation.
+7. **Self-review + commit** — scans for remaining placeholders,
+   removes vague wording, and commits the spec to a docs-only branch.
+
+The session is idempotent: re-running it on a partially filled spec
+fills only still-empty sections without overwriting your prose.
+
+**Hard gate:** this command does not write production code, tests, or
+implementation branches. The terminal state is a committed spec.
+
+## Pipeline position
+
+`doc-rfc` → `doc-spec` → **`doc-design`** → `doc-plan`
+
+After `doc-design`, open a PR for the spec. Once merged, generate the
+implementation plan with `/octopus:doc-plan`.
 
 ## Usage & parameters
 
@@ -20,4 +63,8 @@ draft: true
 /octopus:doc-design [slug]
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `[slug]` — kebab-case spec slug (e.g. `checkout-revamp`). If
+  omitted, the command asks. If the spec does not exist, it is
+  created first via `/octopus:doc-spec`.
+
+[Source: `commands/doc-design.md`](https://github.com/leocosta/octopus/blob/main/commands/doc-design.md)
