@@ -1,19 +1,38 @@
 ---
 title: test-component
 description: "Component-level testing patterns with Testing Library (React Testing Library / Vue Testing Library) and Vitest. Tests behaviour through accessible queries and user-event, mocks at the network boundary with MSW, and draws the line between component tests and end-to-end tests. Pairs with frontend-patterns and complements test-e2e."
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`test-component` is the guidance for testing one component or hook in isolation —
+fast tests that exercise behaviour the way a user does, with the network mocked.
+It is the broad base of the testing pyramid: where most of your front-end
+confidence should come from, because these tests are quick and stable.
 
 ## What it solves
 
-{/* TODO: the concrete pain this skill removes */}
+Component tests usually fail in one of two directions. Too coupled — asserting on
+CSS classes, internal `useState`, or render order — and every refactor breaks
+them. Too shallow — mocking the service layer instead of the network — and they
+pass while the real wiring is broken. Either way the suite stops meaning
+anything. This skill draws the lines that keep component tests honest *and*
+maintainable.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+The core principle is **test behaviour, not implementation**:
 
-## Usage
+- **Query by accessibility** — find elements by role and label, the way a user
+  (or a screen reader) does, not by test-id or CSS selector.
+- **`user-event`, not `fireEvent`** — model real interactions (typing, clicking,
+  tabbing) rather than raw DOM events.
+- **Mock at the network boundary with MSW** — intercept HTTP, not the
+  service/`axios` layer, so the component's real data wiring is under test.
+- **A clear line vs E2E** — component tests cover one component/hook with the
+  network mocked; `test-e2e` covers the assembled app in a real browser. Don't
+  re-test in E2E what a fast component test already proves.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+## When to use
+
+Writing tests for a component, hook, or form. It pairs with `frontend-patterns`
+(where those components are built) and complements `test-e2e` — together they are
+the front-end half of the testing pyramid.

@@ -1,19 +1,38 @@
 ---
 title: test-e2e
-description: "End-to-end testing patterns with Playwright for reliable, maintainable browser tests"
-draft: true
+description: "Padrões de teste end-to-end com Playwright para testes de browser confiáveis e manuteníveis"
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`test-e2e` é a orientação pra testes end-to-end com Playwright — o app montado,
+num browser real, exercitando os fluxos que de fato importam. É o topo da
+pirâmide de testes: poucos testes, alto valor, e os mais propensos a flakiness se
+você os escreve errado.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this skill removes */}
+Testes E2E são onde os times ou ganham confiança de verdade ou uma suíte flaky
+que todo mundo aprende a ignorar. Os dois jeitos de dar errado são conhecidos:
+**flakiness** por competir com a UI usando waits fixos, e **inmanutenibilidade**
+por seletores e setup copiados em cada spec. Uma suíte vermelha sem motivo é pior
+que suíte nenhuma — treina as pessoas a re-rodar até ficar verde.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+A skill codifica os padrões que mantêm uma suíte E2E confiável:
 
-## Usage
+- **Page Object Model** — seletores e interações vivem num lugar por tela, então
+  uma mudança de UI toca um arquivo, não cinquenta specs.
+- **Confiabilidade** — locators com auto-wait e esperas explícitas por rede, com
+  regra dura de "nada de `waitForTimeout` fixo"; você espera uma *condição*, nunca
+  uma duração chutada.
+- **Isolamento** — cada teste monta o próprio estado e limpa, então ordem nunca
+  importa e uma falha aponta pra uma causa.
+- **Escopo** — E2E cobre as jornadas críticas e preocupações transversais (auth,
+  pagamentos, o happy path de cada fluxo), mais checks de acessibilidade — *não* o
+  que um teste de componente rápido já cobre.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+## Quando usar
+
+Montando E2E num projeto, ou adicionando cobertura pra um fluxo crítico que só um
+browser real contra um backend real valida. Pra um único componente ou hook
+isolado, use `test-component` — e não re-teste em E2E o que aquela camada já cobre.

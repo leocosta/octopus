@@ -1,19 +1,38 @@
 ---
 title: test-component
-description: "Component-level testing patterns with Testing Library (React Testing Library / Vue Testing Library) and Vitest. Tests behaviour through accessible queries and user-event, mocks at the network boundary with MSW, and draws the line between component tests and end-to-end tests. Pairs with frontend-patterns and complements test-e2e."
-draft: true
+description: "Padrões de teste em nível de componente com Testing Library (React Testing Library / Vue Testing Library) e Vitest. Testa comportamento por queries acessíveis e user-event, mocka na fronteira de rede com MSW, e traça a linha entre testes de componente e end-to-end. Faz par com frontend-patterns e complementa test-e2e."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`test-component` é a orientação pra testar um componente ou hook isolado — testes
+rápidos que exercitam comportamento do jeito que um usuário faz, com a rede
+mockada. É a base larga da pirâmide de testes: de onde a maior parte da sua
+confiança de front-end deveria vir, porque esses testes são rápidos e estáveis.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this skill removes */}
+Testes de componente costumam falhar em uma de duas direções. Acoplados demais —
+assertando sobre classes CSS, `useState` interno ou ordem de render — e todo
+refactor os quebra. Rasos demais — mockando a camada de serviço em vez da rede —
+e passam enquanto a fiação real está quebrada. De um jeito ou de outro a suíte
+deixa de significar algo. Esta skill traça as linhas que mantêm os testes de
+componente honestos *e* manuteníveis.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+O princípio central é **testar comportamento, não implementação**:
 
-## Usage
+- **Query por acessibilidade** — ache elementos por role e label, do jeito que um
+  usuário (ou leitor de tela) faz, não por test-id ou seletor CSS.
+- **`user-event`, não `fireEvent`** — modele interações reais (digitar, clicar,
+  tabular) em vez de eventos DOM crus.
+- **Mock na fronteira de rede com MSW** — intercepte HTTP, não a camada de
+  serviço/`axios`, pra que a fiação real de dados do componente fique sob teste.
+- **Uma linha clara vs E2E** — testes de componente cobrem um componente/hook com
+  a rede mockada; `test-e2e` cobre o app montado num browser real. Não re-teste
+  em E2E o que um teste de componente rápido já prova.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+## Quando usar
+
+Escrevendo testes pra um componente, hook ou form. Faz par com `frontend-patterns`
+(onde esses componentes são construídos) e complementa `test-e2e` — juntos são a
+metade front-end da pirâmide de testes.

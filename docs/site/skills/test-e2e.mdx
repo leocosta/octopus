@@ -1,19 +1,39 @@
 ---
 title: test-e2e
 description: "End-to-end testing patterns with Playwright for reliable, maintainable browser tests"
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`test-e2e` is the guidance for end-to-end tests with Playwright — the assembled
+app, in a real browser, exercising the flows that actually matter. It is the top
+of the testing pyramid: few tests, high value, and the ones most prone to
+flakiness if you write them wrong.
 
 ## What it solves
 
-{/* TODO: the concrete pain this skill removes */}
+E2E tests are where teams either get real confidence or a flaky suite everyone
+learns to ignore. The two ways they go wrong are well known: **flakiness** from
+racing the UI with hardcoded waits, and **unmaintainability** from selectors and
+setup copy-pasted across every spec. A red suite that's red for no reason is
+worse than no suite — it trains people to re-run until green.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+The skill encodes the patterns that keep an E2E suite trustworthy:
 
-## Usage
+- **Page Object Model** — selectors and interactions live in one place per
+  screen, so a UI change touches one file, not fifty specs.
+- **Reliability** — auto-waiting locators and explicit waits for network, with a
+  hard "no hardcoded `waitForTimeout`" rule; you wait for a *condition*, never a
+  guessed duration.
+- **Test isolation** — each test sets up its own state and cleans up, so order
+  never matters and a failure points at one cause.
+- **Scope** — E2E covers the critical user journeys and cross-cutting concerns
+  (auth, payments, the happy path of each flow), plus accessibility checks —
+  *not* what a fast component test already covers.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+## When to use
+
+Setting up E2E for a project, or adding coverage for a critical flow that only a
+real browser against a real backend can validate. For a single component or hook
+in isolation, use `test-component` instead — and don't re-test in E2E what that
+layer already covers.
