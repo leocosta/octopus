@@ -1,19 +1,37 @@
 ---
 title: respond-to-review
 description: "The Octopus PR-feedback discipline — verify the critique, ask for evidence on generic comments, separate reasoned feedback from preference, never make performative changes, ask for clarification on ambiguity. After the fixes are applied, runs the post-fix loop (commit, conditional push, hybrid inline replies, resolve threads) in a single confirmation turn — the skill is end-to-end and does not require a separate /octopus:pr-comments invocation. Active by default on every PR feedback loop."
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`respond-to-review` is the discipline for handling PR feedback well: take each
+comment seriously, but don't change code just to look agreeable. It runs the whole
+loop — from judging the critique to replying and resolving threads — end to end.
 
 ## What it solves
 
-{/* TODO: the concrete pain this skill removes */}
+The failure mode of an eager agent (or person) under review is the **performative
+change**: edit the code to satisfy a comment without checking whether the comment
+is right, so a vague or mistaken note gets implemented and the diff drifts. The
+opposite failure is just as common — dismissing reasoned feedback as preference.
+Good review response needs judgment, and this skill encodes it instead of leaving
+it to reflex.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+The discipline is a set of standing rules:
 
-## Usage
+- **Verify the critique** before acting — is it correct, against this code?
+- **Ask for evidence** on generic comments ("this is slow" → slow how, where?).
+- **Separate reasoned feedback from preference**, and weigh them differently.
+- **Never make a performative change** — if a comment doesn't hold up, say so with
+  reasoning rather than editing to placate it.
+- **Ask for clarification** when a comment is ambiguous, instead of guessing.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+Once the fixes are agreed and applied, it runs the **post-fix loop in one turn** —
+commit, conditional push, inline replies, resolve threads — so it is end-to-end and
+doesn't need a separate `/octopus:pr-comments` step.
+
+## When to use
+
+Every time you're acting on PR review feedback — it's active by default on that
+loop. The actual code changes are then made through `implement` or `debugging`.

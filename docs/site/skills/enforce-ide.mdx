@@ -1,19 +1,37 @@
 ---
 title: enforce-ide
 description: "Write a baseline `.editorconfig` and (opt-in) `.vscode/settings.json` + `.vscode/extensions.json` aligned with the project's chosen formatter and linter. Reinforces the project's conventions in the editor surface — the layer between the human's keystroke and the git commit. Detects stack via file extensions and existing configs. Respects existing files: merges keys conservatively, never overwrites a user-set value. Pairs with enforce-precommit and the guardrails bundle for defense-in-depth across loop / git / CI / IDE."
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`enforce-ide` sets the project's conventions in the **editor** — the earliest
+layer, between a keystroke and a commit. When the editor already formats the way
+the project expects, most violations never get typed in the first place.
 
 ## What it solves
 
-{/* TODO: the concrete pain this skill removes */}
+The cheapest fix is the one that never has to happen. If everyone's editor
+indents, quotes, and trims differently, the pre-commit gate and CI spend their
+time catching style noise, and diffs fill with reformatting churn. Aligning the
+editor removes that whole class of friction at the source: the convention is
+applied as you type, not flagged three layers later.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+- **Baseline `.editorconfig`** — the cross-editor settings (indentation, line
+  endings, trailing whitespace) that every modern editor honours.
+- **Opt-in VS Code config** — `.vscode/settings.json` and
+  `.vscode/extensions.json` aligned with the project's chosen formatter and
+  linter, so format-on-save and the right extensions are the default.
+- **Stack-aware and respectful** — it detects the stack from file extensions and
+  existing configs, and merges keys **conservatively — never overwriting a value
+  you set yourself**.
 
-## Usage
+It is the editor layer of defense-in-depth: it pairs with `enforce-precommit`
+(git) and the `guardrails` bundle (the agent loop), so the same conventions hold
+across loop, git, CI, and IDE.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+## When to use
+
+Setting up or standardising a repo, especially a team one where editor drift
+causes noisy diffs. Use it together with `enforce-precommit` for the full
+defense-in-depth.

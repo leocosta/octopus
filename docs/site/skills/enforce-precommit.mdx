@@ -1,19 +1,38 @@
 ---
 title: enforce-precommit
 description: "Install and maintain a pre-commit framework configuration aligned with the project's Octopus rules. Closes the git-level enforcement gap that Octopus loop-level hooks (auto-format, typecheck, console-log-warn, block-no-verify) cannot cover for Copilot edits or direct human commits. Detects project stack(s) via file extensions, infers checks from rules/common/*, and writes/updates `.pre-commit-config.yaml` (default) or `lefthook.yml` / `.husky/` (documented alternatives) idempotently. Respects existing config — merges hook entries by id rather than overwriting. Project-level extension via enforce-precommit.local.md. Pairs with the guardrails bundle and the qualityWorkflow CI template."
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`enforce-precommit` sets up a pre-commit framework that enforces the project's
+standards at the **git layer** — the one checkpoint every commit passes through,
+whoever (or whatever) made it. It closes the gap that an agent's own hooks can't
+cover.
 
 ## What it solves
 
-{/* TODO: the concrete pain this skill removes */}
+Octopus's loop-level hooks (`auto-format`, `typecheck`, `block-no-verify`, …) only
+fire inside an agent session. A commit made by a human typing directly, or by a
+different tool like Copilot, slips past them entirely — and that's exactly where
+unformatted, untyped, or no-verify commits leak into history. A pre-commit
+framework moves the gate to git itself, so the guarantee no longer depends on
+*how* the change was made.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+- **Aligned with your rules** — it detects the project's stack from file
+  extensions and infers the right checks from `rules/common/*`, so the gate
+  enforces the *same* standards the agent follows.
+- **Standard tooling** — it writes `.pre-commit-config.yaml` by default, with
+  `lefthook.yml` / `.husky/` as documented alternatives.
+- **Idempotent and respectful** — it merges hook entries by `id` rather than
+  overwriting, so re-running it never clobbers config you added by hand. Extend it
+  per-project with `enforce-precommit.local.md`.
 
-## Usage
+It is one layer of defense-in-depth: it pairs with `enforce-ide` (the editor
+surface), the `guardrails` bundle (the agent loop), and the quality CI template.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+## When to use
+
+Setting up a repo, or hardening one where commits bypass the agent's own checks.
+If you also want the conventions reinforced in the editor before the commit, add
+`enforce-ide`.

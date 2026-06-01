@@ -1,19 +1,38 @@
 ---
 title: enforce-precommit
-description: "Install and maintain a pre-commit framework configuration aligned with the project's Octopus rules. Closes the git-level enforcement gap that Octopus loop-level hooks (auto-format, typecheck, console-log-warn, block-no-verify) cannot cover for Copilot edits or direct human commits. Detects project stack(s) via file extensions, infers checks from rules/common/*, and writes/updates `.pre-commit-config.yaml` (default) or `lefthook.yml` / `.husky/` (documented alternatives) idempotently. Respects existing config — merges hook entries by id rather than overwriting. Project-level extension via enforce-precommit.local.md. Pairs with the guardrails bundle and the qualityWorkflow CI template."
-draft: true
+description: "Instala e mantém uma configuração de framework de pre-commit alinhada com as rules do Octopus do projeto. Fecha a lacuna de enforcement no nível do git que os hooks loop-level do Octopus (auto-format, typecheck, console-log-warn, block-no-verify) não cobrem pra edições do Copilot ou commits humanos diretos. Detecta a(s) stack(s) por extensão de arquivo, infere checks de rules/common/*, e escreve/atualiza `.pre-commit-config.yaml` (default) ou `lefthook.yml` / `.husky/` (alternativas documentadas) de forma idempotente. Respeita config existente — mescla entradas de hook por id em vez de sobrescrever. Extensão por projeto via enforce-precommit.local.md. Faz par com o bundle guardrails e o template de CI qualityWorkflow."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`enforce-precommit` monta um framework de pre-commit que aplica os standards do
+projeto na **camada do git** — o único checkpoint por onde todo commit passa, quem
+quer (ou o quê) que o tenha feito. Fecha a lacuna que os hooks do próprio agente
+não cobrem.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this skill removes */}
+Os hooks loop-level do Octopus (`auto-format`, `typecheck`, `block-no-verify`, …)
+só disparam dentro de uma sessão de agente. Um commit feito por um humano digitando
+direto, ou por outra ferramenta como o Copilot, passa batido por eles — e é
+exatamente aí que commits sem formatar, sem tipo ou no-verify vazam pra história.
+Um framework de pre-commit move o portão pro próprio git, então a garantia deixa de
+depender de *como* a mudança foi feita.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+- **Alinhado com suas rules** — detecta a stack do projeto por extensão de arquivo
+  e infere os checks certos de `rules/common/*`, pra que o portão aplique os
+  *mesmos* standards que o agente segue.
+- **Tooling padrão** — escreve `.pre-commit-config.yaml` por default, com
+  `lefthook.yml` / `.husky/` como alternativas documentadas.
+- **Idempotente e respeitoso** — mescla entradas de hook por `id` em vez de
+  sobrescrever, então re-rodar nunca atropela config que você adicionou à mão.
+  Estenda por projeto com `enforce-precommit.local.md`.
 
-## Usage
+É uma camada de defesa-em-profundidade: faz par com `enforce-ide` (a superfície do
+editor), o bundle `guardrails` (o loop do agente), e o template de CI de qualidade.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+## Quando usar
+
+Montando um repo, ou endurecendo um onde commits driblam os checks do próprio
+agente. Se você também quer as convenções reforçadas no editor antes do commit,
+adicione `enforce-ide`.

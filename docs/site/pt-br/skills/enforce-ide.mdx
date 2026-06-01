@@ -1,19 +1,37 @@
 ---
 title: enforce-ide
-description: "Write a baseline `.editorconfig` and (opt-in) `.vscode/settings.json` + `.vscode/extensions.json` aligned with the project's chosen formatter and linter. Reinforces the project's conventions in the editor surface — the layer between the human's keystroke and the git commit. Detects stack via file extensions and existing configs. Respects existing files: merges keys conservatively, never overwrites a user-set value. Pairs with enforce-precommit and the guardrails bundle for defense-in-depth across loop / git / CI / IDE."
-draft: true
+description: "Escreve um `.editorconfig` base e (opt-in) `.vscode/settings.json` + `.vscode/extensions.json` alinhados com o formatter e linter escolhidos do projeto. Reforça as convenções do projeto na superfície do editor — a camada entre a tecla do humano e o commit no git. Detecta a stack por extensão de arquivo e configs existentes. Respeita arquivos existentes: mescla chaves de forma conservadora, nunca sobrescreve um valor definido pelo usuário. Faz par com enforce-precommit e o bundle guardrails pra defesa-em-profundidade entre loop / git / CI / IDE."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`enforce-ide` ajusta as convenções do projeto no **editor** — a camada mais
+cedo, entre uma tecla e um commit. Quando o editor já formata do jeito que o
+projeto espera, a maioria das violações nunca chega a ser digitada.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this skill removes */}
+O fix mais barato é o que nunca precisa acontecer. Se o editor de cada um indenta,
+aspas e trim de forma diferente, o portão de pre-commit e o CI gastam tempo pegando
+ruído de estilo, e diffs enchem de churn de reformatação. Alinhar o editor remove
+toda essa classe de atrito na origem: a convenção é aplicada enquanto você digita,
+não sinalizada três camadas depois.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+- **`.editorconfig` base** — as configs cross-editor (indentação, fim de linha,
+  trailing whitespace) que todo editor moderno honra.
+- **Config VS Code opt-in** — `.vscode/settings.json` e `.vscode/extensions.json`
+  alinhados com o formatter e linter escolhidos do projeto, pra que format-on-save
+  e as extensões certas sejam o default.
+- **Ciente da stack e respeitoso** — detecta a stack por extensão de arquivo e
+  configs existentes, e mescla chaves **de forma conservadora — nunca sobrescrevendo
+  um valor que você mesmo definiu**.
 
-## Usage
+É a camada de editor da defesa-em-profundidade: faz par com `enforce-precommit`
+(git) e o bundle `guardrails` (o loop do agente), pra que as mesmas convenções
+valham em loop, git, CI e IDE.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+## Quando usar
+
+Montando ou padronizando um repo, especialmente um de time onde a deriva de editor
+causa diffs ruidosos. Use junto com `enforce-precommit` pra defesa-em-profundidade
+completa.
