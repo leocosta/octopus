@@ -1,19 +1,37 @@
 ---
 title: doc-prd
 description: "Synthesise the current conversation context into a PRD and publish it to the issue tracker without re-interviewing the user — the knowledge is assumed to be in context from a prior brainstorm or doc-align grilling. Forbids file paths and code snippets in the body except for prototype snippets that encode a decision more precisely than prose. Skips directly to ready-for-agent. Family doc-*."
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`doc-prd` turns a conversation you have already had into a published PRD. After an
+`interview` or a `doc-align` grilling, the shared understanding is sitting in the
+context — this skill writes it up and pushes it to the issue tracker, without
+asking you everything over again.
 
 ## What it solves
 
-{/* TODO: the concrete pain this skill removes */}
+The gap between "we agreed on this in the discussion" and "there's a ticket
+someone can pick up" is where good thinking evaporates. Re-interviewing to write
+the PRD wastes the work already done and risks drifting from what was decided.
+And PRDs that leak file paths and code turn into stale implementation specs the
+moment the code moves. `doc-prd` closes both gaps: it captures the decision while
+it's fresh, and keeps the document at the level of *intent*.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+- **No re-interview** — the knowledge is assumed to be in context from the prior
+  brainstorm or alignment, so it synthesises rather than re-elicits.
+- **Intent, not implementation** — file paths and code snippets are forbidden in
+  the body, with one exception: a prototype snippet that encodes a decision more
+  precisely than prose would. A PRD describes *what* and *why*, not *which file*.
+- **Straight to ready-for-agent** — it publishes to the issue tracker already
+  labelled for pickup, skipping the triage round-trip.
 
-## Usage
+It is part of the `doc-*` family: `interview` and `doc-align` produce the
+understanding, `doc-prd` publishes it.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+## When to use
+
+Right after an `interview` or `doc-align` session, when the decision is clear and
+you want a ticket without re-walking the conversation. If the understanding
+*isn't* settled yet, run the intake skill first.

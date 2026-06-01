@@ -1,19 +1,38 @@
 ---
 title: doc-prd
-description: "Synthesise the current conversation context into a PRD and publish it to the issue tracker without re-interviewing the user — the knowledge is assumed to be in context from a prior brainstorm or doc-align grilling. Forbids file paths and code snippets in the body except for prototype snippets that encode a decision more precisely than prose. Skips directly to ready-for-agent. Family doc-*."
-draft: true
+description: "Sintetiza o contexto da conversa atual num PRD e o publica no issue tracker sem re-entrevistar o usuário — o conhecimento é assumido como estando no contexto de um brainstorm ou grilling de doc-align anterior. Proíbe caminhos de arquivo e snippets de código no corpo, exceto snippets de protótipo que codificam uma decisão com mais precisão que a prosa. Pula direto pra ready-for-agent. Família doc-*."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`doc-prd` transforma uma conversa que você já teve num PRD publicado. Depois de um
+`interview` ou de um grilling de `doc-align`, o entendimento compartilhado está no
+contexto — esta skill o redige e o empurra pro issue tracker, sem perguntar tudo
+de novo.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this skill removes */}
+A lacuna entre "a gente concordou nisso na discussão" e "existe um ticket que
+alguém pode pegar" é onde o bom raciocínio evapora. Re-entrevistar pra escrever o
+PRD desperdiça o trabalho já feito e arrisca derivar do que foi decidido. E PRDs
+que vazam caminhos de arquivo e código viram specs de implementação obsoletas no
+instante em que o código se move. `doc-prd` fecha as duas lacunas: captura a
+decisão enquanto está fresca, e mantém o documento no nível de *intenção*.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+- **Sem re-entrevista** — o conhecimento é assumido como estando no contexto do
+  brainstorm ou alinhamento anterior, então sintetiza em vez de re-elicitar.
+- **Intenção, não implementação** — caminhos de arquivo e snippets de código são
+  proibidos no corpo, com uma exceção: um snippet de protótipo que codifica uma
+  decisão com mais precisão que a prosa. Um PRD descreve *o quê* e *por quê*, não
+  *qual arquivo*.
+- **Direto pra ready-for-agent** — publica no issue tracker já rotulado pra
+  pickup, pulando o vai-e-volta da triagem.
 
-## Usage
+Faz parte da família `doc-*`: `interview` e `doc-align` produzem o entendimento,
+`doc-prd` o publica.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+## Quando usar
+
+Logo após uma sessão de `interview` ou `doc-align`, quando a decisão está clara e
+você quer um ticket sem re-percorrer a conversa. Se o entendimento *ainda não*
+está fechado, rode a skill de intake antes.

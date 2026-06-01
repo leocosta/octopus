@@ -1,19 +1,37 @@
 ---
 title: doc-align
 description: "Stress-test a plan against the project's CONTEXT.md glossary and docs/adr/ decisions by grilling the user one question at a time, surfacing contradictions between user claims and the actual code, and updating CONTEXT.md / ADRs lazily as terms resolve. Pairs with doc-prd (publishes the aligned plan) and refactor-deepen (calls into doc-align for grilling sub-loops)."
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`doc-align` takes a plan you already have and stress-tests it against what the
+project has already decided — its `CONTEXT.md` glossary and its ADRs — by grilling
+you one question at a time until the plan and the project speak the same language.
 
 ## What it solves
 
-{/* TODO: the concrete pain this skill removes */}
+A plan written in a vacuum drifts from the codebase in two quiet ways: it uses a
+term to mean something the glossary already defines differently, and it assumes a
+design the ADRs already ruled out. Neither shows up until implementation, when the
+mismatch is expensive to unwind. `doc-align` surfaces those contradictions *before*
+the work starts — and, as a side effect, keeps the project's own docs honest.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+- **Grilling, one question at a time** — it interrogates the plan against the
+  glossary and the decisions of record, the same one-decision-at-a-time rhythm as
+  `interview`, but anchored to existing documents.
+- **Contradiction surfacing** — when your claim conflicts with the actual code or
+  a recorded decision, it names the conflict rather than letting it pass.
+- **Lazy doc updates** — as terms resolve during the grilling, it updates
+  `CONTEXT.md` and the ADRs in place, so the alignment improves the source of
+  truth instead of just the plan.
 
-## Usage
+It is the counterpart to `interview` (which works greenfield, with no docs), pairs
+with `doc-prd` (which publishes the aligned plan), and `refactor-deepen` calls
+into it for its own grilling sub-loops.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+## When to use
+
+When a plan or design already exists and you want it validated against the
+project's language and decisions before building. For a brand-new idea with no
+plan yet, start with `interview`.

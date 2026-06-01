@@ -1,19 +1,37 @@
 ---
 title: doc-align
-description: "Stress-test a plan against the project's CONTEXT.md glossary and docs/adr/ decisions by grilling the user one question at a time, surfacing contradictions between user claims and the actual code, and updating CONTEXT.md / ADRs lazily as terms resolve. Pairs with doc-prd (publishes the aligned plan) and refactor-deepen (calls into doc-align for grilling sub-loops)."
-draft: true
+description: "Testa um plano contra o glossário CONTEXT.md e as decisões em docs/adr/ do projeto fazendo grilling no usuário uma pergunta por vez, revelando contradições entre o que o usuário afirma e o código real, e atualizando CONTEXT.md / ADRs de forma preguiçosa conforme os termos se resolvem. Faz par com doc-prd (publica o plano alinhado) e refactor-deepen (chama doc-align pra sub-loops de grilling)."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`doc-align` pega um plano que você já tem e o testa contra o que o projeto já
+decidiu — seu glossário `CONTEXT.md` e seus ADRs — fazendo grilling em você uma
+pergunta por vez até o plano e o projeto falarem a mesma língua.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this skill removes */}
+Um plano escrito no vácuo deriva do código de dois jeitos silenciosos: usa um
+termo pra dizer algo que o glossário já define diferente, e assume um design que
+os ADRs já descartaram. Nenhum aparece até a implementação, quando o descompasso é
+caro de desfazer. `doc-align` revela essas contradições *antes* do trabalho
+começar — e, de quebra, mantém os próprios docs do projeto honestos.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+- **Grilling, uma pergunta por vez** — interroga o plano contra o glossário e as
+  decisões de record, o mesmo ritmo uma-decisão-por-vez do `interview`, mas
+  ancorado em documentos existentes.
+- **Revelar contradições** — quando sua afirmação conflita com o código real ou
+  uma decisão registrada, ele nomeia o conflito em vez de deixar passar.
+- **Atualização preguiçosa de docs** — conforme os termos se resolvem no grilling,
+  atualiza `CONTEXT.md` e os ADRs no lugar, então o alinhamento melhora a fonte da
+  verdade, não só o plano.
 
-## Usage
+É a contraparte do `interview` (que funciona greenfield, sem docs), faz par com
+`doc-prd` (que publica o plano alinhado), e o `refactor-deepen` o chama pros seus
+próprios sub-loops de grilling.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+## Quando usar
+
+Quando um plano ou design já existe e você quer validá-lo contra a linguagem e as
+decisões do projeto antes de construir. Pra uma ideia nova sem plano, comece com
+`interview`.
