@@ -1,19 +1,35 @@
 ---
 title: scaffold-skill
 description: "Create new Octopus skills with the correct structure — frontmatter with name + description, SKILL.md ≤ 250 lines, optional REFERENCE.md / EXAMPLES.md / scripts/ at one level of depth — and register the skill into a target bundle so no skill ships loose. Complements compress-skill (which modifies existing skills). Family *-skill."
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`scaffold-skill` creates a new Octopus skill with the right shape from the start —
+the frontmatter, the size discipline, the optional supporting files — and wires it
+into a bundle so it actually ships. It is the front door for extending the
+catalogue.
 
 ## What it solves
 
-{/* TODO: the concrete pain this skill removes */}
+A skill created ad hoc tends to come out wrong in small, compounding ways: missing
+or malformed frontmatter, a SKILL.md that sprawls past the point of being loadable,
+support files nested too deep to find — and, most commonly, a skill that exists but
+belongs to no bundle, so no one ever installs it. `scaffold-skill` makes the
+correct structure the default, so a new skill is consistent and discoverable on day
+one.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+- **Correct structure** — frontmatter with `name` + `description`, a SKILL.md kept
+  **≤ 250 lines**, and optional `REFERENCE.md` / `EXAMPLES.md` / `scripts/` at one
+  level of depth (no deep nesting to hunt through).
+- **Bundle registration** — the skill is registered into a target bundle as part
+  of scaffolding, so **no skill ships loose** — every skill maps to a bundle a team
+  can enable.
 
-## Usage
+It is the counterpart to `compress-skill` (which shrinks *existing* skills): the
+`*-skill` family for authoring and maintaining the catalogue.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+## When to use
+
+Whenever you're adding a new capability to Octopus. Start here rather than copying
+an existing SKILL.md by hand — the structure and the bundle wiring come for free.

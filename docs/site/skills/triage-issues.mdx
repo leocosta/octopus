@@ -1,19 +1,36 @@
 ---
 title: triage-issues
 description: "State-machine triage flow for incoming issues — categorise as bug or enhancement, transition through needs-triage / needs-info / ready-for-agent / ready-for-human / wontfix, reproduce bugs before grilling, preserve grilling work in needs-info notes, record rejected enhancements in .out-of-scope/. Every AI-generated comment carries a mandatory disclaimer. Sits in the docs bundle next to plan-backlog."
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`triage-issues` runs an incoming issue through a disciplined state machine, so a
+bug report or feature request comes out either ready to work or clearly parked —
+never stuck in the limbo of "we'll look at it later."
 
 ## What it solves
 
-{/* TODO: the concrete pain this skill removes */}
+Issue backlogs rot the same way everywhere: reports land half-described, nobody
+reproduces the bug before debating it, the same questions get asked twice because
+the first round of grilling was never written down, and rejected ideas vanish with
+no record of *why* — so they get re-proposed in six months. Triage done by gut
+produces an inconsistent backlog nobody trusts. A state machine makes every issue
+take the same well-defined path.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+- **Categorise** — bug or enhancement, first.
+- **Defined states** — each issue moves through `needs-triage` → `needs-info` →
+  `ready-for-agent` / `ready-for-human` / `wontfix`, so its status is always
+  explicit.
+- **Reproduce before grilling** — a bug must be reproduced before it's debated, so
+  the conversation is about a real failure, not a guess.
+- **Preserve the work** — grilling that ends in `needs-info` is saved in the issue
+  notes, so the next round doesn't restart from zero; rejected enhancements are
+  recorded in `.out-of-scope/` with their reasoning.
+- **Honest attribution** — every AI-generated comment carries a **mandatory
+  disclaimer**, so a human reader always knows what an agent wrote.
 
-## Usage
+## When to use
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+Filing or triaging incoming bugs and feature requests, or preparing issues for an
+agent to pick up. It sits in the `docs` bundle next to `plan-backlog`.

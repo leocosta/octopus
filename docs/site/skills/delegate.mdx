@@ -1,19 +1,36 @@
 ---
 title: delegate
 description: "Delegate one task or a multi-step role pipeline to Octopus roles and return results inline with attribution. Triggers on @<role>: pattern in user messages, multi-role chained messages (PT-BR or EN), or via /octopus:delegate."
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`delegate` routes a task to the right Octopus role — or chains several roles into
+a pipeline — and brings the results back inline, each labelled with who produced
+it. It's how you get a specialist's answer (architect, security, dba) without
+leaving the conversation.
 
 ## What it solves
 
-{/* TODO: the concrete pain this skill removes */}
+A team's senior judgment lives in its roles, but reaching for the right one
+mid-task is friction: you stop, invoke a role, copy context across, come back. And
+when a task needs *several* perspectives in order — design it, then review it,
+then check the data layer — doing that by hand is tedious and easy to short-cut.
+`delegate` removes the friction so asking the right specialist (or a sequence of
+them) is a single gesture.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+- **One task to one role** — `@architect: …` hands the task to that role and
+  returns its answer inline, attributed.
+- **A pipeline of roles** — chain roles in a message (e.g. design → review →
+  data) and `delegate` runs them in order, threading the output of each into the
+  next.
+- **Triggers naturally** — an `@<role>:` mention, a multi-role chained message
+  (Portuguese or English), or the explicit `/octopus:delegate` command.
 
-## Usage
+Every result carries **attribution**, so you always know which role said what.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+## When to use
+
+When a task wants a specific role's expertise, or a sequence of roles, without
+spinning up a separate session for each. For long-running, parallel orchestration
+across many agents, the `octopus control` / `run` orchestrator is the heavier tool.

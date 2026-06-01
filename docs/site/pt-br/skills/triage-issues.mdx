@@ -1,19 +1,36 @@
 ---
 title: triage-issues
-description: "State-machine triage flow for incoming issues — categorise as bug or enhancement, transition through needs-triage / needs-info / ready-for-agent / ready-for-human / wontfix, reproduce bugs before grilling, preserve grilling work in needs-info notes, record rejected enhancements in .out-of-scope/. Every AI-generated comment carries a mandatory disclaimer. Sits in the docs bundle next to plan-backlog."
-draft: true
+description: "Fluxo de triagem em máquina de estados pra issues que chegam — categoriza como bug ou enhancement, transiciona por needs-triage / needs-info / ready-for-agent / ready-for-human / wontfix, reproduz bugs antes do grilling, preserva o grilling em notas needs-info, registra enhancements rejeitados em .out-of-scope/. Todo comentário gerado por IA carrega um disclaimer obrigatório. Fica no bundle docs ao lado de plan-backlog."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`triage-issues` roda uma issue que chega por uma máquina de estados disciplinada,
+pra que um relato de bug ou pedido de feature saia ou pronto pra trabalhar ou
+claramente parqueado — nunca preso no limbo do "a gente olha depois".
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this skill removes */}
+Backlogs de issues apodrecem do mesmo jeito em todo lugar: relatos chegam mal
+descritos, ninguém reproduz o bug antes de debatê-lo, as mesmas perguntas são
+feitas duas vezes porque a primeira rodada de grilling nunca foi anotada, e ideias
+rejeitadas somem sem registro do *porquê* — então são re-propostas em seis meses.
+Triagem no feeling produz um backlog inconsistente em que ninguém confia. Uma
+máquina de estados faz toda issue percorrer o mesmo caminho bem definido.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+- **Categorizar** — bug ou enhancement, primeiro.
+- **Estados definidos** — cada issue passa por `needs-triage` → `needs-info` →
+  `ready-for-agent` / `ready-for-human` / `wontfix`, então o status é sempre
+  explícito.
+- **Reproduzir antes do grilling** — um bug deve ser reproduzido antes de debatido,
+  pra que a conversa seja sobre uma falha real, não um chute.
+- **Preservar o trabalho** — o grilling que termina em `needs-info` é salvo nas
+  notas da issue, pra que a próxima rodada não comece do zero; enhancements
+  rejeitados são registrados em `.out-of-scope/` com o raciocínio.
+- **Atribuição honesta** — todo comentário gerado por IA carrega um **disclaimer
+  obrigatório**, pra que um leitor humano sempre saiba o que um agente escreveu.
 
-## Usage
+## Quando usar
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+Abrindo ou triando bugs e pedidos de feature que chegam, ou preparando issues pra
+um agente pegar. Fica no bundle `docs` ao lado de `plan-backlog`.
