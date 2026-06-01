@@ -1,19 +1,39 @@
 ---
 title: dba-postgres
 description: "PostgreSQL heuristics catalogue for the dba role. Detects indexing, modeling, query, migration, retention, capacity, security, and concurrency problems specific to Postgres. Every finding ships with a SQL fix."
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`dba-postgres` is the PostgreSQL heuristics catalogue that gives the `dba` role a
+database expert's eye on a change. A generalist agent writes queries that *run*;
+this one knows the Postgres-specific ways they'll hurt at scale — and ships a SQL
+fix with every finding.
 
 ## What it solves
 
-{/* TODO: the concrete pain this skill removes */}
+Postgres has its own footguns that look harmless in review: an index that can't
+be used because of a function on the column, a migration that takes an
+`ACCESS EXCLUSIVE` lock on a busy table, a sequential scan hiding behind a query
+that "works" on test data, bloat and vacuum problems that only surface under
+load. A reviewer who isn't a Postgres specialist won't see them. This skill makes
+that specialist judgment part of the review.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+It runs a catalogue of heuristics across the dimensions that bite on Postgres:
 
-## Usage
+- **indexing** — missing or unusable indexes, the wrong index type for the query;
+- **modeling** — schema choices that work against the access patterns;
+- **query** — sequential scans, non-sargable predicates, planner traps;
+- **migration** — DDL that locks under load (and the safe, concurrent alternative);
+- **retention, capacity, security, concurrency** — growth, vacuum/bloat, exposure,
+  and locking/isolation hazards.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+Each finding carries a **severity** and a concrete **SQL fix**, so it tells you
+what to change, not just that something is wrong. It can connect to a database for
+live checks or work from the diff alone.
+
+## When to use
+
+On any change to the data layer of a Postgres project — a migration, a query, a
+schema change. It is the `dba` role's Postgres catalogue, alongside `dba-mssql`,
+`dba-mongodb`, and `dba-redis`.

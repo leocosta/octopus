@@ -1,19 +1,39 @@
 ---
 title: dba-postgres
-description: "PostgreSQL heuristics catalogue for the dba role. Detects indexing, modeling, query, migration, retention, capacity, security, and concurrency problems specific to Postgres. Every finding ships with a SQL fix."
-draft: true
+description: "Catálogo de heurísticas PostgreSQL para a role dba. Detecta problemas de indexação, modelagem, query, migração, retenção, capacidade, segurança e concorrência específicos do Postgres. Todo achado vem com um fix em SQL."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`dba-postgres` é o catálogo de heurísticas do PostgreSQL que dá à role `dba` o
+olho de um especialista de banco sobre uma mudança. Um agente generalista escreve
+queries que *rodam*; este conhece os jeitos específicos do Postgres de elas
+machucarem em escala — e entrega um fix em SQL com cada achado.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this skill removes */}
+O Postgres tem seus próprios footguns que parecem inofensivos no review: um índice
+que não pode ser usado por causa de uma função na coluna, uma migração que pega um
+lock `ACCESS EXCLUSIVE` numa tabela ocupada, um sequential scan escondido atrás de
+uma query que "funciona" com dados de teste, problemas de bloat e vacuum que só
+aparecem sob carga. Um revisor que não é especialista em Postgres não os vê. Esta
+skill torna esse julgamento de especialista parte do review.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+Roda um catálogo de heurísticas pelas dimensões que mordem no Postgres:
 
-## Usage
+- **indexação** — índices faltando ou inutilizáveis, tipo de índice errado pra query;
+- **modelagem** — escolhas de schema que vão contra os padrões de acesso;
+- **query** — sequential scans, predicados não-sargable, armadilhas do planner;
+- **migração** — DDL que trava sob carga (e a alternativa segura e concorrente);
+- **retenção, capacidade, segurança, concorrência** — crescimento, vacuum/bloat,
+  exposição, e riscos de lock/isolamento.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+Cada achado carrega uma **severidade** e um **fix em SQL** concreto, então te diz
+o que mudar, não só que algo está errado. Pode conectar a um banco pra checks ao
+vivo ou trabalhar só do diff.
+
+## Quando usar
+
+Em qualquer mudança na camada de dados de um projeto Postgres — uma migração, uma
+query, uma mudança de schema. É o catálogo Postgres da role `dba`, ao lado de
+`dba-mssql`, `dba-mongodb` e `dba-redis`.
