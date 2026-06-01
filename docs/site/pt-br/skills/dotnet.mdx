@@ -1,19 +1,36 @@
 ---
 title: dotnet
-description: ".NET backend architecture patterns, conventions, and decision trees for ASP.NET Core projects"
-draft: true
+description: "Padrões de arquitetura backend .NET, convenções e árvores de decisão pra projetos ASP.NET Core — quando usar Minimal APIs vs controllers, como estruturar um serviço, e qual é a escolha idiomática em cada bifurcação."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`dotnet` dá a um agente trabalhando numa base ASP.NET Core o julgamento
+arquitetural de um engenheiro .NET experiente — os padrões, convenções e árvores
+de decisão "pra onde isso deveria ir?" que fazem a diferença entre código que
+compila e código que se encaixa na plataforma.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this skill removes */}
+.NET oferece várias formas válidas de fazer a mesma coisa — Minimal APIs ou
+controllers, esta camada ou aquela — e a escolha certa depende do tamanho do
+projeto, do time e das convenções. Um agente generalista pega uma
+arbitrariamente; o resultado roda mas briga com a base. Esta skill codifica a
+escolha idiomática em cada bifurcação pra que o código pareça pertencer.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+Carrega os padrões e árvores de decisão pro trabalho backend em .NET:
 
-## Usage
+- **Design de API** — quando preferir Minimal APIs (microsserviços, CRUD enxuto,
+  menos cerimônia) versus controllers (convenções MVC estabelecidas, filtros e
+  model binding complexos), com padrões idiomáticos pra cada um.
+- **Arquitetura** — como estruturar um serviço novo e dividi-lo em camadas,
+  seguindo as convenções que um projeto ASP.NET Core espera.
+- **Detecção de stack** — reconhece um projeto .NET pelos seus `*.csproj` /
+  `*.sln`, `Program.cs` / `Startup.cs`, e `appsettings.json`, então ela atua nas
+  bases certas.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+## Quando usar
+
+Ao implementar ou refatorar uma API ASP.NET Core, projetar um serviço .NET novo,
+escolher entre padrões no ecossistema .NET, ou revisar código .NET por qualidade e
+aderência às boas práticas.

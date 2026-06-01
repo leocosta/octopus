@@ -1,19 +1,34 @@
 ---
 title: batch
-description: "Fan out a prompt across many targets (files / modules / directories) running each in an isolated git worktree, then merge results back."
-draft: true
+description: "Fan out a single prompt across many targets (files, modules, directories), running each in an isolated git worktree, then merge the results back. Lets one intent apply to many independent units in parallel without the changes stepping on each other."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`batch` applies one intent to many targets at once. You describe the change
+once; it runs that prompt against each target in its own isolated git worktree,
+in parallel, then merges the results back — so a sweep across a monorepo doesn't
+become a serial slog or a pile of conflicting edits.
 
 ## What it solves
 
-{/* TODO: the concrete pain this skill removes */}
+Some changes are the same edit repeated across many independent units: bump a
+config in every package, apply a lint fix across modules, migrate an API call in
+a dozen directories. Done serially it's slow; done all in one working tree the
+parallel edits collide. You end up either waiting or untangling conflicts.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+- **Fan-out** — the prompt is dispatched once per target, across the files,
+  modules, or directories you point it at.
+- **Worktree isolation** — each target runs in its own git worktree, so parallel
+  changes never share a working directory and can't corrupt each other.
+- **Merge back** — once each unit finishes, the results are merged back together,
+  giving you one combined change to review instead of N detached branches.
 
-## Usage
+It's aimed at monorepo / workspace layouts (`packages/**`, `modules/**`,
+`apps/**`) where the same intent legitimately spans many independent units.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+## When to use
+
+When a single, well-defined change must be applied to many independent targets
+and you want them done in parallel without conflicts — a workspace-wide bump, a
+repeated migration, a cross-module fix.

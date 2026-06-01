@@ -1,19 +1,39 @@
 ---
 title: standards
-description: "Self-serve lookup that answers \"what's our standard for X, and why?\" from the team's own sources — docs/adr/ (decisions), rules/ (coding rules incl. *.local.md overrides), CONTEXT.md (vocabulary), and knowledge/ (confirmed facts) — in that precedence, with the source cited and the rationale. Never invents an answer: when no source covers the topic it says so and routes to authoring (doc-adr or a rules override). Read-only, never gates. Pairs with audit-grounding (which flags drift in a diff using the same sources) and doc-adr (which authors the missing standard). Registered in the docs bundle."
-draft: true
+description: "Self-serve lookup that answers \"what's our standard for X, and why?\" from the team's own sources — ADRs, coding rules (including local overrides), the CONTEXT.md vocabulary, and confirmed knowledge — in that precedence, citing the source and the rationale. Never invents an answer: when nothing covers the topic it says so and routes you to authoring. Read-only, never gates. Part of the docs bundle."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`standards` answers the question "what's our standard for X, and why?" from your
+team's own written sources — and cites where the answer came from. It's the
+read-only counterpart to writing a standard: you ask, it looks it up, it never
+makes something up.
 
 ## What it solves
 
-{/* TODO: the concrete pain this skill removes */}
+Conventions live scattered across ADRs, rules files, a vocabulary doc, and
+captured knowledge — so "do we use X or Y here?" gets answered from memory, or
+guessed, and the guess drifts from what the team actually decided. New people
+can't self-serve; the answer with its *reasoning* is buried. This skill makes the
+team's own decisions queryable, with the rationale attached.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+- **Precedence-ordered lookup** — it consults sources in a fixed order:
+  `docs/adr/` (decisions) → `rules/` (coding rules, including `*.local.md`
+  overrides) → `CONTEXT.md` (vocabulary) → `knowledge/` (confirmed facts). The
+  highest-precedence source that covers the topic wins.
+- **Cited, with rationale** — the answer names its source and explains *why* the
+  standard is what it is, not just what it is.
+- **Never invents** — when no source covers the topic, it says so plainly and
+  routes you to author the missing standard (`doc-adr`, or a `rules` override)
+  rather than fabricating one.
+- **Read-only, never gates** — it informs; it never blocks a commit or a change.
 
-## Usage
+It pairs with `audit-grounding` (which flags drift in a diff against the *same*
+sources) and `doc-adr` (which authors the standard that's missing).
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+## When to use
+
+Any time you need to know the team's standard on something and the reasoning
+behind it — before writing code that should conform, onboarding, or settling an
+"is this how we do it here?" question. Registered in the `docs` bundle.
