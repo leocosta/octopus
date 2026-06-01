@@ -1,19 +1,39 @@
 ---
 title: dba-mongodb
-description: "MongoDB heuristics catalogue for the dba role. Detects indexing (ESR rule), modeling (embed vs reference), query, migration, retention (TTL), capacity (shard key), security, and concurrency problems. Every finding ships with a Mongo shell command."
-draft: true
+description: "Catálogo de heurísticas MongoDB para a role dba. Detecta problemas de indexação (regra ESR), modelagem (embed vs reference), query, migração, retenção (TTL), capacidade (shard key), segurança e concorrência. Todo achado vem com um comando do Mongo shell."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`dba-mongodb` é o catálogo de heurísticas do MongoDB que dá à role `dba` o olho de
+um especialista de banco de documentos sobre uma mudança. A flexibilidade do Mongo
+é também sua armadilha: um schema fácil de escrever é fácil de modelar errado, e o
+custo aparece muito depois. Todo achado vem com um comando do Mongo shell pra
+corrigir.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this skill removes */}
+Decisões de modelagem de documento são as que silenciosamente determinam se um
+deployment Mongo escala ou trava — e são invisíveis pra um revisor generalista.
+Embed versus reference, a ordem de índice errada pra query, uma shard key que
+faz hot-spot de toda escrita num nó só, uma collection sem TTL que cresce pra
+sempre. Nada disso quebra na demo; tudo morde em produção. Esta skill torna o
+julgamento de banco de documentos parte do review.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+Roda um catálogo de heurísticas específicas do Mongo:
 
-## Usage
+- **indexação** — ordem de índice composto pela **regra ESR** (Equality, Sort, Range);
+- **modelagem** — embed vs. reference pro padrão de acesso real;
+- **query** — collection scans, `$lookup` sem limite, sorts não-indexados;
+- **migração** — mudanças de schema seguras de rodar online;
+- **retenção (TTL)**, **capacidade (shard key)**, **segurança**, **concorrência** —
+  crescimento, distribuição uniforme, exposição, e riscos de conflito de escrita.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+Cada achado carrega uma **severidade** e um **comando do Mongo shell** concreto,
+então o fix está a um paste de distância.
+
+## Quando usar
+
+Em qualquer mudança numa camada de dados MongoDB — uma collection nova, uma
+aggregation, uma decisão de índice ou shard key. É o catálogo MongoDB da role
+`dba`, ao lado de `dba-mssql`, `dba-postgres` e `dba-redis`.

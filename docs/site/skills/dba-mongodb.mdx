@@ -1,19 +1,38 @@
 ---
 title: dba-mongodb
 description: "MongoDB heuristics catalogue for the dba role. Detects indexing (ESR rule), modeling (embed vs reference), query, migration, retention (TTL), capacity (shard key), security, and concurrency problems. Every finding ships with a Mongo shell command."
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`dba-mongodb` is the MongoDB heuristics catalogue that gives the `dba` role a
+document-database expert's eye on a change. Mongo's flexibility is also its trap:
+a schema that's easy to write is easy to model wrong, and the cost shows up much
+later. Every finding ships with a Mongo shell command to fix it.
 
 ## What it solves
 
-{/* TODO: the concrete pain this skill removes */}
+Document modeling decisions are the ones that quietly determine whether a Mongo
+deployment scales or stalls — and they're invisible to a generalist reviewer.
+Embed versus reference, the wrong index order for the query, a shard key that
+hot-spots every write onto one node, a collection with no TTL that grows forever.
+None of these break in the demo; all of them bite in production. This skill makes
+the document-database judgment part of the review.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+It runs a catalogue of Mongo-specific heuristics:
 
-## Usage
+- **indexing** — compound-index order by the **ESR rule** (Equality, Sort, Range);
+- **modeling** — embed vs. reference for the actual access pattern;
+- **query** — collection scans, unbounded `$lookup`, unindexed sorts;
+- **migration** — schema changes safe to run online;
+- **retention (TTL)**, **capacity (shard key)**, **security**, **concurrency** —
+  growth, even distribution, exposure, and write-conflict hazards.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+Each finding carries a **severity** and a concrete **Mongo shell command**, so
+the fix is one paste away.
+
+## When to use
+
+On any change to a MongoDB data layer — a new collection, an aggregation, an index
+or shard-key decision. It is the `dba` role's MongoDB catalogue, alongside
+`dba-mssql`, `dba-postgres`, and `dba-redis`.

@@ -1,19 +1,39 @@
 ---
 title: dba-redis
 description: "Redis heuristics catalogue for the dba role. Detects key design, TTL discipline, hot/big key risks, persistence trade-offs, pub/sub vs streams, pipeline use, eviction policy, and operational hazards. Every finding ships with a Redis command or config fix."
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`dba-redis` is the Redis heuristics catalogue that gives the `dba` role a
+cache-and-datastore expert's eye on a change. Redis is simple to start with and
+easy to misuse — and because it lives in memory and on the hot path, its mistakes
+fail loudly. Every finding ships with a Redis command or config fix.
 
 ## What it solves
 
-{/* TODO: the concrete pain this skill removes */}
+Redis problems are operational, not just correctness: a key with no TTL that
+leaks memory until the node evicts live data, a single "big key" that blocks the
+event loop on every access, a hot key that pins one shard, a persistence setting
+that quietly trades away the durability you assumed you had. A generalist won't
+weigh these trade-offs. This skill names them before the cache becomes the
+incident.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+It runs a catalogue of Redis-specific heuristics:
 
-## Usage
+- **key design & TTL discipline** — naming, and an expiry on everything that
+  isn't meant to live forever;
+- **hot / big key risks** — access patterns and value sizes that block the loop
+  or hot-spot a shard;
+- **persistence trade-offs** — RDB vs. AOF against the durability you actually need;
+- **pub/sub vs. streams**, **pipeline use**, **eviction policy**, **operational
+  hazards** — the right primitive, fewer round-trips, a sane `maxmemory` policy,
+  and the footguns ops teams hit.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+Each finding carries a **severity** and a concrete **Redis command or config fix**.
+
+## When to use
+
+On any change that uses Redis — a new cache, a queue, a rate limiter, a pub/sub or
+streams design. It is the `dba` role's Redis catalogue, completing the set with
+`dba-mssql`, `dba-postgres`, and `dba-mongodb`.
