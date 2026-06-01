@@ -1,0 +1,44 @@
+---
+title: patterns
+description: "The default design-pattern conventions — feature-based architecture, consistent API envelopes, the repository and service layers, Result-style error handling, and event-driven decoupling — that shape how an Octopus repo is structured. Override: a repo may replace them entirely with a local file."
+sidebar:
+  order: 4
+---
+
+`patterns` is the set of architectural conventions Octopus suggests by default:
+how to organize code, shape APIs, separate persistence from logic, and handle
+expected failures. Unlike `security` and `quality`, these are starting points,
+not floors — a repo with its own established architecture is meant to replace
+them.
+
+## What it governs
+
+- **Architecture** — feature-based organization (group by domain, not layer),
+  composition over inheritance, dependency inversion at boundaries, separation of
+  concerns.
+- **API design** — a consistent `{ data, error, metadata }` envelope, correct
+  HTTP status codes, versioning for breaking changes, pagination for lists.
+- **Repository pattern** — data access behind a uniform interface
+  (`findAll`/`findById`/`create`/`update`/`delete`), no business logic inside.
+- **Service layer** — stateless orchestration between repositories and external
+  services, one service per bounded context, transactions at the service level.
+- **Error handling** — the Result pattern for expected failures, guard clauses,
+  the Null Object pattern, retry-with-backoff for transient external calls.
+- **Event-driven patterns** — events for cross-boundary communication, immutable
+  event data, idempotent handlers.
+
+## Why it matters
+
+A code assistant with no architectural guidance defaults to whatever it saw most
+in training — often a tangle of layers that fights the codebase it's dropped
+into. Stating the intended patterns gives the agent a coherent target, so new
+code reads like the rest of the system instead of importing a foreign structure.
+
+## How to override
+
+**Override.** Create `patterns.local.md` in the rules directory to *replace*
+these conventions entirely — the local file takes full precedence. This is the
+right move when your repo has its own architectural standard; document it once
+locally and the agent follows yours instead of the defaults.
+
+[Source: `rules/common/patterns.md`](https://github.com/leocosta/octopus/blob/main/rules/common/patterns.md)

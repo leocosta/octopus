@@ -1,0 +1,47 @@
+---
+title: testing
+description: "As convenções de teste — testar comportamento não implementação, a estrutura AAA, nomes de cenário descritivos, o que testar e o que não testar, dados de teste independentes via factory, e cobertura como diretriz não meta. Override: um repo pode substituí-las inteiras com um arquivo local."
+sidebar:
+  order: 7
+---
+
+`testing` é o conjunto de convenções de como testes são escritos e o que devem
+cobrir. Seu fio condutor: um teste existe pra pegar uma regressão real e explicar
+o que quebrou quando falha — não pra perseguir um número de cobertura ou fixar
+detalhes de implementação que deveriam mudar.
+
+## O que governa
+
+- **Princípios** — testar comportamento, não implementação; um teste que falha
+  deve tornar a causa óbvia; nomeie testes pelo cenário e resultado esperado;
+  prefira testes de integração pra caminhos críticos, testes unitários pra lógica
+  complexa; mantenha os testes independentes.
+- **Estrutura** — o padrão AAA (Arrange, Act, Assert); uma asserção lógica por
+  teste; nomes descritivos como `should_return_error_when_email_is_invalid`.
+- **O que testar** — happy paths pros fluxos críticos, edge cases (vazio, limite,
+  null), caminhos de erro, regras de negócio, transições de estado e efeitos
+  colaterais.
+- **O que não testar** — internos de framework, comportamento de terceiros,
+  getters/setters triviais, detalhes privados de implementação, layout exato de
+  UI.
+- **Dados de teste** — factories/builders no lugar de fixtures hardcoded; cada
+  teste cria seus próprios dados; limpe depois de testes de integração.
+- **Cobertura** — uma diretriz (80% não é meta); código sem cobertura deve ser uma
+  decisão consciente; caminhos críticos (auth, pagamentos, mutações) precisam de
+  testes de integração.
+
+## Por que importa
+
+Um assistente otimizando por testes verdes vai alegremente escrever testes
+frágeis — presos à implementação, asseverando estado interno, passando pelos
+motivos errados. Esses testes custam mais do que economizam: quebram a cada
+refactor e não pegam bug real. Declarar como é o *bom* mantém a suíte uma rede de
+segurança em vez de um imposto de manutenção.
+
+## Como sobrescrever
+
+**Override.** Crie `testing.local.md` no diretório de regras pra *substituir*
+estas convenções inteiras — o arquivo local toma precedência total quando a
+estratégia de teste do seu time difere.
+
+[Source: `rules/common/testing.md`](https://github.com/leocosta/octopus/blob/main/rules/common/testing.md)

@@ -1,0 +1,43 @@
+---
+title: security
+description: "The stack-agnostic security baseline — secrets management, input validation, injection prevention, auth, dependency hygiene, and safe error handling — that every Octopus repo holds the agent to. Extend-only: a repo may add to it, never weaken it."
+sidebar:
+  order: 2
+---
+
+`security` is the baseline set of security conventions Octopus loads on every
+task. It's deliberately broad and non-negotiable: the practices that, when
+skipped, turn into the incidents nobody wants to debug at 2 AM.
+
+## What it governs
+
+The standing rules across the security surfaces an application touches:
+
+- **Secrets** — never hardcode; use environment variables or a secret manager;
+  keep `.env*.local` out of version control; fail fast when a required secret is
+  missing.
+- **Input validation** — validate and sanitize all external input at system
+  boundaries with schema-based validation; reject invalid input early.
+- **Injection prevention** — parameterized queries, sanitized HTML output,
+  escaped shell arguments, validated file paths.
+- **Auth** — least privilege, protected-by-default endpoints, short-lived tokens,
+  rate-limited auth endpoints.
+- **Dependencies** — keep them current, pin in production, review before adding.
+- **Error handling** — never leak stack traces, SQL, or internal paths; log
+  detail server-side, return safe messages, never log secrets or PII.
+
+## Why it matters
+
+Security failures are asymmetric: cheap to prevent in review, ruinous in
+production. A code assistant generating plausible code will happily concatenate
+user input into a query or echo a stack trace to the client unless the standard
+says not to. This rule makes the floor explicit so it's applied uniformly, not
+left to whoever happens to be reviewing.
+
+## How to override
+
+**Extend-only.** Create `security.local.md` in the rules directory to *add*
+project-specific rules. You cannot use a local file to remove or weaken an
+Octopus security default — the baseline is a floor, not a starting suggestion.
+
+[Source: `rules/common/security.md`](https://github.com/leocosta/octopus/blob/main/rules/common/security.md)

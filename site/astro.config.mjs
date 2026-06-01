@@ -83,6 +83,12 @@ export default defineConfig({
           collapsed: true,
         },
         {
+          label: 'Rules',
+          translations: { 'pt-BR': 'Regras' },
+          autogenerate: { directory: 'rules' },
+          collapsed: true,
+        },
+        {
           label: 'Roles',
           translations: { 'pt-BR': 'Roles' },
           autogenerate: { directory: 'roles' },

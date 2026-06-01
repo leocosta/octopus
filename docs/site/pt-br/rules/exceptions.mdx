@@ -1,0 +1,47 @@
+---
+title: exceptions
+description: "A disciplina pra exceptions customizadas — trate uma como um contrato que você deve ao caller e ao operador, não um upgrade estilístico. Por padrão, use resultados tipados ou tipos da stdlib; crie uma classe customizada só quando um catch real ou um consumidor operacional justifica. Override: um repo pode substituí-la inteira."
+sidebar:
+  order: 5
+---
+
+`exceptions` é a regra que impede uma base de encher de classes de exception
+jogadas-uma-vez que ninguém captura. Sua afirmação central: uma exception
+customizada é um contrato que você deve ao caller e ao operador — então você só
+cria uma quando esse contrato de fato existe.
+
+## O que governa
+
+- **Por padrão, não criar uma** — busque primeiro um resultado tipado (pra falhas
+  esperadas), a exception de stdlib/framework mais próxima com mensagem precisa,
+  ou um assert fail-fast pra estados impossíveis.
+- **O gate de criação** — uma exception customizada se justifica só quando ao
+  menos um vale, e está escrito: um **contrato de domínio** (2+ call sites
+  capturam o tipo específico, ou ela faz parte de uma API publicada), um
+  **diagnóstico operacional** (campos estruturados que um consumidor real
+  consulta), ou um **wrap de trust boundary** (uma exception de infra relançada
+  com contexto de domínio e a causa preservada).
+- **O conjunto proibido** — `FooNotFoundException` espelhando semântica de stdlib,
+  um throw site com zero catch sites, wrappers que escondem a causa, hierarquias
+  de subtipo especulativas, exceptions usadas pra controle de fluxo, uma exception
+  por regra de validação.
+- **Mensagens pras 2 da manhã** — diga o que era esperado, o que foi recebido e os
+  identificadores que um operador precisa; sempre preserve a causa.
+
+## Por que importa
+
+Exceptions customizadas parecem boa engenharia, então proliferam — e a maioria
+não adiciona nada que um tipo preciso de stdlib não daria, enquanto poluem o
+domínio com contratos que código nenhum honra. A regra reformula a pergunta de "é
+um nome bonito?" pra "alguém captura esse tipo, e um operador lê seus campos?".
+Esse gate mantém a superfície de exceptions pequena e significativa. Inclui
+orientação por linguagem (C#, Python, TypeScript) e um self-check de quatro
+perguntas.
+
+## Como sobrescrever
+
+**Override.** Crie `exceptions.local.md` no diretório de regras pra *substituir*
+esta convenção inteira — o arquivo local toma precedência total se seu time roda
+uma filosofia diferente de tratamento de erros.
+
+[Source: `rules/common/exceptions.md`](https://github.com/leocosta/octopus/blob/main/rules/common/exceptions.md)
