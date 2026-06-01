@@ -1,19 +1,52 @@
 ---
 title: knowledge-briefing
 description: "Proactive cadence summary over a knowledge root — surfaces \"what changed / what needs you today\" without the reader asking. The deterministic core (`octopus briefing`, over the `octopus kr` registry) computes the change-delta since a per-root watermark and composes `octopus hygiene` (attention) and `octopus synthesize` (connections, weekly); this skill narrates the briefing, grounded to source nodes, on the cheapest model tier."
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+A knowledge base only speaks when spoken to. `knowledge-hygiene` and
+`knowledge-synthesize` answer when you invoke them — but nothing tells you *what
+changed* or *what needs you today* on its own. `knowledge-briefing` is the part
+that comes to you: a short, grounded summary on a cadence, so the blocker
+recorded yesterday isn't invisible until someone thinks to ask.
 
 ## What it solves
 
-{/* TODO: the concrete pain this skill removes */}
+The expensive failure of a knowledge base is "you didn't know to look." Across a
+handful of areas — six repos, a dozen contexts — no one holds the whole picture
+in their head, and the thing that needed attention sat unread because checking
+every corner by hand is nobody's job. A briefing flips that: the base reports
+its own state, instead of waiting to be queried area by area.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+The deterministic core (`octopus briefing`) does the mechanical work; the skill
+narrates it.
 
-## Usage
+- A **per-root watermark** (stored privately, never in a team repo) records when
+  you last looked, so each run is a true *since you last saw it* — not a fixed
+  window you have to remember to pass.
+- The **change-delta** — the briefing's own signal — is the set of nodes updated
+  since that watermark.
+- For the "needs you" section it **composes the sibling engines** rather than
+  recomputing: `octopus hygiene`'s warnings (overdue, stale, broken), and on
+  `--weekly`, `octopus synthesize`'s new connections.
+- Every line is **grounded** — it cites the source node it came from and invents
+  nothing. The narration runs on the **cheapest model tier**, because turning a
+  delta into prose is light work, not reasoning.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+`--daily` advances the watermark (so the next run picks up where this left off);
+`--weekly` is a window-only rollup that leaves the watermark untouched. The
+cadence itself is hosted by a scheduler — the skill is one run.
+
+## Usage & parameters
+
+```
+octopus briefing [--root <id>] [--daily | --weekly] [--since <window>]
+```
+
+| Flag | What it does | Default |
+|---|---|---|
+| `--root <id>` | Brief on one knowledge root. | every resolved root |
+| `--daily` | Attention briefing; advances the watermark. | this is the default |
+| `--weekly` | Narrated rollup over a 7-day window; leaves the watermark untouched. | — |
+| `--since <window>` | Override the window for one run (e.g. `"3 days"`) without touching the watermark. | the stored watermark |

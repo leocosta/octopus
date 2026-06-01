@@ -1,19 +1,53 @@
 ---
 title: knowledge-synthesize
 description: "Surface connections that cross the nodes of a knowledge root — the value a silo'd base hides. The deterministic core (`octopus synthesize`, over the `octopus kr` registry) computes ranked candidates: shared-target (two nodes linking the same third), co-mention (a recurring entity with no home node), and relevant (`--node` lexical overlap, the forgotten-but-relevant lookup). This skill judges which candidates are real, flags contradictions against the authorities a node links, and seeds missing links with `--fix`."
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+A knowledge base is worth more than the sum of its notes only when something
+*traverses* it and surfaces a link your memory missed. Left to itself, every
+note is an island. `knowledge-synthesize` finds the connections that cross
+nodes — the same blocker hitting two areas, a note that contradicts the decision
+it cites, the old write-up that is suddenly relevant again.
 
 ## What it solves
 
-{/* TODO: the concrete pain this skill removes */}
+The cost of a siloed base is invisible: you only pay it when you *didn't* connect
+two things and shipped the worse decision because of it. A cross-node pattern
+never surfaces unless you already suspect it and go looking — which means it
+mostly doesn't surface at all. This skill makes the base do the looking.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+The deterministic core (`octopus synthesize`) computes ranked **candidate**
+connections over the `octopus kr` registry; the skill makes the judgment calls a
+script cannot.
 
-## Usage
+The core surfaces three signals:
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+- **shared-target** — two nodes that link the same third node (they relate
+  through it);
+- **co-mention** — an entity that recurs across several nodes but has no node of
+  its own (a topic worth promoting);
+- **relevant** — with `--node`, other nodes ranked by shared-entity overlap with
+  a focus node: the *forgotten-but-relevant* lookup.
+
+Entity extraction is **language-neutral** — it reads `[[wikilinks]]` and
+`` `code` `` spans, which work in any language, and leaves free-text proper-noun
+detection to the skill rather than a hardcoded English heuristic.
+
+The skill then judges which candidates are real, reads a node against the
+authorities it links (an ADR, a spec) to flag **contradictions**, and — with
+`--fix` — seeds a link only when a mention resolves to exactly one node, leaving
+the ambiguous cases as report-only.
+
+## Usage & parameters
+
+```
+octopus synthesize [--root <id>] [--node <path>] [--fix]
+```
+
+| Flag | What it does | Default |
+|---|---|---|
+| `--root <id>` | Synthesize over one knowledge root. | every resolved root |
+| `--node <path>` | Forgotten-but-relevant lookup for one node (ranks others by shared entities). | whole-root scan |
+| `--fix` | Seed a link when a mention resolves to exactly one node (reversible). | report-only |

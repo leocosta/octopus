@@ -1,19 +1,52 @@
 ---
 title: knowledge-synthesize
-description: "Surface connections that cross the nodes of a knowledge root — the value a silo'd base hides. The deterministic core (`octopus synthesize`, over the `octopus kr` registry) computes ranked candidates: shared-target (two nodes linking the same third), co-mention (a recurring entity with no home node), and relevant (`--node` lexical overlap, the forgotten-but-relevant lookup). This skill judges which candidates are real, flags contradictions against the authorities a node links, and seeds missing links with `--fix`."
-draft: true
+description: "Revela conexões que cruzam os nós de um knowledge root — o valor que uma base em silos esconde. O core determinístico (`octopus synthesize`, sobre o registry `octopus kr`) computa candidatos ranqueados: shared-target (dois nós linkando o mesmo terceiro), co-mention (uma entidade recorrente sem nó próprio) e relevant (overlap léxico via `--node`, a busca do esquecido-mas-relevante). Esta skill julga quais candidatos são reais, sinaliza contradições contra as autoridades que um nó linka, e semeia links faltando com `--fix`."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+Uma base de conhecimento vale mais que a soma das notas só quando algo a
+*atravessa* e revela um link que sua memória perdeu. Por si só, toda nota é uma
+ilha. `knowledge-synthesize` encontra as conexões que cruzam nós — o mesmo
+blocker atingindo duas áreas, uma nota que contradiz a decisão que cita, o
+write-up antigo que de repente voltou a ser relevante.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this skill removes */}
+O custo de uma base em silos é invisível: você só paga quando *não* conectou duas
+coisas e entregou a decisão pior por causa disso. Um padrão cross-node nunca
+aparece a menos que você já desconfie dele e vá procurar — o que significa que na
+maioria das vezes não aparece. Esta skill faz a base procurar por você.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+O core determinístico (`octopus synthesize`) computa **candidatos** de conexão
+ranqueados sobre o registry `octopus kr`; a skill faz os julgamentos que um
+script não faz.
 
-## Usage
+O core revela três sinais:
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+- **shared-target** — dois nós que linkam o mesmo terceiro (se relacionam por ele);
+- **co-mention** — uma entidade que recorre em vários nós mas não tem nó próprio
+  (um tópico que merece ser promovido);
+- **relevant** — com `--node`, outros nós ranqueados por overlap de entidades com
+  um nó-foco: a busca do *esquecido-mas-relevante*.
+
+A extração de entidades é **neutra de idioma** — lê `[[wikilinks]]` e spans de
+`` `code` ``, que funcionam em qualquer língua, e deixa a detecção de nomes
+próprios em texto livre pra skill, em vez de uma heurística fixa em inglês.
+
+A skill então julga quais candidatos são reais, lê um nó contra as autoridades
+que ele linka (um ADR, uma spec) pra sinalizar **contradições**, e — com `--fix`
+— semeia um link só quando uma menção resolve pra exatamente um nó, deixando os
+casos ambíguos só como relatório.
+
+## Uso & parâmetros
+
+```
+octopus synthesize [--root <id>] [--node <path>] [--fix]
+```
+
+| Flag | O que faz | Default |
+|---|---|---|
+| `--root <id>` | Sintetiza sobre um knowledge root. | todo root resolvido |
+| `--node <path>` | Busca esquecido-mas-relevante pra um nó (ranqueia outros por entidades compartilhadas). | varredura do root inteiro |
+| `--fix` | Semeia um link quando a menção resolve pra exatamente um nó (reversível). | só relatório |
