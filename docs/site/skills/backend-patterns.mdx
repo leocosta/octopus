@@ -1,19 +1,42 @@
 ---
 title: backend-patterns
 description: "Backend architecture decision patterns for multi-stack projects (Node.js, .NET, Python)"
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`backend-patterns` is the agent's reference for the architecture decisions that
+recur on every backend feature — how to shape an API, where business logic
+lives, how data access is structured — so the answer is consistent across the
+stacks a team runs (Node.js, .NET, Python) instead of reinvented per feature and
+per developer.
 
 ## What it solves
 
-{/* TODO: the concrete pain this skill removes */}
+Backend decisions are made constantly and quietly: does this go in the
+controller or a service, do we return a 200 with an error body or a real status
+code, does this query live in the repository or leak into the handler. Left to
+each developer (or each agent run) in the moment, the codebase ends up with five
+dialects of the same structure — which is what makes an unfamiliar service hard
+to read and risky to change. The skill makes those calls the *same* call every
+time.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+It encodes the recurring patterns as guidance with **decision trees**, not dogma:
 
-## Usage
+- **API design** — consistent response shapes, real status codes, pagination on
+  list endpoints, versioning when a break is unavoidable.
+- **Service layer** — business logic orchestrated in one stateless place per
+  bounded context, with transactions handled at that level.
+- **Repository pattern** — data access behind a uniform interface, keeping
+  persistence out of the business logic and making it mockable in tests.
+- **Cross-stack** — the same shape expressed idiomatically in Node.js, .NET, or
+  Python, so the *pattern* travels even when the syntax doesn't.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+It also names the **anti-patterns** to avoid, so the agent recognises the wrong
+turn before taking it.
+
+## When to use
+
+Designing or reviewing a backend feature — an endpoint, a service, a data-access
+layer — where the structural decision should match the rest of the codebase. It
+pairs with the `backend-developer` role and the stack-specific guidance.

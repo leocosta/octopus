@@ -1,19 +1,42 @@
 ---
 title: backend-patterns
-description: "Backend architecture decision patterns for multi-stack projects (Node.js, .NET, Python)"
-draft: true
+description: "Padrões de decisão de arquitetura backend para projetos multi-stack (Node.js, .NET, Python)"
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`backend-patterns` é a referência do agente pras decisões de arquitetura que se
+repetem em toda feature de backend — como modelar uma API, onde a lógica de
+negócio vive, como o acesso a dados é estruturado — pra que a resposta seja
+consistente entre as stacks que um time roda (Node.js, .NET, Python) em vez de
+reinventada por feature e por dev.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this skill removes */}
+Decisões de backend são tomadas o tempo todo e em silêncio: isso vai no
+controller ou num service, retornamos 200 com um corpo de erro ou um status real,
+essa query fica no repositório ou vaza pro handler. Deixadas a cada dev (ou cada
+run de agente) no momento, o codebase acaba com cinco dialetos da mesma estrutura
+— o que torna um service desconhecido difícil de ler e arriscado de mudar. A
+skill faz essas decisões serem a *mesma* decisão sempre.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+Codifica os padrões recorrentes como orientação com **árvores de decisão**, não
+dogma:
 
-## Usage
+- **Design de API** — formatos de resposta consistentes, status codes reais,
+  paginação em endpoints de lista, versionamento quando um break é inevitável.
+- **Service layer** — lógica de negócio orquestrada num lugar stateless por
+  bounded context, com transações tratadas nesse nível.
+- **Repository pattern** — acesso a dados atrás de uma interface uniforme,
+  mantendo persistência fora da lógica de negócio e mockável em testes.
+- **Cross-stack** — a mesma forma expressa idiomaticamente em Node.js, .NET ou
+  Python, pra que o *padrão* viaje mesmo quando a sintaxe não.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+Também nomeia os **anti-padrões** a evitar, pra que o agente reconheça a curva
+errada antes de pegá-la.
+
+## Quando usar
+
+Projetando ou revisando uma feature de backend — um endpoint, um service, uma
+camada de acesso a dados — onde a decisão estrutural deve combinar com o resto do
+codebase. Faz par com a role `backend-developer` e a orientação específica de stack.
