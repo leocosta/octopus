@@ -1,19 +1,38 @@
 ---
 title: respond-to-review
-description: "The Octopus PR-feedback discipline — verify the critique, ask for evidence on generic comments, separate reasoned feedback from preference, never make performative changes, ask for clarification on ambiguity. After the fixes are applied, runs the post-fix loop (commit, conditional push, hybrid inline replies, resolve threads) in a single confirmation turn — the skill is end-to-end and does not require a separate /octopus:pr-comments invocation. Active by default on every PR feedback loop."
-draft: true
+description: "A disciplina de PR-feedback do Octopus — verificar a crítica, pedir evidência em comentários genéricos, separar feedback fundamentado de preferência, nunca fazer mudanças performáticas, pedir esclarecimento em ambiguidade. Depois dos fixes aplicados, roda o loop pós-fix (commit, push condicional, replies inline híbridos, resolver threads) num único turno de confirmação — a skill é ponta-a-ponta e não requer uma invocação separada de /octopus:pr-comments. Ativa por padrão em todo loop de feedback de PR."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`respond-to-review` é a disciplina pra lidar bem com feedback de PR: leve cada
+comentário a sério, mas não mude código só pra parecer concordante. Roda o loop
+inteiro — de julgar a crítica a responder e resolver threads — ponta a ponta.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this skill removes */}
+O modo de falha de um agente (ou pessoa) ansioso sob review é a **mudança
+performática**: editar o código pra satisfazer um comentário sem checar se o
+comentário está certo, então uma nota vaga ou equivocada é implementada e o diff
+deriva. A falha oposta é igualmente comum — descartar feedback fundamentado como
+preferência. Boa resposta a review exige julgamento, e esta skill o codifica em vez
+de deixá-lo pro reflexo.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+A disciplina é um conjunto de regras permanentes:
 
-## Usage
+- **Verificar a crítica** antes de agir — ela está correta, contra este código?
+- **Pedir evidência** em comentários genéricos ("isso está lento" → lento como, onde?).
+- **Separar feedback fundamentado de preferência**, e pesá-los diferente.
+- **Nunca fazer uma mudança performática** — se um comentário não se sustenta,
+  diga isso com raciocínio em vez de editar pra apaziguar.
+- **Pedir esclarecimento** quando um comentário é ambíguo, em vez de chutar.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+Uma vez que os fixes são acordados e aplicados, roda o **loop pós-fix num turno** —
+commit, push condicional, replies inline, resolver threads — então é ponta-a-ponta
+e não precisa de um passo `/octopus:pr-comments` separado.
+
+## Quando usar
+
+Toda vez que você está agindo sobre feedback de review de PR — é ativa por padrão
+nesse loop. As mudanças de código em si são então feitas via `implement` ou
+`debugging`.
