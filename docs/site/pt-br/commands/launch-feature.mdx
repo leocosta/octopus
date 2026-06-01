@@ -1,23 +1,80 @@
 ---
 title: launch-feature
-description: "Generate a multi-channel launch kit from a completed feature (RM/spec/PR)."
-draft: true
+description: "Transforma uma feature concluída em um kit de lançamento multi-canal — posts, email, copy de landing page, changelog comercial, roteiro de vídeo e imagens opcionais."
+sidebar:
+  order: 12
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:launch-feature` é o comando que dispara quando uma feature é
+entregue e alguém precisa contar pro mundo. Ele resolve a feature a partir de
+um ID de roadmap, caminho de spec ou PR e produz um kit de lançamento
+pronto pra revisão em `docs/marketing/launches/`.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this command removes */}
+Uma feature entregue que ninguém ouve é aquisição perdida. Transformar uma
+feature concluída em copy coerente para Instagram, LinkedIn, X, email, landing
+page, roteiro de vídeo e changelog comercial normalmente significa trocar de
+contexto entre ferramentas, re-explicar a feature pra cada canal e perder
+consistência no caminho.
 
-## How it works
+`launch-feature` faz o assembly de contexto uma vez — lendo a spec, os docs
+de pesquisa e o histórico de commits — e depois renderiza templates por canal,
+opcionalmente gera imagens, e escreve todos os artefatos em um diretório
+versionado único que você entrega pra um revisor.
 
-{/* TODO: the mechanism */}
+## Como funciona
 
-## Usage & parameters
+- **Resolução do ref** — o comando aceita um ID de roadmap, caminho de spec ou
+  research, ou referência de PR. Segue qualquer cross-link na entrada do
+  roadmap pra puxar contexto de spec e research, e aumenta tudo com `git log`
+  escopado nos arquivos afetados.
+- **Override cascade** — voz de marca, definição de audiência, hashtags,
+  ângulos de hook e templates de caption são resolvidos primeiro a partir dos
+  overrides do repo em `docs/marketing/`, com fallback para os defaults
+  embutidos do Octopus. O `README.md` do kit registra qual fonte foi usada
+  pra cada override, pra que revisores saibam exatamente de onde veio cada
+  decisão de estilo.
+- **Renderização de canais** — cada canal selecionado recebe seu próprio
+  arquivo populado a partir de um template. Placeholders são sempre
+  preenchidos; aqueles que não têm resposta fundamentada são removidos e
+  marcados com um comentário inline indicando o que falta, em vez de ficarem como estão.
+- **Geração de imagens** — se `GEMINI_API_KEY` está definida, imagens são
+  geradas via Gemini e salvas como PNGs em `images/`. Pollinations.ai é o
+  fallback sem chave. Quando nenhum funciona, `image-prompts.md` é gerado pra
+  que as imagens possam ser criadas separadamente.
+
+Toda a saída vai pra `docs/marketing/launches/YYYY-MM-DD-<slug>/`. Nada é
+publicado automaticamente — o kit é um rascunho até um revisor assinar.
+
+## Uso & parâmetros
 
 ```
 /octopus:launch-feature <ref> [--channels=a,b,c] [--dry-run] [--no-images] [--images-only] [--angle=<label>] [--force]
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `<ref>` — ID de roadmap, caminho de spec/research, ou referência de PR
+  (`#123` / URL completa do GitHub). Obrigatório.
+- `--channels=<lista>` — subconjunto separado por vírgula de
+  `instagram,linkedin,x,email,lp,changelog,video`. Default: todos os canais
+  aplicáveis cujo template ou override está disponível.
+- `--dry-run` — imprime o conteúdo gerado no chat sem criar arquivos.
+- `--no-images` — pula geração de imagens mesmo quando um provider está
+  configurado.
+- `--images-only` — regenera só as imagens; reutiliza artefatos de texto
+  existentes no diretório de lançamento.
+- `--angle=<label>` — força um ângulo de hook específico dos overrides de
+  marca, pulando a seleção automática.
+- `--force` — sobrescreve um diretório de lançamento existente pra mesma
+  data/slug.
+
+## Dupla
+
+`/octopus:launch-feature` cuida da aquisição — falar com novas audiências
+sobre o que mudou. `/octopus:launch-release` cuida da retenção — anunciar o
+mesmo release para usuários existentes através de canais temáticos e
+versionados. Um lançamento completo geralmente usa os dois.
+
+[Fonte: `commands/launch-feature.md`](https://github.com/leocosta/octopus/blob/main/commands/launch-feature.md)
+
+[Source: `commands/launch-feature.md`](https://github.com/leocosta/octopus/blob/main/commands/launch-feature.md)

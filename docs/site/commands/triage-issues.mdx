@@ -1,18 +1,65 @@
 ---
 title: triage-issues
 description: "Run the state-machine triage flow on a single issue — recommend category and state, reproduce bugs, grill, transition."
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:triage-issues` drives the triage protocol explicitly for a
+single issue the user names inline — the same state-machine flow the
+agent applies whenever the task involves incoming issues, surfaced as a
+command for deliberate, one-issue-at-a-time control.
 
 ## What it solves
 
-{/* TODO: the concrete pain this command removes */}
+Untriaged issues accumulate noise that makes a backlog unreadable.
+Without a consistent protocol, bugs get closed without a reproduction
+attempt, enhancements get rejected without a written record, and the
+same proposals cycle through triage repeatedly because there is no
+institutional memory of why they were declined.
+
+`triage-issues` moves one issue through a small, disciplined state
+machine — categorizing it, reproducing bugs before asking questions,
+preserving work even when the issue is blocked on the reporter, and
+recording rejected enhancements so future triagers don't re-litigate
+them.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+The protocol is seven steps:
+
+1. **Read context** — pull the issue body, comments, related ADRs, and
+   `.out-of-scope/` entries. If the issue echoes an existing
+   out-of-scope entry, close as `wontfix` immediately — no
+   re-litigation.
+
+2. **Recommend category + state** — output one sentence: recommended
+   category (`bug` or `enhancement`), recommended state, and the
+   reason. Wait for confirmation before applying labels.
+
+3. **Reproduce before grilling** (bugs only) — attempt to reproduce
+   the failure before asking any questions. Failure to reproduce is a
+   signal for `needs-info`, not for `wontfix`.
+
+4. **Grill if unclear** — for ambiguous bugs and most enhancements,
+   run a grilling sub-loop. Questions that hit a wall blocked on the
+   reporter transition to `needs-info`.
+
+5. **Preserve `needs-info` work** — the `needs-info` comment includes
+   two sections: what was established during grilling, and what
+   specific questions still need answers. This prevents the next agent
+   from restarting the conversation.
+
+6. **Record rejected enhancements** — closing an enhancement as
+   `wontfix` requires a one-paragraph entry in `.out-of-scope/<slug>.md`:
+   what was proposed, why it was rejected, and which ADR or spec made
+   it out of scope.
+
+7. **Hand off `ready-for-agent` cleanly** — attach a comment listing
+   acceptance criteria, the most relevant files, and the skills the
+   implementing agent should invoke.
+
+Every comment generated during triage carries a mandatory AI
+disclaimer so future readers can weight AI-generated content
+appropriately.
 
 ## Usage & parameters
 
@@ -20,4 +67,14 @@ draft: true
 /octopus:triage-issues <issue number or URL>
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `<issue number or URL>` — the GitHub issue number or full issue URL
+  to triage.
+
+## Relationship to the skill
+
+The `triage-issues` skill defines the triage discipline and is active
+by default when tasks involve incoming issues. This command drives it
+explicitly for a single named issue, useful for focused triage work
+where you want to step through each state transition deliberately.
+
+[Source: `commands/triage-issues.md`](https://github.com/leocosta/octopus/blob/main/commands/triage-issues.md)

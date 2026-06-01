@@ -1,23 +1,61 @@
 ---
 title: doc-rfc
-description: "Create a new RFC from template with project context"
-draft: true
+description: "Bootstrap um novo RFC a partir do template do projeto quando uma feature precisa de consenso entre stakeholders antes de o design começar."
+sidebar:
+  order: 14
+source_hash: "sha256:doc-rfc-en-v1"
+needs_retranslation: false
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:doc-rfc` é o primeiro passo quando uma mudança é grande o
+suficiente pra precisar de alinhamento antes de qualquer spec ser
+escrito. Ele cria um documento RFC datado a partir do template do
+Octopus, então a conversa acontece por escrito — com todo mundo
+lendo o mesmo enquadramento.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this command removes */}
+Features que pulam o passo de consenso costumam gerar desacordos
+caros no meio da implementação. Um RFC força que o problema, a
+proposta e as alternativas sejam colocados em texto antes de o
+trabalho de design começar — transformando uma futura reunião ou
+thread de chat num documento revisável.
 
-## How it works
+O RFC também funciona como âncora upstream pra o restante do
+pipeline. Uma vez aprovado, o `/octopus:doc-spec` pode fazer
+referência a ele, então os leitores sempre sabem por que a feature
+foi desenhada daquela forma.
 
-{/* TODO: the mechanism */}
+## Como funciona
 
-## Usage & parameters
+1. Resolve o slug — a partir do argumento que você passa, ou
+   perguntando.
+2. Determina a data de hoje e monta o caminho de destino:
+   `docs/rfcs/<data>-<slug>.md`.
+3. Lê o template de RFC e preenche a data e o título.
+4. Escreve o arquivo e informa o caminho.
+5. Lembra você de preencher as seções e compartilhar com
+   stakeholders, e sugere criar um spec com `/octopus:doc-spec`
+   depois que o RFC for aprovado.
+
+Este é um comando de bootstrapping — ele cria a estrutura do
+documento; o conteúdo é seu pra escrever.
+
+## Posição no pipeline
+
+`doc-rfc` → **`doc-spec`** → `doc-design` → `doc-plan`
+
+RFCs ficam upstream de tudo. Quando o consenso já está estabelecido
+(brainstorm síncrono, direção óbvia), pule o RFC e vá direto pra
+`/octopus:doc-spec`.
+
+## Uso & parâmetros
 
 ```
 /octopus:doc-rfc [slug]
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `[slug]` — nome em kebab-case pro RFC (ex: `politica-retry-pagamento`).
+  Se omitido, o comando pede antes de continuar.
+
+[Source: `commands/doc-rfc.md`](https://github.com/leocosta/octopus/blob/main/commands/doc-rfc.md)

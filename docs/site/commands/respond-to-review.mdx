@@ -1,18 +1,49 @@
 ---
 title: respond-to-review
 description: "Walk the Octopus PR-feedback discipline — verify, ask for evidence, separate reasoned vs preference, never performative, clarify ambiguity."
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:respond-to-review` drives the PR-feedback protocol
+explicitly for a single comment or thread — the same discipline the
+agent applies automatically on every PR feedback loop, surfaced as a
+command for when you want deliberate, step-by-step control.
 
 ## What it solves
 
-{/* TODO: the concrete pain this command removes */}
+The default response to a review comment is often either blind
+deference ("changed") or reflexive pushback. Both are wrong.
+Blind deference applies changes without understanding them; reflexive
+pushback rejects feedback without reading the code. `respond-to-review`
+enforces a middle path: verify first, then engage with the actual
+substance of the critique.
+
+The command also handles the mechanics after the fixes land — batching
+the commit, deciding whether to push, composing inline replies, and
+resolving threads — so none of those steps get forgotten or done
+out of order.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+The skill runs a five-rule protocol on every comment, in order:
+
+1. **Verify the critique** — read the code the reviewer pointed at
+   before accepting the feedback as correct. If the critique doesn't
+   hold, say so with evidence; if it does, proceed to the next rules.
+2. **Ask for evidence on generic comments** — "this is ugly" or "seems
+   wrong" cannot be acted on. Ask for specificity before touching code.
+3. **Separate reasoned feedback from preference** — technical reasons
+   (performance, correctness, consistency) get weight; preferences are
+   a negotiation, not an instruction.
+4. **Never make performative changes** — a change made to close a
+   thread without understanding the concern is an anti-pattern. If the
+   feedback is unclear, use Rule 2 or Rule 5 instead.
+5. **Ask for clarification on ambiguity** — when a comment allows more
+   than one reading, one clarifying question saves a second review round.
+
+Once the right changes are applied, the skill opens a single post-fix
+turn that proposes commit, push, inline thread replies, and thread
+resolution in one consolidated menu. Threads still waiting on
+clarification are left open.
 
 ## Usage & parameters
 
@@ -20,4 +51,23 @@ draft: true
 /octopus:respond-to-review <pr-or-comment-ref>
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `<pr-or-comment-ref>` — a PR number, a comment URL, or a quoted
+  snippet of the reviewer's comment. Tells the skill which feedback
+  thread to process.
+
+## Relationship to the skill
+
+The `respond-to-review` skill is active by default on every PR
+feedback loop — the agent engages it automatically when the task
+involves processing review comments. This command drives it explicitly
+for a single item the user describes inline, which is useful when
+you want a step-by-step walk rather than implicit engagement.
+
+## Pairing
+
+- `/octopus:pr-review` — *writing* a review for someone else's PR,
+  not processing incoming feedback.
+- `/octopus:codereview` — self-review of uncommitted changes before
+  the PR exists.
+
+[Source: `commands/respond-to-review.md`](https://github.com/leocosta/octopus/blob/main/commands/respond-to-review.md)

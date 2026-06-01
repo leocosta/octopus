@@ -1,18 +1,44 @@
 ---
 title: audit-config
 description: "Audit the Octopus configuration surface (rules, skills, hooks, commands, bundles) for model drift, stale dates, phantom skills, and deprecated paths. Severity-tiered report."
-draft: true
+sidebar:
+  order: 11
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:audit-config` is the periodic health check for the Octopus
+configuration surface itself — not the application code, but the rules, skills,
+hooks, commands, and bundles that shape how agents behave on your team.
 
 ## What it solves
 
-{/* TODO: the concrete pain this command removes */}
+Configuration ages differently from code. A rule written for an older model can
+silently constrain a newer one. A skill with no `triggers:` and no routing cues
+in its description becomes a phantom — present in the repo but never engaged. A
+hook predating a model-family change may enforce a discipline that no longer
+applies. None of these problems surface on their own; they accumulate quietly
+until agents behave in ways that are hard to trace back to a cause.
+`audit-config` surfaces that drift on demand, with severity labels, so you can
+address it deliberately.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+The command runs five checks across every file in `rules/`, `skills/`,
+`hooks/`, `commands/`, and `bundles/`:
+
+1. **Model-specific assumptions** — greps for version pins to older model
+   families (e.g. `Opus 3`, `Claude 3.5`). Severity: warn.
+2. **Stale date references** — finds date patterns and flags those older than
+   9 months without a successor comment. Severity: info / warn.
+3. **Phantom skills** — skills with no `triggers:` field and no routing cue in
+   their description are invisible to automatic engagement. Severity: warn.
+4. **Hooks untouched since a model-family change** — heuristic flag to prompt
+   manual review of hooks that predate the last known model upgrade by more
+   than 6 months. Severity: info.
+5. **Commands referencing deprecated paths** — paths that no longer exist on
+   disk (warn) or are gitignored (block). Severity: warn / block.
+
+The report is **read-only**. It suggests next steps but never edits
+configuration files. Fixes are applied as separate commits, by the user.
 
 ## Usage & parameters
 
@@ -20,4 +46,7 @@ draft: true
 /octopus:audit-config
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+This command takes no flags. Run it on demand: every 3–6 months, after a major
+model-family change, or before opening a new cluster of work.
+
+[Source: `commands/audit-config.md`](https://github.com/leocosta/octopus/blob/main/commands/audit-config.md)

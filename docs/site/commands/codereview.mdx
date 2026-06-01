@@ -1,19 +1,82 @@
 ---
 title: codereview
 description: "Self-review of uncommitted changes — orchestrates audit skills and review roles based on what the diff touches, then runs a minimal fallback checklist."
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:codereview` is the agent's self-review pass on uncommitted
+changes. It reads the staged diff, routes it to the right specialist
+skills and roles, and aggregates everything into a single
+severity-tiered report before a commit ever lands.
 
 ## What it solves
 
-{/* TODO: the concrete pain this command removes */}
+Ad-hoc review checklists are inconsistent — the items you remember
+depend on the day and on how tired you are. `codereview` fixes that by
+treating the diff as a routing signal: billing code automatically
+triggers the money audit, auth changes trigger the security role, DTO
+changes trigger the contract check. Nothing is skipped because someone
+forgot to run it.
+
+It also catches the things no specialist covers — debug statements
+left in production files, functions that grew past 50 lines, nesting
+depth that crept past four levels — through a lightweight fallback
+checklist that runs after every dispatch.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+The command runs five phases:
+
+1. **Detect** — `git diff --name-only HEAD` classifies each changed
+   path against a routing matrix.
+2. **Dispatch** — matching skills and roles run concurrently. Each
+   receives the same diff context and emits findings in its own
+   severity format.
+
+   | Signal in the diff | Dispatch |
+   |---|---|
+   | Migrations, SQL files, ORM mappings | `dba` role |
+   | Auth, JWT, OAuth, secrets, credential paths | `security` role |
+   | Billing, payment, money-touching code | `audit-money` skill |
+   | Multi-tenant queries, `IgnoreQueryFilters()` | `audit-tenant` skill |
+   | Both `api/` and frontend stacks in the same diff | `review-contracts` skill |
+   | Any production code change | `architect` role (always) |
+
+   Data-layer changes require **both** `dba` and `architect` to clear.
+   Auth/secrets changes require **both** `security` and `architect`.
+
+3. **Fallback checklist** — covers what no specialist skill owns:
+   `TODO`/`FIXME`/`HACK` introduced in the diff, debug statements
+   (`console.log`, `print()`, `debugger`) in non-test files, files
+   exceeding 800 lines, functions exceeding 50 lines, nesting depth
+   above four levels.
+
+4. **Definition of Done** — when `docs/definition-of-done.md` exists,
+   the DoD is validated against the diff and its verdict folded into
+   the report as advisory findings. When the file is absent, this step
+   is silently skipped.
+
+5. **Aggregate** — findings from all dispatched skills, roles, and the
+   fallback checklist are merged into one report ordered by severity:
+   BLOCKING / CRITICAL → ADVISORY / HIGH → MEDIUM → LOW / QUESTION.
+
+The commit is blocked if any BLOCKING or CRITICAL finding remains
+open. Advisory findings surface in the report but do not block —
+they belong in the PR description as follow-ups.
 
 ## Usage & parameters
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+```
+/octopus:codereview
+```
+
+No flags. The command reads the current working-copy diff automatically.
+
+## Pairing
+
+- `/octopus:pr-review` — self-review of a PR the agent already opened,
+  with reviewer assignment. Narrower scope than `codereview`; runs
+  every time on every PR.
+- `/octopus:respond-to-review` — processing feedback from human
+  reviewers after the PR is open.
+
+[Source: `commands/codereview.md`](https://github.com/leocosta/octopus/blob/main/commands/codereview.md)

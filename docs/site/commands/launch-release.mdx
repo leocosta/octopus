@@ -1,18 +1,50 @@
 ---
 title: launch-release
-description: "Generate a themed release announcement kit for existing users — landing page, email, Slack, Discord, in-app banner, status page, X thread, WhatsApp, slide deck."
-draft: true
+description: "Turn one or more version refs into a themed release announcement kit for existing users — landing page, email, Slack, Discord, in-app banner, status page, X thread, WhatsApp, and slide deck."
+sidebar:
+  order: 13
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:launch-release` is the command that runs right after a versioned
+release lands. It reads the changelog, git history, and roadmap entries for
+the given refs, synthesises a canonical release narrative, and renders it into
+a themed set of paste-ready channel messages and a self-contained landing page.
 
 ## What it solves
 
-{/* TODO: the concrete pain this command removes */}
+A version tag without a user-facing announcement is just a number. Writing
+that announcement manually across email, Slack, Discord, an in-app banner, and
+a slide deck means re-voicing the same changelog prose six times — each time
+losing context about which benefit to lead with and which evidence to cite.
+
+`launch-release` solves the re-voicing problem structurally. It expands each
+changelog entry into a `{feature, benefit, evidence}` record once, then
+projects that record into every channel according to the theme's intent
+(retaining existing users, expanding their capability, repairing a visible
+issue, or educating them about something already shipped). The narrative is
+written once and every channel reads from it — no channel invents its own
+headline.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+- **Ref resolution** — accepts version tags (`v1.7.0`), tag ranges
+  (`v1.5.0..v1.7.0`), or roadmap IDs. When no refs are given, defaults to
+  everything since the last release tag.
+- **FBE expansion** — each changelog highlight is rewritten into a
+  `feature / benefit / evidence` record before any channel is rendered.
+  `benefit` is always second-person ("you can now…"); `evidence` is omitted
+  rather than fabricated when the source material doesn't support it.
+- **Theme resolution** — themes control palette, typography, layout, voice
+  tone, intent, and CTA style. The cascade is: `--design-from` prompt (custom
+  theme via `frontend-design`) → `--theme` flag → `.octopus.yml` → default
+  `classic`. Twelve preset themes ship out of the box.
+- **Narrative synthesis** — a `narrative.yml` is written first, carrying the
+  headline, proof statement, and CTA. Every channel reads from it; no channel
+  may invent its own opening.
+- **Output** — all artifacts land in `docs/releases/YYYY-MM-DD-<slug>/`:
+  canonical `index.html` (self-contained, all CSS inline), `narrative.yml`,
+  `notes.md`, `theme.yml`, and a `channels/` subdirectory with the selected
+  channel files.
 
 ## Usage & parameters
 
@@ -22,4 +54,28 @@ draft: true
                            [--design-from="<prompt>"] [--dry-run]
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `<ref>...` — zero or more version tags, tag ranges, or roadmap IDs. When
+  omitted, defaults to `--since=<last-release-tag>..HEAD`.
+- `--theme=<name>` — one of the installed preset themes. Default from
+  `.octopus.yml`, else `classic`.
+- `--since=<tag>` — shortcut for `<tag>..HEAD` when no positional refs are
+  given.
+- `--audience=<user|developer|executive>` — tunes voice and detail level
+  across all channels. Default: `user`.
+- `--channels=<list>` — subset of
+  `email,slack,discord,in-app-banner,status-page,x-announcement,whatsapp,slides`.
+  Default: `email,slack,in-app-banner`. Use `all` for every channel, `none`
+  for canonical artifacts only.
+- `--design-from="<prompt>"` — synthesise a custom theme via `frontend-design`
+  and persist it for future reuse. Overrides `--theme`.
+- `--dry-run` — print the plan and exit without writing any files.
+
+## Pairing
+
+`/octopus:launch-release` handles retention — existing users. For acquisition
+(new audiences, social posts, landing-page copy), use `/octopus:launch-feature`.
+A full release often needs both: one kit for the market, one for existing
+users. Run `/octopus:release` first to create the tag and changelog entry,
+then `launch-release` to generate the user-facing package.
+
+[Source: `commands/launch-release.md`](https://github.com/leocosta/octopus/blob/main/commands/launch-release.md)

@@ -1,20 +1,52 @@
 ---
 title: launch-release
-description: "Generate a themed release announcement kit for existing users — landing page, email, Slack, Discord, in-app banner, status page, X thread, WhatsApp, slide deck."
-draft: true
+description: "Transforma um ou mais refs de versão em um kit temático de anúncio de release para usuários existentes — landing page, email, Slack, Discord, banner in-app, status page, thread no X, WhatsApp e slide deck."
+sidebar:
+  order: 13
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:launch-release` é o comando que roda logo após um release versionado
+ser publicado. Ele lê o changelog, o histórico git e as entradas de roadmap
+dos refs fornecidos, sintetiza uma narrativa canônica de release e renderiza
+em um conjunto temático de mensagens de canal prontas pra colar e uma landing
+page autocontida.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this command removes */}
+Uma tag de versão sem anúncio voltado ao usuário é só um número. Escrever esse
+anúncio manualmente para email, Slack, Discord, banner in-app e slide deck
+significa revoicear a mesma prosa de changelog seis vezes — cada vez perdendo
+contexto sobre qual benefício destacar e qual evidência citar.
 
-## How it works
+`launch-release` resolve o problema de re-voicing estruturalmente. Ele expande
+cada entrada do changelog em um registro `{feature, benefit, evidence}` uma
+vez, depois projeta esse registro em cada canal de acordo com o intent do tema
+(reter usuários existentes, expandir suas capacidades, reparar um problema
+visível ou educar sobre algo já entregue). A narrativa é escrita uma vez e
+todos os canais leem dela — nenhum canal inventa seu próprio headline.
 
-{/* TODO: the mechanism */}
+## Como funciona
 
-## Usage & parameters
+- **Resolução de refs** — aceita tags de versão (`v1.7.0`), ranges de tag
+  (`v1.5.0..v1.7.0`) ou IDs de roadmap. Quando nenhum ref é fornecido,
+  usa tudo desde a última tag de release.
+- **Expansão FBE** — cada highlight do changelog é reescrito em um registro
+  `feature / benefit / evidence` antes de qualquer canal ser renderizado.
+  `benefit` é sempre em segunda pessoa ("agora você pode…"); `evidence` é
+  omitido em vez de fabricado quando o material-fonte não suporta.
+- **Resolução de tema** — temas controlam paleta, tipografia, layout, tom de
+  voz, intent e estilo de CTA. A cascade é: prompt `--design-from` (tema
+  customizado via `frontend-design`) → flag `--theme` → `.octopus.yml` →
+  default `classic`. Doze temas predefinidos vêm instalados.
+- **Síntese da narrativa** — um `narrative.yml` é gerado primeiro, com
+  headline, proof statement e CTA. Todos os canais leem dele; nenhum canal
+  pode inventar sua própria abertura.
+- **Saída** — todos os artefatos vão pra `docs/releases/YYYY-MM-DD-<slug>/`:
+  `index.html` canônico (autocontido, todo CSS inline), `narrative.yml`,
+  `notes.md`, `theme.yml`, e um subdiretório `channels/` com os arquivos de
+  canal selecionados.
+
+## Uso & parâmetros
 
 ```
 /octopus:launch-release [<ref>...] [--theme=<name>] [--since=<tag>]
@@ -22,4 +54,31 @@ draft: true
                            [--design-from="<prompt>"] [--dry-run]
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `<ref>...` — zero ou mais tags de versão, ranges de tag ou IDs de roadmap.
+  Quando omitido, usa `--since=<última-tag-de-release>..HEAD`.
+- `--theme=<name>` — um dos temas predefinidos instalados. Default pelo
+  `.octopus.yml`, senão `classic`.
+- `--since=<tag>` — atalho pra `<tag>..HEAD` quando nenhum ref posicional é
+  fornecido.
+- `--audience=<user|developer|executive>` — ajusta o tom e nível de detalhe
+  em todos os canais. Default: `user`.
+- `--channels=<lista>` — subconjunto de
+  `email,slack,discord,in-app-banner,status-page,x-announcement,whatsapp,slides`.
+  Default: `email,slack,in-app-banner`. Use `all` pra todos os canais, `none`
+  só pra artefatos canônicos.
+- `--design-from="<prompt>"` — sintetiza um tema customizado via
+  `frontend-design` e persiste pra reutilização futura. Sobrescreve `--theme`.
+- `--dry-run` — imprime o plano e sai sem escrever nenhum arquivo.
+
+## Dupla
+
+`/octopus:launch-release` cuida da retenção — usuários existentes. Pra
+aquisição (novas audiências, posts sociais, copy de landing page), use
+`/octopus:launch-feature`. Um release completo geralmente usa os dois: um kit
+pro mercado e outro pra usuários existentes. Rode `/octopus:release` primeiro
+pra criar a tag e a entrada de changelog, depois `launch-release` pra gerar o
+pacote voltado ao usuário.
+
+[Fonte: `commands/launch-release.md`](https://github.com/leocosta/octopus/blob/main/commands/launch-release.md)
+
+[Source: `commands/launch-release.md`](https://github.com/leocosta/octopus/blob/main/commands/launch-release.md)

@@ -1,23 +1,90 @@
 ---
 title: implement
 description: "Walk the Octopus implementation workflow explicitly — TDD, plan-before-code, verification, simplify, commit cadence."
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:implement` drives the implementation workflow explicitly for
+a single task the user describes inline — the same five-practice
+protocol the agent applies automatically on every code-editing task.
 
 ## What it solves
 
-{/* TODO: the concrete pain this command removes */}
+Coding without a process tends to produce macro-commits that mix
+unrelated changes, tests written after the fact (or not at all), and
+"it works" declarations with no verification evidence attached. None of
+that is obvious as it happens — it's just the path of least resistance.
+
+`implement` makes the disciplined path the default one: plan before
+touching files, write the failing test first, verify before declaring
+done, clean the code before committing, and keep commits atomic. The
+command is useful when you want explicit phase-by-phase control over a
+specific task rather than letting the skill engage implicitly.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+The skill applies five practices in order:
+
+1. **TDD loop** — for any change with observable behavior: write a
+   failing test first, confirm the failure mode, then write the minimal
+   implementation that makes it pass. Refactor while tests stay green.
+   Skip TDD only for changes with no testable behavior (renames, config
+   tweaks, doc edits) — but still split those into logical commits.
+
+2. **Plan-before-code gate** — for tasks touching more than two files,
+   introducing a new concept, or with more than one viable approach:
+   present a short plan (files changed, approach, trade-offs,
+   acceptance check) and wait for approval before editing code. For
+   larger work, escalate to `/octopus:doc-spec`.
+
+3. **Verification-before-completion** — before declaring any work
+   done, run the relevant verification command and include the output
+   in the reply: test suite, typecheck, formatter, `git log -n 1`.
+   "It should work" without evidence is a protocol violation.
+
+4. **Simplify pass** — after the last green test and before
+   committing, re-read the changed code for duplication, dead code,
+   premature abstractions, unclear names, and explanatory comments
+   that should be commit messages instead.
+
+5. **Commit cadence** — one commit per logical step, not one
+   macro-commit at the end. TDD produces two to three commits per
+   behavior. Each commit passes pre-commit hooks; `--no-verify` is
+   never acceptable.
 
 ## Usage & parameters
 
 ```
 /octopus:implement <task description>
+/octopus:implement --plan PATH
+/octopus:implement --plan PATH --resume-from TaskN
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `<task description>` — plain-language description of the task to
+  implement. The skill runs single-task mode.
+- `--plan PATH` — enter walker mode. The command parses the plan file
+  at `PATH` (fallback: `docs/plans/<PATH>.md`), walks its `## Task N`
+  blocks top-to-bottom, and pauses for review after each task completes.
+  After each task a summary is shown — task name, files changed, tests
+  passing, next task — with a continue / stop / redo prompt.
+- `--resume-from TaskN` — used with `--plan PATH`. Skip completed
+  tasks and start from the named task.
+
+The walker never pushes, never opens PRs, and never creates branches.
+Per-task commits accumulate on the current branch; the user opens the
+PR via `/octopus:pr-open` after the walker completes.
+
+## Relationship to the skill
+
+The `implement` skill is active by default on every code-editing task.
+This command drives it explicitly for a single task described inline,
+or runs the walker over a plan file for multi-task execution.
+
+## Pairing
+
+- `/octopus:debug` — when the task starts from a bug report or failing
+  test rather than a feature request.
+- `/octopus:codereview` — run after implementation and before opening
+  the PR, especially for billing, tenant, or cross-stack changes.
+- `/octopus:pr-open` — open the PR once implementation is complete.
+
+[Source: `commands/implement.md`](https://github.com/leocosta/octopus/blob/main/commands/implement.md)

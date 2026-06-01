@@ -1,23 +1,54 @@
 ---
 title: audit-all
-description: "Run all quality-audit skills in parallel against one ref — consolidated severity report with a cross-audit hotspots table."
-draft: true
+description: "Executa todos os skills de auditoria de qualidade em paralelo contra uma ref — relatório consolidado de severidade com tabela de hotspots entre auditorias."
+sidebar:
+  order: 10
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:audit-all` é o comando de auditoria completa. Ele executa
+`audit-security`, `audit-money`, `audit-tenant` e `review-contracts` em paralelo
+contra uma única ref e consolida o resultado em um relatório de severidade com
+uma tabela de hotspots entre auditorias.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this command removes */}
+Executar quatro auditorias separadas manualmente é lento e fácil de pular sob
+pressão. Mais importante ainda: o resultado fica em quatro threads separados —
+então um arquivo que aparece tanto numa finding de money quanto numa de tenant
+nunca é sinalizado como prioridade. `audit-all` resolve os dois problemas: um
+comando, descoberta de arquivos compartilhada, execução paralela e uma tabela de
+hotspots dedicada que destaca os arquivos sinalizados por mais de uma auditoria.
+Esses são os que precisam de atenção primeiro.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+1. **Descoberta de arquivos compartilhada** — executa `git diff --name-only` uma
+   vez e rotula cada arquivo modificado com domínios (`money`, `tenant`, `auth`,
+   `api-contract`, etc.) usando as mesmas heurísticas das auditorias individuais.
+2. **Dispatch paralelo** — envia pra cada skill de auditoria apenas os arquivos
+   relevantes ao seu domínio. `audit-money` vê arquivos com tag money;
+   `audit-tenant` vê arquivos com tag tenant; e assim por diante.
+3. **Consolidação** — mescla os quatro sub-relatórios em uma estrutura de
+   severidade única. Arquivos sinalizados por mais de uma auditoria aparecem na
+   tabela de hotspots no topo pra que os revisores saibam onde olhar primeiro.
+4. **Persistência opcional** — com `--write-report`, o relatório consolidado
+   completo é salvo em `docs/reviews/`.
 
-## Usage & parameters
+Se uma auditoria não encontrar arquivos relevantes, ela emite uma linha
+`<audit>: no domain-matching files`. Se uma auditoria falhar, as outras
+continuam e o resumo registra a falha.
+
+## Uso & parâmetros
 
 ```
 /octopus:audit-all [ref] [--base=main] [--only=<audits>] [--write-report]
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `ref` — número de PR (`#123`), URL, nome do branch ou SHA do commit a auditar. Default: `HEAD` atual vs seu upstream.
+- `--base=<branch>` — branch base para o diff. Default: `main`.
+- `--only=<lista>` — subconjunto separado por vírgula de `security,money,tenant,cross-stack`. Executa apenas as auditorias listadas. Default: todas as instaladas.
+- `--write-report` — persiste o relatório consolidado em `docs/reviews/YYYY-MM-DD-audit-all-<slug>.md`.
+
+[Fonte: `commands/audit-all.md`](https://github.com/leocosta/octopus/blob/main/commands/audit-all.md)
+
+[Source: `commands/audit-all.md`](https://github.com/leocosta/octopus/blob/main/commands/audit-all.md)

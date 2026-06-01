@@ -1,23 +1,59 @@
 ---
 title: consigliere-lens
-description: "Run a knowledge engine against the consigliere workspace and reframe it through the consigliere lens — political risk, per-node playbook, \"thinks like you\" voice. Read-only (ADR-007)."
-draft: true
+description: "Roda um engine de conhecimento contra o workspace privado do manager e reformula os findings na voz do consigliere — risco político, heurísticas de playbook por node. Read-only."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:consigliere-lens` roda `hygiene`, `synthesize` ou `briefing` contra o
+workspace privado do manager e reformula os findings do jeito que um consigliere
+leria: risco político em evidência, heurísticas de playbook aplicadas, na voz
+do próprio manager.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this command removes */}
+Os engines genéricos produzem relatórios planos. Rodados contra o workspace de
+um manager — onde cada node carrega contexto político, dinâmicas de
+relacionamento e heurísticas pessoais — um relatório plano perde a maior parte
+do que importa. Um node stale num `docs/` genérico é dívida de documentação; a
+mesma staleness no contexto de projetos-em-andamento de um manager pode ser
+sinal de que uma iniciativa chave ficou quieta.
 
-## How it works
+`consigliere-lens` aplica a camada de interpretação que esses findings precisam,
+sem fazer fork dos engines. Reutiliza `hygiene`, `synthesize` e `briefing`
+como são, depois enriquece cada finding com o material registrado no workspace:
+as heurísticas de playbook por node, as anotações de risco político e os
+blockers ativos.
 
-{/* TODO: the mechanism */}
+## Como resolve
 
-## Usage & parameters
+A skill roda em quatro etapas:
+
+1. Confirma que o lens está configurado: `octopus lens profile consigliere` deve
+   retornar `consigliere`. Se o workspace não estiver registrado, a skill para.
+2. Roda o engine escolhido em modo read-only contra o root consigliere:
+   `octopus <engine> --root consigliere` — nunca com `--fix`.
+3. Pra cada node de um finding, puxa o material grounded do lens:
+   `octopus lens context <node>` retorna as heurísticas de playbook do sibling,
+   as linhas de risco político e as linhas de blocker registradas no workspace.
+4. Reformula os findings na voz do consigliere — tecendo a leitura política e
+   aplicando o playbook (empurrando as heurísticas que se aplicam, deixando de
+   lado as que não se aplicam).
+
+Cada linha cita sua origem: `(src: <node>)` mais a linha específica de playbook,
+risco ou blocker da qual ela parte. O lens aguça o que está registrado; não
+inventa leituras políticas que o workspace não sustenta.
+
+O lens é **read-only**. Runs de engine são sempre compostos sem `--fix` e o
+workspace nunca é escrito. Dados gerenciais no workspace privado nunca são
+mutados por um pass de lens automatizado.
+
+## Uso & parâmetros
 
 ```
 /octopus:consigliere-lens [--engine hygiene|synthesize|briefing] [--daily|--weekly]
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `--engine` — qual engine rodar contra o root consigliere; padrão: `briefing`.
+- `--daily` / `--weekly` — repassado pro `briefing` quando esse engine é
+  selecionado; padrão: `--daily`.
+
+[Source: `commands/consigliere-lens.md`](https://github.com/leocosta/octopus/blob/main/commands/consigliere-lens.md)

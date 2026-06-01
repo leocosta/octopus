@@ -1,19 +1,52 @@
 ---
 title: update
-description: "Update the Octopus submodule to a newer version"
-draft: true
+description: "Atualiza o submodule do Octopus para uma versão mais nova e re-roda o setup para regenerar os agent configs."
+sidebar:
+  order: 16
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:update` faz o bump do submodule do Octopus no seu projeto para a
+versão mais recente disponível — ou para uma versão específica que você
+escolher — e roda `octopus setup` automaticamente pra que os agent configs
+reflitam o novo release imediatamente.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this command removes */}
+Manter uma ferramenta baseada em submodule atualizada à mão significa verificar
+novos releases, rodar o comando de atualização e depois lembrar de re-rodar o
+setup pra que os arquivos de agent config gerados correspondam à versão
+instalada. Pular o passo de setup deixa os configs antigos no lugar, o que
+pode causar divergência entre o comportamento do agente e a versão que está
+de fato instalada.
 
-## How it works
+`update` agrupa os três passos — verificar, atualizar, regenerar — em um único
+comando interativo que mostra o delta de versão antes de você confirmar.
 
-{/* TODO: the mechanism */}
+## Como funciona
 
-## Usage & parameters
+1. Roda `octopus update --latest` pra ler a versão instalada atualmente e o
+   release mais recente disponível, e apresenta os dois pra você.
+2. Confirma a versão alvo — aceita a mais recente ou especifica uma diferente
+   (ex: `v1.2.0` pra fixar em um release específico).
+3. Busca e instala a versão alvo.
+4. Roda `octopus setup` automaticamente pra regenerar todos os agent configs.
+   Se nenhum `.octopus.yml` for encontrado no repo, o setup é pulado e um
+   aviso é exibido.
+5. Reporta o resultado: versão atual → nova versão, configs regenerados.
+   Qualquer aviso ou erro do setup é surfaceado antes da mensagem de sucesso.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+## Uso & parâmetros
+
+```
+/octopus:update
+```
+
+- (sem argumentos) — interativo: mostra a versão atual e a mais recente, pede
+  confirmação ou uma versão alvo específica, depois atualiza e re-roda o setup.
+
+Após a atualização, se o setup reportar avisos ou erros, rode `octopus setup`
+manualmente pra resolvê-los antes de usar outros comandos.
+
+[Fonte: `commands/update.md`](https://github.com/leocosta/octopus/blob/main/commands/update.md)
+
+[Source: `commands/update.md`](https://github.com/leocosta/octopus/blob/main/commands/update.md)

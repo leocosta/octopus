@@ -1,18 +1,48 @@
 ---
 title: doc-rfc
-description: "Create a new RFC from template with project context"
-draft: true
+description: "Bootstrap a new RFC from the project template when a feature needs stakeholder consensus before design work begins."
+sidebar:
+  order: 14
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:doc-rfc` is the opening move when a change is large enough
+that it needs buy-in before anyone writes a spec. It creates a dated
+RFC document from the Octopus template so the conversation happens in
+writing, with everyone reading the same framing.
 
 ## What it solves
 
-{/* TODO: the concrete pain this command removes */}
+Features that skip the consensus step tend to generate expensive
+mid-implementation disagreements. An RFC forces the problem statement,
+the proposal, and the alternatives to be written down before design
+work begins — turning a future meeting or Slack thread into a
+reviewable document.
+
+The RFC also acts as the upstream anchor for the rest of the
+pipeline. Once it's approved, `/octopus:doc-spec` can link back to
+it so readers always know why the feature was shaped the way it was.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+1. Resolves the slug — from the argument you pass, or by asking.
+2. Determines today's date and assembles the target path:
+   `docs/rfcs/<date>-<slug>.md`.
+3. Reads the RFC template and fills in the date and title.
+4. Writes the file and reports the path.
+5. Reminds you to fill in the sections and share with stakeholders,
+   and suggests creating a spec with `/octopus:doc-spec` once the RFC
+   is approved.
+
+This is a bootstrapping command — it scaffolds the document; the
+substance is yours to write.
+
+## Pipeline position
+
+`doc-rfc` → **`doc-spec`** → `doc-design` → `doc-plan`
+
+RFCs live upstream of everything else. When consensus is already
+established (synchronous brainstorm, obvious direction), skip the RFC
+and go straight to `/octopus:doc-spec`.
 
 ## Usage & parameters
 
@@ -20,4 +50,7 @@ draft: true
 /octopus:doc-rfc [slug]
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `[slug]` — kebab-case name for the RFC (e.g. `payment-retry-policy`).
+  If omitted, the command asks for one before proceeding.
+
+[Source: `commands/doc-rfc.md`](https://github.com/leocosta/octopus/blob/main/commands/doc-rfc.md)

@@ -1,27 +1,82 @@
 ---
 title: fleet-bootstrap
-description: "Converge a fleet of repos onto a layered Octopus standard (baseline + per-stack profile + adoption tier) from one fleet.yml — dry-run by default, non-destructive merge, never force-pushes."
-draft: true
+description: "Converge uma frota de repos para um padrão Octopus em camadas (baseline + perfil por stack + tier de adoção) a partir de um único fleet.yml — dry-run por padrão, merge não-destrutivo, nunca faz force-push."
+sidebar:
+  order: 11
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:fleet-bootstrap` propaga um padrão Octopus consistente para todos os
+repos da sua frota em uma única execução — compondo o `.octopus.yml` de cada
+repo a partir de um arquivo de controle central e delegando o seeding real ao
+`octopus setup`.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this command removes */}
+Rodar `octopus setup` em seis terminais separadamente não escala, e uma frota
+nunca é uniforme: um serviço .NET precisa de bundles diferentes de um frontend
+React, e um repo legado não consegue absorver as mesmas guardrails de um
+serviço greenfield desde o primeiro dia.
 
-## How it works
+`fleet-bootstrap` lida com as duas dimensões. Ele lê um `fleet.yml` no repo
+de workspace e compõe um manifesto por-repo a partir de três camadas —
+um baseline agnóstico de stack, um perfil por stack, e um tier de adoção —
+para que cada repo receba exatamente o padrão que consegue absorver agora,
+com um caminho claro para aumentar o enforcement depois.
 
-{/* TODO: the mechanism */}
+## Como funciona
 
-## Usage & parameters
+O comando é um orquestrador fino. O único arquivo que ele escreve diretamente
+é o `.octopus.yml`; rules, hooks, agent config, `.editorconfig` e `.husky`
+são gerados pelo `octopus setup` após o manifesto estar no lugar.
+
+Para cada repo no `fleet.yml`:
+
+1. Resolve o perfil de stack — detectado automaticamente por sinais como
+   `*.csproj`, `package.json` ou `pyproject.toml`, ou fixado explicitamente
+   para monorepos e stacks ambíguos.
+2. Seleciona o tier de adoção (T0 / T1 / T2), que controla quais camadas de
+   enforcement são ativadas:
+   - **T0** — rules e agent config apenas; sem hooks, sem commit gates. Seguro
+     em qualquer codebase legado imediatamente.
+   - **T1** — adiciona hooks de loop e `.editorconfig`. Captura drift novo sem
+     bloquear commits existentes.
+   - **T2** — adiciona pre-commit hooks e o CI de quality workflow. Adequado
+     só quando o codebase está limpo.
+3. Compõe o manifesto como `baseline ∪ perfil(s) ∪ tier` e faz diff contra o
+   `.octopus.yml` atual do repo.
+4. Mostra o preview (dry-run por padrão). Com `--apply`, escreve e roda
+   `octopus setup`.
+
+O merge é **por-chave e não-destrutivo**: adições locais que correspondem ao
+perfil do repo são mantidas; chaves arbitrárias locais e qualquer de-escalação
+de tier são sinalizadas pro operador resolver, nunca removidas silenciosamente.
+Nada é sobrescrito sem um marcador explícito.
+
+## Uso & parâmetros
 
 ```
-/octopus:fleet-bootstrap                 # dry-run: preview the per-repo diff, write nothing
-/octopus:fleet-bootstrap --apply         # write the merged .octopus.yml + run `octopus setup`
-/octopus:fleet-bootstrap --apply --yes   # trusted batch, skip per-repo confirmation
-/octopus:fleet-bootstrap --apply --pr    # open a guarded branch + PR per repo (never push main)
-/octopus:fleet-bootstrap --from-audit <report>   # scope to repos audit-fleet flagged
+/octopus:fleet-bootstrap                 # dry-run: preview do diff por repo, não escreve nada
+/octopus:fleet-bootstrap --apply         # escreve o .octopus.yml mesclado + roda `octopus setup`
+/octopus:fleet-bootstrap --apply --yes   # batch confiável, pula confirmação por repo
+/octopus:fleet-bootstrap --apply --pr    # abre branch + PR por repo (nunca faz push no main)
+/octopus:fleet-bootstrap --from-audit <report>   # escopa para repos marcados pelo audit-fleet
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- (sem flags) — dry-run: preview do diff por repo, não escreve nada.
+- `--apply` — escreve o manifesto mesclado e roda `octopus setup` em cada repo.
+- `--yes` — pula os prompts de confirmação por repo. Use em batch confiável
+  junto com `--apply`.
+- `--pr` — abre uma branch e PR por repo em vez de escrever direto. Nunca faz
+  push para o `main`.
+- `--from-audit <report>` — escopa a execução para repos marcados como drifted
+  pelo `audit-fleet`. Usa o mesmo resolvedor de lista de repos.
+
+## Dupla
+
+`/octopus:fleet-bootstrap` é a metade de remediação do loop detectar → remediar.
+`/octopus:audit-fleet` é a metade de detecção — rode-o primeiro pra ver quais
+repos drifted, depois passe `--from-audit` pra fazer o bootstrap só nesses.
+
+[Fonte: `commands/fleet-bootstrap.md`](https://github.com/leocosta/octopus/blob/main/commands/fleet-bootstrap.md)
+
+[Source: `commands/fleet-bootstrap.md`](https://github.com/leocosta/octopus/blob/main/commands/fleet-bootstrap.md)

@@ -1,19 +1,87 @@
 ---
 title: codereview
 description: "Self-review of uncommitted changes — orchestrates audit skills and review roles based on what the diff touches, then runs a minimal fallback checklist."
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:codereview` é o passe de self-review do agente sobre
+mudanças ainda não commitadas. Ele lê o diff, roteia pra as skills e
+roles especialistas certas e agrega tudo num relatório único com
+severidade tirada antes de qualquer commit existir.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this command removes */}
+Checklists de revisão ad-hoc são inconsistentes — os itens que você
+lembra dependem do dia e do quanto você está cansado. O `codereview`
+resolve isso tratando o diff como um sinal de roteamento: código de
+billing aciona automaticamente o audit de money, mudanças de auth
+acionam o role de security, alterações de DTO acionam a verificação
+de contratos. Nada é esquecido porque alguém não lembrou de rodar.
 
-## How it works
+O comando também captura o que nenhum especialista cobre — debug
+statements esquecidos em arquivos de produção, funções que cresceram
+além de 50 linhas, profundidade de nesting que passou de quatro
+níveis — por meio de um checklist fallback leve que roda depois de
+todo dispatch.
 
-{/* TODO: the mechanism */}
+## Como resolve
 
-## Usage & parameters
+O comando roda cinco fases:
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+1. **Detectar** — `git diff --name-only HEAD` classifica cada path
+   alterado contra uma matriz de roteamento.
+2. **Despachar** — as skills e roles correspondentes rodam de forma
+   concorrente. Cada uma recebe o mesmo contexto de diff e emite
+   findings no seu próprio formato de severidade.
+
+   | Sinal no diff | Dispatch |
+   |---|---|
+   | Migrations, arquivos SQL, mapeamentos ORM | role `dba` |
+   | Auth, JWT, OAuth, secrets, paths de credenciais | role `security` |
+   | Billing, payment, código que toca money | skill `audit-money` |
+   | Queries multi-tenant, `IgnoreQueryFilters()` | skill `audit-tenant` |
+   | Tanto `api/` quanto stacks de frontend no mesmo diff | skill `review-contracts` |
+   | Qualquer mudança em código de produção | role `architect` (sempre) |
+
+   Mudanças na camada de dados requerem **tanto** `dba` quanto
+   `architect` para aprovar. Mudanças de auth/secrets requerem
+   **tanto** `security` quanto `architect`.
+
+3. **Fallback checklist** — cobre o que nenhuma skill especialista
+   possui: `TODO`/`FIXME`/`HACK` introduzidos no diff, debug
+   statements (`console.log`, `print()`, `debugger`) em arquivos
+   não-test, arquivos com mais de 800 linhas, funções com mais de 50
+   linhas, profundidade de nesting acima de quatro níveis.
+
+4. **Definition of Done** — quando `docs/definition-of-done.md`
+   existe, o DoD é validado contra o diff e seu veredito é incluído
+   no relatório como findings advisory. Quando o arquivo não existe,
+   essa etapa é silenciosamente ignorada.
+
+5. **Agregar** — findings de todas as skills despachadas, roles e do
+   fallback checklist são mesclados num único relatório ordenado por
+   severidade: BLOCKING / CRITICAL → ADVISORY / HIGH → MEDIUM →
+   LOW / QUESTION.
+
+O commit é bloqueado se qualquer finding BLOCKING ou CRITICAL
+estiver aberto. Findings advisory aparecem no relatório mas não
+bloqueiam — eles pertencem à descrição do PR como follow-ups.
+
+## Uso & parâmetros
+
+```
+/octopus:codereview
+```
+
+Sem flags. O comando lê o diff do working copy atual automaticamente.
+
+## Pairing
+
+- `/octopus:pr-review` — self-review de um PR que o agente já abriu,
+  com atribuição de revisores. Escopo mais estreito que `codereview`;
+  roda sempre em todo PR.
+- `/octopus:respond-to-review` — processar feedback de revisores
+  humanos depois que o PR está aberto.
+
+[Fonte: `commands/codereview.md`](https://github.com/leocosta/octopus/blob/main/commands/codereview.md)
+
+[Source: `commands/codereview.md`](https://github.com/leocosta/octopus/blob/main/commands/codereview.md)

@@ -1,18 +1,47 @@
 ---
 title: compress-skill
-description: "Shrink a SKILL.md — deterministic cleanup + optional LLM rewrite — with invariants on frontmatter, headings, code blocks, and test anchors."
-draft: true
+description: "Shrink a SKILL.md by ~25% — deterministic cleanup pass first, optional LLM rewrite if needed — with invariants on frontmatter, headings, code blocks, and test anchors."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:compress-skill` reduces a `SKILL.md` by roughly 25% without changing
+its meaning. Dry-run by default; `--apply` writes the result only after all
+invariants pass.
 
 ## What it solves
 
-{/* TODO: the concrete pain this command removes */}
+`SKILL.md` files drift into verbosity. Authors add caveats, worked examples, and
+meta-commentary over time — each addition is reasonable in isolation, but the
+cumulative effect is a file that loads into every session's context window at
+full size. Verbosity in a skill file is a recurring cost, not a one-time one.
+
+`compress-skill` addresses this systematically: it applies a deterministic
+cleanup pass (no LLM required, no semantic risk), then an optional LLM rewrite
+only if the target has not been reached. Anchors extracted from the skill's own
+test file are preserved verbatim — the invariants ensure the compressed file
+remains a drop-in replacement.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+**Step 1 — Deterministic cleanup** runs first, with no LLM call. Five
+semantic-neutral rules applied in order: collapse consecutive blank lines,
+trim trailing whitespace, remove meta prose (`"This section describes…"`,
+`"As mentioned above…"`, `"Note that…"`, `"In other words,…"`), shorten
+example lists longer than three items, and drop bullets that restate the
+preceding sentence verbatim. If this pass hits the target ratio, Step 2 is
+skipped entirely.
+
+**Step 2 — LLM rewrite** runs only when Step 1 does not reach `--target`. The
+post-Step-1 text, the anchor allow-list, the target ratio, and the `--max-loss`
+threshold are sent to the model. The model returns a JSON envelope with the
+compressed text, a per-change log (`merge` / `delete` / `rephrase`), and a
+`semantic_risk_pct` self-estimate. If `semantic_risk_pct` exceeds `--max-loss`,
+the pass aborts and prints the offending entries.
+
+**Invariants** are enforced after both steps, before any output is written:
+frontmatter is byte-identical to the input; every anchor string from the test
+file is present; every `##` / `###` heading appears with the same text; every
+fenced code block appears verbatim. Any invariant failure aborts with a specific
+report — no partial writes.
 
 ## Usage & parameters
 
@@ -20,4 +49,13 @@ draft: true
 /octopus:compress-skill <skill-name> [--apply] [--target=25] [--max-loss=5] [--heuristics-only]
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `<skill-name>` — required; must match a directory under `skills/`.
+- `--apply` — write the compressed `SKILL.md` back; without this flag the
+  command prints a diff only (default: dry-run).
+- `--target=<pct>` — desired compression ratio as a percentage (default: `25`).
+- `--max-loss=<pct>` — abort if the LLM pass estimates more than this fraction
+  of content as semantically at-risk (default: `5`).
+- `--heuristics-only` — skip the LLM rewrite pass entirely; useful in CI or
+  offline contexts.
+
+[Source: `commands/compress-skill.md`](https://github.com/leocosta/octopus/blob/main/commands/compress-skill.md)

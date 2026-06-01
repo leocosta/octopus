@@ -1,23 +1,64 @@
 ---
 title: audit-tenant
-description: "Pre-merge audit of multi-tenant data-scope enforcement — query filters, new entity configs, raw SQL, controller ownership, admin endpoints."
-draft: true
+description: "Auditoria pré-merge de enforcement de escopo de tenant — filtros de query, configs de novas entidades, SQL raw, ownership em controllers, endpoints de admin."
+sidebar:
+  order: 14
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:audit-tenant` escaneia o branch atual (ou qualquer ref) em busca de
+enforcement de escopo de tenant ausente antes do merge. Ele produz um relatório
+com severidade e rótulos de confiança em seis checks específicos para codebases
+SaaS multi-tenant.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this command removes */}
+Numa aplicação multi-tenant, os piores bugs são os que funcionam corretamente
+pra maioria dos usuários — e vazam dados silenciosamente pra outros. Uma query
+com `IgnoreQueryFilters()` sem justificativa, uma nova entidade adicionada ao
+`DbContext` sem `HasQueryFilter`, um controller que busca por `id` da rota sem
+verificar ownership — cada um desses é um caminho potencial de vazamento de
+dados que passa em testes unitários e em code review, a não ser que alguém
+esteja olhando especificamente pra isso. `audit-tenant` olha pra isso em cada
+merge, automaticamente.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+O comando resolve o diff, identifica arquivos relevantes a tenant via heurísticas
+e executa seis checks:
 
-## Usage & parameters
+- **T1 query-without-filter** — sinaliza chamadas `IgnoreQueryFilters()` sem
+  comentário `// tenant-override: <reason>`. Severidade: block.
+- **T2 dbcontext-missing-filter** — sinaliza novas propriedades `DbSet<X>` no
+  `DbContext` configurado que não têm `HasQueryFilter` ou
+  `IEntityTypeConfiguration<X>` no mesmo diff. Severidade: block.
+- **T3 raw-sql-no-filter** — sinaliza `FromSqlRaw`, `ExecuteSqlRaw` e similares
+  onde a string SQL não contém o campo de tenant configurado. Severidade: block.
+- **T4 id-from-route-no-ownership** — avisa quando um método de controller busca
+  uma entidade com escopo de tenant por `id` de rota sem chamar um helper de
+  ownership. Severidade: warn (defesa em profundidade — o query filter já impõe
+  o escopo, mas um `IgnoreQueryFilters()` futuro exporia esse caminho).
+- **T5 join-to-unfiltered-table** — avisa quando o lado direito de um join LINQ é
+  um `DbSet` sem escopo de tenant e o predicado não restringe pelo campo de tenant.
+  Severidade: warn.
+- **T6 cross-tenant-admin-endpoint** — avisa quando um método com
+  `[Authorize(Roles = "Admin")]` ou `[AllowAnonymous]` acessa um `DbSet` com
+  escopo de tenant sem comentário `// across-tenants: <reason>`. Severidade: warn.
+
+A config de escopo de tenant (`field`, `filter`, `context`, `entities`) é
+resolvida do bloco `tenantScope:` do `.octopus.yml`, com fallback para defaults
+seguros.
+
+## Uso & parâmetros
 
 ```
 /octopus:audit-tenant [ref] [--base=main] [--only=<checks>] [--write-report]
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `ref` — número de PR (`#123`), URL, nome do branch ou SHA do commit. Default: `HEAD` atual vs seu upstream.
+- `--base=<branch>` — branch base para o diff. Default: `main`.
+- `--only=<lista>` — subconjunto separado por vírgula de `query-without-filter,dbcontext-missing-filter,raw-sql-no-filter,id-from-route-no-ownership,join-to-unfiltered-table,cross-tenant-admin-endpoint`.
+- `--write-report` — persiste o relatório em `docs/reviews/YYYY-MM-DD-tenant-<slug>.md`.
+
+[Fonte: `commands/audit-tenant.md`](https://github.com/leocosta/octopus/blob/main/commands/audit-tenant.md)
+
+[Source: `commands/audit-tenant.md`](https://github.com/leocosta/octopus/blob/main/commands/audit-tenant.md)

@@ -1,18 +1,51 @@
 ---
 title: knowledge-synthesize
 description: "Surface cross-node connections in a knowledge root — shared-target, co-mention, and forgotten-but-relevant; judge contradictions; --fix seeds missing links."
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:knowledge-synthesize` traverses a knowledge root and surfaces the
+connections between nodes that manual recall misses — related documents that
+never link each other, recurring topics with no home page, and the
+forgotten-but-relevant note from six months ago.
 
 ## What it solves
 
-{/* TODO: the concrete pain this command removes */}
+A knowledge base is worth more than the sum of its nodes only if something
+traverses it. Left alone, every root becomes a silo: documents accumulate,
+topics recur across multiple pages without connecting, and past decisions become
+invisible to new work. The problem is not that the information is missing — it
+is that the links between pieces are never made explicit.
+
+`knowledge-synthesize` runs that traversal systematically. It finds which nodes
+relate via a shared reference, which topics appear everywhere without a dedicated
+page, and — when you're focused on a specific node — which older nodes are most
+relevant to your current work.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+The mechanical candidate-finding runs in the `octopus synthesize` core, which
+reads nodes and links from the knowledge root registry. The skill adds the
+judgment the core cannot make: which candidates are real connections worth
+surfacing, and where a node contradicts an authority it cites.
+
+Three signal types are produced, each as a structured line:
+
+- **shared-target** — two nodes that both link the same third node. They relate
+  via that shared reference even if they never link each other directly. Score is
+  the size of the shared-target intersection.
+- **co-mention** — an entity (a term, name, or concept) that recurs across
+  multiple nodes but has no node of its own. A recurring topic without a home.
+- **relevant** — (with `--node`) other nodes ranked by shared-entity overlap
+  with the focus node. The forgotten-but-relevant lookup.
+
+**Contradiction detection** is yours to judge: the core surfaces a node together
+with the authorities it links (ADRs, specs). You read both and determine whether
+the node asserts something the authority negates, then report it with the citing
+line.
+
+**`--fix`** seeds a missing relative link only when an entity mention resolves to
+exactly one node title — unambiguous, not already present. Multi-target or fuzzy
+matches stay report-only.
 
 ## Usage & parameters
 
@@ -20,4 +53,11 @@ draft: true
 /octopus:knowledge-synthesize [--root <id>] [--node <path>] [--fix]
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `--root <id>` — one root (e.g. `docs`, `memory`, `consigliere`); default:
+  every resolved root.
+- `--node <path>` — forgotten-but-relevant lookup: find other nodes ranked by
+  shared-entity overlap with this specific node.
+- `--fix` — seed a missing link where a mention resolves to exactly one node;
+  the edit is a plain append, revertible with `git revert`.
+
+[Source: `commands/knowledge-synthesize.md`](https://github.com/leocosta/octopus/blob/main/commands/knowledge-synthesize.md)

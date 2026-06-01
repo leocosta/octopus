@@ -1,18 +1,55 @@
 ---
 title: fleet-bootstrap
 description: "Converge a fleet of repos onto a layered Octopus standard (baseline + per-stack profile + adoption tier) from one fleet.yml — dry-run by default, non-destructive merge, never force-pushes."
-draft: true
+sidebar:
+  order: 11
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:fleet-bootstrap` rolls a consistent Octopus standard across every
+repo in your fleet in one pass — composing each repo's `.octopus.yml` from a
+single control file and delegating the actual seeding to `octopus setup`.
 
 ## What it solves
 
-{/* TODO: the concrete pain this command removes */}
+Running `octopus setup` in six terminals by hand does not scale, and a fleet
+is never uniform: a .NET service needs different bundles than a React frontend,
+and a legacy repo cannot absorb the same enforcement guardrails as a greenfield
+service on day one.
+
+`fleet-bootstrap` handles both dimensions. It reads one `fleet.yml` in your
+workspace repo and composes a per-repo manifest from three layers —
+a stack-agnostic baseline, a per-stack profile, and an adoption tier —
+so every repo gets exactly the standard it can absorb right now, with a
+clear path to tighten enforcement later.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+The command is a thin orchestrator. The only file it writes directly is
+`.octopus.yml`; rules, hooks, agent config, `.editorconfig`, and `.husky`
+are seeded by `octopus setup` after the manifest is in place.
+
+For each repo in `fleet.yml`:
+
+1. Resolve the stack profile — detected automatically from signals like
+   `*.csproj`, `package.json`, or `pyproject.toml`, or pinned explicitly
+   for monorepos and ambiguous stacks.
+2. Select the adoption tier (T0 / T1 / T2), which controls which enforcement
+   layers turn on:
+   - **T0** — rules and agent config only; no hooks, no commit gates. Safe
+     on any legacy codebase immediately.
+   - **T1** — adds loop-level hooks and `.editorconfig`. Catches new drift
+     without blocking existing commits.
+   - **T2** — adds pre-commit hooks and the quality workflow CI gate. Only
+     appropriate once the codebase is clean.
+3. Compose the manifest as `baseline ∪ profile(s) ∪ tier` and diff it
+   against the repo's current `.octopus.yml`.
+4. Preview the diff (dry-run by default). On `--apply`, write and run
+   `octopus setup`.
+
+The merge is **per-key and non-destructive**: local additions that match the
+repo's profile are kept; arbitrary local keys and any tier de-escalation are
+flagged for the operator to resolve, never silently removed. Nothing is
+clobbered without an explicit marker.
 
 ## Usage & parameters
 
@@ -24,4 +61,19 @@ draft: true
 /octopus:fleet-bootstrap --from-audit <report>   # scope to repos audit-fleet flagged
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- (no flags) — dry-run mode: preview the per-repo diff, write nothing.
+- `--apply` — write the merged manifest and run `octopus setup` in each repo.
+- `--yes` — skip per-repo confirmation prompts. Use in trusted batch runs
+  alongside `--apply`.
+- `--pr` — open a guarded branch and PR per repo instead of writing directly.
+  Never pushes to `main`.
+- `--from-audit <report>` — scope the run to repos flagged as drifted by
+  `audit-fleet`. Shares the same repo-list resolver.
+
+## Pairing
+
+`/octopus:fleet-bootstrap` is the remediation half of the detect → remediate
+loop. `/octopus:audit-fleet` is the detection half — run it first to see which
+repos have drifted, then pass `--from-audit` to bootstrap only those.
+
+[Source: `commands/fleet-bootstrap.md`](https://github.com/leocosta/octopus/blob/main/commands/fleet-bootstrap.md)

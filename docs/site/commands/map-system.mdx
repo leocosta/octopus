@@ -1,18 +1,46 @@
 ---
 title: map-system
-description: "Produce a higher-level map of the relevant modules and their callers in the project's domain vocabulary — manual-invocation only."
-draft: true
+description: "Produce a higher-level map of the codebase in the project's own domain vocabulary — a quick orientation snapshot or a full themed HTML deck."
+sidebar:
+  order: 14
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:map-system` answers "what is this area, in our own words?" at
+whatever depth the situation calls for. It is manual-invocation only — the
+command exists precisely because agents should not map on their own initiative.
 
 ## What it solves
 
-{/* TODO: the concrete pain this command removes */}
+Reading code at the level of the question is the most common orientation
+mistake. When you're trying to understand a feature area, reading individual
+functions tells you *how*, not *what*. A useful map sits one level above the
+question and uses the project's own domain vocabulary, not code identifiers.
+
+`map-system` enforces that abstraction discipline. It reads `CONTEXT.md`,
+ADRs, the module tree, and (when present) API and data model definitions, then
+produces a map written in the terms the team actually uses. For a new engineer
+being onboarded or a manager reviewing an unfamiliar area before a planning
+session, the output is the artifact they get walked through.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+The command has two modes, selected with `--mode`:
+
+**`complete` (default)** — an exhaustive crawl of the repository that renders
+a self-contained, themed HTML deck. The deck covers: project overview and
+business purpose, an architecture and module map with inline SVG diagrams,
+API contracts and data model (when detectable), and the ADRs that shape the
+codebase. Written to `docs/system-map/<repo>.html` by default. When
+`frontend-design` is available, it refines the visual design beyond the base
+template.
+
+**`simplified`** — a one-shot ~30-line textual orientation map, rendered
+inline. Samples rather than crawls. The value is the discipline: one screen,
+domain vocabulary, one level above the question.
+
+For both modes, if `CONTEXT.md` is missing the command surfaces that gap
+explicitly — the map falls back to code identifiers, which is a usable but
+weaker result.
 
 ## Usage & parameters
 
@@ -20,4 +48,16 @@ draft: true
 /octopus:map-system <area or question>
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `<area or question>` — the area or question to map. Required. The command
+  decides the right abstraction level from this input.
+- `--mode simplified | complete` — content depth. Default: `complete`.
+- `--save` / `--no-save` — write to a file or return inline. Default: save on.
+  `--no-save` returns the content inline regardless of `--output`.
+- `--output markdown | html` — saved-file format. Default: `html` (themed deck).
+  `markdown` writes the same content as a plain document with no theme.
+- `--theme <name>` — preset theme for the HTML deck. Default: `dark-blue`.
+- `--design-from "<prompt>"` — synthesise a custom theme via `frontend-design`.
+  Requires `frontend-design` to be available; falls back to a preset when it
+  is not.
+
+[Source: `commands/map-system.md`](https://github.com/leocosta/octopus/blob/main/commands/map-system.md)

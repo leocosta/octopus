@@ -1,23 +1,78 @@
 ---
 title: doc-plan
-description: "Turn a completed spec into a bite-sized, TDD-style implementation plan under docs/plans/<slug>.md"
-draft: true
+description: "Transforma um spec completo em um plano de implementação granular no estilo TDD em docs/plans/<slug>.md"
+sidebar:
+  order: 17
+source_hash: "sha256:doc-plan-en-v1"
+needs_retranslation: false
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:doc-plan` lê um spec completo e produz um plano de
+implementação passo a passo onde cada tarefa segue o ciclo TDD de
+red-green-commit. O arquivo de plano resultante está pronto pra ser
+executado por um agente ou por um humano sem interpretação adicional.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this command removes */}
+A seção Implementation Plan de um spec descreve *o que* construir e
+em que ordem. Ela não descreve *como* construir com segurança em
+incrementos pequenos e verificáveis. Sem essa quebra, a implementação
+tende a derivar: mudanças se acumulam antes de serem testadas, as
+tarefas são ambíguas em escopo, e o histórico de commits não mapeia
+de volta pro design original.
 
-## How it works
+`doc-plan` preenche essa lacuna. Cada item de alto nível do spec
+vira uma ou mais tarefas com um passo explícito de teste falhando,
+um passo de implementação mínima, um passo de teste passando e um
+commit. O plano é um artefato executável concreto — não uma
+reafirmação do spec.
 
-{/* TODO: the mechanism */}
+## Como funciona
 
-## Usage & parameters
+1. **Setup** — lê `docs/specs/<slug>.md` e verifica se a seção
+   Implementation Plan está preenchida. Aborta com mensagem clara
+   se o spec não existir ou se a seção de plano estiver vazia.
+2. **Scan de contexto** — lê silenciosamente o histórico recente do
+   git e os metadados, overview, detailed design e testing strategy
+   do spec.
+3. **Cabeçalho do plano** — rascunha o objetivo, resumo da
+   arquitetura, tech stack, link pro spec e uma tabela de estrutura
+   de arquivos. Apresenta o rascunho pra aprovação antes de escrever.
+4. **Frontmatter de pipeline** — gera IDs de tarefa (`t1`, `t2`, …),
+   infere o papel de agente responsável e infere dependências entre
+   tarefas. Pede aprovação antes de finalizar.
+5. **Decomposição de tarefas** — mapeia cada item do Implementation
+   Plan pra uma ou mais tarefas TDD. Itens grandes demais (que tocam
+   muitos arquivos ou fazem muitas coisas) são divididos; itens
+   trivialmente pequenos são fundidos na tarefa anterior.
+6. **Auto-revisão** — varre o plano em buffer em busca de linguagem
+   placeholder, inconsistências de nomenclatura, lacunas de cobertura
+   em relação ao spec e tamanho excessivo do plano, antes de escrever.
+7. **Escreve + commit** — escreve `docs/plans/<slug>.md` em um branch
+   docs-only e faz commit. Pergunta antes de sobrescrever um plano
+   existente.
+
+**Hard gate:** este comando não escreve código de produção, testes
+ou branches de implementação. O estado terminal é um arquivo de
+plano commitado.
+
+## Posição no pipeline
+
+`doc-rfc` → `doc-spec` → `doc-design` → **`doc-plan`**
+
+Depois que o plano for mergeado, execute-o com
+`superpowers:executing-plans` ou
+`superpowers:subagent-driven-development`.
+
+## Uso & parâmetros
 
 ```
 /octopus:doc-plan <slug>
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `<slug>` — obrigatório. O slug do spec em kebab-case cujo
+  Implementation Plan será decomposto (ex: `checkout-revamp`). O
+  spec deve existir em `docs/specs/<slug>.md` com a seção
+  Implementation Plan preenchida.
+
+[Source: `commands/doc-plan.md`](https://github.com/leocosta/octopus/blob/main/commands/doc-plan.md)

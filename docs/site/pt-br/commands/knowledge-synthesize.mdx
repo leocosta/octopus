@@ -1,23 +1,63 @@
 ---
 title: knowledge-synthesize
-description: "Surface cross-node connections in a knowledge root — shared-target, co-mention, and forgotten-but-relevant; judge contradictions; --fix seeds missing links."
-draft: true
+description: "Encontra conexões entre nodes de um knowledge root — shared-target, co-mention e forgotten-but-relevant; julga contradições; --fix planta links ausentes."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:knowledge-synthesize` percorre um knowledge root e traz à tona as
+conexões entre nodes que a memória manual não alcança — documentos relacionados
+que nunca se linkaram, tópicos recorrentes sem página própria e a nota relevante
+de meses atrás que ficou esquecida.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this command removes */}
+Uma base de conhecimento vale mais do que a soma dos seus nodes apenas se algo a
+percorre. Sozinhos, todos os roots viram silos: documentos se acumulam, tópicos
+aparecem em várias páginas sem se conectar, e decisões do passado ficam
+invisíveis pra trabalho novo. O problema não é que a informação está faltando —
+é que os links entre as peças nunca foram tornados explícitos.
 
-## How it works
+`knowledge-synthesize` faz essa travessia de forma sistemática. Encontra quais
+nodes se relacionam por uma referência compartilhada, quais tópicos aparecem em
+todo lugar sem uma página dedicada e — quando você está focado num node
+específico — quais nodes mais antigos são relevantes pro que você está fazendo
+agora.
 
-{/* TODO: the mechanism */}
+## Como resolve
 
-## Usage & parameters
+A busca de candidatos roda de forma determinística no núcleo `octopus
+synthesize`, que lê nodes e links do registry. A skill adiciona o julgamento que
+o núcleo não pode fazer: quais candidatos são conexões reais que vale mostrar, e
+onde um node contradiz uma autoridade que ele mesmo cita.
+
+Três tipos de sinal são produzidos, cada um como uma linha estruturada:
+
+- **shared-target** — dois nodes que linkam o mesmo terceiro. Eles se relacionam
+  por essa referência compartilhada mesmo que nunca se linkem diretamente. Score
+  = tamanho da interseção de alvos compartilhados.
+- **co-mention** — uma entidade (termo, nome ou conceito) que aparece em vários
+  nodes sem ter um node próprio. Um tópico recorrente sem página.
+- **relevant** — (com `--node`) outros nodes rankeados por sobreposição de
+  entidades com o node em foco. A busca de forgotten-but-relevant.
+
+**Detecção de contradição** é julgamento seu: o núcleo traz um node junto das
+autoridades que ele cita (ADRs, specs). Você lê os dois e determina se o node
+afirma algo que a autoridade nega, e reporta com a linha que cita.
+
+**`--fix`** planta um link relativo ausente apenas quando uma menção resolve pra
+exatamente um título de node — não ambíguo, ainda não presente. Matches múltiplos
+ou fuzzy ficam em report-only.
+
+## Uso & parâmetros
 
 ```
 /octopus:knowledge-synthesize [--root <id>] [--node <path>] [--fix]
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `--root <id>` — um root (ex: `docs`, `memory`, `consigliere`); padrão: todos
+  os roots resolvidos.
+- `--node <path>` — busca de forgotten-but-relevant: encontra outros nodes
+  rankeados por sobreposição de entidades com esse node específico.
+- `--fix` — planta um link ausente quando uma menção resolve pra exatamente um
+  node; a edição é um append simples, reversível com `git revert`.
+
+[Source: `commands/knowledge-synthesize.md`](https://github.com/leocosta/octopus/blob/main/commands/knowledge-synthesize.md)

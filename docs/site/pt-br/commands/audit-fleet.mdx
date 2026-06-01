@@ -1,24 +1,53 @@
 ---
 title: audit-fleet
-description: "Cross-repo adoption + drift audit — reports each repo's Octopus config against its declared target (baseline + stack profile + adoption tier) from fleet.yml. Signal-only; feeds fleet-bootstrap --from-audit."
-draft: true
+description: "Auditoria de adoção + drift entre repos — reporta a config do Octopus de cada repo contra o target declarado (baseline + stack profile + adoption tier) do fleet.yml. Somente sinal; alimenta fleet-bootstrap --from-audit."
+sidebar:
+  order: 12
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:audit-fleet` é a visão cross-repo de adoção do Octopus. Ele lê o seu
+`fleet.yml`, inspeciona a configuração real de cada repo contra o target
+declarado e produz uma tabela por repo e um rollup de drift-hotspots — sem
+modificar nenhum arquivo.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this command removes */}
+`octopus setup` é por repo, e as workspace rules são compartilhadas — mas um
+manager cuidando de múltiplos repos não tem como ver de relance quais estão atrás
+do padrão, quais estão abaixo do adoption tier declarado ou quais não têm
+`CONTEXT.md`. Você descobre aos poucos, por code reviews individuais ou workflows
+quebrados, não como um sinal coerente. `audit-fleet` entrega esse sinal coerente:
+um comando, um relatório, maiores gaps primeiro.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+1. **Resolução da fleet** — lê o `fleet.yml` no workspace repo pra obter a lista
+   de repos e os targets declarados (baseline, stack profile, adoption tier).
+   Cai pra uma lista `fleet:` explícita no `.octopus.yml`, depois pra caminhos
+   locais passados como argumento.
+2. **Inspeção por repo** — pra cada repo, calcula o target (`baseline ∪ profile ∪
+   tier`) e compara com o que está realmente instalado: adoption tier, bundles
+   habilitados, versão do Octopus, drift de rules, presença de `CONTEXT.md` e
+   contagem de ADRs.
+3. **Formato do relatório** — uma tabela por repo (target vs atual, flags de drift)
+   seguida de um rollup de drift-hotspots que destaca os maiores gaps primeiro,
+   ex.: "5/7 repos atrás na versão do Octopus" ou "3/7 abaixo do target tier".
+4. **Ação sugerida** — o relatório aponta o `fleet-bootstrap` pra remediação e
+   informa que ele pode consumir este relatório diretamente via `--from-audit`.
 
-## Usage & parameters
+A auditoria é **somente sinal**. Ela nunca modifica um repo. Remediação é
+responsabilidade do `fleet-bootstrap`.
+
+## Uso & parâmetros
 
 ```
 /octopus:audit-fleet                 # audit the fleet from fleet.yml (or a discovered list)
 /octopus:audit-fleet <path> ...      # audit an explicit list of local repo paths
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `<path> ...` — um ou mais caminhos locais de repos pra auditar. Quando omitido,
+  a fleet é resolvida a partir do `fleet.yml` no workspace repo.
+
+[Fonte: `commands/audit-fleet.md`](https://github.com/leocosta/octopus/blob/main/commands/audit-fleet.md)
+
+[Source: `commands/audit-fleet.md`](https://github.com/leocosta/octopus/blob/main/commands/audit-fleet.md)

@@ -1,18 +1,46 @@
 ---
 title: audit-verification
-description: "Signal-only verification audit — confronts a finished task against run evidence (unverified-completion-claim) and flags missing-file references (unresolved-reference). Queued by the zero-LLM verification-check Stop hook; runs cheap-tier on demand. Never blocks."
-draft: true
+description: "Signal-only verification audit — confronts a finished task against run evidence and flags unverified completion claims and missing-file references. Queued automatically; runs on demand."
+sidebar:
+  order: 15
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:audit-verification` is the check that asks the simplest question
+about a finished task: *was it actually verified?* It surfaces two specific
+failure modes — a completion claimed without any build, test, or typecheck
+having run, and a diff that references a file or symbol that does not exist on
+disk.
 
 ## What it solves
 
-{/* TODO: the concrete pain this command removes */}
+A formatter and a type checker judge syntax. `audit-grounding` judges whether
+the agent invented conventions or unsupported facts. But neither asks whether
+the agent actually ran the build before declaring success. An agent can close a
+task with "done, all tests pass" without ever executing a test runner. It can
+write code importing a module that was never created. The compiler would catch
+the second problem — but only if it is run. `audit-verification` is that catch,
+applied consistently, at the cheapest possible cost.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+The recurring, per-task component is a pure-bash Stop hook
+(`hooks/stop/verification-check.sh`) that runs after every task completes. It
+performs a deterministic, zero-LLM scan of the session and the diff:
+
+- **`unverified-completion-claim`** — the session contains a completion
+  assertion ("done", "tests pass", "fixed") but no evidence of a build, test,
+  or typecheck command having been executed. When this pattern is detected, the
+  hook queues a verification proposal.
+- **`unresolved-reference`** — the diff imports a relative path that does not
+  resolve on disk. The hook detects this deterministically.
+
+When the hook queues a proposal, `/octopus:audit-verification` (or
+`/octopus:review-proposals`) reads it and contextualizes the finding. This
+skill runs on the cheapest model tier — confronting a claim against run evidence
+is mechanical, not deep reasoning.
+
+The skill is **signal-only**. It never blocks a commit, task, or merge. It
+reports; the human decides. Blocking is the `guardrails` bundle's job.
 
 ## Usage & parameters
 
@@ -20,4 +48,8 @@ draft: true
 /octopus:audit-verification
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+This command takes no flags. It is typically reached through
+`/octopus:review-proposals` when a queued verification proposal is present, or
+run directly after a task to check the current session.
+
+[Source: `commands/audit-verification.md`](https://github.com/leocosta/octopus/blob/main/commands/audit-verification.md)

@@ -1,18 +1,51 @@
 ---
 title: audit-tenant
 description: "Pre-merge audit of multi-tenant data-scope enforcement — query filters, new entity configs, raw SQL, controller ownership, admin endpoints."
-draft: true
+sidebar:
+  order: 14
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:audit-tenant` scans the current branch (or any ref) for missing
+tenant-scope enforcement before merge. It produces a severity-tiered report
+with confidence labels across six checks specific to multi-tenant SaaS
+codebases.
 
 ## What it solves
 
-{/* TODO: the concrete pain this command removes */}
+In a multi-tenant application, the worst bugs are the ones that work correctly
+for most users — and silently leak data to others. A query using
+`IgnoreQueryFilters()` without justification, a new entity added to the
+`DbContext` without `HasQueryFilter`, a controller that finds by `id` from the
+route without an ownership check — each of these is a potential data-leak path
+that passes unit tests and passes code review unless someone is specifically
+looking for it. `audit-tenant` looks for it on every merge, automatically.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+The command resolves the diff, identifies tenant-relevant files using keyword
+heuristics, and runs six checks:
+
+- **T1 query-without-filter** — flags `IgnoreQueryFilters()` calls without a
+  `// tenant-override: <reason>` comment. Severity: block.
+- **T2 dbcontext-missing-filter** — flags new `DbSet<X>` properties in the
+  configured `DbContext` that have no `HasQueryFilter` or
+  `IEntityTypeConfiguration<X>` in the same diff. Severity: block.
+- **T3 raw-sql-no-filter** — flags `FromSqlRaw`, `ExecuteSqlRaw`, and similar
+  helpers where the SQL string does not contain the configured tenant field.
+  Severity: block.
+- **T4 id-from-route-no-ownership** — warns when a controller method looks up a
+  tenant-scoped entity by route `id` without calling an ownership helper.
+  Severity: warn (defense-in-depth — the query filter already enforces scope,
+  but a future `IgnoreQueryFilters()` would expose this path).
+- **T5 join-to-unfiltered-table** — warns when a LINQ join's right-side
+  `DbSet` is not tenant-scoped and the join predicate does not restrict by the
+  tenant field. Severity: warn.
+- **T6 cross-tenant-admin-endpoint** — warns when an `[Authorize(Roles = "Admin")]`
+  or `[AllowAnonymous]` method accesses a tenant-scoped `DbSet` without an
+  `// across-tenants: <reason>` comment. Severity: warn.
+
+Tenant-scope config (`field`, `filter`, `context`, `entities`) is resolved from
+`.octopus.yml`'s `tenantScope:` block, falling back to safe defaults.
 
 ## Usage & parameters
 
@@ -20,4 +53,9 @@ draft: true
 /octopus:audit-tenant [ref] [--base=main] [--only=<checks>] [--write-report]
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `ref` — PR number (`#123`), URL, branch name, or commit SHA. Default: current `HEAD` vs its upstream.
+- `--base=<branch>` — base branch for the diff. Default: `main`.
+- `--only=<list>` — comma-separated subset of `query-without-filter,dbcontext-missing-filter,raw-sql-no-filter,id-from-route-no-ownership,join-to-unfiltered-table,cross-tenant-admin-endpoint`.
+- `--write-report` — persists the report to `docs/reviews/YYYY-MM-DD-tenant-<slug>.md`.
+
+[Source: `commands/audit-tenant.md`](https://github.com/leocosta/octopus/blob/main/commands/audit-tenant.md)

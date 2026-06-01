@@ -1,18 +1,46 @@
 ---
 title: doc-spec
-description: "Create a new feature spec from template"
-draft: true
+description: "Create a new feature spec from the project template, optionally linked to an existing RFC, then offer to continue into the design session."
+sidebar:
+  order: 15
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:doc-spec` creates the specification stub that anchors all
+downstream work — design, plan, and implementation. It's the entry
+point for any non-trivial feature that needs a written design before
+code is touched.
 
 ## What it solves
 
-{/* TODO: the concrete pain this command removes */}
+Implementation without a spec generates two failure modes: engineers
+start from different mental models, and decisions made during
+implementation have no permanent record. A spec stub created at the
+right moment — after consensus but before design work — gives the
+team a single document to fill in together.
+
+`doc-spec` handles the mechanical part: finding the right template,
+linking to an existing RFC if one exists, and placing the file at the
+canonical path. The design session fills in the content.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+1. Resolves the slug — from the argument you pass, or by asking.
+2. Checks `docs/rfcs/` for a matching RFC and links it in the
+   spec's metadata if found.
+3. Writes the stub to `docs/specs/<slug>.md` from the project
+   template.
+4. Reports the file path, the RFC link (when found), and a reminder
+   to fill in the design sections.
+5. In interactive sessions, offers to continue directly into the
+   design session — answering `y` chains into `/octopus:doc-design`.
+
+## Pipeline position
+
+`doc-rfc` → **`doc-spec`** → `doc-design` → `doc-plan`
+
+The spec stub is the handoff point between consensus and detailed
+design. Use `/octopus:doc-design` to populate the Design,
+Implementation Plan, Testing Strategy, and Context for Agents sections.
 
 ## Usage & parameters
 
@@ -20,4 +48,7 @@ draft: true
 /octopus:doc-spec [slug]
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `[slug]` — kebab-case name for the spec (e.g. `checkout-revamp`).
+  If omitted, the command asks for one before proceeding.
+
+[Source: `commands/doc-spec.md`](https://github.com/leocosta/octopus/blob/main/commands/doc-spec.md)

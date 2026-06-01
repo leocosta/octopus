@@ -1,23 +1,64 @@
 ---
 title: knowledge-hygiene
-description: "Audit a knowledge root for staleness, broken links, orphans, and archive drift; --gaps for coverage, --fix for reversible remedies."
-draft: true
+description: "Audita um knowledge root em busca de staleness, links quebrados, órfãos e archive drift; --gaps pra cobertura, --fix pra remediações reversíveis."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:knowledge-hygiene` executa uma auditoria estruturada de decaimento em
+qualquer knowledge root registrado — `docs/`, o conjunto de padrões, auto-memory
+ou o workspace privado do consigliere — e mostra o que apodreceu silenciosamente.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this command removes */}
+Bases de conhecimento em Markdown decaem sem avisar. Um node atualizado há oito
+meses fica na mesma lista de um atualizado ontem, sem nada pra diferenciá-los.
+Links internos quebram quando arquivos mudam de lugar; trabalhos concluídos ficam
+na árvore ativa; tópicos se acumulam em diversas notas sem nunca ganhar uma
+página própria. Nenhum desses problemas se anuncia — você só os descobre quando
+confia em algo desatualizado.
 
-## How it works
+`knowledge-hygiene` roda as verificações de forma proativa pra você não precisar
+auditar de cabeça. Reporta o que decaiu; com `--fix`, repara o subconjunto de
+problemas que tem solução segura e reversível.
 
-{/* TODO: the mechanism */}
+## Como resolve
 
-## Usage & parameters
+As verificações mecânicas rodam no núcleo `octopus hygiene`, que lê metadados
+dos nodes, links, thresholds e o diretório de arquivo do registry. A skill
+envolve esses resultados determinísticos com o julgamento que o núcleo te
+delega.
+
+Quatro tipos de verificação são reportados, cada um como uma linha estruturada:
+
+- **staleness** — node cuja última atualização (frontmatter `updated:` → git
+  last-commit → mtime) é mais antiga que o threshold configurado no root.
+  Severidade: `warn`.
+- **broken-link** — um link que não existe no disco. Severidade: `warn`.
+- **orphan** — node sem links de entrada, excluindo entry points conhecidos
+  (`README*`, `index*`, `roadmap*`) e allowlists do root. Severidade: `info`.
+- **archive-drift** — node com `status:` terminal no frontmatter (`done`,
+  `closed`, `archived`) que ainda vive fora do diretório de arquivo. Severidade:
+  `info`.
+
+`--gaps` adiciona uma varredura de cobertura: campos obrigatórios ausentes em
+nodes e entidades recorrentes não rastreadas — tópicos mencionados em vários
+nodes que nunca ganharam uma página própria.
+
+`--fix` aplica apenas as remediações reversíveis: `git mv` pra archive-drift e
+reparo de link quando existe exatamente um alvo não ambíguo. Todo o resto fica
+em modo report-only, revisável antes de qualquer commit.
+
+## Uso & parâmetros
 
 ```
 /octopus:knowledge-hygiene [--root <id>] [--gaps] [--fix] [--write-report]
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `--root <id>` — audita um root específico (ex: `docs`, `memory`,
+  `consigliere`); padrão: todos os roots resolvidos.
+- `--gaps` — também roda o julgamento de cobertura de documentação pra campos
+  ausentes e entidades recorrentes não rastreadas.
+- `--fix` — aplica remediações reversíveis (movimentações de archive-drift,
+  reparos de link não ambíguos); padrão é report-only.
+- `--write-report` — grava o relatório em arquivo em vez de stdout.
+
+[Source: `commands/knowledge-hygiene.md`](https://github.com/leocosta/octopus/blob/main/commands/knowledge-hygiene.md)

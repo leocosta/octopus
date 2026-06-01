@@ -1,23 +1,74 @@
 ---
 title: review-contracts
 description: "Detect API-vs-frontend contract drift in multi-stack monorepos — endpoints, DTOs, enums, status codes, auth rules, params."
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:review-contracts` escaneia um branch em busca de drift entre
+uma API e seus consumers de frontend antes que a mudança faça merge —
+encontrando as incompatibilidades que compilam sem erro mas quebram em
+runtime.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this command removes */}
+Em monorepos com stacks separadas de API e frontend, contract drift é
+o modo de falha que o TypeScript não consegue capturar: uma URL de
+endpoint renomeada, um campo de DTO removido, um valor de enum que não
+existe mais no backend. Esses problemas normalmente aparecem em
+produção ou durante QA manual, muito depois que a mudança foi escrita.
+O `review-contracts` torna a comparação cross-stack automática em
+cada diff.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+A skill resolve quais stacks estão presentes (via `.octopus.yml` ou
+autodetecção), extrai "tokens de intenção" do diff da API — paths de
+endpoints, nomes de DTO/record, nomes de enum, anotações de auth,
+assinaturas de parâmetros — e faz grep em cada stack de frontend por
+uso correspondente.
 
-## Usage & parameters
+Sete classes de drift são verificadas:
+
+- **C1 endpoint-added** — novo endpoint sem consumer no frontend
+  (`ℹ Info`).
+- **C2 endpoint-removed** — frontend ainda chama uma URL removida ou
+  renomeada (`🚫 Block`).
+- **C3 dto** — campo de DTO adicionado, removido ou renomeado;
+  interface no frontend não atualizada (`⚠ Warn`).
+- **C4 enum** — conjunto de membros de enum alterado; union type ou
+  mapa `as const` no frontend fora de sincronia (`⚠ Warn`).
+- **C5 status** — status code de resposta alterado em endpoint
+  existente; handler de erro mais próximo no frontend sinalizado pra
+  revisão (`ℹ Info`).
+- **C6 auth** — regra de autorização adicionada, removida ou alterada
+  num endpoint; fluxo de login no frontend deve ser re-verificado
+  (`⚠ Warn`).
+- **C7 params** — path param ou query param adicionado, removido ou
+  renomeado; call sites vivos usam a assinatura antiga (`⚠ Warn`).
+
+Cada finding traz um rótulo de confiança (`high` / `medium` / `low`)
+e cita tanto o arquivo da API quanto o arquivo de frontend onde o
+drift foi detectado. Os findings são orientações para o revisor —
+não um gate automatizado.
+
+## Uso & parâmetros
 
 ```
 /octopus:review-contracts [ref] [--base=main] [--stacks=<list>] [--only=<checks>] [--write-report]
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `ref` — branch, SHA de commit ou ref de PR a inspecionar. Default:
+  diff do working copy atual contra `--base`.
+- `--base=<branch>` — base de comparação. Default: `main`.
+- `--stacks=<list>` — subconjunto de stacks a comparar, separado por
+  vírgula (`api`, `app`, `lp` ou nomes customizados em
+  `.octopus.yml`). Default: todos os stacks detectados.
+- `--only=<checks>` — rodar somente os drift checks listados. Valores
+  válidos: `endpoint-added`, `endpoint-removed`, `dto`, `enum`,
+  `status`, `auth`, `params`. Default: todos os sete.
+- `--write-report` — gravar os findings em
+  `docs/reviews/YYYY-MM-DD-contract-<slug>.md` além de exibí-los
+  inline. Default: somente exibição.
+
+[Fonte: `commands/review-contracts.md`](https://github.com/leocosta/octopus/blob/main/commands/review-contracts.md)
+
+[Source: `commands/review-contracts.md`](https://github.com/leocosta/octopus/blob/main/commands/review-contracts.md)

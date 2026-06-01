@@ -1,23 +1,64 @@
 ---
 title: interview
-description: "Run the requirements interview to scope one feature or problem — one question at a time until intent is concrete enough to feed doc-align, doc-prd, or implement. For area-level exploration that generates multiple backlog items, use /octopus:doc-research."
-draft: true
+description: "Conduz uma entrevista de requisitos pra escopar uma feature ou problema — uma pergunta por vez até a intenção estar concreta o suficiente pra alimentar doc-prd, doc-align ou implement."
+sidebar:
+  order: 17
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:interview` é o comando de grilling greenfield — ele roda quando você
+tem uma ideia mas nenhum plano ainda. Ele percorre a árvore de decisão uma
+pergunta por vez até a intenção estar concreta o suficiente pra virar um PRD,
+um plano, ou um brief de implementação diretamente acionável.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this command removes */}
+Asks vagos produzem features erradas. "Precisamos de algo pra pagamentos" não
+é um brief — é uma fonte de semanas de trabalho desalinhado. A disciplina de
+especificar antes de desenhar existe por boas razões, mas aplicá-la ad-hoc
+numa conversa significa que perguntas são agrupadas, respostas sim/não
+substituem exploração aberta, e o resultado é um plano com premissas silenciosas
+embutidas.
 
-## How it works
+`interview` impõe a disciplina estruturalmente: uma pergunta por turno,
+rastreamento explícito do que está estabelecido e do que ainda está
+não-resolvido, e um resumo confirmado no final que o usuário assina antes de
+qualquer design ou implementação começar.
 
-{/* TODO: the mechanism */}
+## Como funciona
 
-## Usage & parameters
+A entrevista tem uma forma clara:
+
+1. **Root statement** — o objetivo é reescrito em uma frase e confirmado antes
+   de qualquer ramificação começar. Se você não consegue enunciar o objetivo
+   em uma frase, as primeiras perguntas miram no root.
+2. **Uma pergunta por turno** — cada pergunta mira exatamente em um dos:
+   constraint, ator, fronteira, trade-off ou critério de sucesso. Sem
+   agrupamento, sem hedges "e também…".
+3. **Progresso visível** — a cada 3–5 perguntas, os fatos estabelecidos e os
+   ramos ainda não-resolvidos são mostrados num recap curto pra ninguém perder
+   o fio.
+4. **Resolução e handoff** — quando cada ramo tem uma resposta e os critérios
+   de sucesso estão concretos o suficiente pra testar, um resumo estruturado é
+   produzido e a skill correta é sugerida: `doc-align` se CONTEXT.md existe,
+   `doc-prd` se o trabalho é do tamanho de um ticket, `implement` se começa
+   agora.
+
+`interview` é o contraponto de `doc-align` (que valida um plano existente
+contra docs existentes). A sequência natural é
+`interview → doc-align → doc-prd → implement`. Para exploração de área que
+produz múltiplos backlog items em vez de uma feature escopada, use
+`/octopus:doc-research`.
+
+## Uso & parâmetros
 
 ```
 /octopus:interview <one-sentence statement of the problem or goal>
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `<one-sentence statement>` — o root da árvore de decisão. Se não fornecido,
+  o primeiro turno da entrevista é dedicado a produzir um. Não começa a
+  ramificar até o root ser confirmado.
+
+[Fonte: `commands/interview.md`](https://github.com/leocosta/octopus/blob/main/commands/interview.md)
+
+[Source: `commands/interview.md`](https://github.com/leocosta/octopus/blob/main/commands/interview.md)

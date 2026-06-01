@@ -1,18 +1,52 @@
 ---
 title: interview
-description: "Run the requirements interview to scope one feature or problem — one question at a time until intent is concrete enough to feed doc-align, doc-prd, or implement. For area-level exploration that generates multiple backlog items, use /octopus:doc-research."
-draft: true
+description: "Run a requirements interview to scope one feature or problem — one question at a time until intent is concrete enough to hand off to doc-prd, doc-align, or implement."
+sidebar:
+  order: 17
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`/octopus:interview` is the greenfield grilling command — it runs when you
+have an idea but no plan yet. It walks the decision tree one question at a
+time until the intent is concrete enough to become a PRD, a plan, or a
+directly actionable implementation brief.
 
 ## What it solves
 
-{/* TODO: the concrete pain this command removes */}
+Vague asks produce wrong features. "We need something for payments" is not a
+brief — it is a source of weeks of misaligned work. The discipline of
+specifying before designing exists for good reason, but running it
+ad-hoc in a conversation means questions get batched, yes/no answers replace
+open exploration, and the result is a plan with silent assumptions baked in.
+
+`interview` enforces the discipline structurally: one question per turn,
+explicit tracking of what is established and what is still unresolved, and
+a confirmed summary at the end that the user signs off on before any design
+or implementation starts.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+The interview has a clear shape:
+
+1. **Root statement** — the goal is restated in one sentence and confirmed
+   before any branching begins. If you cannot state the goal in one sentence,
+   the first questions target the root.
+2. **One question per turn** — each question targets exactly one of: a
+   constraint, an actor, a boundary, a trade-off, or a success criterion.
+   No batching, no "and also…" hedges.
+3. **Visible progress** — every 3–5 questions, the established facts and
+   still-unresolved branches are shown in a short recap so neither party
+   loses track of where the tree is.
+4. **Resolution and hand-off** — when every branch has an answer and the
+   success criteria are concrete enough to test against, a structured summary
+   is produced and the right next skill is suggested: `doc-align` if
+   CONTEXT.md exists, `doc-prd` if the work is ticket-sized, `implement` if
+   it starts now.
+
+`interview` is the counterpart to `doc-align` (which validates an existing
+plan against existing docs). The natural sequence is
+`interview → doc-align → doc-prd → implement`. For area-level exploration
+that produces multiple backlog items rather than one scoped feature, use
+`/octopus:doc-research` instead.
 
 ## Usage & parameters
 
@@ -20,4 +54,8 @@ draft: true
 /octopus:interview <one-sentence statement of the problem or goal>
 ```
 
-{/* TODO: one row per flag/arg — what it does → default */}
+- `<one-sentence statement>` — the root of the decision tree. If not
+  supplied, the first turn of the interview is dedicated to producing one.
+  Do not start branching until the root is confirmed.
+
+[Source: `commands/interview.md`](https://github.com/leocosta/octopus/blob/main/commands/interview.md)
