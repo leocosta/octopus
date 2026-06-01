@@ -1,19 +1,36 @@
 ---
 title: scaffold-skill
-description: "Create new Octopus skills with the correct structure — frontmatter with name + description, SKILL.md ≤ 250 lines, optional REFERENCE.md / EXAMPLES.md / scripts/ at one level of depth — and register the skill into a target bundle so no skill ships loose. Complements compress-skill (which modifies existing skills). Family *-skill."
-draft: true
+description: "Cria novas skills do Octopus com a estrutura correta — frontmatter com name + description, SKILL.md ≤ 250 linhas, REFERENCE.md / EXAMPLES.md / scripts/ opcionais em um nível de profundidade — e registra a skill num bundle alvo pra que nenhuma skill saia solta. Complementa compress-skill (que modifica skills existentes). Família *-skill."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`scaffold-skill` cria uma nova skill do Octopus com o formato certo desde o início
+— o frontmatter, a disciplina de tamanho, os arquivos de apoio opcionais — e a
+conecta a um bundle pra que ela de fato seja entregue. É a porta de entrada pra
+estender o catálogo.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this skill removes */}
+Uma skill criada ad hoc tende a sair errada em pequenos jeitos que se acumulam:
+frontmatter faltando ou malformado, um SKILL.md que se espalha além do ponto de
+ser carregável, arquivos de apoio aninhados fundo demais pra achar — e, mais
+comum, uma skill que existe mas não pertence a bundle nenhum, então ninguém a
+instala. `scaffold-skill` torna a estrutura correta o default, pra que uma skill
+nova seja consistente e descobrível no dia um.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+- **Estrutura correta** — frontmatter com `name` + `description`, um SKILL.md
+  mantido **≤ 250 linhas**, e `REFERENCE.md` / `EXAMPLES.md` / `scripts/` opcionais
+  em um nível de profundidade (sem aninhamento fundo pra caçar).
+- **Registro em bundle** — a skill é registrada num bundle alvo como parte do
+  scaffolding, então **nenhuma skill sai solta** — toda skill mapeia pra um bundle
+  que um time pode habilitar.
 
-## Usage
+É a contraparte do `compress-skill` (que encolhe skills *existentes*): a família
+`*-skill` pra autorar e manter o catálogo.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+## Quando usar
+
+Sempre que estiver adicionando uma capacidade nova ao Octopus. Comece aqui em vez
+de copiar um SKILL.md existente à mão — a estrutura e a conexão com o bundle vêm de
+graça.

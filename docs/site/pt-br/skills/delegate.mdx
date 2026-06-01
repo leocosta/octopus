@@ -1,19 +1,36 @@
 ---
 title: delegate
-description: "Delegate one task or a multi-step role pipeline to Octopus roles and return results inline with attribution. Triggers on @<role>: pattern in user messages, multi-role chained messages (PT-BR or EN), or via /octopus:delegate."
-draft: true
+description: "Delega uma task ou um pipeline de roles em vários passos pras roles do Octopus e retorna resultados inline com atribuição. Dispara no padrão @<role>: nas mensagens do usuário, mensagens encadeadas multi-role (PT-BR ou EN), ou via /octopus:delegate."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`delegate` roteia uma task pra role certa do Octopus — ou encadeia várias roles
+num pipeline — e traz os resultados de volta inline, cada um rotulado com quem o
+produziu. É como você obtém a resposta de um especialista (architect, security,
+dba) sem sair da conversa.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this skill removes */}
+O julgamento sênior de um time vive nas suas roles, mas alcançar a certa no meio
+da task é atrito: você para, invoca uma role, copia contexto, volta. E quando uma
+task precisa de *várias* perspectivas em ordem — desenhar, depois revisar, depois
+checar a camada de dados — fazer isso à mão é tedioso e fácil de pular. `delegate`
+remove o atrito pra que pedir o especialista certo (ou uma sequência deles) seja
+um gesto só.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+- **Uma task pra uma role** — `@architect: …` entrega a task pra essa role e
+  retorna a resposta inline, atribuída.
+- **Um pipeline de roles** — encadeie roles numa mensagem (ex.: design → review →
+  data) e o `delegate` as roda em ordem, passando o output de cada pra próxima.
+- **Dispara naturalmente** — uma menção `@<role>:`, uma mensagem encadeada
+  multi-role (português ou inglês), ou o comando explícito `/octopus:delegate`.
 
-## Usage
+Todo resultado carrega **atribuição**, então você sempre sabe qual role disse o quê.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+## Quando usar
+
+Quando uma task quer a expertise de uma role específica, ou uma sequência de
+roles, sem subir uma sessão separada pra cada. Pra orquestração paralela e
+duradoura entre muitos agentes, o orquestrador `octopus control` / `run` é a
+ferramenta mais pesada.
