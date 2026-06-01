@@ -1,19 +1,39 @@
 ---
 title: standards
-description: "Self-serve lookup that answers \"what's our standard for X, and why?\" from the team's own sources — docs/adr/ (decisions), rules/ (coding rules incl. *.local.md overrides), CONTEXT.md (vocabulary), and knowledge/ (confirmed facts) — in that precedence, with the source cited and the rationale. Never invents an answer: when no source covers the topic it says so and routes to authoring (doc-adr or a rules override). Read-only, never gates. Pairs with audit-grounding (which flags drift in a diff using the same sources) and doc-adr (which authors the missing standard). Registered in the docs bundle."
-draft: true
+description: "Consulta self-service que responde \"qual é nosso padrão pra X, e por quê?\" a partir das fontes do próprio time — ADRs, regras de código (incluindo overrides locais), o vocabulário do CONTEXT.md, e conhecimento confirmado — nessa precedência, citando a fonte e o racional. Nunca inventa resposta: quando nada cobre o tópico, ela diz isso e te direciona pra autoria. Read-only, nunca bloqueia. Faz parte do bundle docs."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`standards` responde à pergunta "qual é nosso padrão pra X, e por quê?" a partir
+das fontes escritas do seu time — e cita de onde a resposta veio. É a contraparte
+read-only de escrever um padrão: você pergunta, ela busca, ela nunca inventa.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this skill removes */}
+Convenções vivem espalhadas por ADRs, arquivos de regras, um doc de vocabulário e
+conhecimento capturado — então "usamos X ou Y aqui?" é respondido de memória, ou
+chutado, e o chute desvia do que o time de fato decidiu. Gente nova não consegue
+se virar sozinha; a resposta com o seu *raciocínio* fica enterrada. Esta skill
+torna as próprias decisões do time consultáveis, com o racional anexado.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+- **Busca por precedência** — consulta as fontes numa ordem fixa: `docs/adr/`
+  (decisões) → `rules/` (regras de código, incluindo overrides `*.local.md`) →
+  `CONTEXT.md` (vocabulário) → `knowledge/` (fatos confirmados). A fonte de maior
+  precedência que cobre o tópico vence.
+- **Citada, com racional** — a resposta nomeia sua fonte e explica *por que* o
+  padrão é o que é, não só o que é.
+- **Nunca inventa** — quando nenhuma fonte cobre o tópico, ela diz isso claramente
+  e te direciona pra autorar o padrão faltante (`doc-adr`, ou um override de
+  `rules`) em vez de fabricar um.
+- **Read-only, nunca bloqueia** — ela informa; nunca trava um commit ou uma
+  mudança.
 
-## Usage
+Faz par com `audit-grounding` (que sinaliza desvio num diff contra as *mesmas*
+fontes) e `doc-adr` (que autora o padrão que está faltando).
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+## Quando usar
+
+Sempre que você precisa saber o padrão do time sobre algo e o raciocínio por trás
+dele — antes de escrever código que deve conformar, no onboarding, ou pra resolver
+uma questão "é assim que fazemos aqui?". Registrada no bundle `docs`.

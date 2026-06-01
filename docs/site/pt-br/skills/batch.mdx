@@ -1,19 +1,38 @@
 ---
 title: batch
-description: "Fan out a prompt across many targets (files / modules / directories) running each in an isolated git worktree, then merge results back."
-draft: true
+description: "Espalha um único prompt por vários alvos (arquivos, módulos, diretórios), rodando cada um num git worktree isolado, e depois mescla os resultados de volta. Faz uma intenção valer pra muitas unidades independentes em paralelo sem que as mudanças se atrapalhem."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`batch` aplica uma intenção a muitos alvos de uma vez. Você descreve a mudança
+uma vez; ela roda esse prompt contra cada alvo no seu próprio git worktree
+isolado, em paralelo, e depois mescla os resultados de volta — então uma varredura
+por um monorepo não vira um arrastão serial nem uma pilha de edições conflitantes.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this skill removes */}
+Algumas mudanças são a mesma edição repetida por muitas unidades independentes:
+subir uma config em todo pacote, aplicar um fix de lint por módulos, migrar uma
+chamada de API numa dúzia de diretórios. Feito em série é lento; feito tudo numa
+working tree só, as edições paralelas colidem. Você acaba ou esperando ou
+desembaraçando conflitos.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+- **Fan-out** — o prompt é despachado uma vez por alvo, pelos arquivos, módulos
+  ou diretórios que você aponta.
+- **Isolamento por worktree** — cada alvo roda no seu próprio git worktree, então
+  mudanças paralelas nunca compartilham um diretório de trabalho e não podem se
+  corromper.
+- **Mescla de volta** — quando cada unidade termina, os resultados são mesclados
+  de volta juntos, te dando uma mudança combinada pra revisar em vez de N branches
+  soltas.
 
-## Usage
+É voltada pra layouts de monorepo / workspace (`packages/**`, `modules/**`,
+`apps/**`) onde a mesma intenção legitimamente abrange muitas unidades
+independentes.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+## Quando usar
+
+Quando uma mudança única e bem definida precisa ser aplicada a muitos alvos
+independentes e você quer fazê-los em paralelo sem conflitos — um bump por todo o
+workspace, uma migração repetida, um fix cross-módulo.

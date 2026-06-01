@@ -1,19 +1,40 @@
 ---
 title: content-images
-description: "Generate brand-consistent images for blog covers, Instagram feed posts, and carousels using AI (Gemini Imagen with Pollinations.ai fallback). Reads brand context from .octopus/content-images.json; GEMINI_API_KEY from .env.octopus. Caches by output file path — skips existing files unless --force is passed."
-draft: true
+description: "Gera imagens consistentes com a marca pra capas de blog, posts de feed do Instagram e carrosséis usando IA (Gemini Imagen, com fallback pro Pollinations.ai). Lê o contexto de marca de .octopus/content-images.json e GEMINI_API_KEY de .env.octopus, e faz cache por caminho de saída, então arquivos existentes são pulados a menos que --force seja passado."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`content-images` gera os assets visuais que acompanham conteúdo publicado —
+capas de blog, posts de feed do Instagram, carrosséis — de um jeito que se mantém
+fiel à marca, porque lê o contexto de marca em vez de chutar.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this skill removes */}
+Fazer à mão uma capa ou um carrossel pra cada post é lento, e geração de IA ad-hoc
+desvia da marca — paleta errada, tom errado, inconsistente de um post pro outro.
+Você quer imagens que pareçam *suas*, geradas sob demanda, sem re-descrever a marca
+toda vez.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+- **Prompts cientes da marca** — lê `.octopus/content-images.json` pro seu
+  contexto de marca (paleta, estilo, specs de formato) e dobra isso em toda
+  geração, então a saída é consistente entre posts.
+- **Geração por IA com fallback** — usa Gemini Imagen como gerador primário e cai
+  pro Pollinations.ai se ele estiver indisponível, então uma key faltando ou uma
+  queda não te trava.
+- **Cache por caminho** — a saída é indexada por caminho de arquivo; uma imagem
+  que já existe é deixada em paz a menos que você passe `--force`, então
+  re-rodar é barato e idempotente.
 
-## Usage
+## Uso
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+Lê `GEMINI_API_KEY` de `.env.octopus`. Flag principal:
+
+- `--force` — regenera mesmo quando o arquivo de saída já existe (padrão: pular
+  arquivos existentes).
+
+## Quando usar
+
+Quando você está publicando conteúdo que precisa de uma capa ou imagem de feed e
+quer que ela combine com sua marca automaticamente — capas, posts de feed e
+carrosséis — sem re-especificar o visual toda vez.

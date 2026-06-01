@@ -1,19 +1,40 @@
 ---
 title: content-images
-description: "Generate brand-consistent images for blog covers, Instagram feed posts, and carousels using AI (Gemini Imagen with Pollinations.ai fallback). Reads brand context from .octopus/content-images.json; GEMINI_API_KEY from .env.octopus. Caches by output file path — skips existing files unless --force is passed."
-draft: true
+description: "Generate brand-consistent images for blog covers, Instagram feed posts, and carousels using AI (Gemini Imagen, with a Pollinations.ai fallback). Reads brand context from .octopus/content-images.json and GEMINI_API_KEY from .env.octopus, and caches by output path so existing files are skipped unless --force is passed."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`content-images` generates the visual assets that go with published content —
+blog covers, Instagram feed posts, carousels — in a way that stays on-brand,
+because it reads your brand context instead of guessing.
 
 ## What it solves
 
-{/* TODO: the concrete pain this skill removes */}
+Hand-making a cover or a carousel for every post is slow, and ad-hoc AI
+generation drifts off-brand — wrong palette, wrong tone, inconsistent from one
+post to the next. You want images that look like *yours*, generated on demand,
+without re-describing the brand every time.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+- **Brand-aware prompts** — it reads `.octopus/content-images.json` for your
+  brand context (palette, style, format specs) and folds that into every
+  generation, so output is consistent across posts.
+- **AI generation with fallback** — it uses Gemini Imagen as the primary
+  generator and falls back to Pollinations.ai if that's unavailable, so a missing
+  key or outage doesn't block you.
+- **Path-based cache** — output is keyed by file path; an image that already
+  exists is left alone unless you pass `--force`, so re-running is cheap and
+  idempotent.
 
 ## Usage
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+Reads `GEMINI_API_KEY` from `.env.octopus`. Key flag:
+
+- `--force` — regenerate even when the output file already exists (default:
+  skip existing files).
+
+## When to use
+
+When you're shipping content that needs a cover or feed image and want it to match
+your brand automatically — covers, feed posts, and carousels — without
+re-specifying the look each time.

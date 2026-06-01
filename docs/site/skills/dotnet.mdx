@@ -1,19 +1,36 @@
 ---
 title: dotnet
-description: ".NET backend architecture patterns, conventions, and decision trees for ASP.NET Core projects"
-draft: true
+description: ".NET backend architecture patterns, conventions, and decision trees for ASP.NET Core projects — when to reach for Minimal APIs vs controllers, how to structure a service, and what the idiomatic choice is at each fork."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`dotnet` gives an agent working in an ASP.NET Core codebase the architectural
+judgment of a seasoned .NET engineer — the patterns, conventions, and "which way
+should this go?" decision trees that make the difference between code that
+compiles and code that fits the platform.
 
 ## What it solves
 
-{/* TODO: the concrete pain this skill removes */}
+.NET offers several valid ways to do the same thing — Minimal APIs or
+controllers, this layering or that — and the right call depends on the project's
+size, team, and conventions. A generalist agent picks one arbitrarily; the result
+runs but fights the codebase. This skill encodes the idiomatic choice at each fork
+so the code reads like it belongs.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+It carries the patterns and decision trees for backend .NET work:
 
-## Usage
+- **API design** — when to prefer Minimal APIs (microservices, thin CRUD, less
+  ceremony) versus controllers (established MVC conventions, complex filters and
+  model binding), with idiomatic patterns for each.
+- **Architecture** — how to structure a new service and layer it, following the
+  conventions an ASP.NET Core project expects.
+- **Stack detection** — it recognizes a .NET project from its `*.csproj` /
+  `*.sln`, `Program.cs` / `Startup.cs`, and `appsettings.json`, so it engages on
+  the right codebases.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+## When to use
+
+When implementing or refactoring an ASP.NET Core API, designing a new .NET
+service, choosing between patterns in the .NET ecosystem, or reviewing .NET code
+for quality and adherence to best practices.
