@@ -1,19 +1,53 @@
 ---
 title: knowledge-briefing
-description: "Proactive cadence summary over a knowledge root — surfaces \"what changed / what needs you today\" without the reader asking. The deterministic core (`octopus briefing`, over the `octopus kr` registry) computes the change-delta since a per-root watermark and composes `octopus hygiene` (attention) and `octopus synthesize` (connections, weekly); this skill narrates the briefing, grounded to source nodes, on the cheapest model tier."
-draft: true
+description: "Resumo proativo em cadência sobre um knowledge root — revela \"o que mudou / o que precisa de você hoje\" sem o leitor pedir. O core determinístico (`octopus briefing`, sobre o registry `octopus kr`) computa o delta de mudança desde um watermark por root e compõe `octopus hygiene` (atenção) e `octopus synthesize` (conexões, semanal); esta skill narra o briefing, ancorado aos nós-fonte, no tier de modelo mais barato."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+Uma base de conhecimento só fala quando falam com ela. `knowledge-hygiene` e
+`knowledge-synthesize` respondem quando você invoca — mas nada te diz *o que
+mudou* ou *o que precisa de você hoje* por conta própria. `knowledge-briefing` é
+a parte que vem até você: um resumo curto e ancorado, em cadência, pra que o
+blocker registrado ontem não fique invisível até alguém lembrar de perguntar.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this skill removes */}
+A falha cara de uma base é "você não sabia que precisava olhar." Em algumas áreas
+— seis repos, uma dúzia de contextos — ninguém tem o quadro inteiro na cabeça, e
+o que precisava de atenção ficou sem ser lido porque checar cada canto à mão não
+é trabalho de ninguém. Um briefing inverte isso: a base relata o próprio estado,
+em vez de esperar ser consultada área por área.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+O core determinístico (`octopus briefing`) faz o trabalho mecânico; a skill
+narra.
 
-## Usage
+- Um **watermark por root** (guardado de forma privada, nunca num repo de time)
+  registra quando você olhou pela última vez, então cada run é um verdadeiro
+  *desde a última vez que você viu* — não uma janela fixa que você tem que
+  lembrar de passar.
+- O **delta de mudança** — o sinal próprio do briefing — é o conjunto de nós
+  atualizados desde esse watermark.
+- Pra seção "precisa de você" ele **compõe os motores irmãos** em vez de
+  recomputar: os avisos do `octopus hygiene` (vencido, obsoleto, quebrado) e, no
+  `--weekly`, as conexões novas do `octopus synthesize`.
+- Toda linha é **ancorada** — cita o nó-fonte de onde veio e não inventa nada. A
+  narração roda no **tier de modelo mais barato**, porque transformar um delta em
+  prosa é trabalho leve, não raciocínio.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+`--daily` avança o watermark (pra que o próximo run continue de onde este parou);
+`--weekly` é um rollup só de janela que deixa o watermark intacto. A cadência em
+si é hospedada por um scheduler — a skill é um run.
+
+## Uso & parâmetros
+
+```
+octopus briefing [--root <id>] [--daily | --weekly] [--since <janela>]
+```
+
+| Flag | O que faz | Default |
+|---|---|---|
+| `--root <id>` | Briefing sobre um knowledge root. | todo root resolvido |
+| `--daily` | Briefing de atenção; avança o watermark. | é o padrão |
+| `--weekly` | Rollup narrado numa janela de 7 dias; deixa o watermark intacto. | — |
+| `--since <janela>` | Sobrescreve a janela pra um run (ex.: `"3 days"`) sem tocar o watermark. | o watermark guardado |

@@ -1,19 +1,62 @@
 ---
 title: knowledge-hygiene
-description: "Audit any registered knowledge root (docs/, the standards set, auto-memory, the consigliere workspace) for decay: stale nodes, broken internal links, orphans, and concluded items that drifted outside their archive. The deterministic checks run in `octopus hygiene` over the `octopus kr` registry; this skill wraps them with the fuzzy `--gaps` judgment (recurring untracked entities, missing fields) and `--fix` confirmation. Read-only by default; `--fix` applies reversible moves only."
-draft: true
+description: "Audita qualquer knowledge root registrado (docs/, o conjunto de standards, a auto-memory, o workspace consigliere) em busca de decaimento: nós obsoletos, links internos quebrados, órfãos e itens concluídos que escaparam do archive. Os checks determinísticos rodam em `octopus hygiene` sobre o registry `octopus kr`; a skill os envolve com o julgamento fuzzy `--gaps` (entidades recorrentes não rastreadas, campos faltando) e a confirmação de `--fix`. Read-only por padrão; `--fix` só aplica movimentos reversíveis."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+Uma base de conhecimento apodrece em silêncio. Uma nota que ninguém tocou há
+quarenta dias ainda se lê como atual; um projeto concluído fica ao lado dos
+vivos; um link enferruja quando seu alvo se move. `knowledge-hygiene` é a
+auditoria que encontra esse decaimento em qualquer árvore markdown de
+conhecimento — e, quando você pede, conserta os casos seguros.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this skill removes */}
+Estado obsoleto lido como *atual* é pior do que estado nenhum — manda as pessoas
+por um caminho abandonado semanas atrás. Sozinha, uma base acumula quatro tipos
+de podridão que ninguém percebe até alguém confiar em algo errado:
 
-## How it works
+- **Nós obsoletos** — páginas além do limiar de frescor, ainda com cara de autoridade.
+- **Links internos quebrados** — referências cujo alvo se moveu ou foi deletado.
+- **Órfãos** — nós que ninguém linka, perdidos e inacháveis.
+- **Archive drift** — trabalho marcado *done* que nunca saiu do conjunto ativo.
 
-{/* TODO: the mechanism */}
+É a contraparte de manutenção da captura de conhecimento: escrever notas não vale
+nada se a base vira em silêncio um museu de fatos errados.
 
-## Usage
+## Como resolve
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+A skill é **híbrida** — os checks mecânicos são determinísticos e os julgamentos
+não.
+
+Um core determinístico (`octopus hygiene`) roda sobre o registry de knowledge
+roots `octopus kr`, então funciona em *qualquer* root declarado — sua árvore
+`docs/`, o conjunto de standards, a memory do seu editor, um workspace privado.
+Ele computa, sem chutar:
+
+- **staleness** por cascata — a data `updated:` no frontmatter do nó, senão o
+  último commit git, senão o mtime do filesystem — comparada ao limiar do root;
+- **links quebrados** — todo alvo de link que não resolve no disco;
+- **órfãos** — nós sem links de entrada, excluindo pontos de entrada legítimos
+  (`README`, `index`, `roadmap`) e uma allowlist por root;
+- **archive drift** — um nó cujo `status:` no frontmatter é terminal mas que
+  ainda vive fora do archive.
+
+Em cima disso, a skill adiciona o julgamento **`--gaps`** que um script não faz:
+tópicos recorrentes discutidos em todo lugar mas nunca documentados, e nós sem
+um campo que deveriam carregar.
+
+É **read-only por padrão**. Com `--fix` ela só faz movimentos *reversíveis* — por
+exemplo um `git mv` de um nó concluído pro archive — então uma decisão errada
+está a um `git restore` de distância, nunca uma edição perdida.
+
+## Uso & parâmetros
+
+```
+octopus hygiene [--root <id>] [--gaps] [--fix]
+```
+
+| Flag | O que faz | Default |
+|---|---|---|
+| `--root <id>` | Audita um único knowledge root (ex.: `docs`, `memory`). | todo root resolvido |
+| `--gaps` | Também revela lacunas de cobertura (tópicos recorrentes não documentados, campos faltando). | desligado |
+| `--fix` | Aplica os remédios reversíveis (movimentos pro archive, reparo de link inequívoco). | só relatório |

@@ -1,19 +1,62 @@
 ---
 title: knowledge-hygiene
 description: "Audit any registered knowledge root (docs/, the standards set, auto-memory, the consigliere workspace) for decay: stale nodes, broken internal links, orphans, and concluded items that drifted outside their archive. The deterministic checks run in `octopus hygiene` over the `octopus kr` registry; this skill wraps them with the fuzzy `--gaps` judgment (recurring untracked entities, missing fields) and `--fix` confirmation. Read-only by default; `--fix` applies reversible moves only."
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+A knowledge base decays silently. A note nobody has touched in forty days still
+reads as current; a concluded project lingers next to the live ones; a link
+quietly rots when its target moves. `knowledge-hygiene` is the audit that finds
+that decay across any markdown knowledge tree — and, when you ask it to, fixes
+the safe cases.
 
 ## What it solves
 
-{/* TODO: the concrete pain this skill removes */}
+Stale state read as *current* is worse than no state at all — it sends people
+down a path that was abandoned weeks ago. Left alone, a knowledge base
+accumulates four kinds of rot that no one notices until a reader trusts
+something wrong:
+
+- **Stale nodes** — pages past their freshness threshold that still look authoritative.
+- **Broken internal links** — references whose target has moved or been deleted.
+- **Orphans** — nodes nothing links to, stranded and unfindable.
+- **Archive drift** — work marked *done* that never moved out of the active set.
+
+It is the maintenance counterpart to capturing knowledge: writing notes is
+worthless if the base silently turns into a museum of wrong facts.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+The skill is **hybrid** — the mechanical checks are deterministic and the
+judgment calls are not.
 
-## Usage
+A deterministic core (`octopus hygiene`) runs over the `octopus kr` knowledge-root
+registry, so it works on *any* declared root — your `docs/` tree, the standards
+set, your editor's memory, a private workspace. It computes, with zero guessing:
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+- **staleness** via a cascade — a node's frontmatter `updated:` date, else its
+  last git commit, else the filesystem mtime — compared to the root's threshold;
+- **broken links** — every link target that does not resolve on disk;
+- **orphans** — nodes with no inbound links, excluding legitimate entry points
+  (`README`, `index`, `roadmap`) and a per-root allowlist;
+- **archive drift** — a node whose frontmatter `status:` is terminal but that
+  still lives outside the archive.
+
+On top of that, the skill adds the **`--gaps`** judgment a script cannot make:
+recurring topics discussed everywhere but never written up, and nodes missing a
+field they ought to carry.
+
+It is **read-only by default**. With `--fix` it only performs *reversible*
+moves — for example a `git mv` of a concluded node into the archive — so a wrong
+call is one `git restore` away, never a lost edit.
+
+## Usage & parameters
+
+```
+octopus hygiene [--root <id>] [--gaps] [--fix]
+```
+
+| Flag | What it does | Default |
+|---|---|---|
+| `--root <id>` | Audit a single knowledge root (e.g. `docs`, `memory`). | every resolved root |
+| `--gaps` | Also surface documentation-coverage gaps (recurring untracked topics, missing fields). | off |
+| `--fix` | Apply the reversible remedies (archive moves, unambiguous link repair). | report-only |
