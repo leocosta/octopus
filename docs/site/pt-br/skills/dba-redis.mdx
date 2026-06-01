@@ -1,19 +1,40 @@
 ---
 title: dba-redis
-description: "Redis heuristics catalogue for the dba role. Detects key design, TTL discipline, hot/big key risks, persistence trade-offs, pub/sub vs streams, pipeline use, eviction policy, and operational hazards. Every finding ships with a Redis command or config fix."
-draft: true
+description: "Catálogo de heurísticas Redis para a role dba. Detecta design de chave, disciplina de TTL, riscos de hot/big key, trade-offs de persistência, pub/sub vs streams, uso de pipeline, política de eviction e riscos operacionais. Todo achado vem com um comando Redis ou fix de config."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`dba-redis` é o catálogo de heurísticas do Redis que dá à role `dba` o olho de um
+especialista de cache-e-datastore sobre uma mudança. O Redis é simples de começar
+e fácil de usar errado — e porque vive em memória e no caminho quente, seus erros
+falham alto. Todo achado vem com um comando Redis ou fix de config.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this skill removes */}
+Problemas de Redis são operacionais, não só de correção: uma chave sem TTL que
+vaza memória até o nó despejar dado vivo, uma única "big key" que bloqueia o event
+loop em todo acesso, uma hot key que prende um shard, uma config de persistência
+que troca em silêncio a durabilidade que você assumiu ter. Um generalista não pesa
+esses trade-offs. Esta skill os nomeia antes de o cache virar o incidente.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+Roda um catálogo de heurísticas específicas do Redis:
 
-## Usage
+- **design de chave & disciplina de TTL** — nomeação, e um expiry em tudo que não
+  deve viver pra sempre;
+- **riscos de hot / big key** — padrões de acesso e tamanhos de valor que bloqueiam
+  o loop ou fazem hot-spot num shard;
+- **trade-offs de persistência** — RDB vs. AOF contra a durabilidade que você de
+  fato precisa;
+- **pub/sub vs. streams**, **uso de pipeline**, **política de eviction**, **riscos
+  operacionais** — o primitivo certo, menos round-trips, uma política `maxmemory`
+  sã, e os footguns que times de ops batem.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+Cada achado carrega uma **severidade** e um **comando Redis ou fix de config**
+concreto.
+
+## Quando usar
+
+Em qualquer mudança que usa Redis — um cache novo, uma fila, um rate limiter, um
+design de pub/sub ou streams. É o catálogo Redis da role `dba`, completando o
+conjunto com `dba-mssql`, `dba-postgres` e `dba-mongodb`.
