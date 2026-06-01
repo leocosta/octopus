@@ -1,19 +1,47 @@
 ---
 title: compress-skill
 description: "Shrink a SKILL.md without changing its meaning. Deterministic cleanup pass first, LLM rewrite pass only if the target is not met. Anchors extracted from the skill's test file are preserved; frontmatter, headings, and code blocks are never modified. Dry-run by default; `--apply` writes the result."
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`compress-skill` shrinks a `SKILL.md` without changing what it means. A skill that
+loads into every relevant session is a recurring tax on the context window — this
+skill pays that tax down, safely, while guaranteeing the behaviour the skill
+encodes is untouched.
 
 ## What it solves
 
-{/* TODO: the concrete pain this skill removes */}
+Skills grow. A SKILL.md picks up redundant phrasing, repeated caveats, and prose
+that could be half as long — and every extra line is loaded again on every
+activation. But compressing by hand is risky: it's easy to drop the one sentence
+that was load-bearing. `compress-skill` makes the shrink **safe**, so you get the
+smaller footprint without gambling on the meaning.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+It compresses in two passes, cheapest first:
 
-## Usage
+- A **deterministic cleanup pass** removes mechanical bloat (whitespace,
+  redundancy) with no model involved.
+- An **LLM rewrite pass** runs *only if* the deterministic pass didn't hit the
+  size target — so the model is spent only when it's needed.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+Throughout, the meaning is protected by hard invariants: **test anchors**
+extracted from the skill's test file are preserved, and **frontmatter, headings,
+and code blocks are never modified**. It is **dry-run by default** — you see the
+result before anything is written.
+
+## Usage & parameters
+
+```
+compress-skill <skill> [--apply]
+```
+
+| Flag | What it does | Default |
+|---|---|---|
+| `--apply` | Write the compressed result to the file. | dry-run (show only) |
+
+## When to use
+
+When a SKILL.md has grown large enough to weigh on the context window, or as a
+periodic pass over the skill catalogue. Pairs with `context-budget` — both reclaim
+the window, this one at the per-skill level.

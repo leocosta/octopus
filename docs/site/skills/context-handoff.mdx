@@ -1,19 +1,37 @@
 ---
 title: context-handoff
 description: "Compact the current conversation into a handoff document another agent can pick up — with explicit suggested-skills section, saved to the OS tmp dir (not the workspace), referencing existing PRDs / plans / ADRs / issues / commits by path rather than duplicating, with mandatory redaction of secrets and PII. Sits in the starter bundle in the context-* family next to context-budget."
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`context-handoff` compacts the conversation you're in into a document the next
+agent can pick up and run with — the state of the work without the megabytes of
+transcript that got you there. It's how you cross a context boundary (a new
+session, a different agent) cheaply, without losing the thread.
 
 ## What it solves
 
-{/* TODO: the concrete pain this skill removes */}
+When a session ends or work moves to another agent, all the context lives in a
+conversation that can't travel — re-reading it is expensive and re-deriving it is
+worse. Hand-rolled handoffs tend to two failures: they duplicate documents that
+already exist (going stale immediately), and they leak secrets or PII into a note
+that lands somewhere it shouldn't. This skill produces a handoff that is small,
+current, and safe.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+- **Compact, don't dump** — it distills the working state, not the whole
+  transcript.
+- **Reference, don't duplicate** — existing PRDs, plans, ADRs, issues, and commits
+  are linked **by path**, so the handoff points at the source of truth instead of
+  copying it.
+- **Suggested skills** — an explicit section tells the receiving agent which
+  skills the next step needs, so it starts oriented.
+- **Safe by default** — secret and PII redaction is mandatory, and the document is
+  saved to the **OS tmp dir, not the workspace**, so it never accidentally gets
+  committed.
 
-## Usage
+## When to use
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+When a session is wrapping up with work unfinished, or when handing a task to
+another agent. It sits in the `starter` bundle, in the `context-*` family next to
+`context-budget`.
