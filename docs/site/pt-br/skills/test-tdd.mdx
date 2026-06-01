@@ -1,19 +1,43 @@
 ---
 title: test-tdd
-description: "Standalone red-green-refactor TDD skill — vertical tracer-bullet slices, integration-style tests against the public interface, hard ban on horizontal slicing (writing all tests then all code). The loop lives here standalone so debug fixes and isolated bugfixes can use it without the full implement workflow. Family test-*."
-draft: true
+description: "Skill standalone de TDD red-green-refactor — fatias verticais tracer-bullet, testes estilo integração contra a interface pública, proibição dura de fatiar horizontal (escrever todos os testes e depois todo o código). O loop vive aqui sozinho pra que correções de debug e bugfixes isolados o usem sem o workflow implement inteiro. Família test-*."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`test-tdd` é o loop red-green-refactor por conta própria: escreva um teste que
+falha, faça passar com a menor mudança, refatore, repita. O mesmo loop está
+embutido no workflow `implement` — esta skill o extrai pra que um bugfix, um
+refactor pequeno ou um follow-up de `debug` rodem sem arrastar o fluxo inteiro.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain this skill removes */}
+Dois modos de falha que tornam "a gente faz TDD" oco:
 
-## How it works
+- **Fatiar horizontal** — escrever todos os testes, depois todo o código. Parece
+  TDD mas joga fora o valor do loop: cada teste deixa de guiar a próxima menor
+  mudança, e você descobre problemas de design só no fim.
+- **Testes presos à implementação** — assertar sobre métodos privados e estado
+  interno, então todo refactor quebra os testes e a suíte vira custo em vez de
+  rede de segurança.
 
-{/* TODO: the mechanism */}
+Existe standalone porque o loop é útil muito além de uma feature nova — qualquer
+mudança isolada merece um teste que falha primeiro.
 
-## Usage
+## Como resolve
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+A skill roda **fatias verticais tracer-bullet**: cada iteração pega um
+comportamento fino ponta-a-ponta e o leva pelo ciclo inteiro antes de começar o
+próximo, então o sistema está sempre funcionando e o design emerge sob teste.
+
+- **Red** — escreva um teste que falha descrevendo a próxima fatia de comportamento.
+- **Green** — a menor mudança que o faz passar; nada além.
+- **Refactor** — limpe com o teste verde como rede de segurança.
+
+Os testes são escritos **contra a interface pública** (estilo integração), não os
+internos, então sobrevivem ao refactor. Fatiar horizontal — todos os testes na
+frente, depois todo o código — é proibição dura.
+
+## Quando usar
+
+Use em qualquer mudança que se beneficia de um loop test-first sem o workflow
+`implement` inteiro: um bugfix, um refactor isolado, ou `debug` quando a causa
+raiz foi achada e um teste de regressão deve travá-la.

@@ -1,19 +1,43 @@
 ---
 title: test-tdd
 description: "Standalone red-green-refactor TDD skill — vertical tracer-bullet slices, integration-style tests against the public interface, hard ban on horizontal slicing (writing all tests then all code). The loop lives here standalone so debug fixes and isolated bugfixes can use it without the full implement workflow. Family test-*."
-draft: true
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`test-tdd` is the red-green-refactor loop on its own: write a failing test, make
+it pass with the smallest change, refactor, repeat. The same loop is embedded in
+the `implement` workflow — this skill extracts it so a bug fix, a small refactor,
+or a `debug` follow-up can run it without dragging in the full end-to-end flow.
 
 ## What it solves
 
-{/* TODO: the concrete pain this skill removes */}
+Two failure modes that make "we do TDD" hollow:
+
+- **Horizontal slicing** — writing all the tests, then all the code. It reads
+  like TDD but throws away the loop's whole value: each test no longer drives the
+  next minimal change, and you discover design problems only at the end.
+- **Tests bound to the implementation** — asserting on private methods and
+  internal state, so every refactor breaks the tests and the suite becomes a
+  cost instead of a safety net.
+
+It exists standalone because the loop is useful far beyond a fresh feature — any
+isolated change deserves a failing test first.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+The skill runs **vertical tracer-bullet slices**: each iteration takes one thin
+end-to-end behaviour and drives it through the full cycle before starting the
+next, so the system is always working and the design emerges under test.
 
-## Usage
+- **Red** — write one failing test that describes the next slice of behaviour.
+- **Green** — the smallest change that makes it pass; nothing more.
+- **Refactor** — clean up with the test green as the safety net.
 
-{/* TODO: invocation + parameters (flag → what it does → default) */}
+Tests are written **against the public interface** (integration-style), not the
+internals, so they survive refactoring. Horizontal slicing — all tests up front,
+then all code — is a hard ban.
+
+## When to use
+
+Reach for it on any change that benefits from a test-first loop without the full
+`implement` workflow: a bug fix, an isolated refactor, or `debug` once the root
+cause is found and a regression test should lock it in.
