@@ -17,6 +17,63 @@ if printf '%s' "$command" | grep -qE '#[[:space:]]*destructive-guard-ok:[[:space
   exit 0
 fi
 
+# Temp-dir carve-out for `rm -rf`.
+#
+# A clean `rm -rf` whose every target RESOLVES strictly under /tmp or
+# /var/tmp is allowed without a marker — this is throwaway scratch (mockups,
+# snapshots) the agent generates constantly. The carve-out is deliberately
+# strict; its invariant is: never exempt a command that could delete anything
+# outside the temp root. Static string-matching cannot guarantee this (`.`,
+# globs, and symlinks all resolve on the live filesystem), so the decision is
+# made by a helper that (1) rejects all shell composition / expansion / glob
+# metacharacters and path traversal, (2) parses the single `rm` invocation
+# with shlex, and (3) resolves every target with realpath and confirms it
+# lands strictly under a temp root and is not a reserved Octopus artifact
+# (e.g. the context-handoff document at /tmp/octopus-handoff-*).
+if printf '%s' "$command" | python3 -c '
+import os, shlex, sys
+
+cmd = sys.stdin.read()
+
+# Reject shell composition, expansion, globbing, comments, traversal — none of
+# which are statically confinable to /tmp.
+if any(c in cmd for c in ";&|`$<>(){}*?[]#") or "\n" in cmd or ".." in cmd:
+    sys.exit(1)
+
+try:
+    toks = shlex.split(cmd)
+except ValueError:
+    sys.exit(1)
+if not toks or toks[0] != "rm":
+    sys.exit(1)
+
+targets, after_ddash = [], False
+for t in toks[1:]:
+    if not after_ddash and t == "--":
+        after_ddash = True
+    elif not after_ddash and t.startswith("-"):
+        continue
+    else:
+        targets.append(t)
+if not targets:
+    sys.exit(1)
+
+ROOTS = ("/tmp", "/var/tmp")
+for t in targets:
+    if not (t.startswith("/tmp/") or t.startswith("/var/tmp/")):
+        sys.exit(1)
+    rp = os.path.realpath(t)                 # resolves symlinks, "." and "/"
+    if not any(rp == r or rp.startswith(r + "/") for r in ROOTS):
+        sys.exit(1)
+    if rp in ROOTS:                          # resolved to the bare temp root
+        sys.exit(1)
+    if os.path.basename(rp).startswith("octopus-"):
+        sys.exit(1)                          # reserved Octopus artifact
+sys.exit(0)
+'; then
+  exit 0
+fi
+
 # Destructive pattern blocklist. Each entry is a description | regex
 # pair; the description appears in the error message.
 patterns=(

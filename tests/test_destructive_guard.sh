@@ -19,7 +19,7 @@ call_guard() {
 
 echo "Test 2: destructive commands are blocked"
 blocked_cmds=(
-  "rm -rf /tmp/foo"
+  "rm -rf /opt/app"
   "git push --force origin main"
   "git push -f origin feat/x"
   "git reset --hard HEAD~3"
@@ -65,12 +65,75 @@ echo "PASS: absent command exits 0"
 
 echo "Test 5: blocked commands exit with code 2"
 set +e
-printf '%s' '{"tool_input":{"command":"rm -rf /tmp/x"}}' | "$GUARD" >/dev/null 2>&1
+printf '%s' '{"tool_input":{"command":"rm -rf /etc/nginx"}}' | "$GUARD" >/dev/null 2>&1
 code=$?
 set -e
 [[ "$code" -eq 2 ]] \
   || { echo "FAIL: expected exit 2, got $code"; exit 1; }
 echo "PASS: block exits 2"
+
+echo "Test 8: temp-dir carve-out allows clean rm -rf confined to /tmp or /var/tmp"
+tmp_allowed=(
+  "rm -rf /tmp/cc-mockups-xyz"
+  "rm -rf /tmp/a /tmp/b"
+  "rm -rf /var/tmp/build"
+  "rm -rf /tmp/x/y/z"
+  "rm -fr /tmp/snapshot"
+  "rm -rf -- /tmp/x"
+  'rm -rf "/tmp/quoted dir"'
+)
+for cmd in "${tmp_allowed[@]}"; do
+  json="$(printf '%s' "$cmd" | python3 -c 'import json, sys; print(json.dumps({"tool_input": {"command": sys.stdin.read()}}))')"
+  if ! printf '%s' "$json" | "$GUARD" >/dev/null 2>&1; then
+    echo "FAIL: temp-confined '$cmd' should be allowed"
+    exit 1
+  fi
+done
+echo "PASS: all ${#tmp_allowed[@]} temp-confined rm -rf allowed"
+
+echo "Test 9: carve-out NEVER exempts an rm that can reach outside /tmp"
+tmp_blocked=(
+  "rm -rf /tmp/octopus-handoff-123.md"   # reserved Octopus artifact
+  "rm -rf /tmp/x /home/leo/proj"         # mixed non-temp target
+  "rm -rf /tmp/../etc"                    # path traversal
+  "rm -rf /tmp"                           # the temp root itself
+  "rm -rf /tmp/"                          # empties /tmp
+  "rm -rf /tmp/."                         # resolves to /tmp → wipes it
+  "rm -rf /var/tmp/."                     # same, /var/tmp
+  "rm -rf /tmp/x /tmp/."                  # one clean target + bare-root dot
+  "rm -rf /tmp/*"                         # glob — not statically confinable
+  "rm -rf /tmp/cc-mockups-*"             # glob — defeats reserved protection
+  "rm -rf /tmp/?"                         # glob
+  "rm -rf /tmp/x && rm -rf /etc"          # shell composition
+  "rm -rf /tmp/x; rm -rf /"              # shell composition
+  'rm -rf /tmp/$(whoami)'                 # command substitution
+  "rm -rf \$TMPDIR/x"                     # unresolved variable
+  "rm -rf ~/project"                      # home, not temp
+  "sudo rm -rf /tmp/x"                    # privilege escalation wrapper
+)
+for cmd in "${tmp_blocked[@]}"; do
+  out="$(call_guard "$cmd" || true)"
+  echo "$out" | grep -q "destructive-guard" \
+    || { echo "FAIL: '$cmd' must stay blocked"; echo "    output: $out"; exit 1; }
+done
+echo "PASS: all ${#tmp_blocked[@]} dangerous rm variants stay blocked"
+
+echo "Test 10: carve-out resolves symlinks — a /tmp link pointing outside is blocked"
+# A link UNDER /tmp that points OUTSIDE: literal path passes the static prefix,
+# but realpath resolves it out of the temp root, so it must stay blocked.
+LINK_HOLDER="$(mktemp -d /tmp/guardtest.XXXXXX)"
+OUTSIDE_DIR="$SCRIPT_DIR/.guardtest-outside-$$"
+mkdir -p "$OUTSIDE_DIR"
+ln -s "$OUTSIDE_DIR" "$LINK_HOLDER/escape"
+out="$(call_guard "rm -rf $LINK_HOLDER/escape/" || true)"
+if ! echo "$out" | grep -q "destructive-guard"; then
+  echo "FAIL: rm through a /tmp symlink to '$OUTSIDE_DIR' must be blocked"
+  echo "    output: $out"
+  rm -rf "$LINK_HOLDER" "$OUTSIDE_DIR"  # destructive-guard-ok: test fixtures
+  exit 1
+fi
+rm -rf "$LINK_HOLDER" "$OUTSIDE_DIR"  # destructive-guard-ok: test fixtures
+echo "PASS: symlink escaping /tmp is blocked"
 
 echo "Test 6: hooks.json registers destructive-guard under PreToolUse/Bash"
 HOOKS_JSON="$SCRIPT_DIR/hooks/hooks.json"
@@ -95,11 +158,13 @@ if not found:
 print("PASS: hooks.json registration")
 PYEOF
 
-echo "Test 7: docs + README wiring"
+echo "Test 7: docs wiring"
 TUTORIAL="$SCRIPT_DIR/docs/features/destructive-action-guard.md"
 [[ -f "$TUTORIAL" ]] || { echo "FAIL: tutorial $TUTORIAL missing"; exit 1; }
 grep -q "destructive-guard" "$SCRIPT_DIR/docs/features/hooks.md" \
   || { echo "FAIL: hooks.md missing destructive-guard row"; exit 1; }
-grep -q "destructiveGuard" "$SCRIPT_DIR/README.md" \
-  || { echo "FAIL: README missing destructiveGuard field"; exit 1; }
-echo "PASS: docs + README wired"
+# The `destructiveGuard` opt-out is documented on the docs site (the README was
+# slimmed to an overview that funnels to the site), not in the README itself.
+grep -q "destructiveGuard" "$SCRIPT_DIR/docs/site/hooks/destructive-guard.mdx" \
+  || { echo "FAIL: site hooks page missing destructiveGuard toggle"; exit 1; }
+echo "PASS: docs wired"

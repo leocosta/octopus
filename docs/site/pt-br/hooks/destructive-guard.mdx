@@ -48,6 +48,45 @@ Um `DELETE FROM sessions WHERE expired_at < now();` legítimo **não**
 ausente para `DELETE`. O objetivo é pegar descuidos, não tornar
 SQL válido impossível.
 
+## Carve-out de diretório temporário
+
+Agentes geram descartáveis o tempo todo — mockups HTML, snapshots,
+diretórios de rascunho — sob `/tmp` e `/var/tmp`, e depois limpam com
+`rm -rf`. Exigir um marcador pra cada limpeza dessas é pura fricção,
+então um **`rm -rf` limpo confinado inteiramente a um temp root é
+liberado sem marcador**:
+
+```bash
+rm -rf /tmp/cc-mockups-xyz      # liberado, sem marcador
+rm -rf /tmp/a /tmp/b            # liberado — todos os alvos sob /tmp
+```
+
+O carve-out é deliberadamente estrito. Seu invariante: **nunca
+liberar um comando que possa deletar qualquer coisa fora de `/tmp`.**
+Como o guard lê uma string mas o `rm` age no filesystem vivo, casar
+prefixo estaticamente não basta — `.`, globs e symlinks resolvem em
+runtime. Então vale só pra uma invocação `rm` única e literal, e ele
+**resolve cada alvo com `realpath`** antes de liberar. Qualquer coisa
+que introduza dúvida cai pro bloqueio:
+
+| Ainda bloqueado | Por quê |
+|---|---|
+| `rm -rf /tmp/x /home/leo/proj` | um alvo fora do temp root |
+| `rm -rf /tmp/../etc` | path traversal |
+| `rm -rf /tmp` / `rm -rf /tmp/` / `rm -rf /tmp/.` | resolve pro temp root puro |
+| `rm -rf /tmp/*` / `/tmp/?` / `/tmp/[a-z]` | um glob — não confinável estaticamente |
+| `rm -rf /tmp/link/` (link → fora) | symlink resolvido pra fora de `/tmp` |
+| `rm -rf /tmp/x && rm -rf /etc` | composição de shell (`;`, `&&`, `\|`, …) |
+| `rm -rf /tmp/$(cmd)` / `rm -rf $TMPDIR/x` | expansão de comando / variável |
+| `rm -rf /tmp/octopus-handoff-*` | artefatos reservados do Octopus (`/tmp/octopus-*`) |
+| `sudo rm -rf /tmp/x` / `/bin/rm …` | não é um `rm` puro |
+
+Artefatos reservados são excluídos porque o próprio Octopus escreve
+em `/tmp` — o `context-handoff` salva o documento de handoff do
+sucessor em `/tmp/octopus-handoff-<timestamp>.md`, então varrer o temp
+inteiro não é seguro. Os outros padrões destrutivos (`git push
+--force`, `DROP TABLE`, …) não têm carve-out de temp.
+
 ## Como fazer bypass
 
 Quando a ação destrutiva é genuinamente intencional, adicione o
