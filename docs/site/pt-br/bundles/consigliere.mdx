@@ -1,29 +1,49 @@
 ---
 title: consigliere
-description: "The manager's private chief-of-staff kit — a personal knowledge workspace that digests diverse inputs (meeting transcripts, Slack, Jira, Confluence) into living, grounded memory organized by perennial contexts and cross-cutting projects. Where tech-lead multiplies the team, consigliere multiplies the manager themselves. All managerial data lives in a private workspace (never a team repo, ADR-007); kept separate from tech-lead by audience, data and activation context (ADR-008). ships the scaffold; digest-source, context-status, playbook-review and the consigliere role land in …103."
-draft: true
+description: "O kit de chief-of-staff privado do gestor — um workspace de conhecimento pessoal que digere insumos diversos (transcrições de reunião, Slack, Jira, Confluence) numa memória viva e fundamentada, organizada por contextos perenes e projetos transversais. Onde o tech-lead multiplica o time, o consigliere multiplica o próprio gestor. Todo dado gerencial vive num workspace privado, nunca num repo do time."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`consigliere` é um kit de chief-of-staff privado pra um gestor de engenharia. Ele
+transforma a enxurrada de insumos em que um gestor nada — transcrições de reunião,
+threads de Slack, tickets de Jira, páginas de Confluence — numa memória viva e
+fundamentada que você consegue acompanhar e consultar. Onde o bundle `tech-lead`
+multiplica o *time*, o `consigliere` multiplica o *gestor*.
 
-## What it solves
+## O que resolve
 
-{/* TODO: the concrete pain enabling this bundle removes */}
+O contexto mais valioso de um gestor — o que foi decidido, quem é dono do quê, a
+leitura política de um projeto, o padrão que insiste em se repetir — vive
+espalhado por transcrições, chats e tickets, e decai no instante em que a reunião
+acaba. Não há um bom lar pra ele: um repo do time é a audiência errada e a
+fronteira de privacidade errada. Então fica na cabeça do gestor e se erode. Este
+bundle dá a esse contexto um lar privado, estruturado e consultável.
 
-## How it works
+## Como resolve
 
-{/* TODO: the mechanism */}
+- **Workspace privado** — todo dado gerencial vive num workspace privado, nunca
+  num repo do time, e é mantido deliberadamente separado do bundle `tech-lead`
+  (voltado ao time) por audiência, dados e contexto de ativação.
+- **Digerir, não despejar** — insumos são capturados, roteados pro contexto certo
+  e destilados num digest fundamentado e estruturado — então espalhados pros
+  contextos e projetos que tocam.
+- **Contextos e projetos** — a memória é organizada em dois eixos: *contextos*
+  perenes (um liderado, um stakeholder, um sistema) e *projetos* transversais.
+- **Fundamentada e consultável** — o estado materializado é consultável em
+  linguagem natural, read-only, e as heurísticas que guiam o julgamento do gestor
+  são curadas por um loop de revisão.
 
-## What's included
+## O que inclui
 
-- `consigliere-bootstrap`
-- `digest-source`
-- `context-status`
-- `playbook-review`
-- `consigliere-connect-atlassian`
-- `consigliere-lens`
-- `consigliere`
+- `consigliere-bootstrap` — monta o workspace privado e seu write-guard.
+- `digest-source` — captura → roteia → digest fundamentado → fan-out.
+- `context-status` — consulta read-only em linguagem natural sobre o estado.
+- `playbook-review` — cura o loop de heurísticas.
+- `consigliere-connect-atlassian` — setup único read-only de Jira + Confluence.
+- `consigliere-lens` — re-enquadra os engines de conhecimento pela lente do gestor.
+- `consigliere` — a role: a leitura de risco político e a voz das heurísticas.
 
-## When to enable
+## Quando habilitar
 
-{/* TODO: the team/situation this bundle is for */}
+Quando você é um gestor que quer um chief-of-staff privado que digere suas
+reuniões e documentos numa memória viva e fundamentada que você acompanha e
+consulta — separada de tudo que o time vê.

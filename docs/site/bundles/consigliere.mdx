@@ -1,29 +1,49 @@
 ---
 title: consigliere
-description: "The manager's private chief-of-staff kit — a personal knowledge workspace that digests diverse inputs (meeting transcripts, Slack, Jira, Confluence) into living, grounded memory organized by perennial contexts and cross-cutting projects. Where tech-lead multiplies the team, consigliere multiplies the manager themselves. All managerial data lives in a private workspace (never a team repo, ADR-007); kept separate from tech-lead by audience, data and activation context (ADR-008). ships the scaffold; digest-source, context-status, playbook-review and the consigliere role land in …103."
-draft: true
+description: "The manager's private chief-of-staff kit — a personal knowledge workspace that digests diverse inputs (meeting transcripts, Slack, Jira, Confluence) into living, grounded memory organized by perennial contexts and cross-cutting projects. Where tech-lead multiplies the team, consigliere multiplies the manager themselves. All managerial data lives in a private workspace, never a team repo."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`consigliere` is a private chief-of-staff kit for an engineering manager. It turns
+the firehose of inputs a manager swims in — meeting transcripts, Slack threads,
+Jira tickets, Confluence pages — into a living, grounded memory you can track and
+query. Where the `tech-lead` bundle multiplies the *team*, `consigliere`
+multiplies the *manager*.
 
 ## What it solves
 
-{/* TODO: the concrete pain enabling this bundle removes */}
+A manager's most valuable context — what was decided, who owns what, the political
+read on a project, the pattern that keeps recurring — lives scattered across
+transcripts, chats, and tickets, and decays the moment the meeting ends. There's
+no good home for it: a team repo is the wrong audience and the wrong privacy
+boundary. So it stays in the manager's head and erodes. This bundle gives that
+context a private, structured, queryable home.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+- **Private workspace** — all managerial data lives in a private workspace, never
+  a team repo, and is kept deliberately separate from the team-facing `tech-lead`
+  bundle by audience, data, and activation context.
+- **Digest, don't dump** — inputs are captured, routed to the right context, and
+  distilled into a grounded, structured digest — then fanned out to the contexts
+  and projects they touch.
+- **Contexts and projects** — memory is organized along two axes: perennial
+  *contexts* (a report, a stakeholder, a system) and cross-cutting *projects*.
+- **Grounded and consultable** — the materialized state is queryable in natural
+  language, read-only, and the heuristics that drive the manager's judgment are
+  curated through a review loop.
 
 ## What's included
 
-- `consigliere-bootstrap`
-- `digest-source`
-- `context-status`
-- `playbook-review`
-- `consigliere-connect-atlassian`
-- `consigliere-lens`
-- `consigliere`
+- `consigliere-bootstrap` — scaffolds the private workspace and its write-guard.
+- `digest-source` — capture → route → grounded digest → fan-out.
+- `context-status` — read-only natural-language consult over the state.
+- `playbook-review` — curate the heuristics loop.
+- `consigliere-connect-atlassian` — one-time read-only Jira + Confluence setup.
+- `consigliere-lens` — reframe the knowledge engines through the manager's lens.
+- `consigliere` — the role: the political-risk read and the heuristics voice.
 
 ## When to enable
 
-{/* TODO: the team/situation this bundle is for */}
+When you're a manager who wants a private chief-of-staff that digests your
+meetings and documents into living, grounded memory you can track and query —
+separate from anything the team sees.

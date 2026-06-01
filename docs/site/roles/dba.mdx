@@ -1,23 +1,47 @@
 ---
 title: dba
-description: "Staff DBA specialist — reviews schemas, queries, migrations, and data modeling across MSSQL/Postgres/MongoDB/Redis with indexing and modeling heuristics; emits findings ranked by severity with ready-to-apply fix DDL"
-draft: true
+description: "Staff DBA specialist — reviews schemas, queries, migrations, and data modeling across MSSQL, Postgres, MongoDB, and Redis with indexing and modeling heuristics, emitting findings ranked by severity with ready-to-apply fix DDL. An additional review gate alongside the architect on any change that touches the data layer."
 ---
 
-{/* TODO: Introduction — the hook (1–2 sentences) */}
+`dba` is a Staff Database Engineer review persona. It doesn't implement features
+— it reviews, questions, and approves changes that touch the data layer, and
+every finding it raises comes with a fix you can paste and run. On a database PR
+it acts as a second required gate, alongside the `architect`.
 
 ## What it solves
 
-{/* TODO: the concrete pain this role addresses */}
+Most database damage is invisible at review time and expensive in production: a
+missing index that's fine on test data and fatal at scale, a migration that locks
+a hot table, a schema that models the domain wrong, PII that leaks through an
+index or a log. A generalist reviewer — human or agent — won't catch these. This
+role puts a specialist's eye on exactly the changes where that judgment pays off.
 
 ## How it works
 
-{/* TODO: the mechanism */}
+It reviews data-layer changes against the concerns that bite in production:
+
+- **Indexing & queries** — queries hit indexes that exist and use them in the
+  right order; no hidden scans.
+- **Modeling & migrations** — schemas model the domain accurately and evolve
+  safely; migrations run against a hot database without lock storms or
+  non-idempotent rollbacks.
+- **Retention & capacity** — growth is bounded by design, not by hope.
+- **Security & concurrency** — sensitive data isn't exposed via indexes, logs, or
+  replication; isolation choices match the workload.
+
+It draws on the per-engine heuristic catalogues (`dba-mssql`, `dba-postgres`,
+`dba-mongodb`, `dba-redis`), and **every finding ships with a concrete fix DDL**
+ranked by severity.
 
 ## When to invoke
 
-{/* TODO: the situations this role is for */}
+On any change that crosses into the data layer — a migration, a new query, a
+schema or index change — across MSSQL, Postgres, MongoDB, or Redis. Database PRs
+require its approval **in addition to** the `architect`: the architect owns the
+broader codebase, the `dba` owns everything that touches data.
 
 ## What it judges
 
-{/* TODO: what the role produces / the verdict it gives */}
+A list of findings, each ranked by severity and paired with ready-to-apply fix
+DDL — not a vague warning, but the exact change to make. It approves only when the
+data-layer concerns are clear.
