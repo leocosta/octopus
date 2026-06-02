@@ -51,7 +51,7 @@ path/conteúdo:
 | `audit-money` | Arquivos tocados em `src/billing/`, `src/payments/`, ou qualquer coisa que case com `money\|price\|cents\|fee\|discount\|invoice` |
 | `audit-tenant` | Novas linhas `class … : DbContext`, novos entity configs, SQL raw sem filtro `WHERE` em colunas de tenant |
 | `audit-security` | Mudanças em código de auth, middleware, carregamento de env-var, handlers de rotas públicas |
-| `review-contracts` | Arquivos tocados em ambos os lados de um split frontend/backend (`api/` + `web/`, etc.) |
+| `audit-contracts` | Arquivos tocados em ambos os lados de um split frontend/backend (`api/` + `web/`, etc.) |
 | `audit-config` | Edições em `rules/`, `skills/`, `hooks/`, `commands/` ou `bundles/` |
 
 Os padrões são intencionalmente conservadores — melhor não

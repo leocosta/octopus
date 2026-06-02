@@ -55,11 +55,11 @@ grep -q '\.csproj\|\.cs' "$SCRIPT_DIR/skills/dotnet/SKILL.md" \
   || { echo "FAIL: dotnet triggers missing expected paths"; exit 1; }
 echo "PASS"
 
-echo "Test 8: review-contracts has triggers: with paths"
-grep -q "^triggers:" "$SCRIPT_DIR/skills/review-contracts/SKILL.md" \
-  || { echo "FAIL: review-contracts missing triggers:"; exit 1; }
-grep -q 'openapi\|contracts' "$SCRIPT_DIR/skills/review-contracts/SKILL.md" \
-  || { echo "FAIL: review-contracts triggers missing expected paths"; exit 1; }
+echo "Test 8: audit-contracts has triggers: with paths"
+grep -q "^triggers:" "$SCRIPT_DIR/skills/audit-contracts/SKILL.md" \
+  || { echo "FAIL: audit-contracts missing triggers:"; exit 1; }
+grep -q 'openapi\|contracts' "$SCRIPT_DIR/skills/audit-contracts/SKILL.md" \
+  || { echo "FAIL: audit-contracts triggers missing expected paths"; exit 1; }
 echo "PASS"
 
 echo "Test 9: audit-security has triggers: with keywords"

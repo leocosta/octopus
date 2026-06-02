@@ -13,7 +13,7 @@ One bug in this layer means one tenant sees another tenant's data.
 
 Before merging any PR that touches a `DbContext`, a controller, a
 query helper, or anywhere the `TenantId` discipline applies. Runs well
-alongside `audit-security`, `audit-money`, and `review-contracts`.
+alongside `audit-security`, `audit-money`, and `audit-contracts`.
 
 ## Enable
 

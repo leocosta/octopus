@@ -38,8 +38,8 @@ check "audit-money references audit-cache.md" \
   grep -q "audit-cache.md" "$OCTOPUS_DIR/skills/audit-money/SKILL.md"
 check "audit-security references audit-cache.md" \
   grep -q "audit-cache.md" "$OCTOPUS_DIR/skills/audit-security/SKILL.md"
-check "review-contracts references audit-cache.md" \
-  grep -q "audit-cache.md" "$OCTOPUS_DIR/skills/review-contracts/SKILL.md"
+check "audit-contracts references audit-cache.md" \
+  grep -q "audit-cache.md" "$OCTOPUS_DIR/skills/audit-contracts/SKILL.md"
 check "audit-tenant references audit-cache.md" \
   grep -q "audit-cache.md" "$OCTOPUS_DIR/skills/audit-tenant/SKILL.md"
 

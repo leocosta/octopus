@@ -74,7 +74,7 @@ Todas as auditorias encapsulam suas respectivas skills. Execute
 
 | Command | O que audita |
 |---|---|
-| `/octopus:audit-all` | Dispara `audit-security`, `audit-money`, `audit-tenant` e `review-contracts` em paralelo; consolida achados com níveis de severidade. |
+| `/octopus:audit-all` | Dispara `audit-security`, `audit-money`, `audit-tenant` e `audit-contracts` em paralelo; consolida achados com níveis de severidade. |
 | `/octopus:audit-money` | Código que toca dinheiro — tipos, arredondamento, testes em centavos, drift de env, idempotência, assinaturas de webhook. |
 | `/octopus:audit-tenant` | Enforcement de escopo de dados multi-tenant — query filters, SQL bruto, ownership de controllers. |
 | `/octopus:audit-config` | Frescor da configuração do agente — premissas de modelo, datas vencidas, skills fantasma, paths deprecados. |
@@ -86,7 +86,7 @@ Todas as auditorias encapsulam suas respectivas skills. Execute
 | `/octopus:implement` | `implement` — o workflow TDD / plan / verify / simplify / commit. |
 | `/octopus:debug` | `debug` — reproduzir → isolar → regression-test → documentar. |
 | `/octopus:prototype` | `prototype` — protótipos descartáveis para amadurecer um design antes de se comprometer com ele. |
-| `/octopus:review-contracts` | `review-contracts` — detecção de drift de contrato frontend/backend. |
+| `/octopus:audit-contracts` | `audit-contracts` — detecção de drift de contrato frontend/backend. |
 | `/octopus:respond-to-review` | `respond-to-review` — disciplina para lidar com feedback de PR. |
 
 ## Orquestração

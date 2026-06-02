@@ -46,7 +46,7 @@ add `quality` later if the surface grows.
 ```yaml
 skills:
   - audit-all         # parallel composer of the four audits
-  - review-contracts  # API-vs-frontend contract drift
+  - audit-contracts  # API-vs-frontend contract drift
   - refactor-deepen   # find shallow modules, propose deepening
   - audit-config      # configuration freshness (rules, skills, hooks)
   - audit-grounding   # signal-only divergence from the source of truth
@@ -56,7 +56,7 @@ roles:
 ```
 
 Plus the audit skills `audit-all` composes — `audit-security`,
-`audit-money`, `audit-tenant`, `review-contracts` — which install
+`audit-money`, `audit-tenant`, `audit-contracts` — which install
 as transitive dependencies.
 
 [Source: `bundles/quality.yml`](https://github.com/leocosta/octopus/blob/main/bundles/quality.yml)
@@ -67,7 +67,7 @@ as transitive dependencies.
   parallel against a branch or PR, producing a consolidated
   severity-tiered report with cross-audit hotspots. This is the
   entry point most teams use.
-- **`review-contracts`** — separate from `audit-all` because it
+- **`audit-contracts`** — separate from `audit-all` because it
   applies to a different scope (cross-stack contract drift detected
   across the diff, not file-content audits).
 - **`refactor-deepen`** — architecture-depth audits don't fit the
@@ -116,7 +116,7 @@ A typical PR ready to merge:
    diff, then produces a consolidated report with severities:
    `⛔ block`, `⚠ warn`, `ℹ info`. Cross-audit hotspots (files
    that triggered findings in multiple audits) get highlighted.
-3. If the change touches API contracts, `review-contracts`
+3. If the change touches API contracts, `audit-contracts`
    inspects the diff for DTO / endpoint / enum / status-code
    drift between the backend and the frontend, beyond what the
    per-stack audits cover.

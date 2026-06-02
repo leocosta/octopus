@@ -23,7 +23,7 @@ name: quality
 description: Pre-merge audit gates + senior-reviewer discipline
 skills:
   - audit-all
-  - review-contracts
+  - audit-contracts
   - refactor-deepen
   - audit-config
 roles:
@@ -43,7 +43,7 @@ dos resultados:
 
 ```
 starter:    skills: [implement, debug, ...] roles: [...] rules: [common]
-quality:    skills: [audit-all, review-contracts, ...] roles: [architect]
+quality:    skills: [audit-all, audit-contracts, ...] roles: [architect]
                             │
                             ▼ union (dedup by name)
 effective:  skills: [implement, debug, audit-all, ...] roles: [...] rules: [common]
@@ -66,7 +66,7 @@ depends_on:
   - audit-security
   - audit-money
   - audit-tenant
-  - review-contracts
+  - audit-contracts
 ---
 ```
 

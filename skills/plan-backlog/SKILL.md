@@ -21,7 +21,7 @@ accumulate plans, RFCs, specs, and research docs faster than teams
 archive them. `plans/` grows to 50+ files and new contributors can't
 tell which plan is alive. This skill walks the planning directories and
 the roadmap, cross-references the two, and emits findings in the same
-severity format used by `audit-money` and `review-contracts`.
+severity format used by `audit-money` and `audit-contracts`.
 
 It does not edit plan content. The only write action is moving
 concluded plans into `plans/archive/YYYY-MM/` when invoked with `--fix`.
@@ -145,7 +145,7 @@ Severity: ℹ Info.
 ## Output
 
 Same three-heading severity format used by `audit-money` and
-`review-contracts`. v1 does not emit any 🚫 Block findings, so the
+`audit-contracts`. v1 does not emit any 🚫 Block findings, so the
 block heading is always empty — it is kept for format compatibility.
 
 ```markdown
@@ -215,6 +215,6 @@ human judgment.
 ## Composition
 
 This skill scans repo state (not a diff) and runs independently of
-`audit-money` and `review-contracts`. The output format matches so
+`audit-money` and `audit-contracts`. The output format matches so
 a monthly "hygiene digest" PR can concatenate all three reports in a
 single comment.

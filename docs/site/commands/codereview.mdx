@@ -38,7 +38,7 @@ The command runs five phases:
    | Auth, JWT, OAuth, secrets, credential paths | `security` role |
    | Billing, payment, money-touching code | `audit-money` skill |
    | Multi-tenant queries, `IgnoreQueryFilters()` | `audit-tenant` skill |
-   | Both `api/` and frontend stacks in the same diff | `review-contracts` skill |
+   | Both `api/` and frontend stacks in the same diff | `audit-contracts` skill |
    | Any production code change | `architect` role (always) |
 
    Data-layer changes require **both** `dba` and `architect` to clear.

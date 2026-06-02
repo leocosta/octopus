@@ -39,7 +39,7 @@ O comando roda cinco fases:
    | Auth, JWT, OAuth, secrets, paths de credenciais | role `security` |
    | Billing, payment, código que toca money | skill `audit-money` |
    | Queries multi-tenant, `IgnoreQueryFilters()` | skill `audit-tenant` |
-   | Tanto `api/` quanto stacks de frontend no mesmo diff | skill `review-contracts` |
+   | Tanto `api/` quanto stacks de frontend no mesmo diff | skill `audit-contracts` |
    | Qualquer mudança em código de produção | role `architect` (sempre) |
 
    Mudanças na camada de dados requerem **tanto** `dba` quanto

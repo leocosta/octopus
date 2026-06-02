@@ -283,7 +283,7 @@ not a restructure.
   flows go through that skill; `implement` resumes for each
   implementation step the reviewer asks for.
 - **Audit skills (`audit-security`, `audit-money`,
-  `audit-tenant`, `review-contracts`, `audit-all`)** —
+  `audit-tenant`, `audit-contracts`, `audit-all`)** —
   pre-merge review; `implement` is pre-audit.
 
 #### Anti-patterns (explicit in SKILL.md)

@@ -38,8 +38,8 @@ check "audit-money has pre_pass:" \
   grep -q "^pre_pass:" "$OCTOPUS_DIR/skills/audit-money/SKILL.md"
 check "audit-security has pre_pass:" \
   grep -q "^pre_pass:" "$OCTOPUS_DIR/skills/audit-security/SKILL.md"
-check "review-contracts has pre_pass:" \
-  grep -q "^pre_pass:" "$OCTOPUS_DIR/skills/review-contracts/SKILL.md"
+check "audit-contracts has pre_pass:" \
+  grep -q "^pre_pass:" "$OCTOPUS_DIR/skills/audit-contracts/SKILL.md"
 check "audit-tenant has pre_pass:" \
   grep -q "^pre_pass:" "$OCTOPUS_DIR/skills/audit-tenant/SKILL.md"
 
@@ -52,8 +52,8 @@ check "audit-money references audit-pre-pass.md" \
   grep -q "audit-pre-pass.md" "$OCTOPUS_DIR/skills/audit-money/SKILL.md"
 check "audit-security references audit-pre-pass.md" \
   grep -q "audit-pre-pass.md" "$OCTOPUS_DIR/skills/audit-security/SKILL.md"
-check "review-contracts references audit-pre-pass.md" \
-  grep -q "audit-pre-pass.md" "$OCTOPUS_DIR/skills/review-contracts/SKILL.md"
+check "audit-contracts references audit-pre-pass.md" \
+  grep -q "audit-pre-pass.md" "$OCTOPUS_DIR/skills/audit-contracts/SKILL.md"
 check "audit-tenant references audit-pre-pass.md" \
   grep -q "audit-pre-pass.md" "$OCTOPUS_DIR/skills/audit-tenant/SKILL.md"
 

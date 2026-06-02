@@ -26,7 +26,7 @@ checklist, not a switch statement.
 |---|---|
 | Keywords `payment`, `billing`, `split`, `fee`, `invoice`, `subscription`; paths `billing/`, `payment/` | `audit-money` |
 | New `DbSet<X>`, multi-tenant queries, `[Authorize]` changes, `IgnoreQueryFilters()` | `audit-tenant` |
-| Change touches both `api/` and `app/` (or `lp/`) in the same diff; DTO/endpoint changes | `review-contracts` |
+| Change touches both `api/` and `app/` (or `lp/`) in the same diff; DTO/endpoint changes | `audit-contracts` |
 | Secrets, env vars, `detect-secrets` warnings, authentication paths | `audit-security` |
 | Pre-merge on a non-trivial PR that touches billing or multi-tenant data | `audit-all` (composer — runs all four audits in parallel) |
 

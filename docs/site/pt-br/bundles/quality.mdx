@@ -48,7 +48,7 @@ o `quality` é, em grande parte, exagero. Fique com o `starter` e adicione o
 ```yaml
 skills:
   - audit-all         # parallel composer of the four audits
-  - review-contracts  # API-vs-frontend contract drift
+  - audit-contracts  # API-vs-frontend contract drift
   - refactor-deepen   # find shallow modules, propose deepening
   - audit-config      # configuration freshness (rules, skills, hooks)
   - audit-grounding   # signal-only divergence from the source of truth
@@ -58,7 +58,7 @@ roles:
 ```
 
 Mais as skills de auditoria que o `audit-all` compõe — `audit-security`,
-`audit-money`, `audit-tenant`, `review-contracts` — que são instaladas como
+`audit-money`, `audit-tenant`, `audit-contracts` — que são instaladas como
 dependências transitivas.
 
 [Fonte: `bundles/quality.yml`](https://github.com/leocosta/octopus/blob/main/bundles/quality.yml)
@@ -69,7 +69,7 @@ dependências transitivas.
   uma branch ou PR, produzindo um relatório consolidado com severidades em
   camadas e hotspots cross-audit. É o ponto de entrada que a maioria dos times
   usa.
-- **`review-contracts`** — separada do `audit-all` porque atua em um escopo
+- **`audit-contracts`** — separada do `audit-all` porque atua em um escopo
   diferente (drift de contrato cross-stack detectado no diff, não auditorias
   de conteúdo de arquivo).
 - **`refactor-deepen`** — auditorias de profundidade arquitetural não se
@@ -114,7 +114,7 @@ Um PR típico pronto para merge:
    relatório consolidado com severidades: `⛔ block`, `⚠ warn`, `ℹ info`.
    Hotspots cross-audit (arquivos que dispararam achados em múltiplas
    auditorias) são destacados.
-3. Se a mudança toca contratos de API, o `review-contracts` inspeciona o diff
+3. Se a mudança toca contratos de API, o `audit-contracts` inspeciona o diff
    em busca de drift de DTO / endpoint / enum / status-code entre o backend e
    o frontend, indo além do que as auditorias por stack cobrem.
 4. Periodicamente (trimestralmente), você roda `/octopus:audit-config` para

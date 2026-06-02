@@ -5,7 +5,7 @@ persona_question: "Does your team run security, money, multi-tenant scope audits
 persona_default: false
 skills:
   - audit-all
-  - review-contracts
+  - audit-contracts
   - refactor-deepen
   - audit-config
   - audit-grounding

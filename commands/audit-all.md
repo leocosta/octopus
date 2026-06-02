@@ -8,7 +8,7 @@ description: (Octopus) Run all quality-audit skills in parallel against one ref 
 ## Purpose
 
 Run `audit-security`, `audit-money`, `audit-tenant`, and
-`review-contracts` in parallel against a single ref with
+`audit-contracts` in parallel against a single ref with
 shared file discovery. Output is a consolidated severity report
 with cross-audit hotspots.
 

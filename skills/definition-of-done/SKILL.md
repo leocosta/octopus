@@ -107,7 +107,7 @@ Diff: <N> files changed
 
 UNMET (n)
   [Tested]     No test for the new enrollment filter. → test-tdd / rules/common/testing.md
-  [Documented] Public DTO changed without a contract update. → review-contracts
+  [Documented] Public DTO changed without a contract update. → audit-contracts
 
 MET (n)
   [Clean]      Formatter + type check pass.
@@ -143,7 +143,7 @@ NOT-APPLICABLE (n)
 - **`audit-grounding`** / **`standards`** — the enforcers behind the
   "Grounded" items (drift detection and standard lookup over the same
   sources).
-- **`audit-money` / `audit-tenant` / `review-contracts`** — the `audit-*`
+- **`audit-money` / `audit-tenant` / `audit-contracts`** — the `audit-*`
   family the "Released safely" items reference when those concerns are
   touched.
 - **roles `architect` / `security` / `dba`** — the human-judgment enforcers

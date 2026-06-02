@@ -16,7 +16,7 @@ format so reviews can be concatenated.
 ```yaml
 # .octopus.yml
 skills:
-  - review-contracts
+  - audit-contracts
 
 # Optional: declare the stack roots explicitly.
 # If omitted, the skill auto-detects from the filesystem.
@@ -31,11 +31,11 @@ Run `octopus setup`.
 ## Use
 
 ```
-/octopus:review-contracts                          # current branch vs main
-/octopus:review-contracts #123                     # a PR
-/octopus:review-contracts --stacks=api,app
-/octopus:review-contracts --only=endpoint-removed,dto
-/octopus:review-contracts --write-report
+/octopus:audit-contracts                          # current branch vs main
+/octopus:audit-contracts #123                     # a PR
+/octopus:audit-contracts --stacks=api,app
+/octopus:audit-contracts --only=endpoint-removed,dto
+/octopus:audit-contracts --write-report
 ```
 
 ## Inspection checks
@@ -59,7 +59,7 @@ Every finding is labeled with a confidence level (`high` / `medium` /
 
 ## Overrides
 
-- `docs/review-contracts/patterns.md` — append repo-specific
+- `docs/audit-contracts/patterns.md` — append repo-specific
   endpoint / DTO / consumer patterns.
 
 ## Review before merge

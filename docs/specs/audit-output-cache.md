@@ -12,7 +12,7 @@
 
 ## Problem Statement
 
-Audit skills (`audit-money`, `audit-security`, `review-contracts`, `audit-tenant`) re-run full LLM analysis every time they are invoked, even when the PR diff hasn't changed. On busy review cycles this wastes tokens and adds latency for identical work.
+Audit skills (`audit-money`, `audit-security`, `audit-contracts`, `audit-tenant`) re-run full LLM analysis every time they are invoked, even when the PR diff hasn't changed. On busy review cycles this wastes tokens and adds latency for identical work.
 
 ## Goals
 
@@ -123,7 +123,7 @@ Regression risk: low. The only new behavior is returning cached output instead o
 
 3. **Update `skills/audit-security/SKILL.md`** — same
 
-4. **Update `skills/review-contracts/SKILL.md`** — same (File Discovery section)
+4. **Update `skills/audit-contracts/SKILL.md`** — same (File Discovery section)
 
 5. **Update `skills/audit-tenant/SKILL.md`** — same
 
@@ -134,7 +134,7 @@ Regression risk: low. The only new behavior is returning cached output instead o
 **Knowledge modules**: audit-skills, shared-fragments, frontmatter-conventions
 **Implementing roles**: general-purpose
 **Related ADRs**: N/A
-**Skills needed**: audit-money, audit-security, review-contracts, audit-tenant
+**Skills needed**: audit-money, audit-security, audit-contracts, audit-tenant
 **Bundle**: audit
 
 **Constraints**:
@@ -155,7 +155,7 @@ Grep-based tests in `tests/test_audit_output_cache.sh`:
 6. Fragment contains "created_at"
 7. `audit-money/SKILL.md` references `audit-cache.md`
 8. `audit-security/SKILL.md` references `audit-cache.md`
-9. `review-contracts/SKILL.md` references `audit-cache.md`
+9. `audit-contracts/SKILL.md` references `audit-cache.md`
 10. `audit-tenant/SKILL.md` references `audit-cache.md`
 
 ## Risks

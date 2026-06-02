@@ -151,7 +151,7 @@ done
 | `audit-security` | keywords: `auth`, `jwt`, `secret`, `token`, `sql` | No |
 | `audit-money` | keywords: `price`, `payment`, `invoice`, `stripe`, `billing` | No |
 | `audit-tenant` | keywords: `tenant`, `org`, `workspace` | No |
-| `review-contracts` | paths: `openapi/**`, `contracts/**` | No |
+| `audit-contracts` | paths: `openapi/**`, `contracts/**` | No |
 | `implement`, `debug`, `respond-to-review`, `adr`, `feature-lifecycle`, `context-budget` | — | Always-on |
 
 ### Migration / Backward Compatibility
@@ -166,7 +166,7 @@ The `triggers:` field is silently ignored by agents that use template mode (Clau
 
 1. **Add `triggers:` parser to `setup.sh`.** Implement `_skill_has_triggers`, `_skill_triggers_match`, and `_skill_triggers_summary` helpers. Cache `git ls-files` in a variable before the skill loop to avoid repeated subprocess calls. No dependencies.
 2. **Modify `concatenate_from_manifest` in `setup.sh`.** Replace the skills loop with the conditional stub/full logic that calls the new helpers. Depends on step 1.
-3. **Add `triggers:` to the 6 eligible skills** — `e2e-testing`, `dotnet`, `audit-security`, `audit-money`, `audit-tenant`, `review-contracts` — each with appropriate `paths` and/or `keywords`. Depends on step 1 (schema defined).
+3. **Add `triggers:` to the 6 eligible skills** — `e2e-testing`, `dotnet`, `audit-security`, `audit-money`, `audit-tenant`, `audit-contracts` — each with appropriate `paths` and/or `keywords`. Depends on step 1 (schema defined).
 4. **Structural tests in `tests/test_lazy_skill_activation.sh`.** Verify: stub emitted when triggers don't match; full content when they do; skills without `triggers:` always full; backward compatibility with repos lacking `git`. Depends on steps 1 and 2.
 5. **Dog-food:** run `octopus setup` on this repo and measure line-count reduction in the concatenated output of a non-Claude-Code agent. Capture findings in `docs/research/YYYY-MM-DD-lazy-skill-dogfood.md`. Merge any protocol issues back into `setup.sh` before the roadmap flip. Depends on steps 1–3.
 

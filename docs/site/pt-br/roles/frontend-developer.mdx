@@ -52,7 +52,7 @@ role não é acionada automaticamente. Invoque via
 
 - Código de backend (delegue ao `backend-developer`)
 - Design de contrato de API (cross-stack — geralmente uma tarefa
-  do agent padrão com a skill `review-contracts` ativada)
+  do agent padrão com a skill `audit-contracts` ativada)
 - Copy de marketing / landing page (delegue ao `marketer`)
 - Decisões arquiteturais sobre estratégia de gerenciamento de
   estado (delegue ao `architect`)
@@ -117,7 +117,7 @@ monorepos, então a stack costuma ser evidente.
   `marketer` para a copy, `frontend-developer` apenas para a
   implementação)
 - Mudanças de contrato de API (cross-stack — use o agent padrão
-  com a skill `review-contracts`)
+  com a skill `audit-contracts`)
 
 ## Compõe com
 
@@ -125,7 +125,7 @@ monorepos, então a stack costuma ser evidente.
   que a role aplica dentro da Phase 2.
 - **skill `test-tdd`** — usada para o loop de TDD em tests de
   componentes / hooks.
-- **[skill review-contracts](/octopus/skills/review-contracts/)**
+- **[skill audit-contracts](/octopus/skills/audit-contracts/)**
   — relevante quando a mudança de frontend toca um DTO ou o
   formato de um endpoint que o backend também possui. A skill
   detecta a divergência; a role aplica o fix no lado do frontend.

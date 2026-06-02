@@ -280,7 +280,7 @@ _RM-088 (`audit-grounding`) shipped in v1.69.0. **Cluster 16** (manager-multipli
 | RM-073 | Setup auto-configura todos os assistentes para apontar para as rules — `concatenate_from_manifest` injects a "## Coding Rules" section with rule paths when `native_rules: true` | completed | 2026-05-16 |
 | RM-074 | Bundle-aware formatter hooks — `deliver_hooks` filters by `stacks` field; `.octopus/hooks/hooks.local.json` overrides defaults; `auto-format.sh` dotnet fix | completed | 2026-05-16 |
 | RM-065 | `frontend` bundle — `frontend-patterns` + `test-component` skills (reusing `test-e2e`) wired with the `frontend-developer` role; bilingual site docs | completed | 2026-05-27 |
-| RM-066 | `fullstack` bundle — `backend` ∪ `frontend` ∪ `review-contracts` for monorepos; `test-e2e` de-duplicated by the expander | completed | 2026-05-27 |
+| RM-066 | `fullstack` bundle — `backend` ∪ `frontend` ∪ `audit-contracts` for monorepos; `test-e2e` de-duplicated by the expander | completed | 2026-05-27 |
 | RM-075 | `doc-align` skill — interactive grilling against CONTEXT.md glossary and ADRs | completed → v1.45.0 | 2026-05-19 |
 | RM-076 | `test-tdd` skill — standalone red-green-refactor loop extracted from `implement` | completed → v1.45.0 | 2026-05-19 |
 | RM-077 | `refactor-deepen` skill — find shallow modules and deepening opportunities | completed → v1.45.0 | 2026-05-19 |

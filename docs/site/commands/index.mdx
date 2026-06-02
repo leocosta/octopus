@@ -71,7 +71,7 @@ the relevant ones in parallel.
 
 | Command | What it audits |
 |---|---|
-| `/octopus:audit-all` | Dispatches `audit-security`, `audit-money`, `audit-tenant`, and `review-contracts` in parallel; consolidates findings with severity tiers. |
+| `/octopus:audit-all` | Dispatches `audit-security`, `audit-money`, `audit-tenant`, and `audit-contracts` in parallel; consolidates findings with severity tiers. |
 | `/octopus:audit-money` | Money-touching code — types, rounding, cents tests, env drift, idempotency, webhook signatures. |
 | `/octopus:audit-tenant` | Multi-tenant data-scope enforcement — query filters, raw SQL, controller ownership. |
 | `/octopus:audit-config` | Agent-configuration freshness — model assumptions, stale dates, phantom skills, deprecated paths. |
@@ -83,7 +83,7 @@ the relevant ones in parallel.
 | `/octopus:implement` | `implement` — the TDD / plan / verify / simplify / commit workflow. |
 | `/octopus:debug` | `debug` — reproduce → isolate → regression-test → document. |
 | `/octopus:prototype` | `prototype` — throwaway prototypes to flush out a design before committing to it. |
-| `/octopus:review-contracts` | `review-contracts` — frontend/backend contract drift detection. |
+| `/octopus:audit-contracts` | `audit-contracts` — frontend/backend contract drift detection. |
 | `/octopus:respond-to-review` | `respond-to-review` — discipline for handling PR feedback. |
 
 ## Orchestration
