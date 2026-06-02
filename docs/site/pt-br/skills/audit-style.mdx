@@ -1,0 +1,85 @@
+---
+title: audit-style
+description: "Auditoria signal-only que confronta o diff de trabalho com as regras de design opinativas do time — o gate de exceção customizada, a regra de Result-em-vez-de-throw, a regra de não-usar-parâmetro-booleano, a regra do custo da abstração — e sinaliza dois pontos que o formatter e o simplify genérico não enxergam: código que quebra uma regra declarada (rule-violation) e abstração que as regras consideram um custo (over-engineering). Nunca bloqueia; reporta e deixa a decisão com você."
+---
+
+O `simplify` nativo tem bom gosto, mas não conhece as *suas* regras. Ele não
+sabe que uma exceção customizada precisa justificar a própria existência por um
+gate, que uma falha esperada deveria ser um resultado tipado em vez de um throw,
+ou que abstração é um custo que você só paga na terceira ocorrência. E como ele
+otimiza por *menos código*, pode introduzir exatamente a super-abstração que as
+suas regras proíbem. O `audit-style` é o leitor que segura as regras numa mão e
+o diff na outra.
+
+## O que resolve
+
+O Octopus já guarda a qualidade do código em dois eixos — mas nenhum deles é o
+das regras de design da casa:
+
+- o **bloqueio sintático** (o bundle `guardrails`) barra código sem formatar,
+  sem tipo ou com segredo — mas julga sintaxe, não se uma decisão de design
+  honra uma regra que o time escreveu;
+- o **sinal semântico de grounding** (`audit-grounding`) sinaliza convenções
+  inventadas e fatos de domínio sem suporte — mas julga o diff contra o
+  *domínio*, não contra as *regras de código*.
+
+Sobra o terceiro eixo: *este código honra as regras de design opinativas, e
+está super-engenheirado?* Um formatter nunca vai dizer "esta exceção customizada
+tem um ponto de throw e zero de catch — lance o tipo da stdlib". O `simplify`
+genérico nunca vai dizer "você extraiu isto na segunda ocorrência; a regra manda
+esperar a terceira". O `audit-style` é o lado que lê as regras e reporta onde o
+diff diverge.
+
+## Os dois achados
+
+- **`rule-violation`** — um construto que o diff introduz e que contradiz uma
+  regra declarada: uma exceção customizada que falha no gate, um throw onde se
+  pede um resultado tipado, um parâmetro booleano, um número mágico, um guard
+  clause ausente, lógica de negócio vazando para um repositório, uma exceção
+  engolida.
+- **`over-engineering`** — abstração que as regras explicitamente chamam de
+  custo: uma abstração prematura, uma hierarquia de subtipos especulativa "para
+  o futuro", DRY aplicado antes de três ocorrências, uma camada de indireção sem
+  consumidor presente. Esta é a dimensão que o `simplify` genérico
+  estruturalmente não produz — o `audit-style` é o leitor que sabe a hora de
+  **não** simplificar.
+
+## A fonte de verdade
+
+Ele carrega as regras que o repositório já entrega, em ordem, e degrada com
+elegância quando uma está ausente: `rules/common/exceptions.md` (o gate de
+exceção customizada), `rules/common/patterns.md` (Result pattern, separação
+repository/service, guard clauses), `rules/common/coding-style.md` (nomes,
+estrutura, o catálogo de anti-patterns) e as regras de stack ativas que casam
+com as linguagens que o diff toca. Uma regra ausente vira uma nota `info`, para
+você saber que a auditoria foi parcial — ele nunca inventa uma regra que não
+está escrita.
+
+## Por que signal-only, nunca bloqueia
+
+Um veredito de design é um julgamento. Bloquear um merge com base numa leitura
+probabilística de "isto está super-engenheirado?" seria pior que o problema que
+resolve. O gate sintático já bloqueia no commit; o `audit-style` revela a lacuna
+das regras de design como `warn` / `info` e deixa a decisão com você. Achados
+recorrentes alimentam o loop de conhecimento existente, então uma violação que o
+time repete é promovida a regra em vez de ser sinalizada para sempre.
+
+## Como roda
+
+Diferente de `audit-grounding` e `audit-verification`, o `audit-style` **não tem
+Stop hook** — não há custo de LLM por task. Ele roda só quando um fluxo de review
+o invoca: os self-reviews do `codereview` e do `pr-review`, ou o passo de
+simplify do `implement`. Registra no bundle `quality`:
+
+```yaml
+bundles:
+  - quality
+  - guardrails
+hooks: true
+```
+
+O `audit-style` complementa o `simplify` nativo em vez de substituí-lo: o passo
+genérico aplica gosto e edita o código, o `audit-style` lê as regras da casa e
+sinaliza — incluindo o over-engineering que o passo genérico pode deixar passar.
+
+[Source: `skills/audit-style/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/audit-style/SKILL.md)

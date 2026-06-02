@@ -179,6 +179,18 @@ _**Status: Cluster 20 complete** — RM-111 shipped in #134. The local-guardrail
 
 ---
 
+### Cluster 21 — Semantic quality/style signal
+
+_**Implemented** (added 2026-06-02). Seeds from [research](research/2026-06-02-audit-style-rules-aware.md): the RM-088 PRD was titled "Quality, Style **& Grounding**" but shipped only the syntactic block (`guardrails`) and the semantic **grounding** signal (`audit-grounding`). The semantic **design/quality** signal — judging conformance to the opinionated rules in `rules/common/*` and flagging over-engineering — was never built. The native `/simplify` cannot fill it (no project rules, no memory across runs, and it may itself introduce the over-abstraction the rules forbid). The fix is the `audit-grounding` shape pointed at a different source of truth: the house rules._
+
+| RM | Item | Theme |
+|----|------|-------|
+| RM-112 | `audit-style` skill — semantic, signal-only reviewer confronting the diff against the opinionated design rules (`exceptions.md` gate G1/G2/G3, Result-vs-throw, boolean-param→options, magic numbers, guard clauses, layer separation) + active stack rules, with an explicit **anti-over-engineering** dimension (premature abstraction, speculative hierarchy, DRY-before-three). Mirrors `audit-grounding` (signal-only, `warn`/`info`, structural tests); registers in `quality`, orchestrated by `codereview`/`pr-review`/`implement`; **no new Stop hook**. Recurring findings reuse the existing `continuous-learning`/`review-proposals` loop (RM-093 at team level) → rule/CLAUDE.md candidates | local guardrail |
+
+_Decisions: positioned as an `audit-*` sibling (not a `simplify` wrapper); skill-only (no per-session hook, and **not** part of `audit-all`'s domain dispatch — like `audit-grounding`/`audit-verification`, it runs via the review flows); knowledge loop reused, not a new RM. Distinct from `refactor-deepen` (deepens design) and native `/simplify` (generic taste, applies fixes). Implemented: `skills/audit-style/SKILL.md`, `quality` bundle, EN+pt-br docs pages, `tests/test_audit_style.sh`._
+
+---
+
 ## In Progress
 
 _RM-088 (`audit-grounding`) shipped in v1.69.0. **Cluster 16** (manager-multiplier) is **complete on `feat/standards-lookup`** — all implemented & committed, pending merge/release: RM-089 (`mentor`), RM-090 (`onboarding`), RM-091 (`definition-of-done`), RM-092 (`standards`), RM-093 (team `continuous-learning`), RM-094 (`audit-fleet`), RM-095 (`fleet-bootstrap`), RM-096 (`tech-lead` bundle), RM-098 (`map-system` complete-mode deck). ADRs 002–006 recorded. See [research](research/2026-05-30-manager-multiplier.md)._
