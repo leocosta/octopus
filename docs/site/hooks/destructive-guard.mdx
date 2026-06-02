@@ -46,6 +46,46 @@ A legitimate `DELETE FROM sessions WHERE expired_at < now();` is
 clause for `DELETE`. The goal is to catch carelessness, not to
 make valid SQL impossible.
 
+## Temp-dir carve-out
+
+Agents generate throwaway scratch constantly — HTML mockups,
+snapshots, scratch dirs — under `/tmp` and `/var/tmp`, then clean
+it up with `rm -rf`. Requiring a marker for every such cleanup is
+pure friction, so a **clean `rm -rf` confined entirely to a temp
+root is allowed without a marker**:
+
+```bash
+rm -rf /tmp/cc-mockups-xyz      # allowed, no marker needed
+rm -rf /tmp/a /tmp/b            # allowed — all targets under /tmp
+```
+
+The carve-out is deliberately strict. Its invariant: **never exempt
+a command that could delete anything outside `/tmp`.** Because the
+guard reads a command string but `rm` acts on the live filesystem,
+static prefix-matching alone is not enough — `.`, globs, and
+symlinks all resolve at runtime. So it applies only to a single,
+literal `rm` invocation, and it **resolves every target with
+`realpath`** before allowing it. Anything that introduces doubt
+falls through and stays blocked:
+
+| Still blocked | Why |
+|---|---|
+| `rm -rf /tmp/x /home/leo/proj` | a target outside the temp root |
+| `rm -rf /tmp/../etc` | path traversal |
+| `rm -rf /tmp` / `rm -rf /tmp/` / `rm -rf /tmp/.` | resolves to the bare temp root |
+| `rm -rf /tmp/*` / `/tmp/?` / `/tmp/[a-z]` | a glob — not statically confinable |
+| `rm -rf /tmp/link/` (link → outside) | symlink resolved out of `/tmp` |
+| `rm -rf /tmp/x && rm -rf /etc` | shell composition (`;`, `&&`, `\|`, …) |
+| `rm -rf /tmp/$(cmd)` / `rm -rf $TMPDIR/x` | command / variable expansion |
+| `rm -rf /tmp/octopus-handoff-*` | reserved Octopus artifacts (`/tmp/octopus-*`) |
+| `sudo rm -rf /tmp/x` / `/bin/rm …` | not a bare `rm` invocation |
+
+Reserved artifacts are excluded because Octopus itself writes to
+`/tmp` — `context-handoff` saves the successor's handoff document to
+`/tmp/octopus-handoff-<timestamp>.md`, so a blanket temp wipe is not
+safe. The other destructive patterns (`git push --force`, `DROP
+TABLE`, …) have no temp carve-out.
+
 ## How to bypass
 
 When the destructive action is genuinely intended, add the marker

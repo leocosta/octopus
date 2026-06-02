@@ -65,6 +65,28 @@ A legitimate `DELETE FROM sessions WHERE expired_at < now();`
 is not blocked — the guard only trips when no `WHERE` clause is
 present.
 
+## Temp-dir carve-out for `rm -rf`
+
+A clean `rm -rf` whose every target is confined to `/tmp` or
+`/var/tmp` is allowed **without** a marker — agents generate
+throwaway scratch (mockups, snapshots) there constantly:
+
+```bash
+rm -rf /tmp/cc-mockups-xyz      # allowed, no marker
+```
+
+The carve-out is strict; its invariant is that it never exempts a
+command that could delete outside the temp root. Since `rm` acts on
+the live filesystem, the guard **resolves every target with
+`realpath`** rather than trusting the literal string. Anything that
+introduces doubt stays blocked: a target outside `/tmp`, path
+traversal (`..`), the bare temp root (`/tmp`, `/tmp/`, `/tmp/.`), a
+glob (`*`, `?`, `[`), a symlink that resolves out of `/tmp`, shell
+composition (`;`, `&&`, `|`), variable/command expansion (`$`,
+`` ` ``, `$(`), `sudo` / `/bin/rm`, or a reserved Octopus artifact
+(`/tmp/octopus-*`, such as the `context-handoff` document). No
+other destructive pattern has a carve-out.
+
 ## Extending
 
 Each pattern is a regex in

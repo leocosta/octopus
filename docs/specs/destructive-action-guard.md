@@ -52,6 +52,20 @@ intended destructive command through.
   `DROP TABLE`, `DROP DATABASE`, `TRUNCATE`, `DELETE FROM`
   without `WHERE`, `chmod -R 777`, `find ... -delete`, `npm
   uninstall --global`, curl-pipe-bash on an unseen URL.
+- Allow a marker-free temp-dir carve-out for `rm -rf`: a single,
+  literal `rm` invocation whose every target is confined to `/tmp`
+  or `/var/tmp` is exempt, since agents generate throwaway scratch
+  there constantly. The carve-out is strict — its invariant is that
+  it never exempts a command that could reach outside the temp root.
+  Because `rm` acts on the live filesystem, the decision resolves
+  every target with `realpath` (not just the literal string) and
+  confirms strict containment. Shell composition (`;`, `&&`, `|`),
+  variable/command expansion (`$`, `` ` ``, `$(`), globs (`*`, `?`,
+  `[`), path traversal (`..`), a symlink resolving outside `/tmp`, a
+  mixed non-temp target, a bare temp root (`/tmp`, `/tmp/`,
+  `/tmp/.`), and reserved Octopus artifacts (`/tmp/octopus-*`, e.g.
+  the `context-handoff` document) all fall through and stay blocked.
+  No other pattern gets a carve-out.
 
 ## Non-Goals
 
@@ -471,3 +485,15 @@ Inside a fresh repo with `hooks: true` and default
 ## Changelog
 
 - **2026-04-19** — Initial draft.
+- **2026-06-01** — Added a strict temp-dir carve-out for `rm -rf`:
+  a single literal `rm` confined to `/tmp`/`/var/tmp` is allowed
+  without a marker. The decision is made by an inline `python3`
+  helper that rejects shell composition, expansion, globs (`*?[`),
+  and `..`, parses with `shlex`, and resolves every target with
+  `realpath` to confirm strict containment (closing `.`, symlink,
+  and bare-root escapes) — reviewed adversarially by the `security`
+  role. Updated `tests/test_destructive_guard.sh` accordingly (the
+  previously-blocked `rm -rf /tmp/foo` is now allowed; added glob,
+  `/tmp/.`, and live-symlink-escape cases) and pointed the
+  docs-wiring test at the site page, since the README was slimmed to
+  funnel to the docs site.
