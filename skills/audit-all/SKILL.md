@@ -2,14 +2,14 @@
 name: audit-all
 description: >
   Run the four quality-audit skills in parallel against one ref —
-  audit-security, audit-money, audit-tenant, review-contracts.
+  audit-security, audit-money, audit-tenant, audit-contracts.
   Shared file discovery + parallel execution + consolidated report
   with a cross-audit hotspots table.
 depends_on:
   - audit-security
   - audit-money
   - audit-tenant
-  - review-contracts
+  - audit-contracts
 triggers:
   paths: ["openapi/**", "contracts/**", "**/openapi.yaml", "**/openapi.json"]
   keywords: ["auth", "jwt", "payment", "invoice", "stripe", "tenant", "org", "workspace"]
@@ -72,7 +72,7 @@ one per installed audit, each with:
 - The subset of files tagged with at least one of the audit's
   domains (audit-money gets files tagged `money`; audit-tenant
   gets files tagged `tenant`; audit-security gets files tagged
-  `secrets` or `auth`; review-contracts gets files tagged
+  `secrets` or `auth`; audit-contracts gets files tagged
   `api-contract` or `frontend-consumer`).
 - The same `<ref>` and `--base`.
 - Instruction to produce output in the audit's existing format,
@@ -118,8 +118,8 @@ Files flagged by more than one audit — prioritize these first.
 ## 🏢 audit-tenant
 <audit-tenant's own output>
 
-## 🔁 review-contracts
-<review-contracts's own output>
+## 🔁 audit-contracts
+<audit-contracts's own output>
 ```
 
 Every sub-report keeps its own summary footer (e.g.

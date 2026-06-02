@@ -20,7 +20,7 @@ triggers:
 ## Overview
 
 Octopus already audits the **code** (`audit-all` composes
-`audit-security`, `audit-money`, `audit-tenant`, `review-contracts`)
+`audit-security`, `audit-money`, `audit-tenant`, `audit-contracts`)
 and the **plans** (`plan-backlog`). What was missing until now is an
 audit of the **configuration surface itself** — the rules, skills,
 hooks, commands, and bundles that shape how the agents behave.

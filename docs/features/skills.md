@@ -9,12 +9,12 @@ them natively, other assistants get them inlined into their output file.
 | Skill | What it does | Bundle | Tutorial |
 |---|---|---|---|
 | `doc-adr` | Create and manage Architecture Decision Records (ADRs) to document significant technical decisions. | `starter` | — |
-| `audit-all` | Composer skill — runs ``audit-security`, `audit-money`, `audit-tenant`, and `review-contracts` in parallel with shared file discovery and a consolidated report with cross-audit hotspots. | `saas-quality` | [audit-all.md](audit-all.md) |
+| `audit-all` | Composer skill — runs ``audit-security`, `audit-money`, `audit-tenant`, and `audit-contracts` in parallel with shared file discovery and a consolidated report with cross-audit hotspots. | `saas-quality` | [audit-all.md](audit-all.md) |
 | `backend-patterns` | Backend architecture decision patterns for multi-stack projects (Node.js, .NET, Python). | `dotnet-api` / `node-api` | — |
 | `context-budget` | Audit and optimize AI-agent context-window usage to reduce token overhead and improve response quality. | `starter` | — |
 | `continuous-learning` | Captures insights, tests hypotheses, and promotes confirmed patterns to rules — a learning loop that makes the agent sharper over time. | `documentation` | — |
 | `debug` | Active-by-default bug-fix workflow — reproduce deterministically, isolate, fix with a regression test first, document non-obvious cause. Pair for `implement` in the `starter` bundle. | `starter` | [debug.md](debug.md) |
-| `review-contracts` | Detect API-vs-frontend contract drift in multi-stack monorepos (endpoints, DTOs, enums, status codes, auth rules, params). Produces a severity-tiered report with confidence labels. | `fullstack` | [review-contracts.md](review-contracts.md) |
+| `audit-contracts` | Detect API-vs-frontend contract drift in multi-stack monorepos (endpoints, DTOs, enums, status codes, auth rules, params). Produces a severity-tiered report with confidence labels. | `fullstack` | [audit-contracts.md](audit-contracts.md) |
 | `dotnet` | .NET backend architecture patterns, conventions, and decision trees for ASP.NET Core projects. | `dotnet-api` | — |
 | `test-e2e` | End-to-end testing patterns with Playwright for reliable, maintainable browser tests. | `dotnet-api` / `node-api` | — |
 | `doc-lifecycle` | Guides the complete documentation lifecycle of a feature — from RFC through spec, implementation, ADR capture, and knowledge extraction. | `starter` | [doc-lifecycle.md](doc-lifecycle.md) |
@@ -29,7 +29,7 @@ them natively, other assistants get them inlined into their output file.
 
 Pair-ups:
 
-- `audit-security` + `audit-money` + `review-contracts` + `audit-tenant`
+- `audit-security` + `audit-money` + `audit-contracts` + `audit-tenant`
   share the same `🚫 Block / ⚠ Warn / ℹ Info` output format with confidence
   labels — concatenate them into one PR comment without extra formatting work.
 - `doc-lifecycle` + `launch-feature` cover the path from *plan* to

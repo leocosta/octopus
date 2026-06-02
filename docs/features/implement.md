@@ -53,7 +53,7 @@ If the skill does not auto-engage, drive it explicitly:
   loop still applies to the fix itself.
 - `respond-to-review` (RM-032, future) — PR feedback flow.
 - Audit skills (`audit-security`, `audit-money`,
-  `audit-tenant`, `review-contracts`, `audit-all`) —
+  `audit-tenant`, `audit-contracts`, `audit-all`) —
   pre-merge review. `implement` is pre-audit.
 - `superpowers:*` skills — when installed, they win on the
   practices they already cover (TDD, systematic debugging,

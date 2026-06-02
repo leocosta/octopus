@@ -13,7 +13,7 @@
 ## Problem Statement
 
 Octopus ships four pre-merge audit skills (`audit-money`,
-`audit-tenant`, `review-contracts`, `audit-security`) plus
+`audit-tenant`, `audit-contracts`, `audit-security`) plus
 the `audit-all` composer, but reviewers and authors have to
 remember to run them. In practice they run sporadically — and
 the most valuable signals (money-logic drift, missing tenant
@@ -50,7 +50,7 @@ that benefit from being automatic on a hot PR.
 A `pre-push` git hook that reads the diff of the commits about
 to be pushed, maps touched files and keywords to the relevant
 Octopus audit skills (`audit-money`, `audit-tenant`,
-`review-contracts`, `audit-security`), and prints a short
+`audit-contracts`, `audit-security`), and prints a short
 list of suggestions before returning exit 0 (advisory only —
 never blocks the push).
 
@@ -86,7 +86,7 @@ it never blocks the push; it never pings the network.
 | File | Role |
 |---|---|
 | `hooks/git/pre-push-audit-suggest.sh` | The hook body. Reads `$OCTOPUS_SKIP_AUDIT_HOOK`, computes the push diff, dispatches to the map library, prints suggestions. Exits 0 unconditionally. |
-| `cli/lib/audit-map.sh` | Pure function library. Given a unified diff on stdin, emits the set of audit names (`audit-money`, `audit-tenant`, `review-contracts`, `audit-security`) whose triggers fired. |
+| `cli/lib/audit-map.sh` | Pure function library. Given a unified diff on stdin, emits the set of audit names (`audit-money`, `audit-tenant`, `audit-contracts`, `audit-security`) whose triggers fired. |
 | `setup.sh` (modification) | Installs the hook into `.git/hooks/pre-push` (or `core.hooksPath` when set) when `workflow: true` AND `postMergeAuditHook` is not `false`. |
 | `cli/lib/parse_octopus_yml` (existing) | Reads the new `postMergeAuditHook:` key. Default `true`. |
 
@@ -138,10 +138,10 @@ Parse the resolved `patterns.md` for two kinds of signals:
 An audit matches when **any** of its path tokens OR content
 regexes hit the diff. Emit `<audit-name>` on its own line on
 stdout. Order: `audit-security`, `audit-money`,
-`audit-tenant`, `review-contracts` (criticality, then
+`audit-tenant`, `audit-contracts` (criticality, then
 alphabetical).
 
-**Cross-stack special case:** `review-contracts` doesn't
+**Cross-stack special case:** `audit-contracts` doesn't
 need a `patterns.md` — it fires when the diff touches paths
 belonging to two or more stacks declared in the manifest's
 `stacks:` map. Implemented as a dedicated helper inside
@@ -209,7 +209,7 @@ installed but bypasses the output for a given push.
    Depends on Step 1.
 3. **Create `tests/test_audit_map.sh`.** Fixture diffs per
    audit (a billing.cs diff → expects `audit-money`; a diff
-   touching `api/` + `app/` → expects `review-contracts`;
+   touching `api/` + `app/` → expects `audit-contracts`;
    a diff adding `sk-ABC123` → expects `audit-security`; a
    benign README diff → expects empty). Malformed
    `patterns.md` fixture → skip that audit, warn once.
@@ -245,7 +245,7 @@ tech-writer (for the `patterns.md` schema doc).
 merits an ADR — flag as a follow-up.
 **Skills needed**: `adr`, `feature-lifecycle`,
 `audit-security`, `audit-money`, `audit-tenant`,
-`review-contracts`, `audit-all`.
+`audit-contracts`, `audit-all`.
 **Bundle**: N/A — hook under the existing `hooks:` setting,
 not a new skill.
 
@@ -265,7 +265,7 @@ not a new skill.
 - **Unit tests** in `tests/test_audit_map.sh` (step 3 of the
   plan): fixture diffs covering each audit, empty-set diff,
   malformed `patterns.md` graceful failure, and
-  review-contracts manifest-driven path matching.
+  audit-contracts manifest-driven path matching.
 - **Install tests** in `tests/test_post_merge_audit_hook.sh`
   (step 6): minimal fixture repos exercising the three
   install paths (fresh, opt-out, chain onto existing hook).

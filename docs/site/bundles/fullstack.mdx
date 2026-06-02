@@ -7,7 +7,7 @@ sidebar:
 
 `fullstack` is for the monorepo that holds both halves of the
 product: a backend API and a separate frontend. Rather than hand-stack
-`backend` and `frontend` and remember to add `review-contracts`, this
+`backend` and `frontend` and remember to add `audit-contracts`, this
 bundle unions all three into one pick — including the cross-stack
 contract gate that only makes sense when both sides live in the same
 repo.
@@ -22,7 +22,7 @@ doesn't render. The failure mode of a full-stack repo is the **seam
 between the stacks**, not either stack alone.
 
 `fullstack` exists to make that seam a first-class concern. It carries
-everything `backend` and `frontend` do, plus `review-contracts` — the
+everything `backend` and `frontend` do, plus `audit-contracts` — the
 skill that catches API ↔ frontend drift before it ships.
 
 ## Team archetype
@@ -50,7 +50,7 @@ skills:
   - dba-redis         # Redis review
   - frontend-patterns # component design, state, a11y
   - test-component    # component-level tests (RTL)
-  - review-contracts  # API ↔ frontend contract drift detection
+  - audit-contracts  # API ↔ frontend contract drift detection
 roles:
   - backend-developer
   - dba
@@ -59,7 +59,7 @@ roles:
 
 [Source: `bundles/fullstack.yml`](https://github.com/leocosta/octopus/blob/main/bundles/fullstack.yml)
 
-This is `backend` ∪ `frontend` ∪ `review-contracts`. `test-e2e` belongs
+This is `backend` ∪ `frontend` ∪ `audit-contracts`. `test-e2e` belongs
 to both stacks; the bundle expander de-duplicates it to a single entry.
 
 ### Why each one is in
@@ -72,7 +72,7 @@ to both stacks; the bundle expander de-duplicates it to a single entry.
 - **All of `frontend`** — `frontend-patterns`, `test-component`, and
   the `frontend-developer` role. The UI half gets its component
   patterns and the component-test layer.
-- **`review-contracts`** — the reason `fullstack` is more than the sum
+- **`audit-contracts`** — the reason `fullstack` is more than the sum
   of its parts. It detects drift between what the API returns and what
   the frontend expects: endpoints, DTO shapes, enum variants, status
   codes, auth rules. In a single-stack repo this skill has nothing to
@@ -102,7 +102,7 @@ A change that crosses the seam stays coherent in one PR:
    with the loading/empty/error states handled.
 4. `test-component` covers the new cell's render states; `test-e2e`
    covers the assembled "view order list" journey.
-5. `review-contracts` runs pre-merge and confirms the frontend's
+5. `audit-contracts` runs pre-merge and confirms the frontend's
    `Order` DTO matches the API's new shape — no silent drift.
 
 ## Composes with

@@ -42,7 +42,7 @@ PR diff:
   - `audit-money` (billing, payment, fee, invoice, subscription)
   - `audit-tenant` (multi-tenant scope, `IgnoreQueryFilters`,
     cross-tenant endpoints)
-  - `review-contracts` (DTO/endpoint changes touching both `api/`
+  - `audit-contracts` (DTO/endpoint changes touching both `api/`
     and `app/`/`lp/`)
 - **Fallback checklist** for TODO/FIXME, debug statements,
   emoji, oversized files/functions, deep nesting

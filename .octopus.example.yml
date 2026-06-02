@@ -33,7 +33,7 @@ rules:
 # Available: audit-all, audit-money, audit-security, audit-tenant, backend-patterns,
 #            context-budget, continuous-learning, debug, doc-adr, doc-design, doc-lifecycle,
 #            doc-plan, dotnet, implement, launch-feature, launch-release, plan-backlog,
-#            review-contracts, respond-to-review, test-e2e
+#            audit-contracts, respond-to-review, test-e2e
 # skills:
 #   - doc-adr
 #   - dotnet

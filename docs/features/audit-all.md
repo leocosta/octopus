@@ -3,7 +3,7 @@
 Run all four quality-audit skills in parallel against a single ref,
 with shared file discovery and a consolidated severity report.
 Composer for `audit-security`, `audit-money`, `audit-tenant`,
-and `review-contracts`.
+and `audit-contracts`.
 
 ## When to use
 
@@ -64,7 +64,7 @@ The four audits stay independently invocable:
 /octopus:audit-security
 /octopus:audit-money
 /octopus:audit-tenant
-/octopus:review-contracts
+/octopus:audit-contracts
 ```
 
 Use `audit-all` for a full pre-merge sweep; use an individual audit

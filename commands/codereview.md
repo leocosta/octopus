@@ -27,7 +27,7 @@ use `/octopus:pr-review`.
 | Auth, JWT, OAuth, secret/token handling, `.env*`, password/credential paths | role `security` |
 | `billing/`, `payment/`, money-touching code (`Decimal`, `cents`, fee/invoice/subscription) | skill `audit-money` |
 | New `DbSet<X>`, multi-tenant queries, `IgnoreQueryFilters()`, `tenant`/`org`/`workspace` predicates | skill `audit-tenant` |
-| Both `api/` and `app/`/`lp/` in same diff; DTO/endpoint/enum changes | skill `review-contracts` |
+| Both `api/` and `app/`/`lp/` in same diff; DTO/endpoint/enum changes | skill `audit-contracts` |
 | Any non-trivial production code change | role `architect` (always) |
 
 If the diff touches the data layer, **both** `dba` and `architect`
@@ -95,7 +95,7 @@ BLOCKING (n)
   [origin: security]   ...
 
 ADVISORY (n)
-  [origin: review-contracts] ...
+  [origin: audit-contracts] ...
   [origin: fallback] TODO introduced at <path:line>
 
 QUESTION (n)

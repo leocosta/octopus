@@ -12,7 +12,7 @@ skills:
   - dba-redis
   - frontend-patterns
   - test-component
-  - review-contracts
+  - audit-contracts
 roles:
   - backend-developer
   - dba

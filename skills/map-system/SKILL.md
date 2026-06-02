@@ -113,7 +113,7 @@ Each section degrades gracefully when its source is absent:
    connect, as **inline SVG diagrams** (authored in Mermaid, pre-rendered to
    SVG so the deck needs no runtime).
 4. **Contracts** — when an API is detected, the endpoints, DTOs, enums, and
-   status codes. Reuse the API-detection heuristics from `review-contracts`.
+   status codes. Reuse the API-detection heuristics from `audit-contracts`.
 5. **Data model** — when a DB is detected, the entities and relationships.
 6. **Decisions of record** — the ADRs that shape the codebase, summarized.
 
@@ -180,7 +180,7 @@ For **`complete` mode**:
 - **`frontend-design`** — refines the `complete` HTML deck and synthesizes
   custom themes for `--design-from`; an enhancer, not required for presets.
 - **`launch-release`** — the theme schema and presets the deck reuses.
-- **`review-contracts`** — the API-detection heuristics for the contracts section.
+- **`audit-contracts`** — the API-detection heuristics for the contracts section.
 - **`onboarding`** — presents the `complete` deck during the ramp.
 - **`doc-align`** — often called before it, so grilling starts from shared geography.
 - **`doc-lifecycle`** — when the map reveals an undocumented area, the follow-up

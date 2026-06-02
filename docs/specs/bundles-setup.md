@@ -22,7 +22,7 @@ choice" abandonment on first run. Users frequently under-select
 artifacts).
 
 Octopus ships useful skills (`audit-money`, `audit-tenant`,
-`review-contracts`, `launch-feature`, etc.) that cluster
+`audit-contracts`, `launch-feature`, etc.) that cluster
 naturally around intent ("we're a SaaS", "we produce content",
 "we document with RFCs") but the wizard does not expose the cluster —
 it exposes the atoms.
@@ -184,7 +184,7 @@ Pre-flight prompt: `Setup mode — [1] Quick (recommended) [2] Full
 | `quality-gates` | intent | "Is this a SaaS product for external customers (billing, multi-tenant)?" | skills: `audit-security`, `audit-money`, `audit-tenant`; roles: `backend-specialist` |
 | `growth` | intent | "Does your team produce marketing content alongside code?" | skills: `launch-feature`; roles: `social-media` |
 | `docs-discipline` | intent | "Do you document with RFCs, specs, and ADRs?" | skills: `plan-backlog`, `continuous-learning`; roles: `tech-writer` |
-| `cross-stack` | intent | "Does your repo contain both an API and a separate frontend?" | skills: `review-contracts`; roles: `backend-specialist`, `frontend-specialist` |
+| `cross-stack` | intent | "Does your repo contain both an API and a separate frontend?" | skills: `audit-contracts`; roles: `backend-specialist`, `frontend-specialist` |
 | `dotnet-api` | stack | "Primary backend language is .NET?" | skills: `dotnet`, `backend-patterns`, `e2e-testing` |
 | `node-api` | stack | "Primary backend language is Node/TypeScript?" | skills: `backend-patterns`, `e2e-testing` |
 

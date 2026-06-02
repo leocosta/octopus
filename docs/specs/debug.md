@@ -330,7 +330,7 @@ here.
 
 `cli/lib/setup-wizard.sh` registers `debug` in the skills items
 array + hints + legend, inserted alphabetically after
-`continuous-learning` and before `review-contracts`.
+`continuous-learning` and before `audit-contracts`.
 
 ### Migration / Backward Compatibility
 
@@ -361,7 +361,7 @@ array + hints + legend, inserted alphabetically after
    update `description:` line.
 7. `cli/lib/setup-wizard.sh` — register `debug` in items +
    hints + legend (alphabetical — after `continuous-learning`,
-   before `review-contracts`).
+   before `audit-contracts`).
 8. `docs/features/debugging.md` — tutorial.
 9. `docs/features/skills.md` — new row with `starter` bundle.
 10. `README.md` — add `debug` to the Available-skills comment.

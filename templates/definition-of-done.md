@@ -43,7 +43,7 @@
 
 - [ ] Irreversible or hard-to-reverse decisions have an ADR. (→ `doc-adr`)
 - [ ] Public API / contract changes update the relevant docs and the
-      frontend/backend contract. (→ `review-contracts`)
+      frontend/backend contract. (→ `audit-contracts`)
 - [ ] The PR description states **what**, **why**, and **how to test**.
       (→ `core/pr-workflow.md`)
 
@@ -71,7 +71,7 @@
 - [ ] Multi-tenant data-scope is audited when entities/queries change.
       (→ `audit-tenant`)
 - [ ] Frontend/backend contracts are audited when both stacks change in one
-      diff. (→ `review-contracts`)
+      diff. (→ `audit-contracts`)
 
 ## Team-specific items
 

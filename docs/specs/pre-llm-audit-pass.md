@@ -12,7 +12,7 @@
 
 ## Problem Statement
 
-Audit skills (`audit-money`, `audit-security`, `review-contracts`, `audit-tenant`) currently instruct the LLM to analyse the full diff of a PR. When the diff is large, the LLM reads irrelevant files before narrowing to the ones that matter, wasting tokens and increasing latency. There is no deterministic pre-filter that can terminate early if no relevant files exist.
+Audit skills (`audit-money`, `audit-security`, `audit-contracts`, `audit-tenant`) currently instruct the LLM to analyse the full diff of a PR. When the diff is large, the LLM reads irrelevant files before narrowing to the ones that matter, wasting tokens and increasing latency. There is no deterministic pre-filter that can terminate early if no relevant files exist.
 
 ## Goals
 
@@ -84,12 +84,12 @@ The existing file-discovery section in each skill is **replaced** by a reference
 | `audit-money` | `## File Discovery` |
 | `audit-security` | `## File Discovery` |
 | `audit-tenant` | `## File Discovery` |
-| `review-contracts` | `## Stack Discovery` |
+| `audit-contracts` | `## Stack Discovery` |
 
 Replacement content (heading retained, body replaced):
 
 ```markdown
-## File Discovery   <!-- or ## Stack Discovery for review-contracts -->
+## File Discovery   <!-- or ## Stack Discovery for audit-contracts -->
 
 Follow the Pre-Pass protocol in `skills/_shared/audit-pre-pass.md`.
 Use this skill's `pre_pass.file_patterns` and `pre_pass.line_patterns` from the frontmatter.
@@ -102,7 +102,7 @@ Proceed to inspection checks only with the scoped diff produced by Step 4.
 |---|---|---|
 | `audit-money` | `billing\|payment\|charge\|cobran\|split\|invoice\|subscription\|asaas\|stripe\|pix\|webhook\|refund\|reembolso\|tax\|taxa\|fee` | `PERCENT[_A-Z]*\s*=\|\bdecimal\b\|asaas\|stripe\|mercadopago\|webhook.*(signature\|hmac)` |
 | `audit-security` | `auth\|jwt\|oauth\|secret\|token\|password\|credential\|permission\|role\|middleware\|\.env` | `password\|secret\|Bearer\|Authorization\|SQL\|querySelector` |
-| `review-contracts` | `controller\|endpoint\|route\|openapi\|swagger\|dto\|request\|response\|contract` | `\[Route\]\|\[HttpGet\]\|\[HttpPost\]\|app\.map\|MapGet\|MapPost\|fetch(\|axios\.` |
+| `audit-contracts` | `controller\|endpoint\|route\|openapi\|swagger\|dto\|request\|response\|contract` | `\[Route\]\|\[HttpGet\]\|\[HttpPost\]\|app\.map\|MapGet\|MapPost\|fetch(\|axios\.` |
 | `audit-tenant` | `tenant\|org\|workspace\|organization\|scope` | `tenantId\|orgId\|workspaceId\|TenantId\|OrgId` |
 
 ### Migration / Backward Compatibility
@@ -123,7 +123,7 @@ Regression risk: low. The only behavioral change is early-exit on PRs with no re
 
 3. **Update `skills/audit-security/SKILL.md`** — same, with security patterns (including `\.env`)
 
-4. **Update `skills/review-contracts/SKILL.md`** — same, with contract patterns; note: replace `## Stack Discovery` (not `## File Discovery`) with the shared fragment reference
+4. **Update `skills/audit-contracts/SKILL.md`** — same, with contract patterns; note: replace `## Stack Discovery` (not `## File Discovery`) with the shared fragment reference
 
 5. **Update `skills/audit-tenant/SKILL.md`** — same, with tenant patterns
 
@@ -134,7 +134,7 @@ Regression risk: low. The only behavioral change is early-exit on PRs with no re
 **Knowledge modules**: audit-skills, shared-fragments, frontmatter-conventions
 **Implementing roles**: general-purpose
 **Related ADRs**: N/A
-**Skills needed**: audit-money, audit-security, review-contracts, audit-tenant
+**Skills needed**: audit-money, audit-security, audit-contracts, audit-tenant
 **Bundle**: audit
 
 **Constraints**:
@@ -151,7 +151,7 @@ Grep-based tests in `tests/test_pre_llm_audit_pass.sh`:
 3. Shared fragment contains "early exit" and "CANDIDATE_FILES"
 4. `audit-money/SKILL.md` contains `pre_pass:`
 5. `audit-security/SKILL.md` contains `pre_pass:`
-6. `review-contracts/SKILL.md` contains `pre_pass:`
+6. `audit-contracts/SKILL.md` contains `pre_pass:`
 7. `audit-tenant/SKILL.md` contains `pre_pass:`
 8. `audit-security/SKILL.md` `file_patterns` contains `\.env`
 9. Each of the 4 skills references `audit-pre-pass.md` in its File Discovery section

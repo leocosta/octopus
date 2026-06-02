@@ -26,7 +26,7 @@ Single file: `cli/lib/setup-wizard.sh`
 ```bash
 declare -A ROLE_SKILL_MAP=(
   ["backend-specialist"]="backend-patterns audit-tenant audit-money audit-security debugging"
-  ["frontend-specialist"]="e2e-testing review-contracts debugging"
+  ["frontend-specialist"]="e2e-testing audit-contracts debugging"
   ["product-manager"]="adr plan-backlog feature-lifecycle doc-design doc-plan"
   ["tech-writer"]="adr doc-design doc-plan continuous-learning"
   ["social-media"]="launch-feature launch-release"

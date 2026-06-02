@@ -1,9 +1,9 @@
 ---
-title: review-contracts
+title: audit-contracts
 description: "Detect API-vs-frontend contract drift in multi-stack monorepos — endpoints, DTOs, enums, status codes, auth rules, params."
 ---
 
-`/octopus:review-contracts` escaneia um branch em busca de drift entre
+`/octopus:audit-contracts` escaneia um branch em busca de drift entre
 uma API e seus consumers de frontend antes que a mudança faça merge —
 encontrando as incompatibilidades que compilam sem erro mas quebram em
 runtime.
@@ -15,7 +15,7 @@ o modo de falha que o TypeScript não consegue capturar: uma URL de
 endpoint renomeada, um campo de DTO removido, um valor de enum que não
 existe mais no backend. Esses problemas normalmente aparecem em
 produção ou durante QA manual, muito depois que a mudança foi escrita.
-O `review-contracts` torna a comparação cross-stack automática em
+O `audit-contracts` torna a comparação cross-stack automática em
 cada diff.
 
 ## Como resolve
@@ -53,7 +53,7 @@ não um gate automatizado.
 ## Uso & parâmetros
 
 ```
-/octopus:review-contracts [ref] [--base=main] [--stacks=<list>] [--only=<checks>] [--write-report]
+/octopus:audit-contracts [ref] [--base=main] [--stacks=<list>] [--only=<checks>] [--write-report]
 ```
 
 - `ref` — branch, SHA de commit ou ref de PR a inspecionar. Default:
@@ -69,6 +69,6 @@ não um gate automatizado.
   `docs/reviews/YYYY-MM-DD-contract-<slug>.md` além de exibí-los
   inline. Default: somente exibição.
 
-[Fonte: `commands/review-contracts.md`](https://github.com/leocosta/octopus/blob/main/commands/review-contracts.md)
+[Fonte: `commands/audit-contracts.md`](https://github.com/leocosta/octopus/blob/main/commands/audit-contracts.md)
 
-[Source: `commands/review-contracts.md`](https://github.com/leocosta/octopus/blob/main/commands/review-contracts.md)
+[Source: `commands/audit-contracts.md`](https://github.com/leocosta/octopus/blob/main/commands/audit-contracts.md)

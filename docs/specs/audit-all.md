@@ -14,7 +14,7 @@
 
 Octopus ships four audit skills that all target a git diff:
 `audit-security`, `audit-money`, `audit-tenant`, and
-`review-contracts`. Running a full pre-merge review today means
+`audit-contracts`. Running a full pre-merge review today means
 invoking each of them sequentially, and each one repeats the same
 preparatory work: resolve the ref, compute the diff, list touched
 files, classify them by domain. Four sequential invocations also
@@ -110,7 +110,7 @@ depends_on:
   - audit-security
   - audit-money
   - audit-tenant
-  - review-contracts
+  - audit-contracts
 ---
 ```
 
@@ -203,8 +203,8 @@ Files flagged by more than one audit — prioritize these first.
 ## 🏢 audit-tenant
 <audit-tenant's own output, unchanged>
 
-## 🔁 review-contracts
-<review-contracts's own output, unchanged>
+## 🔁 audit-contracts
+<audit-contracts's own output, unchanged>
 ```
 
 Every sub-report keeps its own summary footer

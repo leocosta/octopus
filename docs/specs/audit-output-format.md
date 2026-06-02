@@ -6,7 +6,7 @@
 ## Problem
 
 Three pre-merge audit skills (`audit-money`, `audit-tenant`,
-`review-contracts`) each repeated ~60 lines of preamble documenting
+`audit-contracts`) each repeated ~60 lines of preamble documenting
 the same conventions: invocation flags, override-file cascade,
 severity output format, `--write-report` frontmatter, common errors,
 and composition note. Maintenance drift was a real risk — a fix to
@@ -32,7 +32,7 @@ Line counts after refactor (total includes the new shared file):
 |---|---:|---:|---:|
 | `skills/audit-money/SKILL.md` | 233 | 197 | −15% |
 | `skills/audit-tenant/SKILL.md` | 245 | 203 | −17% |
-| `skills/review-contracts/SKILL.md` | 250 | 217 | −13% |
+| `skills/audit-contracts/SKILL.md` | 250 | 217 | −13% |
 | `skills/_shared/audit-output-format.md` | — | 114 | new |
 | **Total** | 728 | 731 | +3 |
 

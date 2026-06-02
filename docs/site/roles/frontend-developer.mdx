@@ -48,7 +48,7 @@ engage automatically. Invoke via `/octopus:delegate
 
 - Backend code (delegate to `backend-developer`)
 - API contract design (cross-stack — usually a default-agent task
-  with `review-contracts` skill engaged)
+  with `audit-contracts` skill engaged)
 - Marketing / landing copy (delegate to `marketer`)
 - Architectural decisions about state management strategy
   (delegate to `architect`)
@@ -110,7 +110,7 @@ the stack is usually evident.
 - The change is a marketing landing page rewrite (use `marketer`
   for copy, `frontend-developer` only for the implementation)
 - API contract changes (cross-stack — use the default agent with
-  `review-contracts` skill)
+  `audit-contracts` skill)
 
 ## Composes with
 
@@ -118,7 +118,7 @@ the stack is usually evident.
   the role applies inside Phase 2.
 - **`test-tdd` skill** — used for the
   TDD loop on component / hook tests.
-- **[review-contracts skill](/octopus/skills/review-contracts/)**
+- **[audit-contracts skill](/octopus/skills/audit-contracts/)**
   — relevant when the frontend change touches a DTO or endpoint
   shape that the backend also owns. The skill catches drift; the
   role applies the fix on the frontend side.

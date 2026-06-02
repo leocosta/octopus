@@ -1,5 +1,5 @@
 ---
-title: review-contracts
+title: audit-contracts
 description: Detecta contract drift entre API e frontend em monorepos multi-stack — endpoints, DTOs, enums, status codes, regras de auth, params.
 sidebar:
   order: 10
@@ -7,7 +7,7 @@ source_hash: "sha256:d9881dcadf0e99e2474b9f2c2b0799b665e964b02f6697ded1a95925663
 needs_retranslation: false
 ---
 
-`review-contracts` é o audit que mira contract drift entre
+`audit-contracts` é o audit que mira contract drift entre
 camadas em um repo multi-stack. O modo de falha dominante em
 monorepos com frontend e backend é um lado adicionar um campo
 novo ou mudar um status code e o outro lado não perceber — a
@@ -58,7 +58,7 @@ compara com uma API viva. Isso significa que:
 
 ## Combinando com `audit-all`
 
-`review-contracts` é um dos quatro audits que o `audit-all`
+`audit-contracts` é um dos quatro audits que o `audit-all`
 compõe em paralelo. A invocação standalone faz sentido quando
 você quer focar especificamente em contratos (por exemplo, o PR
 de um time de frontend que só mexe no client da API; rodar a
@@ -72,4 +72,4 @@ stacks de backend precisam de uma atualização no SKILL.md para
 reconhecer a sintaxe de declaração de rotas e as convenções de
 DTO.
 
-[Fonte: `skills/review-contracts/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/review-contracts/SKILL.md)
+[Fonte: `skills/audit-contracts/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/audit-contracts/SKILL.md)

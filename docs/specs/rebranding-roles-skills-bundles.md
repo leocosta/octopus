@@ -4,7 +4,7 @@
 
 The current naming system has three compounding issues:
 1. **Inconsistent patterns** — skills mix verbs (`implement`, `batch`), nouns (`adr`, `dotnet`), and long descriptives (`plan-backlog`, `respond-to-review`)
-2. **Unclear names** — `review-contracts`, `audit-tenant`, and `respond-to-review` require domain knowledge to understand
+2. **Unclear names** — `audit-contracts`, `audit-tenant`, and `respond-to-review` require domain knowledge to understand
 3. **Role/skill overlap** — `tech-writer` (role) alongside `doc-plan`, `doc-design`, `adr` (skills) blurs the boundary between who does the work and what they do
 
 ## Solution
@@ -49,7 +49,7 @@ Introduce a consistent naming system:
 | Old | New |
 |---|---|
 | `respond-to-review` | `review-pr` |
-| `review-contracts` | `review-contracts` |
+| `audit-contracts` | `audit-contracts` |
 
 ### `launch-*` — publishing and go-to-market
 | Old | New |
@@ -100,7 +100,7 @@ Introduce a consistent naming system:
 - `skills/audit-security/` → `skills/audit-security/`
 - `skills/audit-tenant/` → `skills/audit-tenant/`
 - `skills/respond-to-review/` → `skills/review-pr/`
-- `skills/review-contracts/` → `skills/review-contracts/`
+- `skills/audit-contracts/` → `skills/audit-contracts/`
 - `skills/launch-feature/` → `skills/launch-feature/`
 - `skills/launch-release/` → `skills/launch-release/`
 - `skills/debug/` → `skills/debug/`

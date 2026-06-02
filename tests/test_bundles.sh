@@ -150,7 +150,7 @@ OCTOPUS_BUNDLES=("starter" "quality")
 
 expand_bundles
 
-expected_skills=(doc-adr doc-lifecycle context-budget implement debug respond-to-review delegate test-tdd map-system prototype context-handoff audit-all audit-security audit-money audit-tenant review-contracts refactor-deepen audit-config audit-grounding audit-verification audit-style audit-fleet fleet-bootstrap knowledge-hygiene knowledge-synthesize knowledge-briefing)
+expected_skills=(doc-adr doc-lifecycle context-budget implement debug respond-to-review delegate test-tdd map-system prototype context-handoff audit-all audit-security audit-money audit-tenant audit-contracts refactor-deepen audit-config audit-grounding audit-verification audit-style audit-fleet fleet-bootstrap knowledge-hygiene knowledge-synthesize knowledge-briefing)
 printf '%s\n' "${OCTOPUS_SKILLS[@]}" | sort -u > /tmp/got.$$
 printf '%s\n' "${expected_skills[@]}" | sort -u > /tmp/exp.$$
 diff -q /tmp/got.$$ /tmp/exp.$$ >/dev/null \
@@ -205,7 +205,7 @@ OCTOPUS_RULES=()
 parse_octopus_yml "$WORKDIR/.octopus.yml"
 expand_bundles
 
-# starter (11 skills) + quality (15 unique skills: audit-all + its 3 deps, review-contracts,
+# starter (11 skills) + quality (15 unique skills: audit-all + its 3 deps, audit-contracts,
 # refactor-deepen, audit-config, audit-grounding, audit-verification, audit-style, audit-fleet,
 # fleet-bootstrap, knowledge-hygiene, knowledge-synthesize, knowledge-briefing) = 26 distinct skills
 [[ ${#OCTOPUS_SKILLS[@]} -eq 26 ]] \
@@ -238,7 +238,7 @@ printf '%s\n' "${OCTOPUS_ROLES[@]}" | grep -q "^frontend-developer$" \
 
 echo "PASS: frontend bundle expands correctly"
 
-echo "Test 9c: fullstack bundle unions backend + frontend + review-contracts, dedups test-e2e"
+echo "Test 9c: fullstack bundle unions backend + frontend + audit-contracts, dedups test-e2e"
 
 OCTOPUS_SKILLS=()
 OCTOPUS_ROLES=()
@@ -248,7 +248,7 @@ OCTOPUS_BUNDLES=("fullstack")
 
 expand_bundles
 
-expected_fs=(backend-patterns test-e2e dba-mssql dba-postgres dba-mongodb dba-redis frontend-patterns test-component review-contracts)
+expected_fs=(backend-patterns test-e2e dba-mssql dba-postgres dba-mongodb dba-redis frontend-patterns test-component audit-contracts)
 printf '%s\n' "${OCTOPUS_SKILLS[@]}" | sort -u > /tmp/got_fs.$$
 printf '%s\n' "${expected_fs[@]}" | sort -u > /tmp/exp_fs.$$
 diff -q /tmp/got_fs.$$ /tmp/exp_fs.$$ >/dev/null \
@@ -408,7 +408,7 @@ rm -rf "$FAKE"
 echo "PASS: skills without depends_on are untouched"
 
 echo "Test: renamed skill dirs exist"
-for skill in doc-adr doc-lifecycle audit-money audit-security audit-tenant respond-to-review review-contracts launch-feature launch-release debug plan-backlog test-e2e frontend-patterns test-component; do
+for skill in doc-adr doc-lifecycle audit-money audit-security audit-tenant respond-to-review audit-contracts launch-feature launch-release debug plan-backlog test-e2e frontend-patterns test-component; do
   [[ -d "skills/${skill}" ]] \
     || { echo "FAIL: skills/${skill}/ not found"; exit 1; }
 done

@@ -1,5 +1,5 @@
 ---
-name: review-contracts
+name: audit-contracts
 description: >
   Detect API-vs-frontend contract drift in multi-stack monorepos
   (.NET/Node API + React/Vue/Astro frontends). Given a branch or PR,
@@ -36,7 +36,7 @@ compatible so reports can be concatenated in a single PR comment.
 ## Invocation
 
 ```
-/octopus:review-contracts [ref] [--base=main] [--stacks=<list>] [--only=<checks>] [--write-report]
+/octopus:audit-contracts [ref] [--base=main] [--stacks=<list>] [--only=<checks>] [--write-report]
 ```
 
 Flags `ref`, `--base`, `--only`, `--write-report` follow the shared
@@ -206,7 +206,7 @@ Skill-specific notes:
 - Finding lines cite both sides:
   `[<api-file>:<line> ↔ <frontend-file>:<line>]`.
 - Trailer appends the compared stacks:
-  `review-contracts: N block, N warn, N info (<stacks compared>)`.
+  `audit-contracts: N block, N warn, N info (<stacks compared>)`.
 - Report path: `docs/reviews/YYYY-MM-DD-contract-<slug>.md`.
 - Frontmatter adds a `stacks:` list.
 
@@ -219,7 +219,7 @@ Skill-specific errors:
 - **No stacks detected** → abort with `add stacks: to .octopus.yml or
   run from a supported monorepo layout`.
 - **Only one stack detected** → print `nothing to compare` and exit 0
-  with `review-contracts: 0 block, 0 warn, 0 info`.
+  with `audit-contracts: 0 block, 0 warn, 0 info`.
 - **No contract-relevant changes** → print `no contract changes
   detected` and exit 0.
 

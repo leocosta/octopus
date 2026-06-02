@@ -113,7 +113,7 @@ Otherwise                      → context is enough
 - **`test-e2e`** — covers the assembled flows across pages.
 - **`frontend-developer` role** — the persona that implements UI using these
   patterns via `/octopus:delegate`.
-- **`review-contracts`** — catches drift between the API and the frontend's
+- **`audit-contracts`** — catches drift between the API and the frontend's
   expected DTOs/endpoints (central to the `fullstack` bundle).
 - Stack rules: `rules/typescript/react-patterns.md`,
   `rules/typescript/ui-conventions.md`, `rules/typescript/tooling.md`.

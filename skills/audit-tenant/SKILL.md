@@ -29,7 +29,7 @@ DbContext without configuration, a controller that finds by `id`
 without verifying ownership.
 
 The skill composes with `audit-security`, `audit-money`, and
-`review-contracts`. All four emit the same severity format so
+`audit-contracts`. All four emit the same severity format so
 their reports concatenate into a single PR comment.
 
 ## Invocation
@@ -190,6 +190,6 @@ shared convention. Skill-specific wording:
 ## Composition
 
 Composes with `audit-security`, `audit-money`, and
-`review-contracts`. In multi-tenant code, reviewers should treat
+`audit-contracts`. In multi-tenant code, reviewers should treat
 🚫 Block findings as merge blockers — each one is a potential
 data-leak path.

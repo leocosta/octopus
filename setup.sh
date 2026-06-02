@@ -1926,7 +1926,7 @@ deliver_git_hooks() {
     local _has_audit=0
     for _skill in "${OCTOPUS_SKILLS[@]}"; do
       case "$_skill" in
-        audit-money|audit-tenant|review-contracts|audit-security|audit-all)
+        audit-money|audit-tenant|audit-contracts|audit-security|audit-all)
           _has_audit=1; break ;;
       esac
     done

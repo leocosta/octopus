@@ -251,7 +251,7 @@ The v1 SKILL.md includes the same stub shape as `implement` and
 > When a code-review response starts, consider whether
 > domain-specific skills help — `audit-money` for comments on
 > billing / tax / splits, `audit-tenant` for multi-tenant
-> data access concerns, `review-contracts` for comments that
+> data access concerns, `audit-contracts` for comments that
 > touch both API and frontend, `debug` when the reviewer
 > points at a bug rather than a style issue.
 >

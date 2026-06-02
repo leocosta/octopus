@@ -59,7 +59,7 @@ Theme flags (`--theme`, default **`dark-blue`**; `--design-from`) apply to `--ou
 1. **Cover** — repo name, one-line purpose, theme branding.
 2. **Project overview & business insights** — what the project does and why, in domain vocabulary. Sources: `CONTEXT.md`, `README`, the "why" recorded in `docs/adr/*`.
 3. **Architecture & module map** — the modules, their responsibilities, and how they connect, rendered as **inline SVG diagrams** (authored in Mermaid, pre-rendered to SVG so the deck carries no script runtime). The `--save` crawl produces the structure the default mode only samples.
-4. **Contracts (when an API is detected)** — endpoints, DTOs, enums, status codes. Reuses the API-detection heuristics from `review-contracts`.
+4. **Contracts (when an API is detected)** — endpoints, DTOs, enums, status codes. Reuses the API-detection heuristics from `audit-contracts`.
 5. **Data model (when a DB is detected)** — entities and relationships.
 6. **Decisions of record** — the ADRs that shape the codebase, summarized.
 
@@ -98,7 +98,7 @@ The new default does **not** require `frontend-design`: preset themes (default `
 **Knowledge modules**: [documentation]
 **Implementing roles**: [tech-writer, frontend-developer]
 **Related ADRs**: [proposed: map-system-save-deck-and-theme-reuse]
-**Skills needed**: [frontend-design, launch-release (theme schema), review-contracts (API detection)]
+**Skills needed**: [frontend-design, launch-release (theme schema), audit-contracts (API detection)]
 **Bundle**: `starter` (map-system already ships there) — the new modes ride the same skill; no new bundle entry.
 **Constraints**:
 - The deck (`complete`) is the new default; `simplified` mode keeps the old micro behaviour and is the only mode with the anti-crawl discipline. `--save`/`--no-save` and `--output` are orthogonal controls (persist? format?).

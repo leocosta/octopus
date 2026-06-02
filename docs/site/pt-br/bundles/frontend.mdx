@@ -86,7 +86,7 @@ roles:
 - **Nenhuma skill de backend ou camada de dados** — o bundle continua
   focado em UI. Um repo com as duas stacks quer `fullstack`, não
   `frontend + backend` montados à mão.
-- **`review-contracts`** — vive no `quality` (e no `fullstack`), porque
+- **`audit-contracts`** — vive no `quality` (e no `fullstack`), porque
   detecção de drift de contrato só faz sentido quando tanto uma API
   quanto seu consumidor estão em escopo. Um repo puramente frontend
   contra uma API de terceiros não é dono do contrato.
@@ -118,8 +118,8 @@ Tarefas com forma de UI passam a ser roteadas:
 
 - **[starter](/octopus/pt-br/bundles/starter/)** — fundação obrigatória.
 - **[quality](/octopus/pt-br/bundles/quality/)** — casa para UIs em
-  produção. Traz `review-contracts` (drift API ↔ frontend) e os gates
+  produção. Traz `audit-contracts` (drift API ↔ frontend) e os gates
   de auditoria.
 - **[fullstack](/octopus/pt-br/bundles/fullstack/)** — se o repo tem
   backend também, prefira `fullstack`, que já une este bundle com
-  `backend` e `review-contracts`.
+  `backend` e `audit-contracts`.

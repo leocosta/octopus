@@ -32,7 +32,7 @@ check "declares --theme with default dark-blue" grep -qi "dark-blue" "$SKILL"
 # --- composition --------------------------------------------------------
 check "composes frontend-design" grep -qi "frontend-design" "$SKILL"
 check "reuses launch-release theme system" grep -qi "launch-release" "$SKILL"
-check "reuses review-contracts for API detection" grep -qi "review-contracts" "$SKILL"
+check "reuses audit-contracts for API detection" grep -qi "audit-contracts" "$SKILL"
 
 # --- deck content -------------------------------------------------------
 check "deck section: overview / business insights" grep -qiE "business insight|overview" "$SKILL"

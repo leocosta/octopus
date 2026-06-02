@@ -21,7 +21,7 @@ matches.
 |---|---|---|---|
 | `e2e-testing` | paths: `*.spec.ts`, `cypress/**`, `playwright/**` | **STUB** | No spec/test files, no cypress or playwright dirs |
 | `dotnet` | paths: `*.csproj`, `*.cs`, `*.sln` | **STUB** | No .NET files |
-| `review-contracts` | paths: `openapi/**`, `contracts/**`, `swagger.*` | **STUB** | No OpenAPI/contract files |
+| `audit-contracts` | paths: `openapi/**`, `contracts/**`, `swagger.*` | **STUB** | No OpenAPI/contract files |
 | `audit-security` | keywords: `auth`, `jwt`, `token`, `sql`, … | **STUB** | Keywords not found in README, package.json, docs/ |
 | `audit-money` | keywords: `payment`, `stripe`, `billing`, … | **STUB** | Keywords not found |
 | `audit-tenant` | keywords: `tenant`, `org`, `workspace`, … | **STUB** | Keywords not found |
@@ -46,7 +46,7 @@ significantly smaller output file.
 For a project using the `dotnet-api` or `node-api` bundle (which includes
 domain-specific skills), the realistic reduction depends on which triggers
 fire:
-- A pure Node.js API project → `dotnet`, `e2e-testing`, `review-contracts`
+- A pure Node.js API project → `dotnet`, `e2e-testing`, `audit-contracts`
   stubbed; `audit-security` likely active (jwt, token keywords common); ~400–600
   lines saved.
 - A .NET project with Stripe billing → all 6 skills likely active → no reduction.

@@ -94,7 +94,7 @@ The `## Task Routing` section is a v1 stub reserved for RM-034,
 which will auto-dispatch to the right companion skill based on
 comment content (`audit-money` for billing comments,
 `audit-tenant` for multi-tenant data access,
-`review-contracts` for cross-layer concerns, `debug` for
+`audit-contracts` for cross-layer concerns, `debug` for
 reported bugs).
 
 ## Review before merging
