@@ -150,7 +150,7 @@ OCTOPUS_BUNDLES=("starter" "quality")
 
 expand_bundles
 
-expected_skills=(doc-adr doc-lifecycle context-budget implement debug respond-to-review delegate test-tdd map-system prototype context-handoff audit-all audit-security audit-money audit-tenant review-contracts refactor-deepen audit-config audit-grounding audit-verification audit-fleet fleet-bootstrap knowledge-hygiene knowledge-synthesize knowledge-briefing)
+expected_skills=(doc-adr doc-lifecycle context-budget implement debug respond-to-review delegate test-tdd map-system prototype context-handoff audit-all audit-security audit-money audit-tenant review-contracts refactor-deepen audit-config audit-grounding audit-verification audit-style audit-fleet fleet-bootstrap knowledge-hygiene knowledge-synthesize knowledge-briefing)
 printf '%s\n' "${OCTOPUS_SKILLS[@]}" | sort -u > /tmp/got.$$
 printf '%s\n' "${expected_skills[@]}" | sort -u > /tmp/exp.$$
 diff -q /tmp/got.$$ /tmp/exp.$$ >/dev/null \
@@ -205,11 +205,11 @@ OCTOPUS_RULES=()
 parse_octopus_yml "$WORKDIR/.octopus.yml"
 expand_bundles
 
-# starter (11 skills) + quality (14 unique skills: audit-all + its 3 deps, review-contracts,
-# refactor-deepen, audit-config, audit-grounding, audit-verification, audit-fleet,
-# fleet-bootstrap, knowledge-hygiene, knowledge-synthesize, knowledge-briefing) = 25 distinct skills
-[[ ${#OCTOPUS_SKILLS[@]} -eq 25 ]] \
-  || { echo "FAIL: expected 25 skills after bundle expansion, got ${#OCTOPUS_SKILLS[@]}"; exit 1; }
+# starter (11 skills) + quality (15 unique skills: audit-all + its 3 deps, review-contracts,
+# refactor-deepen, audit-config, audit-grounding, audit-verification, audit-style, audit-fleet,
+# fleet-bootstrap, knowledge-hygiene, knowledge-synthesize, knowledge-briefing) = 26 distinct skills
+[[ ${#OCTOPUS_SKILLS[@]} -eq 26 ]] \
+  || { echo "FAIL: expected 26 skills after bundle expansion, got ${#OCTOPUS_SKILLS[@]}"; exit 1; }
 
 printf '%s\n' "${OCTOPUS_ROLES[@]}" | grep -q "^architect$" \
   || { echo "FAIL: architect role missing after expansion"; exit 1; }

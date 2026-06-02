@@ -1,0 +1,82 @@
+---
+title: audit-style
+description: "Signal-only audit that confronts the working diff against your team's opinionated design rules — the custom-exception gate, the Result-over-throw rule, the no-boolean-parameter rule, the cost-of-abstraction rule — and flags two things a formatter and the generic simplify cannot: code that breaks a stated rule (rule-violation) and abstraction the rules call a cost (over-engineering). Never blocks; it reports and leaves the call to you."
+---
+
+The native `simplify` has good taste, but it does not know *your* rules. It
+cannot tell that a custom exception must earn its existence through a gate,
+that an expected failure should be a typed result rather than a throw, or
+that abstraction is a cost you pay only at the third occurrence. And because
+it optimizes for *less code*, it can introduce the very over-abstraction your
+rules forbid. `audit-style` is the reader that holds the rules in one hand and
+the diff in the other.
+
+## What it solves
+
+Octopus already guards code quality on two axes — but neither is the house
+design rules:
+
+- the **syntactic block** (the `guardrails` bundle) stops unformatted,
+  untyped, or secret-bearing code — but it judges syntax, not whether a
+  design decision honors a rule the team wrote down;
+- the **semantic grounding signal** (`audit-grounding`) flags invented
+  conventions and unsupported domain facts — but it judges the diff against
+  the *domain*, not against the *coding rules*.
+
+That leaves the third axis: *does this code honor the opinionated design
+rules, and is it over-engineered?* A formatter will never say "this custom
+exception has one throw site and zero catch sites — throw the stdlib type
+instead." The generic `simplify` will never say "you extracted this at the
+second occurrence; the rule says wait for the third." `audit-style` is the
+side that reads the rules and reports where the diff diverges.
+
+## The two findings
+
+- **`rule-violation`** — a construct the diff introduces that contradicts a
+  stated rule: a custom exception that fails the gate, a throw where a typed
+  result is called for, a boolean parameter, a magic number, a missing guard
+  clause, business logic leaking into a repository, a swallowed exception.
+- **`over-engineering`** — abstraction the rules explicitly call a cost: a
+  premature abstraction, a speculative subtype hierarchy "for the future",
+  DRY applied before three occurrences, an indirection layer with no present
+  caller. This is the dimension the generic `simplify` structurally cannot
+  produce — `audit-style` is the reader that knows when **not** to simplify.
+
+## The source of truth
+
+It loads the rules the repo already ships, in order, and degrades gracefully
+when one is absent: `rules/common/exceptions.md` (the custom-exception gate),
+`rules/common/patterns.md` (Result pattern, repository/service separation,
+guard clauses), `rules/common/coding-style.md` (naming, structure, the
+anti-pattern catalogue), and the active stack rules that match the languages
+the diff touches. A missing rules file becomes an `info` note so you know the
+audit was partial — it never invents a rule that is not written down.
+
+## Why signal-only, never block
+
+A design verdict is a judgment call. Blocking a merge on a probabilistic
+read of "is this over-engineered?" would be worse than the problem it solves.
+The syntactic gate already blocks at commit; `audit-style` surfaces the
+design-rules gap as `warn` / `info` and leaves the call to you. Recurring
+findings feed the existing knowledge loop, so a violation the team keeps
+making gets promoted into a rule rather than re-flagged forever.
+
+## How it runs
+
+Unlike `audit-grounding` and `audit-verification`, `audit-style` has **no
+Stop hook** — there is no per-task LLM cost. It runs only when a review flow
+invokes it: the `codereview` and `pr-review` self-reviews, or the `implement`
+simplify pass. It registers in the `quality` bundle:
+
+```yaml
+bundles:
+  - quality
+  - guardrails
+hooks: true
+```
+
+`audit-style` complements the native `simplify` rather than replacing it: the
+generic pass applies taste and edits the code, `audit-style` reads the house
+rules and signals — including the over-engineering the generic pass can miss.
+
+[Source: `skills/audit-style/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/audit-style/SKILL.md)
