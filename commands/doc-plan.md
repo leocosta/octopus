@@ -13,7 +13,7 @@ and filled via `/octopus:doc-design`) and write
 the `superpowers:writing-plans` vocabulary so existing
 executors (`superpowers:executing-plans`,
 `superpowers:subagent-driven-development`, and the future
-`/octopus:implement --plan` walker in RM-037) consume it
+`/octopus:implement --plan` walker) consume it
 directly.
 
 ## Usage
@@ -36,7 +36,7 @@ The terminal state is a committed plan file in
 `docs/plans/<slug>.md`. Any request during the session that
 drifts into implementation (writing code, writing tests,
 creating a feature branch to code on) must be declined —
-redirect the user to `/octopus:implement --plan` (RM-037)
+redirect the user to `/octopus:implement --plan`
 once the plan is merged.
 
 **Docs-only branches are permitted** (and expected when the
@@ -204,7 +204,6 @@ Plan ready at docs/plans/<slug>.md
 
 Open a PR for review, then — once merged — execute with:
   /octopus:implement --plan docs/plans/<slug>.md
-    (available once RM-037 ships)
 
 Or run superpowers:executing-plans or
 superpowers:subagent-driven-development against

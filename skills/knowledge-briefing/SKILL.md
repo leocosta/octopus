@@ -3,7 +3,7 @@ name: knowledge-briefing
 description: >
   Proactive cadence summary over a knowledge root — surfaces "what changed /
   what needs you today" without the reader asking. The deterministic core
-  (`octopus briefing`, over the RM-106 `octopus kr` registry) computes the
+  (`octopus briefing`, over the `octopus kr` registry) computes the
   change-delta since a per-root watermark and composes `octopus hygiene`
   (attention) and `octopus synthesize` (connections, weekly); this skill
   narrates the briefing, grounded to source nodes, on the cheapest model tier.
@@ -47,7 +47,7 @@ The core emits `section|root|node|detail`:
 
 ## Grounding
 
-Every line of the briefing **must cite its source** as `(src: <node>)` and invent nothing — the core already carries the node for each line; never add a claim that no line supports. This reuses the RM-088 audit-grounding discipline: a briefing that can't be traced to a node is not shipped.
+Every line of the briefing **must cite its source** as `(src: <node>)` and invent nothing — the core already carries the node for each line; never add a claim that no line supports. This reuses the audit-grounding discipline: a briefing that can't be traced to a node is not shipped.
 
 ## Narration runs on the cheapest model tier
 

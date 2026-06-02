@@ -25,7 +25,7 @@ at two depths:
 - **`complete`** (the **default**) — an exhaustive pass that renders a
   **self-contained, themed HTML deck** of the repository: the human-facing
   *"what is this project"* artifact a new engineer is walked through and a
-  manager reuses. `onboarding` (RM-090) presents this deck during the ramp.
+  manager reuses. `onboarding` presents this deck during the ramp.
 
 The two modes are different jobs. `simplified` keeps the micro-skill
 discipline; `complete` is allowed — and expected — to crawl.
@@ -181,7 +181,7 @@ For **`complete` mode**:
   custom themes for `--design-from`; an enhancer, not required for presets.
 - **`launch-release`** — the theme schema and presets the deck reuses.
 - **`review-contracts`** — the API-detection heuristics for the contracts section.
-- **`onboarding` (RM-090)** — presents the `complete` deck during the ramp.
+- **`onboarding`** — presents the `complete` deck during the ramp.
 - **`doc-align`** — often called before it, so grilling starts from shared geography.
 - **`doc-lifecycle`** — when the map reveals an undocumented area, the follow-up
   is usually a `CONTEXT.md` update or an ADR.

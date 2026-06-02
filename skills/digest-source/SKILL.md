@@ -9,9 +9,9 @@ description: >
   decisions, system map, actions, political risk) where every claim cites its source
   line, a preview, and then the writes — a dated journal entry, a rewritten
   materialized state, and fan-out pointers into each context a transversal project
-  crosses. Reuses the RM-099 write-guard contract and audit-grounding. Manual,
-  operator-run; second member of the consigliere bundle. Confluence depends on the
-  Atlassian MCP (RM-104) — falls back to export-PDF/paste until then.
+  crosses. Reuses the `consigliere-bootstrap` write-guard contract and
+  audit-grounding. Manual, operator-run; second member of the consigliere bundle.
+  Confluence depends on the Atlassian MCP — falls back to export-PDF/paste until then.
 triggers:
   keywords: ["digest", "digest this", "digest source", "capture this meeting", "log this into my workspace", "add to consigliere"]
 ---
@@ -21,11 +21,11 @@ triggers:
 ## Overview
 
 `digest-source` fills the consigliere workspace that `consigliere-bootstrap`
-(RM-099) scaffolds. The manager drops an input and describes it in one line; the
+scaffolds. The manager drops an input and describes it in one line; the
 skill snapshots it immutably, routes it to the right place in the context/project
 tree, extracts the six fields with strict grounding, previews, and writes. It does
-**capture** only — querying is `context-status` (RM-102); the heuristics loop is
-`playbook-review` (RM-103).
+**capture** only — querying is `context-status`; the heuristics loop is
+`playbook-review`.
 
 ## When to Engage
 
@@ -49,7 +49,7 @@ it understood.
 
 Read the `consigliere.workspace` config key. If it is unset, **refuse** and point the
 manager to `/octopus:consigliere-bootstrap`. Every write below obeys the **canonical
-write-guard contract** documented in `consigliere-bootstrap` (RM-099): a write may
+write-guard contract** documented in `consigliere-bootstrap`: a write may
 land **only** inside the resolved `consigliere.workspace` path — never a team or code
 repo. This skill **cites that contract; it does not re-derive it.**
 
@@ -65,7 +65,7 @@ grounding base every later claim traces back to.
 | **text** | write the pasted text verbatim | ✅ |
 | **pdf** / file | read the local file's text | ✅ |
 | **jira** | pull the issue via the Jira MCP | ✅ |
-| **confluence** | fetch via the Atlassian MCP; **if it is absent, stop and ask** the manager to export the page as PDF or paste it — do not silently fail (RM-104) | ⚠️ depends |
+| **confluence** | fetch via the Atlassian MCP; **if it is absent, stop and ask** the manager to export the page as PDF or paste it — do not silently fail | ⚠️ depends |
 
 ## Step 3 — Infer route + confirm (on-the-fly creation)
 
@@ -106,8 +106,7 @@ Before touching disk, show the exact writes:
 
 Surface any relevant existing heuristic (`playbook.md` / `people/<person>.md`) as a
 **suggestion** ("owner tends to delay → FUP?"), and offer to capture a newly-observed
-pattern into the `playbook-review` queue (RM-103). Suggestions are never written as
-fact.
+pattern into the `playbook-review` queue. Suggestions are never written as fact.
 
 ## Step 6 — Write (journal + state + fan-out)
 
@@ -131,8 +130,7 @@ On confirmation:
 
 ## Related
 
-- Depends on `consigliere-bootstrap` (RM-099) — the workspace contract + write-guard.
-- Reuses `audit-grounding` (RM-088) — the strict-grounding discipline.
-- Spec: `docs/specs/digest-source.md` (RM-100).
-- Next: `context-status` (RM-102) consults the state this skill writes;
-  `playbook-review` (RM-103) owns the heuristics loop this skill feeds.
+- Depends on `consigliere-bootstrap` — the workspace contract + write-guard.
+- Reuses `audit-grounding` — the strict-grounding discipline.
+- Next: `context-status` consults the state this skill writes;
+  `playbook-review` owns the heuristics loop this skill feeds.

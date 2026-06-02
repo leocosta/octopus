@@ -3,7 +3,7 @@ name: knowledge-synthesize
 description: >
   Surface connections that cross the nodes of a knowledge root — the value a
   silo'd base hides. The deterministic core (`octopus synthesize`, over the
-  RM-106 `octopus kr` registry) computes ranked candidates: shared-target (two
+  `octopus kr` registry) computes ranked candidates: shared-target (two
   nodes linking the same third), co-mention (a recurring entity with no home
   node), and relevant (`--node` lexical overlap, the forgotten-but-relevant
   lookup). This skill judges which candidates are real, flags contradictions

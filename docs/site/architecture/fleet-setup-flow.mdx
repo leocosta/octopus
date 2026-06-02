@@ -137,8 +137,8 @@ source is resolved highest-wins:
 
 So a fleet manager curates **one** editor/git standard in the workspace, and it
 overrides the generic generated default — while a repo's intentional local
-choice still wins, and generation fills the gaps. See
-[ADR-005](https://github.com/leocosta/octopus/blob/main/docs/adr/005-workspace-config-template-precedence.md).
+choice still wins, and generation fills the gaps. This is the
+workspace config-template precedence.
 
 ## The merge policy
 
@@ -153,7 +153,7 @@ A repo that already has an `.octopus.yml` is merged **per key**, never clobbered
 ```
 
 Nothing is removed silently; de-escalations and arbitrary keeps are surfaced for
-a human. See [ADR-004](https://github.com/leocosta/octopus/blob/main/docs/adr/004-fleet-merge-policy.md).
+a human — this is the non-destructive fleet merge policy.
 
 ## Usage examples
 

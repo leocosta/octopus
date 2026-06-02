@@ -6,7 +6,7 @@ description: >
   surfaced, the per-node playbook.md heuristics applied, the "thinks like you"
   voice. A wrapper — the engines stay generic; the deterministic `octopus lens`
   helper surfaces the grounded material; the consigliere role (opus) frames it.
-  Read-only over the workspace (ADR-007).
+  Read-only over the workspace.
 triggers:
   paths: []
   keywords: ["consigliere", "lens", "political risk", "playbook", "manager briefing"]
@@ -19,7 +19,7 @@ triggers:
 
 The engines (`hygiene`, `synthesize`, `briefing`) are generic and read like flat
 reports on any root. Run against the consigliere workspace, their findings
-should read like the **consigliere** (RM-101): the political read others miss,
+should read like the **consigliere**: the political read others miss,
 the heuristics you already hold, your own voice. This skill applies that lens by
 reusing the engines — it does not fork them.
 
@@ -41,12 +41,12 @@ reusing the engines — it does not fork them.
 
 ## Voice
 
-The lens speaks as the **`consigliere` role (RM-101, `model: opus`)** — not the engines' cheap-tier narration. Political nuance and "thinks like you" judgment warrant the stronger model. Invoke it via `octopus ask --role consigliere` (or the assistant's equivalent) so the briefing reads in the manager's own register.
+The lens speaks as the **`consigliere` role (`model: opus`)** — not the engines' cheap-tier narration. Political nuance and "thinks like you" judgment warrant the stronger model. Invoke it via `octopus ask --role consigliere` (or the assistant's equivalent) so the briefing reads in the manager's own register.
 
 ## Grounding
 
 Every line must cite its source — `(src: <node>)` plus the specific `playbook|`/`risk|`/`blocker|` line it draws from. Surface no political read that the workspace does not support; the lens sharpens what is recorded, it does not invent.
 
-## Write-guard (ADR-007)
+## Write-guard
 
-The lens is **read-only**. It composes engine runs **without `--fix`** and never writes the workspace. The consigliere root carries `write_policy: adr-007`; honor it — managerial data is never mutated by the lens.
+The lens is **read-only**. It composes engine runs **without `--fix`** and never writes the workspace. The consigliere root carries the workspace write-policy; honor it — managerial data is never mutated by the lens.

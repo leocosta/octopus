@@ -81,7 +81,7 @@ manager).
    (`definition-of-done`), and which bundles/hooks are active (what the
    engineer's agent will enforce on every commit).
 6. **The fleet** — the `workspace:` standard and the other repos they'll
-   touch (over 6+ repos this matters). Point at `audit-fleet` (RM-094)
+   touch (over 6+ repos this matters). Point at `audit-fleet`
    output when available.
 
 After each step, check its item off in the checklist.
@@ -101,12 +101,12 @@ After each step, check its item off in the checklist.
 
 ## Integration with Other Skills
 
-- **`map-system`** — step 4 presents its complete deck (RM-098); the
+- **`map-system`** — step 4 presents its complete deck; the
   architecture surface of the ramp.
 - **`standards`** — the self-serve follow-up for "what's our standard for
   X, and why" after the standards step.
 - **`definition-of-done`** — the "way of working" step shows the team DoD.
-- **`audit-fleet` (RM-094)** — the fleet step points at its cross-repo
+- **`audit-fleet`** — the fleet step points at its cross-repo
   output when available.
-- **`tech-lead` bundle (RM-096)** — the final home; `onboarding` is part of
+- **`tech-lead` bundle** — the final home; `onboarding` is part of
   the manager kit. Interim home: the `docs` bundle.

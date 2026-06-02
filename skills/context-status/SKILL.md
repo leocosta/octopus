@@ -18,7 +18,7 @@ triggers:
 
 ## Overview
 
-`digest-source` (RM-100) fills the workspace; `context-status` reads it. Two weeks
+`digest-source` fills the workspace; `context-status` reads it. Two weeks
 after a meeting the manager asks "how's payments? what's blocked?" and wants a
 grounded answer assembled from the materialized state — not a re-read of every
 transcript. This skill answers natural-language questions over the workspace,
@@ -42,8 +42,8 @@ political risk. Not auto-invoked.
 
 Read the `consigliere.workspace` config key. If it is unset, refuse and point the
 manager to `/octopus:consigliere-bootstrap`. All reads stay **within** the resolved
-workspace — this skill reuses the RM-099 write-guard as a read boundary and **never
-writes** anything.
+workspace — this skill reuses the `consigliere-bootstrap` write-guard as a read
+boundary and **never writes** anything.
 
 ## Step 2 — Interpret the question + route
 
@@ -83,8 +83,7 @@ running `/octopus:digest-source` on the relevant input — do **not** guess, and
 
 ## Related
 
-- Depends on `consigliere-bootstrap` (RM-099, the workspace + write-guard) and the
-  state `digest-source` (RM-100) writes.
-- Reuses `audit-grounding` (RM-088) and applies the `consigliere` role (RM-101).
-- Spec: `docs/specs/context-status.md` (RM-102).
-- Sibling: `playbook-review` (RM-103) owns the heuristics loop this skill applies from.
+- Depends on `consigliere-bootstrap` (the workspace + write-guard) and the
+  state `digest-source` writes.
+- Reuses `audit-grounding` and applies the `consigliere` role.
+- Sibling: `playbook-review` owns the heuristics loop this skill applies from.

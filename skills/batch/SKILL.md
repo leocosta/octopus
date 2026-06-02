@@ -41,7 +41,7 @@ Bad candidates:
 
 ## Pre-requisites
 
-- `worktree: true` in `.octopus.yml` (RM-011) — the manifest flag that
+- `worktree: true` in `.octopus.yml` — the manifest flag that
   signals this repository tolerates worktree isolation.
 - Targets must be independent (no cross-file dependencies).
 - Working tree must be clean before invocation.

@@ -201,7 +201,7 @@ would have provided — point at the gap and move on.
   ADR → Knowledge). `implement` governs code. A task with both
   a docs ask and a code ask triggers both skills; they compose
   without conflict.
-- **`debug` (RM-031, future)** — when a task starts from a
+- **`debug`** — when a task starts from a
   bug report or a failing test, delegate to `debug` for the
   reproduce → isolate → fix → regression flow. The TDD loop in
   this skill still applies to the fix itself.

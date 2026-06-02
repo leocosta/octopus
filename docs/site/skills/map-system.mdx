@@ -62,8 +62,8 @@ behaviour is one flag away (`--mode simplified --no-save`). It does **not**
 add a hard `frontend-design` dependency: preset HTML decks render
 deterministically from the template; `frontend-design` only refines the
 visuals when present, and is required solely for `--design-from` (which
-falls back to a preset). The rationale is recorded in
-[ADR-003](https://github.com/leocosta/octopus/blob/main/docs/adr/003-map-system-complete-deck.md).
+falls back to a preset). This is the rationale for generating and saving
+a complete deck by default.
 
 ## Composes with
 

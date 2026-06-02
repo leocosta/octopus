@@ -348,7 +348,7 @@ listed above.
 
 Twelve presets ship: `classic` (default), `jade`, `dark`, `bold`,
 `newsletter`, `sunset`, `ocean`, `terminal`, `paper`, plus `dark-blue`,
-`dark-jade`, and `light-jade` (added for the `map-system` deck, RM-098).
+`dark-jade`, and `light-jade` (added for the `map-system` deck).
 
 ## Slides Channel
 

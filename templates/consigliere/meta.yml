@@ -1,5 +1,5 @@
 # projects/<proj>/meta.yml — a temporal, cross-cutting project.
-# `contexts` is the M:N link that drives the fan-out pointer (RM-100):
+# `contexts` is the M:N link that drives the fan-out pointer:
 # a digest on this project propagates a one-line pointer into each listed
 # context's state.md.
 title: <Human label>             # e.g. "Checkout Revamp"

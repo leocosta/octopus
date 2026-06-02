@@ -19,7 +19,7 @@ plan-skeleton.md — frozen output template for /octopus:doc-plan.
 This file captures the writing-plans vocabulary that
 downstream executors (superpowers:executing-plans,
 superpowers:subagent-driven-development, and the future
-/octopus:implement --plan walker in RM-037) rely on.
+/octopus:implement --plan walker) rely on.
 
 Structural tests in tests/test_doc_plan.sh assert that
 /octopus:doc-plan emits plans matching this skeleton on the
