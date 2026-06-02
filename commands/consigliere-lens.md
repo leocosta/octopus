@@ -1,6 +1,6 @@
 ---
 name: consigliere-lens
-description: (Octopus) Run a knowledge engine against the consigliere workspace and reframe it through the consigliere lens — political risk, per-node playbook, "thinks like you" voice. Read-only (ADR-007).
+description: (Octopus) Run a knowledge engine against the consigliere workspace and reframe it through the consigliere lens — political risk, per-node playbook, "thinks like you" voice. Read-only.
 ---
 
 # /octopus:consigliere-lens

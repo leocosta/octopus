@@ -5,7 +5,7 @@ description: >
   promotes confirmed patterns to rules. Inspired by the Claude.md learning
   protocol — adapted for multi-agent environments (Kilo Code, Codex, Copilot, etc.).
   Default mode is single-developer/session capture to knowledge/. Team mode
-  (RM-093) aggregates recurring review feedback across the fleet into
+  aggregates recurring review feedback across the fleet into
   rule-promotion candidates — a fleet-wide pattern promotes to the shared
   workspace rules, a single-repo pattern stays local.
 triggers:
@@ -105,7 +105,7 @@ Each file uses this structure:
   - Exception: when this rule does NOT apply
 ```
 
-## Team mode (RM-093) — fleet-wide review learning
+## Team mode — fleet-wide review learning
 
 Everything above is the **default mode**: a single developer's session capture
 to `knowledge/`. **Team mode** lifts the same capture→promote loop to the

@@ -35,7 +35,7 @@ does not dispatch any implementation skill. The terminal state
 is a committed spec in `docs/specs/<slug>.md`. Any request during
 the session that drifts into implementation (writing code,
 writing tests, creating a feature branch to code on) must be
-declined — redirect the user to `/octopus:doc-plan` (RM-036) or
+declined — redirect the user to `/octopus:doc-plan` or
 `/octopus:implement` once the spec is merged.
 
 **Docs-only branches are permitted** (and expected when the
@@ -116,7 +116,7 @@ Each triggered section follows the same mini-cycle: ask → draft
 Ask: `"Walk me through the ordered steps — 3 to 7 items,
 each with target files and dependencies."`
 
-This is **not** the bite-sized TDD plan (that is RM-036's
+This is **not** the bite-sized TDD plan (that is
 `/octopus:doc-plan`). Stay at the "what file / what change"
 level.
 

@@ -19,7 +19,10 @@ mode="check"; [[ "${1:-}" == "--report" ]] && mode="report"
 
 # PR refs are matched only in their unambiguous forms — `(#123)` / `PR #123` —
 # so hex colours like `#008000` in role frontmatter are not false positives.
-leak_re='RM-[0-9]+|Cluster [0-9]+|\(#[0-9]+\)|PR #[0-9]+|shipped in v[0-9]'
+# Links into Octopus's own internal design docs (its ADRs / specs / RFCs /
+# roadmap on GitHub) are leakage too — a public page must not send the reader
+# to browse the tool's development records.
+leak_re='RM-[0-9]+|Cluster [0-9]+|\(#[0-9]+\)|PR #[0-9]+|shipped in v[0-9]|github\.com/leocosta/octopus/blob/[^)]*/docs/(adr|specs|rfcs|roadmap)'
 todo_re='\{/\* TODO|<!-- TODO'
 findings=0
 

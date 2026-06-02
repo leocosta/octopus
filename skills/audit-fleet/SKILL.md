@@ -7,7 +7,7 @@ description: >
   CONTEXT.md/ADR adoption. Signal-only: a per-repo table + a drift-hotspots
   rollup, never a mutation. The detect half of detect → remediate; its report
   feeds `fleet-bootstrap --from-audit`. The cross-repo analog of audit-config.
-  Interim in the quality bundle, final in tech-lead (RM-096).
+  Interim in the quality bundle, final in tech-lead.
 triggers:
   keywords: ["fleet audit", "audit the fleet", "drift across repos", "across repos", "which repos", "fleet adoption", "fleet drift"]
 ---
@@ -40,7 +40,7 @@ is, or where the fleet drifts. Manual, operator-run.
 Resolve the repo list, in precedence (the **same** list `fleet-bootstrap`
 uses):
 
-1. **`fleet.yml`** in the `workspace:` repo — the RM-095 source of truth. Its
+1. **`fleet.yml`** in the `workspace:` repo — the source of truth. Its
    `baseline` / `profiles` / `tiers` let the audit compute each repo's
    **target**; its `repos:` is the list. Primary.
 2. An explicit `fleet:` list in the orchestrator repo's `.octopus.yml` — when
@@ -100,7 +100,7 @@ Hotspots: 2/4 behind version · 3/4 no CONTEXT.md · 1/4 below target tier
 
 v1 runs **locally against checked-out repos** (simplest, no infra) — consistent
 with `fleet-bootstrap` v1. An org-level GitHub Action scanning remotes is a
-heavier follow-up (auth/secrets); flagged, not built (ADR-006).
+heavier follow-up (auth/secrets); flagged, not built.
 
 ## Anti-Patterns
 
@@ -114,9 +114,9 @@ heavier follow-up (auth/secrets); flagged, not built (ADR-006).
 
 ## Integration with Other Skills
 
-- **`fleet-bootstrap` (RM-095)** — the remediation half; shares the fleet list;
+- **`fleet-bootstrap`** — the remediation half; shares the fleet list;
   consumes this report via `--from-audit`.
 - **`audit-config`** — the single-repo checks this audit reuses across the fleet.
 - **`audit-grounding`** — depends on the `CONTEXT.md`/ADR adoption this audit
   surfaces.
-- **`tech-lead` bundle (RM-096)** — the final home; interim `quality`.
+- **`tech-lead` bundle** — the final home; interim `quality`.

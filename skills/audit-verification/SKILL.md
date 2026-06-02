@@ -4,7 +4,7 @@ description: >
   Signal-only audit that confronts a finished agent task against its run
   evidence — the third side of the local-guardrail triad, beside the syntactic
   block (guardrails bundle) and the semantic signal (audit-grounding). It
-  surfaces two failure modes RM-088 deferred: a completion claimed without the
+  surfaces two failure modes: a completion claimed without the
   build/test/typecheck ever running (unverified-completion-claim), and a diff
   that references a file the build would reject (unresolved-reference). Never
   blocks; runs on demand via /octopus:review-proposals, on the cheapest model

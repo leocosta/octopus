@@ -22,7 +22,7 @@ of every session that loads the skill. This skill compresses a single
 `SKILL.md` in place, preserving semantics and every string the
 skill's own tests depend on.
 
-It is the in-skill counterpart to RM-024 (cross-skill dedup). Run
+It is the in-skill counterpart to cross-skill dedup. Run
 both before assuming a skill is "lean".
 
 ## Invocation
@@ -154,7 +154,7 @@ anchors preserved: <K>/<K>
 - Run `/octopus:compress-skill <name>` after landing a round of
   edits to a SKILL.md and before committing. The diff plus the
   semantic-risk report are the review surface.
-- Pair with RM-024's `_shared/audit-output-format.md` when working
+- Pair with `_shared/audit-output-format.md` when working
   on audit skills — extract shared conventions first, then compress
   the skill-specific remainder.
 

@@ -6,11 +6,11 @@ description: >
   projects/, people/), the per-node state/journal/playbook trio, the project
   meta.yml and sources/ frontmatter schemas, and an operating README, then records
   the absolute path in the `consigliere.workspace` config key. Establishes the
-  ADR-007 write-guard every Cluster 17 skill obeys: data is written ONLY inside the
-  configured private workspace, never into a team/code repo. Warns when the target
-  looks like a code repo. Foundation for digest-source (RM-100), the consigliere
-  role (RM-101), context-status (RM-102) and playbook-review (RM-103). Manual,
-  operator-run; member of the consigliere bundle (ADR-008, separate from tech-lead).
+  workspace write-guard every consigliere skill obeys: data is written ONLY inside
+  the configured private workspace, never into a team/code repo. Warns when the
+  target looks like a code repo. Foundation for digest-source, the consigliere
+  role, context-status and playbook-review. Manual, operator-run; member of the
+  consigliere bundle (separate from tech-lead).
 triggers:
   keywords: ["consigliere bootstrap", "set up manager workspace", "scaffold manager-workspace", "init consigliere", "create my consigliere"]
 ---
@@ -21,14 +21,14 @@ triggers:
 
 The `consigliere` capability digests a manager's diverse inputs into a **private**
 knowledge workspace. Before any digesting or querying can happen, that workspace
-must exist with a well-defined shape that every other Cluster 17 skill reads and
+must exist with a well-defined shape that every other consigliere skill reads and
 writes. This skill creates it — and only it. It does no digesting, no querying, no
 heuristics; it is the scaffold.
 
-Per **ADR-007**, the artifacts (this skill, the templates) are generic and ship in
-Octopus, while **all managerial data lives in the private workspace** whose path is
-recorded in the `consigliere.workspace` config key. Per **ADR-008**, this skill
-belongs to a **separate `consigliere` bundle**, not `tech-lead`.
+The artifacts (this skill, the templates) are generic and ship as part of the
+toolkit, while **all managerial data lives in the private workspace** whose path is
+recorded in the `consigliere.workspace` config key. This skill belongs to a
+**separate `consigliere` bundle**, not `tech-lead`.
 
 ## When to Engage
 
@@ -56,18 +56,19 @@ workspace, or to re-scaffold a missing piece. Not auto-invoked.
 
 Every node — context or project — carries the same **trio**: `state.md`
 (materialized) + `journal.md` (append-only, dated) + `playbook.md` (optional). This
-uniformity is the contract RM-100…103 depend on; treat changes to it as breaking.
+uniformity is the contract the other consigliere skills depend on; treat changes to
+it as breaking.
 
 ### `state.md` — the 6-field digest contract
 
-Fixed section headers, so consult (RM-102) is deterministic: **Status by workstream ·
+Fixed section headers, so `context-status` consults are deterministic: **Status by workstream ·
 Blockers · Decisions · System & area map · Actions · Political risk**. A
 leading `<!-- updated: … · sources: [...] -->` marker records provenance.
 
 ### `journal.md` — append-only with citation anchors
 
 One dated block per digest; every extracted line ends with `(src: sources/…#Ln)` so
-each claim traces back to the immutable raw input (the grounding hook for RM-100).
+each claim traces back to the immutable raw input (the grounding hook for `digest-source`).
 
 ### `projects/<proj>/meta.yml` — the project schema
 
@@ -79,11 +80,11 @@ started: 2026-05-31       # ISO date
 due: null                 # ISO date or null
 ```
 
-The `contexts` list drives the fan-out pointer in RM-100.
+The `contexts` list drives the fan-out pointer in `digest-source`.
 
 ### `sources/` frontmatter schema
 
-Every file written under `sources/` (by RM-100) carries:
+Every file written under `sources/` (by `digest-source`) carries:
 
 ```yaml
 ---
@@ -94,17 +95,17 @@ ingested_by: digest-source
 ---
 ```
 
-## Config key + write-guard (ADR-007 — non-negotiable)
+## Config key + write-guard (non-negotiable)
 
-> **This section is the canonical write-guard contract.** `digest-source` (RM-100),
-> `context-status` (RM-102) and `playbook-review` (RM-103) **cite it by reference**
+> **This section is the canonical write-guard contract.** `digest-source`,
+> `context-status` and `playbook-review` **cite it by reference**
 > rather than restating it — they inherit these rules, they do not re-derive them.
 > Changing the rules here changes them for the whole bundle.
 
 - **`consigliere.workspace`** stores the absolute path of the private workspace.
-- **Resolution:** every Cluster 17 skill reads `consigliere.workspace`; if it is
+- **Resolution:** every consigliere skill reads `consigliere.workspace`; if it is
   unset, the skill refuses to run and tells the user to run this bootstrap.
-- **Write-guard:** a Cluster 17 skill may write **only** inside the resolved
+- **Write-guard:** a consigliere skill may write **only** inside the resolved
   `consigliere.workspace` path. Before any write, assert the absolute target is a
   descendant of that path; otherwise abort. This is the hard rule that keeps
   managerial data out of a team repo. The consigliere **never writes outside the
@@ -131,12 +132,9 @@ ingested_by: digest-source
 - Writing any managerial content to the Octopus repo or a team repo — only the
   configured private workspace.
 - Scaffolding into an apparent code repo without explicit confirmation.
-- Drifting the directory/trio/schema contract after RM-100 builds on it — that is a
-  breaking change and needs its own note.
+- Drifting the directory/trio/schema contract after the other skills build on it —
+  that is a breaking change and needs its own note.
 
 ## Related
 
-- ADR-007 (artifact location + write-guard), ADR-008 (separate bundle).
-- Spec: `docs/specs/consigliere-workspace-scaffold.md` (RM-099).
-- Next: `digest-source` (RM-100), `consigliere` role (RM-101), `context-status`
-  (RM-102), `playbook-review` (RM-103).
+- Next: `digest-source`, the `consigliere` role, `context-status`, `playbook-review`.

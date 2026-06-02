@@ -139,8 +139,8 @@ Quando o `enforce-ide` / `enforce-precommit` escrevem `.editorconfig` /
 
 Assim um manager da frota cura **um** padrão de editor/git no workspace, e ele
 sobrescreve o default genérico gerado — enquanto a escolha local intencional de
-um repo ainda ganha, e a geração preenche as lacunas. Veja o
-[ADR-005](https://github.com/leocosta/octopus/blob/main/docs/adr/005-workspace-config-template-precedence.md).
+um repo ainda ganha, e a geração preenche as lacunas. Essa é a precedência
+de template de config do workspace.
 
 ## A merge policy
 
@@ -155,8 +155,7 @@ Um repo que já tem um `.octopus.yml` é mergeado **por chave**, nunca clobberad
 ```
 
 Nada é removido em silêncio; de-escalações e keeps arbitrários são expostos pra
-um humano. Veja o
-[ADR-004](https://github.com/leocosta/octopus/blob/main/docs/adr/004-fleet-merge-policy.md).
+um humano — essa é a merge policy não-destrutiva da frota.
 
 ## Exemplos de uso
 

@@ -89,7 +89,7 @@ If the repo already has one of the three frameworks installed
 (`.pre-commit-config.yaml`, `lefthook.yml`, `.husky/`), respect it —
 extend rather than replace.
 
-### Step 2.5 — Resolve the workspace template (RM-095, D5)
+### Step 2.5 — Resolve the workspace template
 
 Before generating, resolve the config source with this precedence
 (highest wins):
@@ -195,8 +195,6 @@ exit zero (informational).
 
 ## References
 
-- RFC: `docs/rfcs/2026-05-20-team-workspace-guardrails.md`
-- Related plan: `/home/leonardo/.claude/plans/por-que-os-agentes-goofy-gosling.md`
 - `pre-commit.com`: https://pre-commit.com/
 - `lefthook`: https://github.com/evilmartians/lefthook
 - `conventional-pre-commit`: https://github.com/compilerla/conventional-pre-commit

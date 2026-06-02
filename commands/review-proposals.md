@@ -7,7 +7,7 @@ description: (Octopus) Walk the .octopus/proposals/ queue produced by the propos
 
 ## Purpose
 
-The Stop hook `hooks/stop/propose-knowledge-update.sh` (RM-086) scans
+The Stop hook `hooks/stop/propose-knowledge-update.sh` scans
 each session's transcript at session-end for signals worth preserving
 (user corrections, files read 3+ times, patterns greped 3+ times) and
 writes findings to `.octopus/proposals/<timestamp>.md`. This slash

@@ -26,9 +26,9 @@ severity format used by `audit-money` and `review-contracts`.
 It does not edit plan content. The only write action is moving
 concluded plans into `plans/archive/YYYY-MM/` when invoked with `--fix`.
 
-> **Relationship to `knowledge-hygiene` (ADR-010).** The generic checks here
+> **Relationship to `knowledge-hygiene`.** The generic checks here
 > — orphan, broken-link, and stale plans — are subsumed by `knowledge-hygiene`
-> running on the `docs` knowledge root (RM-107). This skill remains the owner of
+> running on the `docs` knowledge root. This skill remains the owner of
 > the **planning-specific** checks that do not generalize to other roots — chiefly
 > `roadmap-entry-without-plan` (a roadmap RM with no corresponding plan file).
 > Prefer `knowledge-hygiene --root docs` for the generic surface; keep this skill

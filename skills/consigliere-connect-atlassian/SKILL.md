@@ -19,7 +19,7 @@ triggers:
 
 ## Overview
 
-`digest-source` (RM-100) reads pasted text, PDFs, and Jira today; **Confluence** and
+`digest-source` reads pasted text, PDFs, and Jira today; **Confluence** and
 richer Jira reads need the Atlassian MCP. Connecting it raises a trust question — you
 are authorizing an agent to read your Jira/Confluence. The friction is not *how* to
 trust but *how many times* you reconfirm. This skill makes it **one OAuth consent plus
@@ -111,6 +111,5 @@ with a single read (fetch one Jira issue). If the server is unreachable, note th
 
 ## Related
 
-- Unblocks `digest-source` (RM-100) for Confluence + richer Jira; the export-PDF
+- Unblocks `digest-source` for Confluence + richer Jira; the export-PDF
   fallback stays for when this is not connected.
-- Spec: `docs/specs/consigliere-connect-atlassian.md` (RM-104). Completes Cluster 17.

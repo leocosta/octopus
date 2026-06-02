@@ -52,7 +52,7 @@ Reuse the stack-detection logic from `enforce-precommit` (file
 extension count + canonical manifests). If `enforce-precommit` ran
 recently, its detected set is the truth.
 
-### Step 1.5 — Resolve the workspace template (RM-095, D5)
+### Step 1.5 — Resolve the workspace template
 
 Before generating, resolve the `.editorconfig` source with this
 precedence (highest wins):
@@ -181,6 +181,5 @@ keybindings, telemetry).
 
 ## References
 
-- RFC: `docs/rfcs/2026-05-20-team-workspace-guardrails.md`
 - EditorConfig: https://editorconfig.org/
 - VS Code settings reference: https://code.visualstudio.com/docs/getstarted/settings

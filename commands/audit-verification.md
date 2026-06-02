@@ -7,7 +7,7 @@ description: (Octopus) Signal-only verification audit — confronts a finished t
 
 ## Purpose
 
-Surface the verification failure modes RM-088 deferred: a completion claimed
+Surface the verification failure modes: a completion claimed
 without the build/test/typecheck running, and a diff referencing a file the
 build rejects. The recurring trigger is the deterministic `verification-check`
 Stop hook (zero LLM); this skill is the on-demand, cheap-tier judgment.

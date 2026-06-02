@@ -4,7 +4,7 @@ description: >
   Audit any registered knowledge root (docs/, the standards set, auto-memory,
   the consigliere workspace) for decay: stale nodes, broken internal links,
   orphans, and concluded items that drifted outside their archive. The
-  deterministic checks run in `octopus hygiene` over the RM-106 `octopus kr`
+  deterministic checks run in `octopus hygiene` over the `octopus kr`
   registry; this skill wraps them with the fuzzy `--gaps` judgment (recurring
   untracked entities, missing fields) and `--fix` confirmation. Read-only by
   default; `--fix` applies reversible moves only.
@@ -20,8 +20,8 @@ triggers:
 
 Keep a markdown knowledge base from decaying silently. Stale state read as
 current is worse than none. This skill audits a **knowledge root** — any linked
-markdown tree the [RM-106 registry](../../docs/specs/knowledge-root-registry.md)
-knows — and reports what rotted, optionally fixing the reversible cases.
+markdown tree the `octopus kr` registry knows — and reports what rotted, optionally
+fixing the reversible cases.
 
 The mechanical checks are deterministic and live in the `octopus hygiene`
 core, which reads nodes, links, thresholds, and the archive dir from
@@ -71,4 +71,4 @@ Shallow scalars under `knowledge_roots:` in `.octopus.yml` (comma-separated list
 
 ## Relationship to plan-backlog
 
-`plan-backlog`'s generic checks (orphan / broken-link / stale plans) are subsumed by this skill's `docs` target (ADR-010); its docs-specific *roadmap-entry-without-plan* check remains its own. See `skills/plan-backlog/SKILL.md`.
+`plan-backlog`'s generic checks (orphan / broken-link / stale plans) are subsumed by this skill's `docs` target; its docs-specific *roadmap-entry-without-plan* check remains its own. See `skills/plan-backlog/SKILL.md`.
