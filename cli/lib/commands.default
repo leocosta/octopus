@@ -1,0 +1,30 @@
+# Octopus workflow commands (RM-113). One command per line, pipe-delimited.
+# Fields: name|description
+#
+# This file is the single source of truth for the workflow CLI:
+#   - cli/octopus.sh generates its help from it and rejects any name not
+#     listed here, so helper/implementation libs in cli/lib/ (ui, audit-map,
+#     knowledge-*, consigliere-lens, setup-picker) are never dispatched as
+#     commands.
+#   - bin/octopus reads it to list the workflow commands in `octopus help`.
+# Adding a command = a new cli/lib/<name>.sh plus one line here.
+#
+# The global bootstrap commands (install, update, doctor) live in the
+# bin/octopus shim, not here.
+setup|Configure Octopus in the current repository (--reconfigure to edit)
+uninstall|Remove Octopus artifacts from the current repository
+branch-create|Create a development branch
+dev-flow|Run the guided development workflow
+pr-open|Open a PR following conventions
+pr-review|Self-review a PR and assign reviewers
+pr-comments|Address PR review comments
+pr-merge|Merge an approved PR
+release|Create a versioned release with tag and CHANGELOG
+control|Open the TUI agent dashboard
+ask|Dispatch a task to a specific agent with live streaming output
+run|Run a feature end-to-end: requirement to spec to plan to agents to PR
+kr|Query the knowledge-root registry (list/meta/nodes/links/archive)
+hygiene|Audit a knowledge root (staleness/orphans/links/archive)
+synthesize|Surface cross-node connections in a knowledge root
+briefing|Proactive cadence summary over a knowledge root
+lens|Surface consigliere lens-context (playbook + political risk)

@@ -374,15 +374,23 @@ print_help() {
   cat <<EOF
 Usage: octopus <command> [args]
 
-Commands:
+Global commands (version management — handled by the shim):
   install [--version <tag>] [--latest]   Install a release into the local cache
   update [--version <tag>] [--latest] [--pin]
   setup [--scope=repo|user] [--reconfigure] [--dry-run]
                                           Configure Octopus for this repo (default) or user account
-  uninstall [--scope=repo|user]          Remove Octopus artifacts from this repo or user account
   doctor                                 Inspect the cached installation
-  <other>                                Delegate to the existing workflow CLI
 EOF
+  # Workflow commands come from the release's command registry (RM-113), so this
+  # list never drifts from what cli/octopus.sh actually dispatches.
+  local registry="$RELEASE_ROOT/cli/lib/commands.default"
+  if [[ -f "$registry" ]]; then
+    echo ""
+    echo "Workflow commands:"
+    awk -F'|' '/^[^#]/ && NF>=2 { printf "  %-14s %s\n", $1, $2 }' "$registry"
+  else
+    echo "  <other>                                Delegate to the existing workflow CLI"
+  fi
 }
 
 command="${1:-}"
@@ -400,7 +408,7 @@ case "$command" in
   doctor)
     doctor
     ;;
-  "" | -h | --help)
+  "" | -h | --help | help)
     print_help
     ;;
   *)
