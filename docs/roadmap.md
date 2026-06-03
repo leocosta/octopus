@@ -204,7 +204,11 @@ _Proposed (added 2026-06-02). Seeds from [research](research/2026-06-02-cli-surf
 
 _Decisions: the `bin/octopus` shim vs `cli/octopus.sh` workflow split is intentional (bootstrap/version-management vs workflow) — RM-113 unifies the **help**, not the binaries. Registry is opt-in (explicit), not opt-out, so the "file = command" coupling that caused the problem is removed. Implementation libs (`knowledge-*`, `consigliere-lens`, `audit-map`, `ui`, `setup-picker`) stay internal — the registry simply omits them._
 
-_**RM-113 implemented** — `cli/lib/commands.default` (pipe-delimited registry mirroring `knowledge-roots.default`); `cli/octopus.sh` generates its help from it and rejects any unregistered name (helper libs no longer no-op); `bin/octopus` `print_help` reads the registry so `octopus help` lists global + workflow commands; `help` is a first-class command. Tests: `tests/test_cli_registry.sh`. RM-114/115/116 remain proposed._
+_**Cluster 22 implemented** (RM-113…116):_
+- _**RM-113** — `cli/lib/commands.default` (pipe-delimited registry mirroring `knowledge-roots.default`); `cli/octopus.sh` generates its help from it and rejects any unregistered name (helper libs no longer no-op); `bin/octopus` `print_help` reads the registry so `octopus help` lists global + workflow commands; `help` is first-class. Tests: `tests/test_cli_registry.sh`. Released v1.76.0._
+- _**RM-114** — `octopus version`/`--version`, `list`, `help <cmd>` (registry summary), `completions [bash\|zsh\|fish]`. `<cmd> --help` defers to the command's own handler. Tests: `tests/test_cli_affordances.sh`._
+- _**RM-115** — `docs/site/reference/cli.mdx` (EN+pt-br): global/workflow commands, full `setup` flags, `release` subcommands, `OCTOPUS_*` env vars; new Reference > CLI Reference sidebar entry._
+- _**RM-116** — `octopus doctor` health checks: stale hook paths in `settings.json`, broken cache symlinks, version drift (best-effort). Read-only, never hard-fails on findings. Tests: `tests/test_doctor.sh`. (The setup-side self-heal lives on branch `fix/stale-hook-settings-paths`.)_
 
 ---
 

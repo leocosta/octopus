@@ -106,6 +106,11 @@ export default defineConfig({
           collapsed: true,
           items: [
             {
+              label: 'CLI Reference',
+              translations: { 'pt-BR': 'Referência da CLI' },
+              slug: 'reference/cli',
+            },
+            {
               label: 'Changelog',
               translations: { 'pt-BR': 'Changelog' },
               link: '/changelog/',
