@@ -2,6 +2,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Absolute path of the running shim — sync_shim replaces this file in place.
+SELF_PATH="$SCRIPT_DIR/${BASH_SOURCE[0]##*/}"
 CACHE_ROOT="${OCTOPUS_CLI_CACHE_ROOT:-$HOME/.octopus-cli}"
 CACHE_DIR="$CACHE_ROOT/cache"
 METADATA_FILE="$CACHE_ROOT/metadata.json"
@@ -181,6 +183,38 @@ install_release() {
   checksum="$(compute_release_checksum "$target")"
   write_metadata "$version" "$checksum"
   echo "Installed Octopus $version (cached at $target)"
+}
+
+# `octopus update` invokes the installer with --no-shim-setup, so the freshly
+# cached release updates everything EXCEPT the running shim (bin/octopus). Any
+# change to the shim itself — e.g. a new global command — would then only reach
+# users via a full reinstall, never via `update`. Sync it here: copy the target
+# release's shim over the running one via an atomic rename. Overwriting the
+# script currently executing is safe because the kernel keeps the open inode
+# alive until this process exits; the rename only swaps the directory entry.
+sync_shim() {
+  local version="$1"
+  local source dir tmp
+  source="$(release_dir_for "$version")/bin/octopus"
+
+  [[ -f "$source" ]] || return 0                # release ships no shim — nothing to sync
+  [[ "$SELF_PATH" -ef "$source" ]] && return 0  # dev checkout / running from cache
+  cmp -s "$SELF_PATH" "$source" && return 0     # already identical — no-op
+
+  dir="$(dirname "$SELF_PATH")"
+  if [[ ! -w "$dir" ]]; then
+    echo "  ⚠ shim at $SELF_PATH is stale but $dir is not writable." >&2
+    echo "    Reinstall to refresh it: curl -fsSL https://github.com/$RELEASE_OWNER/$RELEASE_REPO/releases/latest/download/install.sh | bash" >&2
+    return 0
+  fi
+
+  tmp="$(mktemp "$dir/.octopus-shim.XXXXXX")" || return 0
+  if cp "$source" "$tmp" && chmod +x "$tmp" && mv -f "$tmp" "$SELF_PATH"; then
+    echo "Refreshed shim at $SELF_PATH"
+  else
+    rm -f "$tmp"
+    echo "  ⚠ failed to refresh shim at $SELF_PATH — reinstall manually." >&2
+  fi
 }
 
 write_metadata() {
@@ -393,6 +427,7 @@ command_update() {
   fi
   echo "Updating to Octopus $version..."
   install_release "$version"
+  sync_shim "$version"
   local checksum
   checksum="$(compute_release_checksum "$RELEASE_ROOT")"
   if [[ "$pin" == true ]]; then
