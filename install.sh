@@ -36,6 +36,7 @@ VERSION=""
 FORCE=false
 UNINSTALL=false
 NO_SHIM_SETUP=false
+PRIOR_VERSION=""  # version recorded in metadata before this run — gates the stale-shim heal
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -87,7 +88,7 @@ while [[ $# -gt 0 ]]; do
       echo "  install.sh --cache-root <path> Override ~/.octopus-cli cache location"
       echo "  install.sh --force            Reinstall even if already installed"
       echo "  install.sh --uninstall        Remove Octopus CLI"
-      echo "  install.sh --no-shim-setup    Download release without touching the shim (used by the CLI when backfilling a version)"
+      echo "  install.sh --no-shim-setup    Skip first-time shim install + PATH setup (used by the CLI). An existing stale shim is still refreshed atomically on a forward-version update — never on a downgrade/backfill."
       echo "  install.sh --help             Show this help"
       echo ""
       echo "Environment:"
@@ -374,6 +375,49 @@ install_shim() {
   success "Installed shim to $OCTOPUS_BIN_DIR/octopus"
 }
 
+# Version recorded in metadata.json before this run overwrites it.
+read_installed_version() {
+  [[ -f "$METADATA_FILE" ]] || return 0
+  grep -o '"version"[[:space:]]*:[[:space:]]*"[^"]*"' "$METADATA_FILE" 2>/dev/null \
+    | head -n1 | sed -E 's/.*"([^"]*)"$/\1/'
+}
+
+# True when $1 (the version being installed) is the same as or newer than $2.
+# An empty prior (fresh install) counts as forward. Uses `sort -V` for semver.
+version_is_forward() {
+  local new="$1" prior="$2"
+  [[ -z "$prior" || "$new" == "$prior" ]] && return 0
+  [[ "$(printf '%s\n%s\n' "$new" "$prior" | sort -V | tail -n1)" == "$new" ]]
+}
+
+# Heal a stale shim left behind by an older CLI. `octopus update` invokes this
+# installer with --no-shim-setup, so a shim that predates self-update (sync_shim
+# in bin/octopus) would never refresh via `update` — only via a full reinstall.
+# Since the CLI re-fetches this installer fresh from main on every update, this
+# branch closes that gap with no manual copy. Guards keep it conservative:
+# refresh only an EXISTING shim (never create a stray one), only on a forward
+# version move (a pinned-old backfill must not downgrade the global shim), and
+# only via an atomic rename — the running shim may be the file we replace.
+heal_stale_shim() {
+  local version="$1"
+  local source="$OCTOPUS_CACHE_DIR/cache/$version/bin/octopus"
+  local dest="$OCTOPUS_BIN_DIR/octopus"
+
+  [[ -f "$source" && -f "$dest" ]] || return 0
+  cmp -s "$dest" "$source" && return 0                 # already current
+  version_is_forward "$version" "$PRIOR_VERSION" || return 0
+  [[ -w "$OCTOPUS_BIN_DIR" ]] || return 0
+
+  local tmp
+  tmp="$(mktemp "$OCTOPUS_BIN_DIR/.octopus-shim.XXXXXX")" || return 0
+  if cp "$source" "$tmp" && chmod +x "$tmp" && mv -f "$tmp" "$dest"; then
+    success "Refreshed stale shim at $dest"
+  else
+    rm -f "$tmp"
+    warn "Could not refresh shim at $dest — reinstall manually."
+  fi
+}
+
 # Check if bin dir is in PATH
 check_path() {
   if [[ ":$PATH:" != *":$OCTOPUS_BIN_DIR:"* ]]; then
@@ -395,6 +439,10 @@ main() {
 
   check_prerequisites
 
+  # Capture the currently-installed version before write_metadata overwrites it,
+  # so heal_stale_shim can tell a forward update from a pinned-old backfill.
+  PRIOR_VERSION="$(read_installed_version || true)"
+
   # Determine version
   if [[ -z "$VERSION" ]]; then
     info "No version specified, fetching latest..."
@@ -411,11 +459,14 @@ main() {
   write_metadata "$VERSION"
 
   # Install shim (copied from the downloaded release tree — see RM-019).
-  # Skipped when invoked by the CLI shim itself to backfill a different version
-  # without clobbering the currently-running binary.
+  # Under --no-shim-setup (CLI-driven update/backfill) we skip first-time install
+  # and PATH setup, but still heal an existing stale shim on a forward update so
+  # `octopus update` propagates shim changes without a manual reinstall.
   if [[ "$NO_SHIM_SETUP" != true ]]; then
     install_shim "$VERSION"
     check_path
+  else
+    heal_stale_shim "$VERSION"
   fi
 
   echo ""
