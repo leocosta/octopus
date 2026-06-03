@@ -88,12 +88,6 @@ case "$COMMAND" in
     print_usage >&2; exit 1 ;;
 esac
 
-# octopus <cmd> --help / -h → that command's one-line summary.
-if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]] && is_command "$COMMAND"; then
-  print_command_help "$COMMAND"
-  exit 0
-fi
-
 if ! is_command "$COMMAND"; then
   echo "Unknown command: $COMMAND" >&2
   echo "Run 'octopus.sh help' for the list of commands." >&2

@@ -28,9 +28,11 @@ check "'list' excludes helper libs (ui)"             bash -c "! grep -qx ui <<<\
 check "'help release' shows its description" bash -c "'$CLI' help release 2>&1 | grep -qi 'versioned release'"
 check "'help <unknown>' errors"              bash -c "! '$CLI' help nope 2>/dev/null"
 
-# --- per-command --help interceptor ----------------------------------------
-check "'release --help' shows release help" bash -c "'$CLI' release --help 2>&1 | grep -qi 'versioned release'"
-check "'pr-open -h' shows pr-open help"      bash -c "'$CLI' pr-open -h 2>&1 | grep -qi 'PR'"
+# --- help <cmd> works for a command without its own --help -----------------
+check "'help pr-open' shows its summary" bash -c "'$CLI' help pr-open 2>&1 | grep -qi 'PR'"
+
+# --- a command's OWN --help is preserved (not shadowed by the registry) -----
+check "command-owned --help still works (run)" bash -c "'$CLI' run --help 2>&1 | grep -q 'Usage: octopus run'"
 
 # --- completions -----------------------------------------------------------
 check "'completions bash' emits a bash function" bash -c "'$CLI' completions bash 2>&1 | grep -q 'complete -F'"
