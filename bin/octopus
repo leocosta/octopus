@@ -254,6 +254,42 @@ ensure_release_for() {
   fi
 }
 
+# Hook commands in a project's settings.json are rewritten to version-pinned
+# cache paths; after an update those can point at a release that no longer
+# exists and error at session start. Flag any that are gone.
+_doctor_stale_hooks() {
+  local settings="$1" issues=0 cmd
+  [[ -f "$settings" ]] || return 0
+  while IFS= read -r cmd; do
+    [[ -n "$cmd" && ! -e "$cmd" ]] || continue
+    echo "  ⚠ stale hook path: $cmd"
+    issues=$((issues + 1))
+  done < <(grep -oE '"command"[[:space:]]*:[[:space:]]*"[^"]*\.octopus-cli/cache/[^"]*"' "$settings" 2>/dev/null \
+            | sed -E 's/.*:[[:space:]]*"([^"]*)".*/\1/')
+  return "$issues"
+}
+
+# Versioned cache entries that are symlinks to a now-missing target.
+_doctor_broken_symlinks() {
+  local issues=0 entry
+  [[ -d "$CACHE_DIR" ]] || return 0
+  for entry in "$CACHE_DIR"/*; do
+    [[ -L "$entry" && ! -e "$entry" ]] || continue
+    echo "  ⚠ broken cache symlink: $(basename "$entry") -> $(readlink "$entry")"
+    issues=$((issues + 1))
+  done
+  return "$issues"
+}
+
+# Best-effort: a newer release than the one installed. Silent when offline.
+_doctor_version_drift() {
+  local installed="$1" latest
+  latest="$(resolve_latest_remote_version 2>/dev/null || true)"
+  [[ -n "$latest" && "${installed#v}" != "${latest#v}" ]] || return 0
+  echo "  ⚠ newer release available: $latest (installed: $installed) — run 'octopus update'"
+  return 1
+}
+
 doctor() {
   local version
   version="$(resolve_version)"
@@ -266,7 +302,20 @@ doctor() {
   echo "Installed Octopus version: $version"
   echo "Tracked release directory: $release_dir"
   [[ -f "$METADATA_FILE" ]] && echo "Metadata: $METADATA_FILE"
-  [[ -e "$release_dir" ]] && echo "Release available."
+  [[ -e "$release_dir" ]] && echo "Release available." || echo "  ⚠ tracked release directory is missing — run 'octopus install'"
+
+  echo "Health:"
+  local issues=0
+  _doctor_stale_hooks "$(find_project_root)/.claude/settings.json" || issues=$((issues + $?))
+  _doctor_stale_hooks "$HOME/.claude/settings.json"               || issues=$((issues + $?))
+  _doctor_broken_symlinks                                          || issues=$((issues + $?))
+  _doctor_version_drift "$version"                                 || issues=$((issues + $?))
+  if [[ "$issues" -eq 0 ]]; then
+    echo "  ✓ no issues found"
+  else
+    echo "  $issues issue(s) found"
+  fi
+  return 0
 }
 
 run_subcommand() {
