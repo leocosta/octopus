@@ -30,6 +30,19 @@ Categorize everything that loads into the agent's context:
 
 ### 2. Measure Each Component
 
+Start with the deterministic harness — it measures the always-loaded baseline,
+the registry listing, and the core↔rules duplication, and prints a
+machine-readable summary:
+
+```
+scripts/context-budget.sh [repo-root]
+```
+
+The same script backs the CI ratchet `tests/test_context_budget.sh`, which fails
+if the baseline or duplication regresses (ceilings ratchet down as Cluster 23
+lands — see the roadmap). Run the script first; use the LLM audit below only for
+the semantic targets (§3) the script cannot judge.
+
 Estimate token count (rough: 1 token ~ 4 characters):
 
 - Count lines and characters for each file
