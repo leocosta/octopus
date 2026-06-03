@@ -11,12 +11,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUDGET="$SCRIPT_DIR/scripts/context-budget.sh"
 
 # --- ceilings (ratchet down as Cluster 23 lands) ---------------------------
-# Baseline measured 2026-06-03 (pre-refactor): ALWAYS=8414 REGISTRY=2209
-# TOTAL=10623 DUP=3. Targets: ALWAYS ~3500 (RM-117..121), DUP 0 (RM-117).
-MAX_ALWAYS_TOKENS=8500
+# Baseline 2026-06-03 (pre-refactor): ALWAYS=8407 REGISTRY=2209 TOTAL=10616 DUP=3.
+# After RM-117 (dedup core<->rules): ALWAYS=7989 DUP=0.
+# Targets: ALWAYS ~3500 (RM-118..121). Ratchet down as each lands.
+MAX_ALWAYS_TOKENS=8000
 MAX_REGISTRY_TOKENS=2300
-MAX_TOTAL_TOKENS=10700
-MAX_DUP_MARKERS=3
+MAX_TOTAL_TOKENS=10300
+MAX_DUP_MARKERS=0
 
 PASS=0; FAIL=0
 check() {
