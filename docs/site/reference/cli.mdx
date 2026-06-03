@@ -1,0 +1,76 @@
+---
+title: CLI Reference
+description: The full octopus command surface — global and workflow commands, the setup and release flags, and the OCTOPUS_* environment variables that configure the CLI.
+sidebar:
+  order: 2
+---
+
+The `octopus` CLI has two layers: a thin shim that manages versions
+(`install`, `update`, `doctor`, `version`) and the workflow CLI that runs
+everything else. `octopus help` lists both — the list is generated from a single
+registry, so it never drifts from what the CLI actually accepts. This page is the
+reference for the surface that help summarises.
+
+## Discovering commands
+
+```bash
+octopus help              # global + workflow commands
+octopus help <command>    # one-line summary of a command
+octopus list              # command names, one per line (for scripting)
+octopus completions bash  # shell completion: bash, zsh, or fish
+```
+
+## Global commands
+
+These live in the shim and manage the installed version:
+
+| Command | What it does |
+|---|---|
+| `install [--version <tag>] [--latest]` | Install a release into the local cache |
+| `update [--version <tag>] [--latest] [--pin]` | Update to a version; `--pin` writes a lockfile |
+| `setup` | Configure Octopus in the current repository (flags below) |
+| `uninstall [--scope]` | Remove Octopus artifacts from the repo or user account |
+| `doctor` | Inspect the cached installation and report health |
+| `version` · `--version` | Print the installed version |
+
+## `setup` flags
+
+`octopus setup` is interactive by default. For CI or scripting, every choice has
+a flag:
+
+| Flag | Effect |
+|---|---|
+| `--scope` | Configure this repository (`repo`, the default) or the user account (`user`) |
+| `--reconfigure` | Re-open the picker to edit an existing configuration |
+| `--dry-run` | Print what would change without writing anything |
+| `--bundle <name>` | Preselect a bundle (repeatable) |
+| `--stack <name>` | Preselect a stack profile |
+| `--reviewers <list>` | Preset the PR reviewers |
+| `--no-hooks` | Skip hook installation |
+| `--no-workflow` | Skip the workflow command set |
+
+## `release` subcommands
+
+`octopus release` drives a versioned release. The subcommands are the building
+blocks the release workflow orchestrates:
+
+| Subcommand | What it does |
+|---|---|
+| `suggest-version [from-ref]` | Suggest the next semver from the commit history |
+| `list-commits [from-ref]` | List commits since the last tag |
+| `commit-changelog <version>` | Commit `CHANGELOG.md` and sync README version references |
+| `create-tag <version> <file>` | Create the annotated tag from a notes file |
+| `create-gh-release <version> <file>` | Publish the GitHub Release |
+
+## Configuration — environment variables
+
+The CLI reads these at startup; all are optional:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `OCTOPUS_CLI_CACHE_ROOT` | `~/.octopus-cli` | Where releases are cached |
+| `OCTOPUS_RELEASE_OWNER` | `leocosta` | GitHub owner for release lookups |
+| `OCTOPUS_RELEASE_NAME` | `octopus` | GitHub repository name for release lookups |
+| `OCTOPUS_API_ENDPOINT` | GitHub releases API | Override the release-metadata endpoint |
+| `OCTOPUS_DRY_RUN` | unset | When `true`, setup and delivery print instead of writing |
+| `OCTOPUS_DISABLED_HOOKS` | unset | Comma-separated hook ids to skip at setup |
