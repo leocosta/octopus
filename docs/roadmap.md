@@ -191,6 +191,23 @@ _Decisions: positioned as an `audit-*` sibling (not a `simplify` wrapper); skill
 
 ---
 
+### Cluster 22 — CLI surface hygiene
+
+_Proposed (added 2026-06-02). Seeds from [research](research/2026-06-02-cli-surface-hygiene.md): a question — "the CLI accepts params not in the help; which, and why?" — surfaced a structural gap, not a docs gap. `cli/octopus.sh` infers commands from file existence (`source cli/lib/<cmd>.sh`, no allowlist), so every lib is an accepted command — including helper libs that silently no-op — and the help is split across two hand-maintained, drifting layers (`bin/octopus` shows 5 commands; the 17 workflow commands appear only on bare `octopus`). Conventional affordances are missing (`octopus --version` prints "Unknown command"; no per-command `--help`), and `doctor` is anemic. The keystone is a declarative command registry that both guards the dispatch and generates the help; the rest builds on it. Build order: RM-113 → RM-114/115; RM-116 is independent._
+
+| RM | Item | Theme |
+|----|------|-------|
+| RM-113 | Command registry + generated help + lib guard — replace "command = a `cli/lib/*.sh` exists" with a declarative registry (central list or `# @command:` marker); dispatch validates against it (helper libs error instead of no-op); help is **generated** from it and **unified** (`octopus help`/`--help` lists every command, ending the two-layer `bin/octopus` vs `cli/octopus.sh` split). Single source of truth for dispatch guard + help; kills the drift at the source | foundation |
+| RM-114 | Conventional CLI affordances — `octopus version`/`--version` (today errors "Unknown command"), `octopus help <cmd>` + `--help`/`-h` per subcommand, `octopus list` (generated), `octopus completions [bash\|zsh\|fish]`. Enabled by RM-113's registry; `version` trivial, `completions` heaviest/lowest | conventions |
+| RM-115 | Document the hidden-but-real surface — a "Configuration / Environment" section for the `OCTOPUS_*` env vars, the full `setup` flag set (`--no-hooks`/`--no-workflow`/`--bundle`/`--stack`/`--reviewers`), and the `release` subcommands; bilingual docs-site pages. Mostly docs; part auto-covered by RM-113's generated help | docs |
+| RM-116 | `octopus doctor` as the health command — grow it from version/path into read-only detection: stale hook paths in `settings.json` (version-pinned `cache/vX.Y.Z` entries pointing at a deleted release — the class fixed in `deliver_hooks`), rotten cache symlinks, version drift across repos, stale translations. Reuses `audit-config`. Independent of the registry | health |
+
+_Decisions: the `bin/octopus` shim vs `cli/octopus.sh` workflow split is intentional (bootstrap/version-management vs workflow) — RM-113 unifies the **help**, not the binaries. Registry is opt-in (explicit), not opt-out, so the "file = command" coupling that caused the problem is removed. Implementation libs (`knowledge-*`, `consigliere-lens`, `audit-map`, `ui`, `setup-picker`) stay internal — the registry simply omits them._
+
+_**RM-113 implemented** — `cli/lib/commands.default` (pipe-delimited registry mirroring `knowledge-roots.default`); `cli/octopus.sh` generates its help from it and rejects any unregistered name (helper libs no longer no-op); `bin/octopus` `print_help` reads the registry so `octopus help` lists global + workflow commands; `help` is a first-class command. Tests: `tests/test_cli_registry.sh`. RM-114/115/116 remain proposed._
+
+---
+
 ## In Progress
 
 _RM-088 (`audit-grounding`) shipped in v1.69.0. **Cluster 16** (manager-multiplier) is **complete on `feat/standards-lookup`** — all implemented & committed, pending merge/release: RM-089 (`mentor`), RM-090 (`onboarding`), RM-091 (`definition-of-done`), RM-092 (`standards`), RM-093 (team `continuous-learning`), RM-094 (`audit-fleet`), RM-095 (`fleet-bootstrap`), RM-096 (`tech-lead` bundle), RM-098 (`map-system` complete-mode deck). ADRs 002–006 recorded. See [research](research/2026-05-30-manager-multiplier.md)._
