@@ -10,14 +10,17 @@ echo "Test 1: uninstall.sh exists"
   || { echo "FAIL: cli/lib/uninstall.sh not found"; exit 1; }
 echo "PASS"
 
-echo "Test 2: uninstall referenced in octopus.sh help"
-grep -q "uninstall" "$SCRIPT_DIR/cli/octopus.sh" \
-  || { echo "FAIL: 'uninstall' missing from cli/octopus.sh"; exit 1; }
+echo "Test 2: uninstall registered as a workflow command (drives both helps)"
+# Both cli/octopus.sh and bin/octopus now generate their command lists from the
+# registry (RM-113), so the registry — not the hardcoded help — is the contract.
+grep -qE "^uninstall\|" "$SCRIPT_DIR/cli/lib/commands.default" \
+  || { echo "FAIL: 'uninstall' missing from cli/lib/commands.default"; exit 1; }
 echo "PASS"
 
-echo "Test 3: uninstall referenced in bin/octopus help"
-grep -q "uninstall" "$SCRIPT_DIR/bin/octopus" \
-  || { echo "FAIL: 'uninstall' missing from bin/octopus"; exit 1; }
+echo "Test 3: uninstall appears in the generated octopus help"
+OCTOPUS_CLI_CACHE_ROOT=/tmp/octopus-no-cache-$$ bash "$SCRIPT_DIR/bin/octopus" help 2>&1 \
+  | grep -q "uninstall" \
+  || { echo "FAIL: 'uninstall' missing from 'octopus help' output"; exit 1; }
 echo "PASS"
 
 echo "Test 4: _parse_roles helper defined in uninstall.sh"
