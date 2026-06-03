@@ -393,6 +393,12 @@ EOF
   fi
 }
 
+print_version() {
+  local v
+  v="$(resolve_version 2>/dev/null || true)"
+  echo "octopus ${v:-unknown}"
+}
+
 command="${1:-}"
 shift || true
 case "$command" in
@@ -408,7 +414,15 @@ case "$command" in
   doctor)
     doctor
     ;;
-  "" | -h | --help | help)
+  version | -v | --version)
+    print_version
+    ;;
+  help)
+    # `octopus help <cmd>` delegates to the workflow CLI for the per-command
+    # summary; bare `octopus help` prints the unified help.
+    if [[ $# -gt 0 ]]; then run_subcommand help "$@"; else print_help; fi
+    ;;
+  "" | -h | --help)
     print_help
     ;;
   *)
