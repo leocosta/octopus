@@ -268,5 +268,84 @@ print("PASS: no stacks field in delivered hooks")
 PYEOF
 rm -rf "$TMPDIR_ST"
 
+echo "Test: deliver_hooks refreshes version-pinned paths across an upgrade and keeps user hooks"
+TMPDIR_UP=$(mktemp -d)
+mkdir -p "$TMPDIR_UP/.claude"
+echo '{"permissions": {}, "hooks": {}, "mcpServers": {}}' > "$TMPDIR_UP/.claude/settings.json"
+
+# Stage two fake version dirs under a shared cache base, each carrying hooks.json
+# so the path rewrite produces distinguishable old/new prefixes.
+mkdir -p "$TMPDIR_UP/cache/v0.0.1/hooks" "$TMPDIR_UP/cache/v0.0.2/hooks"
+cp "$SCRIPT_DIR/hooks/hooks.json" "$TMPDIR_UP/cache/v0.0.1/hooks/hooks.json"
+cp "$SCRIPT_DIR/hooks/hooks.json" "$TMPDIR_UP/cache/v0.0.2/hooks/hooks.json"
+
+export OCTOPUS_HOOKS="true"
+export PROJECT_ROOT="$TMPDIR_UP"
+MANIFEST_CAP_HOOKS="true"
+MANIFEST_DELIVERY_HOOKS_METHOD="settings_json"
+MANIFEST_DELIVERY_HOOKS_TARGET=".claude/settings.json"
+OCTOPUS_RULES=("common")
+unset OCTOPUS_DISABLED_HOOKS || true
+
+# First install: old version.
+export OCTOPUS_DIR="$TMPDIR_UP/cache/v0.0.1"
+deliver_hooks "claude" >/dev/null
+
+grep -q "cache/v0.0.1/hooks" "$TMPDIR_UP/.claude/settings.json" \
+  || { echo "FAIL: old version path not written on first install"; exit 1; }
+
+# A user adds their own hook (id not in the template, command outside the cache base).
+python3 - "$TMPDIR_UP/.claude/settings.json" <<'PYEOF'
+import json, sys
+with open(sys.argv[1]) as f:
+    settings = json.load(f)
+settings["hooks"].setdefault("PostToolUse", []).append({
+    "matcher": "Write|Edit",
+    "hooks": [{"type": "command", "command": "/usr/local/bin/my-hook.sh", "id": "my-custom-hook"}],
+})
+with open(sys.argv[1], "w") as f:
+    json.dump(settings, f, indent=2)
+PYEOF
+
+# Upgrade: new version. Old Octopus paths must be replaced, user hook preserved.
+export OCTOPUS_DIR="$TMPDIR_UP/cache/v0.0.2"
+deliver_hooks "claude" >/dev/null
+
+if grep -q "cache/v0.0.1/" "$TMPDIR_UP/.claude/settings.json"; then
+  echo "FAIL: stale v0.0.1 hook path survived the upgrade"
+  exit 1
+fi
+
+python3 - "$TMPDIR_UP/.claude/settings.json" <<'PYEOF'
+import json, sys
+with open(sys.argv[1]) as f:
+    settings = json.load(f)
+
+all_hooks = [h for ev in settings.get("hooks", {}).values() for m in ev for h in m.get("hooks", [])]
+
+# Every Octopus-owned command must now point at the new version.
+for h in all_hooks:
+    cmd = h.get("command", "")
+    if "/cache/v0.0." in cmd and "/cache/v0.0.2/" not in cmd:
+        print(f"FAIL: Octopus hook not refreshed to new version: {cmd}")
+        sys.exit(1)
+
+# No duplicate ids.
+ids = [h.get("id") for h in all_hooks if h.get("id")]
+dups = sorted({i for i in ids if ids.count(i) > 1})
+if dups:
+    print(f"FAIL: duplicate hook ids after upgrade: {','.join(dups)}")
+    sys.exit(1)
+
+# The user-added hook survives untouched.
+user = [h for h in all_hooks if h.get("id") == "my-custom-hook"]
+if len(user) != 1 or user[0].get("command") != "/usr/local/bin/my-hook.sh":
+    print("FAIL: user-added hook was dropped or mutated on upgrade")
+    sys.exit(1)
+
+print("PASS: version-pinned paths refreshed, user hook preserved, no duplicates")
+PYEOF
+rm -rf "$TMPDIR_UP"
+
 echo ""
 echo "All hooks injection tests passed!"

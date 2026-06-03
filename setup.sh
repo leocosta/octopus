@@ -1425,23 +1425,33 @@ for event_type, entries in hooks.items():
             if cmd.startswith("octopus/hooks/"):
                 hook["command"] = install_root + "/" + cmd[len("octopus/"):]
 
-# Merge new hooks into existing ones, deduplicating by hook id so that
-# user-added hooks survive repeated setup runs.
+# Octopus owns any hook it installs. Its command path is version-pinned
+# (".../.octopus-cli/cache/vX.Y.Z/hooks/..."), so it goes stale on every update.
+# On each setup run we DROP previously-installed Octopus hooks and re-add the
+# current set, leaving user-added hooks untouched. Matching by cache-base prefix
+# (not just id) also prunes hooks that were removed/renamed between versions.
+cache_base = os.path.dirname(install_root)
+incoming_ids = {
+    h.get("id")
+    for matchers in hooks.values()
+    for m in matchers
+    for h in m.get("hooks", [])
+    if h.get("id")
+}
+
+def _is_octopus_hook(hook):
+    cmd = hook.get("command", "")
+    return cmd.startswith(cache_base + os.sep) or hook.get("id") in incoming_ids
+
 existing = settings.get("hooks", {})
 for event_type, new_matchers in hooks.items():
-    existing_matchers = existing.get(event_type, [])
-    seen_ids = {
-        h.get("id")
-        for m in existing_matchers
-        for h in m.get("hooks", [])
-        if h.get("id")
-    }
-    for matcher in new_matchers:
-        fresh = [h for h in matcher.get("hooks", []) if h.get("id") not in seen_ids]
-        if fresh:
-            existing_matchers.append({**matcher, "hooks": fresh})
-            seen_ids.update(h.get("id") for h in fresh if h.get("id"))
-    existing[event_type] = existing_matchers
+    kept_matchers = []
+    for m in existing.get(event_type, []):
+        survivors = [h for h in m.get("hooks", []) if not _is_octopus_hook(h)]
+        if survivors:
+            kept_matchers.append({**m, "hooks": survivors})
+    kept_matchers.extend(new_matchers)
+    existing[event_type] = kept_matchers
 settings["hooks"] = existing
 with open(settings_path, "w") as f:
     json.dump(settings, f, indent=2)
