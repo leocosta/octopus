@@ -1,0 +1,65 @@
+---
+title: quality-metrics
+description: "Local, non-blocking read at PR-open of how your change moves coverage, cyclomatic complexity, module size, and dependency cycles — reported as a dual delta (vs. the per-merge baseline and vs. your local main). Numbers come from your stack's tooling at ≈0 tokens; a low-cost model is invoked only when a metric crosses a threshold."
+---
+
+`quality-metrics` tells you what your change did to the numbers — coverage,
+cyclomatic complexity, module size, dependency-graph cycles — at the one moment
+you can still act on it cheaply: before you open the PR.
+
+## What it solves
+
+Quality metrics regress quietly, and the author is the last to notice. A
+function creeps past a complexity ceiling, coverage slips a couple of points, a
+fresh import cycle appears — review rarely catches any of it, and a dashboard
+only surfaces the trend long after the change shipped. The feedback arrives too
+late and too far from the person who caused it.
+
+This skill closes that gap by being two things at once: **immediate** (a local
+read on your branch, no CI round-trip) and **near-free** (the numbers are pure
+tooling output, so running it costs essentially no tokens). It only spends a
+model when something is actually wrong.
+
+## How it works
+
+The skill is **hybrid** — deterministic measurement, model-assisted only on
+breach.
+
+The numbers are produced by a per-stack **adapter** that runs your language's
+real tooling and normalizes the output to a common contract. The adapter is
+selected automatically from the repo's detected stack, so the same command and
+the same four metrics work across languages.
+
+It reports a **dual delta** per metric:
+
+- **vs. baseline** — your branch against the last-merged-to-main baseline (the
+  trend anchor).
+- **vs. main** — your branch against your local `main` HEAD (this PR's isolated
+  impact).
+
+The baseline is read (`git fetch`) from a dedicated, non-protected ref
+(`octopus/quality-metrics`) that a push-to-`main` Action keeps fresh; the read
+path never writes it.
+
+Thresholds are **ratchet by default** — a metric may not regress against the
+baseline — with optional **absolute** targets layered in `.octopus.yml`
+(`coverage.min`, `complexity.max`, `module_size.max`,
+`dependencies.cycles_allowed`). A field with no configured target stays on the
+ratchet. Only when a metric crosses its threshold does the skill invoke a
+low-cost model to read the offending change, explain why the number moved, and
+suggest a fix. No breach means no model call — the cost contract that keeps it
+worth running on every PR.
+
+## Usage & parameters
+
+```
+octopus quality-metrics [--stack <id>] [--against <ref>]
+```
+
+| Flag | What it does | Default |
+|---|---|---|
+| `--stack <id>` | Force a stack adapter (`csharp`, `typescript`) instead of auto-detecting. | auto-detected |
+| `--against <ref>` | The local ref to use as the "vs. main" comparator. | `main` |
+
+The numeric run is always model-free; the curation step fires only on a
+threshold breach, on the harness's low-cost model.

@@ -1,0 +1,43 @@
+---
+title: quality-metrics
+description: "Local, non-blocking dual-delta read of coverage, complexity, module size, and dependency cycles at PR-open; numbers free, model only on a threshold breach."
+---
+
+`/octopus:quality-metrics` runs a local read of how your branch moves four
+deterministic code-quality metrics, before you open the PR — and stays
+near-free unless something actually regresses.
+
+## What it solves
+
+The author who introduces a quality regression is usually the last to find out:
+review misses a creeping complexity number, a two-point coverage slip, or a new
+import cycle, and a dashboard only shows the trend long after the change merged.
+This command moves the read to the moment you can still fix it cheaply, and keeps
+it cheap by computing the numbers with your stack's own tooling rather than a
+model.
+
+## How it works
+
+A per-stack adapter — chosen from the detected stack — runs the real tooling
+(coverage, cyclomatic complexity, module size, dependency cycles) and normalizes
+the output to a shared contract. The command fetches the per-merge baseline from
+the `octopus/quality-metrics` ref and prints a **dual delta**: your branch vs.
+that baseline (the trend) and vs. your local `main` (this PR's impact).
+
+Thresholds are ratchet-by-default (no regression vs. baseline), with optional
+absolute targets in `.octopus.yml`. The numeric run never calls a model; only a
+threshold breach triggers a low-cost model to explain the regression and suggest
+a fix.
+
+## Usage & parameters
+
+```
+octopus quality-metrics [--stack <id>] [--against <ref>]
+```
+
+- `--stack <id>` — force a stack adapter (`csharp`, `typescript`) instead of
+  auto-detecting from the repo.
+- `--against <ref>` — the local ref used as the "vs. main" comparator; default
+  `main`.
+
+[Source: `commands/quality-metrics.md`](https://github.com/leocosta/octopus/blob/main/commands/quality-metrics.md)

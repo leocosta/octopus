@@ -1,0 +1,65 @@
+---
+title: quality-metrics
+description: "Leitura local e não-bloqueante no PR-open de como sua mudança move cobertura, complexidade ciclomática, tamanho de módulo e ciclos de dependência — reportada como um delta duplo (vs. o baseline por-merge e vs. seu main local). Os números vêm do tooling do seu stack a ≈0 tokens; um modelo de baixo custo só é acionado quando uma métrica cruza um threshold."
+---
+
+`quality-metrics` te diz o que sua mudança fez com os números — cobertura,
+complexidade ciclomática, tamanho de módulo, ciclos no grafo de dependências — no
+único momento em que você ainda pode agir barato: antes de abrir o PR.
+
+## O que resolve
+
+As métricas de qualidade regridem em silêncio, e o autor é o último a notar. Uma
+função passa de um teto de complexidade, a cobertura cai uns pontos, surge um
+ciclo de import novo — a review raramente pega qualquer um deles, e um dashboard
+só mostra a tendência muito depois da mudança ter ido. O feedback chega tarde
+demais e longe demais de quem o causou.
+
+Esta skill fecha essa lacuna sendo duas coisas ao mesmo tempo: **imediata** (uma
+leitura local no seu branch, sem ida-e-volta de CI) e **quase de graça** (os
+números são saída pura de tooling, então rodar custa praticamente zero tokens).
+Ela só gasta um modelo quando algo está de fato errado.
+
+## Como funciona
+
+A skill é **híbrida** — medição determinística, assistida por modelo só na
+quebra.
+
+Os números são produzidos por um **adapter** por-stack que roda o tooling real da
+sua linguagem e normaliza a saída para um contrato comum. O adapter é
+selecionado automaticamente a partir do stack detectado no repo, então o mesmo
+comando e as mesmas quatro métricas funcionam entre linguagens.
+
+Ele reporta um **delta duplo** por métrica:
+
+- **vs. baseline** — seu branch contra o baseline do último merge na main (a
+  âncora de tendência).
+- **vs. main** — seu branch contra seu `main` HEAD local (o impacto isolado
+  deste PR).
+
+O baseline é lido (`git fetch`) de um ref dedicado e não-protegido
+(`octopus/quality-metrics`) que uma Action de push-na-`main` mantém fresco; o
+caminho de leitura nunca o escreve.
+
+Os thresholds são **ratchet por padrão** — uma métrica não pode regredir contra
+o baseline — com alvos **absolutos** opcionais somados no `.octopus.yml`
+(`coverage.min`, `complexity.max`, `module_size.max`,
+`dependencies.cycles_allowed`). Um campo sem alvo configurado continua no
+ratchet. Só quando uma métrica cruza seu threshold é que a skill aciona um modelo
+de baixo custo para ler a mudança ofensora, explicar por que o número se moveu e
+sugerir um fix. Sem quebra, sem chamada de modelo — o contrato de custo que faz
+valer a pena rodar em todo PR.
+
+## Uso & parâmetros
+
+```
+octopus quality-metrics [--stack <id>] [--against <ref>]
+```
+
+| Flag | O que faz | Padrão |
+|---|---|---|
+| `--stack <id>` | Força um adapter de stack (`csharp`, `typescript`) em vez de auto-detectar. | auto-detectado |
+| `--against <ref>` | O ref local usado como comparador "vs. main". | `main` |
+
+A rodada numérica é sempre sem modelo; o passo de curadoria dispara apenas numa
+quebra de threshold, no modelo de baixo custo do harness.
