@@ -34,10 +34,10 @@ MAX_STACK_CSHARP_TOKENS=3400
 MAX_STACK_PYTHON_TOKENS=2600
 MAX_STACK_TYPESCRIPT_TOKENS=3950
 # RM-135: SKILL.md bodies over the scaffold-skill 250-line guideline (on-demand
-# cost per activation). Locks the current 4 (dotnet, launch-release,
-# respond-to-review, delegate) and blocks NEW bloat. Lower this as offenders are
-# run through `compress-skill` (the anchor-preserving tool built for it);
-# dotnet is example-heavy and won't shrink much.
+# cost per activation). respond-to-review was compressed (313->213). The
+# remaining 3 (dotnet, delegate, launch-release) are example/template-heavy or
+# genuinely complex — compressing them would remove the code templates that are
+# the value, so they are left and locked here against NEW bloat.
 MAX_OVERSIZED_SKILLS=3
 
 PASS=0; FAIL=0
