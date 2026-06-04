@@ -15,7 +15,7 @@ echo "Test 2: every bundle has name/description/category"
 for f in "$BUNDLES_DIR"/*.yml; do
   grep -q "^name: " "$f" || { echo "FAIL: $f missing 'name:'"; exit 1; }
   grep -q "^description: " "$f" || { echo "FAIL: $f missing 'description:'"; exit 1; }
-  grep -qE "^category: (foundation|intent|stack)$" "$f" \
+  grep -qE "^category: (foundation|intent|stack|db)$" "$f" \
     || { echo "FAIL: $f missing valid 'category:'"; exit 1; }
 done
 echo "PASS: every bundle has required metadata"
@@ -94,10 +94,11 @@ OCTOPUS_MCP=()
 
 _load_bundle "starter"
 
-# starter contributes doc-adr, doc-lifecycle, context-budget, implement, debug, respond-to-review, delegate,
-# test-tdd, map-system, prototype, context-handoff (Cluster 14 — RM-076, RM-078, RM-081, RM-082)
+# starter contributes doc-adr, doc-lifecycle, context-budget, implement, debug,
+# respond-to-review, test-tdd, prototype, context-handoff. map-system + delegate
+# moved to the workflow-extras bundle (RM-143).
 printf '%s\n' "${OCTOPUS_SKILLS[@]}" | sort > /tmp/got_skills.$$
-printf '%s\n' doc-adr doc-lifecycle context-budget implement debug respond-to-review delegate test-tdd map-system prototype context-handoff | sort > /tmp/exp_skills.$$
+printf '%s\n' doc-adr doc-lifecycle context-budget implement debug respond-to-review test-tdd prototype context-handoff | sort > /tmp/exp_skills.$$
 diff -q /tmp/got_skills.$$ /tmp/exp_skills.$$ >/dev/null \
   || { echo "FAIL: starter did not populate skills correctly"; exit 1; }
 rm -f /tmp/got_skills.$$ /tmp/exp_skills.$$
@@ -150,7 +151,7 @@ OCTOPUS_BUNDLES=("starter" "quality")
 
 expand_bundles
 
-expected_skills=(doc-adr doc-lifecycle context-budget implement debug respond-to-review delegate test-tdd map-system prototype context-handoff audit-all audit-security audit-money audit-tenant audit-contracts refactor-deepen audit-config audit-grounding audit-verification audit-style audit-fleet fleet-bootstrap knowledge-hygiene knowledge-synthesize knowledge-briefing)
+expected_skills=(doc-adr doc-lifecycle context-budget implement debug respond-to-review test-tdd prototype context-handoff audit-all audit-security audit-money audit-tenant audit-contracts refactor-deepen audit-config audit-grounding audit-verification audit-style audit-fleet fleet-bootstrap knowledge-hygiene knowledge-synthesize knowledge-briefing)
 printf '%s\n' "${OCTOPUS_SKILLS[@]}" | sort -u > /tmp/got.$$
 printf '%s\n' "${expected_skills[@]}" | sort -u > /tmp/exp.$$
 diff -q /tmp/got.$$ /tmp/exp.$$ >/dev/null \
@@ -205,11 +206,12 @@ OCTOPUS_RULES=()
 parse_octopus_yml "$WORKDIR/.octopus.yml"
 expand_bundles
 
-# starter (11 skills) + quality (15 unique skills: audit-all + its 3 deps, audit-contracts,
-# refactor-deepen, audit-config, audit-grounding, audit-verification, audit-style, audit-fleet,
-# fleet-bootstrap, knowledge-hygiene, knowledge-synthesize, knowledge-briefing) = 26 distinct skills
-[[ ${#OCTOPUS_SKILLS[@]} -eq 26 ]] \
-  || { echo "FAIL: expected 26 skills after bundle expansion, got ${#OCTOPUS_SKILLS[@]}"; exit 1; }
+# starter (9 skills after RM-143) + quality (15 unique: audit-all + its 4 deps,
+# audit-contracts, refactor-deepen, audit-config, audit-grounding,
+# audit-verification, audit-style, audit-fleet, fleet-bootstrap,
+# knowledge-hygiene, knowledge-synthesize, knowledge-briefing) = 24 distinct
+[[ ${#OCTOPUS_SKILLS[@]} -eq 24 ]] \
+  || { echo "FAIL: expected 24 skills after bundle expansion, got ${#OCTOPUS_SKILLS[@]}"; exit 1; }
 
 printf '%s\n' "${OCTOPUS_ROLES[@]}" | grep -q "^architect$" \
   || { echo "FAIL: architect role missing after expansion"; exit 1; }
@@ -248,7 +250,9 @@ OCTOPUS_BUNDLES=("fullstack")
 
 expand_bundles
 
-expected_fs=(backend-patterns test-e2e dba-mssql dba-postgres dba-mongodb dba-redis frontend-patterns test-component audit-contracts)
+# RM-141: intent bundles are stack-agnostic — the per-engine dba-* skills now
+# come from db-* profiles (auto-detected), not from backend/fullstack.
+expected_fs=(backend-patterns test-e2e frontend-patterns test-component audit-contracts)
 printf '%s\n' "${OCTOPUS_SKILLS[@]}" | sort -u > /tmp/got_fs.$$
 printf '%s\n' "${expected_fs[@]}" | sort -u > /tmp/exp_fs.$$
 diff -q /tmp/got_fs.$$ /tmp/exp_fs.$$ >/dev/null \
@@ -263,6 +267,10 @@ for role in backend-developer dba frontend-developer; do
   printf '%s\n' "${OCTOPUS_ROLES[@]}" | grep -q "^${role}$" \
     || { echo "FAIL: fullstack missing role $role"; exit 1; }
 done
+
+# RM-141 guarantee: intent bundles carry no per-engine dba-* skill.
+printf '%s\n' "${OCTOPUS_SKILLS[@]}" | grep -q '^dba-' \
+  && { echo "FAIL: fullstack still pulls a dba-* skill (should come from db-* profile)"; exit 1; } || true
 
 echo "PASS: fullstack bundle expands and de-duplicates correctly"
 
@@ -406,6 +414,73 @@ OCTOPUS_DIR="$OCTOPUS_DIR_SAVED"
 
 rm -rf "$FAKE"
 echo "PASS: skills without depends_on are untouched"
+
+echo "Test 14: stack/db profiles resolve to their skills + rules (RM-140)"
+
+OCTOPUS_SKILLS=(); OCTOPUS_ROLES=(); OCTOPUS_RULES=(); OCTOPUS_MCP=()
+_load_bundle stack-csharp
+printf '%s\n' "${OCTOPUS_SKILLS[@]}" | grep -q "^dotnet$" \
+  || { echo "FAIL: stack-csharp did not pull dotnet"; exit 1; }
+printf '%s\n' "${OCTOPUS_RULES[@]}" | grep -q "^csharp$" \
+  || { echo "FAIL: stack-csharp did not add the csharp rule"; exit 1; }
+
+OCTOPUS_SKILLS=(); OCTOPUS_ROLES=(); OCTOPUS_RULES=(); OCTOPUS_MCP=()
+_load_bundle db-mssql
+printf '%s\n' "${OCTOPUS_SKILLS[@]}" | grep -q "^dba-mssql$" \
+  || { echo "FAIL: db-mssql did not pull dba-mssql"; exit 1; }
+# A db profile carries only its one dba-* skill — never a sibling DB.
+printf '%s\n' "${OCTOPUS_SKILLS[@]}" | grep -q "^dba-postgres$" \
+  && { echo "FAIL: db-mssql leaked a sibling dba-* skill"; exit 1; } || true
+echo "PASS: stack/db profiles resolve granularly"
+
+echo "Test 15: exclude: is parsed and subtracts a member after expansion (RM-144)"
+
+# Parse: exclude: list lands in OCTOPUS_EXCLUDE.
+WORKDIR=$(mktemp -d)
+cat > "$WORKDIR/.octopus.yml" <<'EOF'
+bundles:
+  - db-mssql
+  - db-postgres
+exclude:
+  - dba-postgres
+EOF
+OCTOPUS_BUNDLES=(); OCTOPUS_SKILLS=(); OCTOPUS_ROLES=(); OCTOPUS_RULES=(); OCTOPUS_MCP=(); OCTOPUS_EXCLUDE=()
+parse_octopus_yml "$WORKDIR/.octopus.yml"
+printf '%s\n' "${OCTOPUS_EXCLUDE[@]}" | grep -qx "dba-postgres" \
+  || { echo "FAIL: exclude: not parsed into OCTOPUS_EXCLUDE"; rm -rf "$WORKDIR"; exit 1; }
+
+# Apply: after expansion the excluded member is gone, the sibling remains.
+expand_bundles
+_apply_excludes
+printf '%s\n' "${OCTOPUS_SKILLS[@]}" | grep -qx "dba-mssql" \
+  || { echo "FAIL: dba-mssql should remain after exclude"; rm -rf "$WORKDIR"; exit 1; }
+printf '%s\n' "${OCTOPUS_SKILLS[@]}" | grep -qx "dba-postgres" \
+  && { echo "FAIL: exclude did not drop dba-postgres"; rm -rf "$WORKDIR"; exit 1; } || true
+OCTOPUS_EXCLUDE=()
+rm -rf "$WORKDIR"
+echo "PASS: exclude subtracts the listed member"
+
+echo "Test 16: a focused stack repo resolves only its stack/DB (RM-138/141/143 end-to-end)"
+OCTOPUS_SKILLS=(); OCTOPUS_ROLES=(); OCTOPUS_RULES=(); OCTOPUS_MCP=(); OCTOPUS_EXCLUDE=()
+OCTOPUS_BUNDLES=(starter backend stack-csharp db-mssql)
+expand_bundles
+# Present: the affirmed stack/DB + agnostic backend + core loop.
+for s in dotnet dba-mssql backend-patterns implement; do
+  printf '%s\n' "${OCTOPUS_SKILLS[@]}" | grep -qx "$s" \
+    || { echo "FAIL: focused repo missing expected skill $s"; exit 1; }
+done
+printf '%s\n' "${OCTOPUS_RULES[@]}" | grep -qx "csharp" \
+  || { echo "FAIL: focused C# repo missing csharp rule"; exit 1; }
+# Absent: foreign DBs/stacks + situational defaults moved to workflow-extras.
+for s in dba-postgres dba-mongodb dba-redis frontend-patterns test-component map-system delegate; do
+  printf '%s\n' "${OCTOPUS_SKILLS[@]}" | grep -qx "$s" \
+    && { echo "FAIL: $s should not load in a focused C# backend repo"; exit 1; } || true
+done
+for r in python typescript; do
+  printf '%s\n' "${OCTOPUS_RULES[@]}" | grep -qx "$r" \
+    && { echo "FAIL: foreign rule $r present in a C# repo"; exit 1; } || true
+done
+echo "PASS: focused stack repo carries only its stack/DB + core loop"
 
 echo "Test: renamed skill dirs exist"
 for skill in doc-adr doc-lifecycle audit-money audit-security audit-tenant respond-to-review audit-contracts launch-feature launch-release debug plan-backlog test-e2e frontend-patterns test-component; do

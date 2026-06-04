@@ -46,16 +46,21 @@ add `quality` for audits if you handle money / auth / multi-tenant).
 skills:
   - backend-patterns  # framework-shaped patterns for backend code
   - test-e2e          # end-to-end testing protocol (real DB, real HTTP)
-  - dba-mssql         # SQL Server review (indexing, migration safety…)
-  - dba-postgres      # Postgres review (concurrent indexes, ESR, etc)
-  - dba-mongodb       # MongoDB review (indexing, modeling, ESR rule)
-  - dba-redis         # Redis review (TTLs, KEYS *, pattern usage)
 roles:
   - backend-developer # senior backend persona for /octopus:delegate
   - dba               # pre-merge gate paired with architect on DB PRs
 ```
 
 [Source: `bundles/backend.yml`](https://github.com/leocosta/octopus/blob/main/bundles/backend.yml)
+
+`backend` is **stack-agnostic**: it carries the patterns, the e2e
+discipline, and the `dba` reviewer role — but not the per-engine
+heuristics. The engine-specific review skills (`dba-mssql`,
+`dba-postgres`, `dba-mongodb`, `dba-redis`) ship as **database
+profiles** that setup auto-selects from the driver detected in your
+repo, so a SQL Server shop gets `dba-mssql` only — never the other
+three. See the [bundles overview](/octopus/architecture/bundles/) for
+the profile axis.
 
 ### Why each one is in
 
@@ -78,17 +83,17 @@ roles:
   detected stack's conventions. Useful when a frontend developer
   is dispatching backend work and wants the agent in the right
   mental model.
-- **`dba-mssql`, `dba-postgres`, `dba-mongodb`, `dba-redis`** — per-engine
-  review skills that catch the data-layer failure modes that page
-  on-call at 3am: FK columns without indexes (Postgres), ALTER COLUMN
-  NOT NULL on hot tables (MSSQL), compound-index ESR-rule violations
-  (Mongo), `KEYS *` in production code or missing TTLs (Redis). Each
-  skill emits severity-tagged findings (BLOCKING / ADVISORY / QUESTION)
-  with ready-to-apply fixes — `CREATE INDEX CONCURRENTLY ...` for the
-  missing Postgres FK index, a split add-nullable→backfill→set-not-null
-  migration plan for the MSSQL hot table, etc. Each skill enriches its
-  findings with EXPLAIN plans and existing-index listings when the
-  matching connection string is present in `.env.octopus`.
+- **per-engine review skills** (`dba-mssql`, `dba-postgres`,
+  `dba-mongodb`, `dba-redis`) — these are **not** in `backend`; they ship
+  as **database profiles** (`db-mssql`, …) that setup auto-selects from
+  the driver in your repo, so you carry only the engine you use. They
+  catch the data-layer failure modes that page on-call at 3am: FK
+  columns without indexes (Postgres), ALTER COLUMN NOT NULL on hot
+  tables (MSSQL), compound-index ESR-rule violations (Mongo), `KEYS *`
+  or missing TTLs (Redis) — emitting severity-tagged findings with
+  ready-to-apply fixes, enriched with EXPLAIN plans when the matching
+  connection string is in `.env.octopus`. The `dba` role (below)
+  orchestrates whichever profiles are installed.
 - **`dba` role** — the persona that orchestrates the four engine
   skills as a second pre-merge approval gate alongside `architect`,
   documented in `core/pr-workflow.md`. The role detects engines
@@ -106,10 +111,11 @@ roles:
   backend repo that ships to production almost always wants
   `backend + quality` (and `quality` is what brings the
   `architect` role that pairs with `dba`).
-- **Framework-specific skills like `dotnet`, `node`, etc.** — the
-  `dotnet` skill exists as a separate, optional install. It's not
-  bundled into `backend` because not every backend is .NET. Future
-  stack-specific skills follow the same pattern.
+- **Framework-specific skills like `dotnet`** — these ship as
+  **stack profiles** (`stack-csharp` carries `dotnet` + the C# rules),
+  auto-selected from the repo (e.g. a `*.csproj`). Not bundled into
+  `backend` because not every backend is .NET — the profile axis keeps
+  the language layer orthogonal to the intent bundle.
 
 ## Workflow this enables
 

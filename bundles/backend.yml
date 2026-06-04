@@ -1,15 +1,11 @@
 name: backend
-description: Backend API development e data layer review — patterns, helpers, e2e tests, e gate de pre-merge pra MSSQL/Postgres/Mongo/Redis (dual com architect).
+description: Backend API development & data-layer review — stack-agnostic patterns, helpers, e2e tests, and the dba reviewer role. Per-engine DB heuristics ship as db-* profiles (auto-selected from the repo's driver).
 category: intent
 persona_question: "Does your team build backend APIs/services or review database changes (schemas, queries, migrations)?"
 persona_default: false
 skills:
   - backend-patterns
   - test-e2e
-  - dba-mssql
-  - dba-postgres
-  - dba-mongodb
-  - dba-redis
 roles:
   - backend-developer
   - dba

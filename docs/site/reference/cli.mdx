@@ -35,16 +35,19 @@ These live in the shim and manage the installed version:
 
 ## `setup` flags
 
-`octopus setup` is interactive by default. For CI or scripting, every choice has
-a flag:
+`octopus setup` is interactive by default. It scans the repo for
+language and database signals and pre-selects the matching stack and
+database profiles in the picker — you confirm or deselect them before
+anything is written. For CI or scripting, every choice has a flag:
 
 | Flag | Effect |
 |---|---|
 | `--scope` | Configure this repository (`repo`, the default) or the user account (`user`) |
 | `--reconfigure` | Re-open the picker to edit an existing configuration |
 | `--dry-run` | Print what would change without writing anything |
-| `--bundle <name>` | Preselect a bundle (repeatable) |
-| `--stack <name>` | Preselect a stack profile |
+| `--bundle <name>` | Preselect a bundle or profile (repeatable) |
+| `--stack <name>` | Preselect a stack profile: `dotnet` → `stack-csharp`, `node` → `stack-typescript`, `python` → `stack-python` |
+| `--no-detect` | Skip automatic stack and database detection; start the picker with no profiles pre-selected |
 | `--reviewers <list>` | Preset the PR reviewers |
 | `--no-hooks` | Skip hook installation |
 | `--no-workflow` | Skip the workflow command set |

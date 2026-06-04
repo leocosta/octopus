@@ -1,0 +1,81 @@
+---
+title: workflow-extras
+description: Skills de workflow situacionais mantidas fora do starter — map-system para decks de orientação de codebase e delegate para pipelines @role multi-papel.
+sidebar:
+  order: 12
+source_hash: ""
+needs_retranslation: false
+---
+
+`workflow-extras` reúne duas skills genuinamente úteis mas não necessárias em
+toda tarefa: `map-system` para construir um deck de orientação do codebase e
+`delegate` para despachar pipelines multi-role. Elas vivem aqui, e não no
+[`starter`](/octopus/bundles/starter/), para que repos que não precisam delas
+não paguem nenhum custo de carregamento. Adicione este bundle quando quiser usá-las.
+
+## Por que isso existe
+
+O [`starter`](/octopus/bundles/starter/) é mantido enxuto de propósito. Ambas as
+skills são situacionais: você roda `map-system` quando um novo colega entra no
+time ou depois de uma mudança arquitetural grande — não em cada PR. Você usa
+`delegate` quando uma tarefa precisa explicitamente de múltiplos papéis
+especialistas em sequência — não no fluxo de implementação de rotina. Tornando-as
+opt-in, o footprint padrão do agent permanece pequeno sem esconder as skills de
+times que precisam delas.
+
+## O que inclui
+
+```yaml
+skills:
+  - map-system   # constrói um deck de orientação do codebase (trigger manual apenas)
+  - delegate     # despacha pipelines @role: @architect, @security, @dba, etc.
+roles: []
+```
+
+[Fonte: `bundles/workflow-extras.yml`](https://github.com/leocosta/octopus/blob/main/bundles/workflow-extras.yml)
+
+### Por que cada uma está aqui
+
+- **`map-system`** — produz um deck de orientação estruturado e navegável para
+  um codebase: entry points, principais fluxos de dados, responsabilidades dos
+  módulos, boundaries arquiteturais importantes. Trigger manual apenas (nunca
+  dispara automaticamente) porque um scan completo do codebase é custoso e
+  pesado em contexto. Útil uma vez no início de um engajamento e novamente após
+  grandes reestruturações.
+- **`delegate`** — habilita pipelines de dispatch `@role` multi-papel: você
+  especifica uma sequência de roles (por exemplo, `@architect → @security →
+  @dba`) e a skill roteia o trabalho por cada uma delas, coletando os outputs
+  antes de retornar um resultado consolidado. Usado quando uma tarefa realmente
+  cruza boundaries de papel — não como substituto de tarefas de papel único onde
+  uma role é suficiente.
+
+### Por que não estão no starter
+
+Ambas as skills requerem invocação explícita e têm um footprint de token
+não-trivial. Carregá-las incondicionalmente em todos os repos adicionaria
+overhead de contexto em tarefas que não precisam delas. O boundary opt-in também
+facilita que os times raciocinem sobre o que o agent faz por padrão versus sob
+demanda.
+
+## Workflow que isso habilita
+
+- **Onboarding de um novo colega** — rode `/octopus:map-system` para gerar um
+  deck de orientação que cobre entry points, fluxos de dados e responsabilidades
+  dos módulos. O output é um documento estruturado que o colega pode ler de forma
+  independente antes de mergulhar no código.
+- **Revisão cross-cutting** — quando um PR toca auth, money e a camada de dados
+  simultaneamente, rode `/octopus:delegate @architect @security @dba` para
+  rotear o diff pelos três especialistas em sequência e coletar um conjunto
+  consolidado de achados.
+- **Alinhamento pós-reestruturação** — após um refactor significativo, re-rode
+  `map-system` para atualizar o deck de orientação de modo que ele reflita o novo
+  layout de módulos.
+
+## Compõe com
+
+- **[starter](/octopus/bundles/starter/)** — fundação obrigatória. O `delegate`
+  despacha roles que são definidas no `starter` e em outros bundles; as roles
+  precisam estar presentes para que o dispatch funcione.
+- **[quality-audits](/octopus/bundles/quality-audits/)** — o `delegate` é a
+  forma natural de invocar `@architect` e `@security` manualmente, fora do fluxo
+  automático de auditoria.

@@ -56,6 +56,7 @@ OCTOPUS_USER_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/octopus"
 declare -a OCTOPUS_RULES=()
 declare -a OCTOPUS_SKILLS=()
 declare -a OCTOPUS_BUNDLES=()
+declare -a OCTOPUS_EXCLUDE=()
 OCTOPUS_HOOKS="false"
 OCTOPUS_DESTRUCTIVE_GUARD="true"   # RM-033: default enabled when hooks are on
 declare -a OCTOPUS_AGENTS=()
@@ -302,6 +303,27 @@ _dedupe_array() {
   eval "${arr_name}=(\"\${result[@]}\")"
 }
 
+# RM-144 — drop members listed under `exclude:` in .octopus.yml from the
+# resolved skills/roles/rules, after bundle/profile expansion. Lets a repo
+# subtract a single member a bundle/profile pulled (e.g. exclude: [dba-mongodb])
+# without abandoning the bundle. Same eval idiom as _dedupe_array (bash 3.2).
+_apply_excludes() {
+  [[ ${#OCTOPUS_EXCLUDE[@]} -eq 0 ]] && return 0
+  local arr_name item ex keep
+  for arr_name in OCTOPUS_SKILLS OCTOPUS_ROLES OCTOPUS_RULES; do
+    eval "local -a src=(\"\${${arr_name}[@]}\")"
+    local -a result=()
+    for item in "${src[@]}"; do
+      keep="true"
+      for ex in "${OCTOPUS_EXCLUDE[@]}"; do
+        [[ "$item" == "$ex" ]] && { keep="false"; break; }
+      done
+      [[ "$keep" == "true" ]] && result+=("$item")
+    done
+    eval "${arr_name}=(\"\${result[@]}\")"
+  done
+}
+
 parse_octopus_yml() {
   local file="$1"
   local current_section=""
@@ -454,6 +476,7 @@ parse_octopus_yml() {
 
       case "$current_section" in
         bundles)   OCTOPUS_BUNDLES+=("$value") ;;
+        exclude)   OCTOPUS_EXCLUDE+=("$value") ;;
         rules)     OCTOPUS_RULES+=("$value") ;;
         skills)    OCTOPUS_SKILLS+=("$value") ;;
         agents)    OCTOPUS_AGENTS+=("$value") ;;
@@ -2633,6 +2656,9 @@ expand_bundles
 
 # 1b. Ensure 'common' rule is always first
 ensure_common_rule
+
+# 1b'. Apply manifest `exclude:` — subtract members after expansion (RM-144)
+_apply_excludes
 
 # 1c. Discover knowledge modules
 discover_knowledge

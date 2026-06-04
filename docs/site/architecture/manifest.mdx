@@ -71,6 +71,45 @@ GEMINI.md
 .opencode/rules.md, .opencode/commands/, .opencode/skills/, .opencode/agents/, .opencode/settings.json
 ```
 
+## Profiles in the bundles list
+
+The `bundles:` list accepts both intent bundles and auto-detected
+profiles. After `octopus setup` runs detection, a typical manifest
+might look like:
+
+```yaml
+bundles:
+  - starter
+  - backend
+  - quality
+  - stack-csharp   # auto-detected from *.csproj
+  - db-mssql       # auto-detected from Microsoft.Data.SqlClient
+```
+
+Stack and database profiles follow the same expansion rules as
+intent bundles — they are simply category-tagged entries in the
+bundle catalog.
+
+## Excluding individual members with `exclude:`
+
+The manifest supports a top-level `exclude:` list that subtracts
+individual skills or roles **after** all bundle and profile
+expansion is complete. Use it when a profile or bundle brings a
+member you don't want:
+
+```yaml
+bundles:
+  - backend
+  - db-mongodb
+
+exclude:
+  - dba-mongodb   # db-mongodb detected, but this repo uses a read-only replica
+```
+
+`exclude:` is applied last, so it works regardless of which bundle
+introduced the member. It does not affect transitive dependencies
+of other skills that remain in the effective list.
+
 ## Why the manifest is never auto-edited
 
 `octopus setup` writes generated files; it never writes back to

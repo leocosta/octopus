@@ -1,0 +1,75 @@
+---
+title: workflow-extras
+description: Opt-in situational workflow skills kept out of starter — map-system for repo-orientation decks and delegate for multi-role @role pipelines.
+sidebar:
+  order: 12
+---
+
+`workflow-extras` holds two skills that are genuinely useful but not needed on
+every task: `map-system` for building a codebase-orientation deck and `delegate`
+for dispatching multi-role pipelines. They live here rather than in
+[`starter`](/octopus/bundles/starter/) so that repos that don't need them pay
+no loading cost. Add this bundle when you want them.
+
+## Why this exists
+
+[`starter`](/octopus/bundles/starter/) is kept lean on purpose. Both
+`map-system` and `delegate` are situational: you run `map-system` when a new
+teammate joins or after a major architectural change — not on every PR.
+You use `delegate` when a task explicitly needs multiple specialist roles in
+sequence — not on routine implementation. Making them opt-in keeps the default
+agent footprint small without hiding them from teams that need them.
+
+## What it includes
+
+```yaml
+skills:
+  - map-system   # builds a codebase-orientation deck (manual-trigger only)
+  - delegate     # dispatches @role pipelines: @architect, @security, @dba, etc.
+roles: []
+```
+
+[Source: `bundles/workflow-extras.yml`](https://github.com/leocosta/octopus/blob/main/bundles/workflow-extras.yml)
+
+### Why each one is in
+
+- **`map-system`** — produces a structured, navigable orientation deck for a
+  codebase: entry points, major data flows, module responsibilities, key
+  architectural boundaries. Manual-trigger only (it never fires automatically)
+  because a full codebase scan is expensive and context-heavy. Useful once at
+  the start of an engagement and again after major restructuring.
+- **`delegate`** — enables multi-role `@role` dispatch pipelines: you specify
+  a sequence of roles (e.g. `@architect → @security → @dba`) and the skill
+  routes the work through each one, collecting their outputs before returning
+  a consolidated result. Used when a task genuinely crosses role boundaries —
+  not as a substitute for single-role tasks where one role suffices.
+
+### Why not in starter
+
+Both skills require explicit invocation and have a non-trivial token footprint.
+Loading them unconditionally in every repo would add context overhead on tasks
+that don't need them. The opt-in boundary also makes it easier for teams to
+reason about what their agent does by default versus on request.
+
+## Workflow this enables
+
+- **Onboarding a new teammate** — run `/octopus:map-system` to generate an
+  orientation deck that covers entry points, data flows, and module
+  responsibilities. The output is a structured doc the teammate can read
+  independently before diving into code.
+- **Cross-cutting review** — when a PR touches auth, money, and the data layer
+  simultaneously, run `/octopus:delegate @architect @security @dba` to route
+  the diff through all three specialists in sequence and collect a consolidated
+  set of findings.
+- **Post-restructuring alignment** — after a significant refactor, re-run
+  `map-system` to refresh the orientation deck so it reflects the new module
+  layout.
+
+## Composes with
+
+- **[starter](/octopus/bundles/starter/)** — required foundation. `delegate`
+  dispatches roles that are defined in `starter` and in other bundles; the
+  roles must be present for dispatch to work.
+- **[quality-audits](/octopus/bundles/quality-audits/)** — `delegate` is the
+  natural way to invoke `@architect` and `@security` manually outside of the
+  automatic audit flow.

@@ -1,6 +1,6 @@
 ---
 title: starter
-description: A base que todo repo deve ter — doc lifecycle, implement, debug, TDD, prototype, mapeamento de sistema, disciplina de review-feedback, handoff de sessão e os hooks de ciclo de vida que garantem tudo isso.
+description: A base que todo repo deve ter — doc lifecycle, implement, debug, TDD, prototype, disciplina de review-feedback, handoff de sessão e os hooks de ciclo de vida que garantem tudo isso.
 sidebar:
   order: 1
 source_hash: "sha256:ba3e9ba643511f7931418bdb12e9f234c3666c71585e0e6912e5cfc625778487"
@@ -27,7 +27,7 @@ trimestre.
 
 O `starter` codifica esses pontos como skills + commands + hooks,
 de forma que todo repo recebe eles no primeiro `octopus update`. O
-bundle é deliberadamente amplo — onze skills — porque o custo de
+bundle é deliberadamente amplo — nove skills — porque o custo de
 um comportamento foundational *ausente* é muito maior que o custo
 de embarcar um que você não usa de imediato.
 
@@ -50,10 +50,8 @@ skills:
   - context-budget    # monitor token overhead
   - implement         # the Octopus implementation workflow (TDD, plan-gate, simplify)
   - debug             # 4-phase bug protocol (reproduce, isolate, fix, document)
-  - respond-to-review         # PR-feedback discipline
-  - delegate          # @role: dispatch with attribution
+  - respond-to-review # PR-feedback discipline
   - test-tdd          # standalone red-green-refactor loop
-  - map-system        # higher-level codebase map (manual-only)
   - prototype         # throwaway code to answer one design question
   - context-handoff   # session compaction for the next agent
 ```
@@ -78,21 +76,20 @@ skills:
   verificar a crítica, pedir evidência em comentários genéricos,
   nunca fazer mudanças performáticas. Sem isso, os agents
   concordam com toda sugestão em review.
-- **`delegate`** — o bundle inclui o primitivo de role-dispatch
-  mesmo que nenhuma role venha no `starter` em si. Motivo: a
-  maioria dos times adiciona `backend` / writer / etc depois e o
-  `delegate` deve estar presente desde o primeiro dia.
 - **`context-budget` + `context-handoff`** — o par de
   gerenciamento de sessão. `context-budget` mede o overhead de
   tokens; `context-handoff` compacta a sessão em um doc que o
   próximo agent consegue pegar e seguir.
-- **`map-system`** — apenas invocação manual. Um mapa rápido e de
-  alto nível do codebase no vocabulário de domínio do projeto.
 - **`prototype`** — disciplina de design: código descartável para
   responder uma pergunta antes de se comprometer com ela.
 
 ### Por que não incluído (exclusões deliberadas)
 
+- **`map-system` + `delegate`** — movidos para o bundle opt-in
+  `workflow-extras`. Os dois são úteis, mas nem todo repo precisa
+  de role-dispatch ou de um mapa completo do codebase desde o
+  primeiro dia; manter o `starter` enxuto evita carregá-los
+  incondicionalmente.
 - **skills `audit-*`** — essas ficam em `quality`. O `starter` é
   sobre *workflow*; audits são sobre *gates*. Preocupações
   diferentes.

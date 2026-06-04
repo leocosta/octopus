@@ -1,0 +1,11 @@
+name: stack-python
+description: Python stack profile — Python typing/tooling/testing coding rules. Auto-selected when pyproject.toml/requirements.txt is present.
+category: stack
+persona_question: "Does this repo use Python (pyproject.toml, requirements.txt)?"
+persona_default: false
+skills: []
+roles: []
+rules:
+  - python
+mcp: []
+hooks: null

@@ -1,10 +1,10 @@
 ---
 title: backend
-description: Padrões específicos de backend, convenções de testes end-to-end e um gate per-engine de review da camada de dados. Anda junto com os roles backend-developer e dba para implementação consciente da stack e review pre-merge da camada de dados.
+description: Padrões específicos de backend, convenções de testes end-to-end e um gate de review da camada de dados. Anda junto com os roles backend-developer e dba; os perfis db-* auto-selecionados pelo setup trazem a skill per-engine correspondente.
 sidebar:
   order: 4
 source_hash: "sha256:a86cc8243daead8e1c1dd0be9235e6071a3b005d2ba3b5287049272785438842"
-needs_retranslation: true
+needs_retranslation: false
 ---
 
 `backend` adiciona skills específicas de backend e dois roles em
@@ -51,16 +51,21 @@ adicione `quality` para auditorias se você lida com dinheiro / auth
 skills:
   - backend-patterns  # padrões com forma de framework para código backend
   - test-e2e          # protocolo de teste end-to-end (DB real, HTTP real)
-  - dba-mssql         # review de SQL Server (indexação, segurança de migration…)
-  - dba-postgres      # review de Postgres (índices concorrentes, ESR, etc)
-  - dba-mongodb       # review de MongoDB (indexação, modelagem, regra ESR)
-  - dba-redis         # review de Redis (TTLs, KEYS *, padrões de uso)
 roles:
   - backend-developer # persona sênior de backend para /octopus:delegate
   - dba               # gate pre-merge pareado com architect em PRs de DB
 ```
 
 [Fonte: `bundles/backend.yml`](https://github.com/leocosta/octopus/blob/main/bundles/backend.yml)
+
+`backend` é **agnóstico de stack**: traz os padrões, a disciplina de
+e2e e o role `dba` — mas não as heurísticas per-engine. As skills de
+review específicas de engine (`dba-mssql`, `dba-postgres`, `dba-mongodb`,
+`dba-redis`) chegam como **perfis de banco de dados** (`db-mssql`, …)
+que o setup auto-seleciona a partir do driver detectado no repo, de forma
+que um time SQL Server recebe só o `dba-mssql` — nunca os outros três.
+Consulte a [visão geral de bundles](/octopus/pt-br/architecture/bundles/)
+para entender o eixo de perfis.
 
 ### Por que cada item está aqui
 
@@ -84,20 +89,31 @@ roles:
   as convenções da stack detectada. Útil quando um frontend
   developer está despachando trabalho de backend e quer o agent no
   modelo mental certo.
+- **skills per-engine de review** (`dba-mssql`, `dba-postgres`,
+  `dba-mongodb`, `dba-redis`) — **não estão** no `backend`; chegam
+  como **perfis de banco de dados** (`db-mssql`, …) que o setup
+  auto-seleciona a partir do driver no repo, de forma que você
+  carrega apenas o engine que usa.
+- **role `dba`** — a persona que orquestra os perfis de engine
+  instalados como um segundo gate de aprovação pre-merge ao lado do
+  `architect`. O role detecta engines tocados pelo diff e despacha
+  as skills correspondentes em paralelo.
 
 ### Por que não está incluído
 
-- **`backend-developer` está aqui, mas nenhuma outra persona** —
-  intencional. O bundle é focado em backend; incluir outros roles
-  fugiria do tema.
+- **Nenhuma outra persona de implementador** — o bundle permanece
+  focado em backend; incluir roles de frontend ou de outros
+  domínios fugiria do tema.
 - **`audit-money`, `audit-tenant`, `audit-security`** — esses
   vivem em `quality` porque a forma da auditoria deles se aplica
   independentemente da stack. Um repo de backend que vai para
   produção quase sempre quer `backend + quality`.
-- **Skills específicas de framework como `dotnet`, `node`, etc.** —
-  a skill `dotnet` existe como uma instalação separada e opcional.
-  Ela não vem no bundle `backend` porque nem todo backend é .NET.
-  Skills específicas de stack futuras seguem o mesmo padrão.
+- **Skills específicas de framework como `dotnet`** — chegam como
+  **perfis de stack** (`stack-csharp` traz `dotnet` + as rules de
+  C#), auto-selecionados a partir do repo (ex.: um `*.csproj`).
+  Não estão no bundle `backend` porque nem todo backend é .NET —
+  o eixo de perfis mantém a camada de linguagem ortogonal ao
+  bundle de intenção.
 
 ## Workflow que isso habilita
 

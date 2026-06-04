@@ -1,0 +1,88 @@
+---
+title: quality-audits
+description: A camada de gate bloqueante pré-merge do quality — security, money-logic, escopo multi-tenant e drift de contratos cross-stack, com as roles architect e security para classificar os achados.
+sidebar:
+  order: 9
+source_hash: ""
+needs_retranslation: false
+---
+
+`quality-audits` é o subconjunto do [`quality`](/octopus/bundles/quality/) que
+traça uma linha clara entre **gates bloqueantes** e sinais advisory. Ele instala
+apenas as skills e roles que podem bloquear um merge — nada que seja signal-only
+por design. Se você quiser também a camada advisory, use o bundle `quality`
+completo ou adicione o [`quality-signals`](/octopus/bundles/quality-signals/)
+junto a este.
+
+## Por que isso existe
+
+`quality` é o padrão certo para repos em produção. Mas alguns times chegam às
+auditorias de forma incremental: querem os gates bloqueantes hoje e vão adicionar
+os sinais mais tarde, quando o time estiver confortável com o workflow. Outros
+times usam suas próprias ferramentas advisory e precisam do Octopus só para a
+camada bloqueante. `quality-audits` é exatamente esse escopo — nada além.
+
+## O que inclui
+
+```yaml
+skills:
+  - audit-all         # parallel composer: audit-security, audit-money, audit-tenant
+  - audit-contracts   # drift de contratos cross-stack (DTO/endpoint/enum/status-code)
+roles:
+  - architect         # classifica achados: BLOCKING / ADVISORY / QUESTION
+  - security          # passe de threat-modeling em diffs de auth e secrets
+```
+
+`audit-all` instala `audit-security`, `audit-money` e `audit-tenant` como
+dependências transitivas.
+
+[Fonte: `bundles/quality-audits.yml`](https://github.com/leocosta/octopus/blob/main/bundles/quality-audits.yml)
+
+### Por que cada uma está aqui
+
+- **`audit-all`** — o ponto de entrada. Roda as quatro auditorias de domínio em
+  paralelo contra um diff de branch ou PR, produzindo um relatório consolidado
+  com severidades em camadas (`⛔ block`, `⚠ warn`, `ℹ info`) e hotspots
+  cross-audit.
+- **`audit-contracts`** — captura drift entre produtores e consumidores de API
+  que as auditorias por arquivo não veem: DTOs incompatíveis, valores de enum
+  renomeados, endpoints removidos, status codes alterados através do boundary de
+  stack.
+- **role `architect`** — achados de auditoria precisam de classificação de nível
+  humano. Essa role percorre um relatório consolidado e rotula cada achado como
+  bloqueante, advisory ou needs-discussion, para que a conversa de revisão seja
+  estruturada.
+- **role `security`** — adiciona um passe de threat-modeling sobre o checklist
+  `audit-security`: superfície de ataque, fluxos de auth, tratamento de secrets.
+  O router do `codereview` a despacha automaticamente em diffs que tocam auth ou
+  secrets, em dual gate com o `architect`.
+
+### Por que algumas coisas não estão aqui
+
+- **`audit-grounding`, `audit-verification`, `audit-style`, `audit-config`,
+  `refactor-deepen`** — são signal-only e pertencem ao
+  [`quality-signals`](/octopus/bundles/quality-signals/). Nenhum deles bloqueia
+  um merge; misturá-los aqui diluiria o contrato de gate bloqueante.
+- **`knowledge-hygiene`, `knowledge-synthesize`, `knowledge-briefing`** — são
+  operações do knowledge loop e vivem no
+  [`knowledge-ops`](/octopus/bundles/knowledge-ops/).
+
+## Workflow que isso habilita
+
+1. Você termina uma feature e dá push na sua branch.
+2. Você roda `/octopus:audit-all` antes de abrir o PR. A skill dispara as quatro
+   auditorias em paralelo contra o diff e consolida os achados.
+3. Se a mudança toca o boundary de API, o `audit-contracts` inspeciona o diff
+   em busca de drift de DTO / endpoint / enum / status-code na stack.
+4. Qualquer achado rotulado `⛔ block` deve ser resolvido antes do merge. A role
+   `architect` percorre o relatório e reclassifica casos de borda; a role
+   `security` adiciona um passe de threat-model em mudanças de auth ou secrets.
+
+## Compõe com
+
+- **[starter](/octopus/bundles/starter/)** — fundação obrigatória (provê o
+  workflow de implementação que produz o código a ser auditado).
+- **[quality-signals](/octopus/bundles/quality-signals/)** — o complemento
+  advisory deste bundle; juntos cobrem toda a superfície do `quality`.
+- **[quality](/octopus/bundles/quality/)** — se quiser tudo em uma única
+  instalação, use o `quality` diretamente.

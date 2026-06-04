@@ -1,0 +1,11 @@
+name: db-redis
+description: redis database profile — the dba-redis heuristics skill. Auto-selected from redis driver signals in the repo.
+category: db
+persona_question: "Does this repo use redis?"
+persona_default: false
+skills:
+  - dba-redis
+roles: []
+rules: []
+mcp: []
+hooks: null

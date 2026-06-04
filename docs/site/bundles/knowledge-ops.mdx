@@ -1,0 +1,86 @@
+---
+title: knowledge-ops
+description: Knowledge-root maintenance — hygiene (staleness, orphans, broken links), synthesis (cross-node connections, forgotten context, contradictions), and proactive briefing (what changed, what needs your attention).
+sidebar:
+  order: 11
+---
+
+`knowledge-ops` contains the three skills that keep a living knowledge base
+useful over time. It is a focused subset of
+[`quality`](/octopus/bundles/quality/) for teams that have an established
+`knowledge/` tree and want dedicated operations over it — without necessarily
+adopting the full audit surface.
+
+## Why this exists
+
+A knowledge base degrades quietly. Entries go stale as the codebase evolves.
+Cross-domain connections that would help the next implementer never get
+recorded. Contradictions accumulate between modules that were written months
+apart. And when a new teammate (or agent) starts, there is no signal about
+which knowledge is fresh and which is archaeology.
+
+These three skills target that degradation at the maintenance, synthesis, and
+briefing layers respectively. They are not audit gates — they are operational
+routines that keep the knowledge loop healthy.
+
+## What it includes
+
+```yaml
+skills:
+  - knowledge-hygiene    # staleness, orphans, broken links, archive drift
+  - knowledge-synthesize # cross-node connections, forgotten context, contradictions
+  - knowledge-briefing   # what changed, what needs attention, proactive digest
+roles: []
+```
+
+[Source: `bundles/knowledge-ops.yml`](https://github.com/leocosta/octopus/blob/main/bundles/knowledge-ops.yml)
+
+### Why each one is in
+
+- **`knowledge-hygiene`** — scans the knowledge tree for stale entries (facts
+  that contradict current code), orphaned nodes (no incoming or outgoing
+  links), broken references, and archive drift (entries promoted to canonical
+  status that are no longer accurate). Produces a prioritised list of items
+  that need review or retirement.
+- **`knowledge-synthesize`** — reads across the knowledge tree to find
+  connections that were never recorded: a fact in `knowledge/payments` that
+  clarifies a pattern in `knowledge/auth`, a forgotten-but-relevant entry that
+  the current implementer would want to know, contradictions between two nodes
+  that have diverged. Surfaces these as proposed additions or corrections.
+- **`knowledge-briefing`** — generates a proactive digest of what has changed
+  in the knowledge base since a given point (last session, last week, last
+  release) and flags entries that need a human decision. Designed to be run at
+  the start of a session or a sprint to orient the agent and the team.
+
+### Why not included
+
+- **`audit-grounding`** — also reads the knowledge tree, but it does so as a
+  signal-only divergence check tied to the code diff. It belongs in
+  [`quality-signals`](/octopus/bundles/quality-signals/) because its trigger
+  and scope are diff-centric, not knowledge-tree-centric.
+- **`doc-lifecycle`, `doc-adr`** — those produce knowledge; these three consume
+  and maintain it. Producers live in `starter` and `docs`.
+
+## Workflow this enables
+
+These skills map to three distinct rhythms:
+
+- **On-demand maintenance** — run `/octopus:knowledge-hygiene` after a large
+  feature lands to catch entries that the new code has made stale. Takes a path
+  (defaults to `knowledge/`) and produces a prioritised fix list.
+- **Periodic synthesis** — run `/octopus:knowledge-synthesize` quarterly or
+  after merging a cross-domain feature. The skill proposes new connections and
+  surfaces contradictions; you decide which ones to record.
+- **Session or sprint start** — run `/octopus:knowledge-briefing` to orient
+  yourself (or a fresh agent session) before picking up a task. The skill
+  summarises what has changed and flags any entries that need a decision before
+  work begins.
+
+## Composes with
+
+- **[starter](/octopus/bundles/starter/)** — provides `doc-adr` and
+  `doc-lifecycle`, which produce the knowledge entries this bundle maintains.
+- **[docs](/octopus/bundles/docs/)** — for the full documentation lifecycle
+  (RFC → Spec → ADR → Knowledge → Changelog) that feeds the knowledge tree.
+- **[quality](/octopus/bundles/quality/)** — `knowledge-ops` is a subset of
+  `quality`; the full bundle includes these skills alongside the audit gates.

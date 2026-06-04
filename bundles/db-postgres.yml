@@ -1,0 +1,11 @@
+name: db-postgres
+description: postgres database profile — the dba-postgres heuristics skill. Auto-selected from postgres driver signals in the repo.
+category: db
+persona_question: "Does this repo use postgres?"
+persona_default: false
+skills:
+  - dba-postgres
+roles: []
+rules: []
+mcp: []
+hooks: null

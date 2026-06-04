@@ -125,6 +125,23 @@ Um PR típico pronto para merge:
    ou `/octopus:delegate @security` para um passe de threat model quando o diff
    toca auth ou secrets.
 
+## Usando o quality de forma granular
+
+`quality` também está disponível como três sub-bundles focados para times
+que querem apenas parte da superfície:
+
+- **`quality-audits`** — a camada de gate bloqueante: `audit-all` e
+  suas dependências de auditoria de domínio, mais as roles `architect` e
+  `security`.
+- **`quality-signals`** — ferramentas signal-only (não bloqueantes):
+  `audit-grounding`, `audit-verification`, `audit-style`,
+  `audit-config` e `refactor-deepen`.
+- **`knowledge-ops`** — as skills do knowledge loop:
+  `knowledge-hygiene`, `knowledge-synthesize`, `knowledge-briefing`.
+
+O `quality` em si permanece o composer completo dos três e é o padrão
+certo para a maioria dos repos em produção.
+
 ## Compõe com
 
 - **[starter](/octopus/bundles/starter/)** — fundação obrigatória (provê

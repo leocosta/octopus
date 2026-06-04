@@ -1,15 +1,11 @@
 name: fullstack
-description: Full-stack monorepos — backend patterns + data-layer review, frontend patterns + component/e2e tests, plus cross-stack contract drift detection. Pairs with backend-developer, dba, and frontend-developer roles.
+description: Full-stack monorepos — backend + frontend patterns, component/e2e tests, the dba reviewer role, and cross-stack contract drift detection. Per-engine DB heuristics ship as db-* profiles (auto-selected from the repo's driver).
 category: intent
 persona_question: "Does your repo contain both a backend API and a separate frontend (monorepo or coupled stacks)?"
 persona_default: false
 skills:
   - backend-patterns
   - test-e2e
-  - dba-mssql
-  - dba-postgres
-  - dba-mongodb
-  - dba-redis
   - frontend-patterns
   - test-component
   - audit-contracts
