@@ -80,6 +80,47 @@ MANIFEST_PATH="$MANIFEST_DIR/.octopus.yml"
 export MANIFEST_PATH
 
 # ---------------------------------------------------------------------------
+# Stack/DB detection (RM-138)
+# ---------------------------------------------------------------------------
+# Scan a repo and echo the matching profile-bundle names (one per line):
+# stack-<lang> from file presence, db-<engine> from driver signals in
+# dependency manifests / config. Read-only; reuses the fleet-bootstrap detect
+# signals and the dba-* trigger keywords. Self-contained (single column-0 `}`)
+# so tests can extract it via sed.
+_detect_stack() {
+  local root="${1:-${PROJECT_ROOT:-$PWD}}"
+  local found=()
+  local prune=( -name node_modules -o -name .git -o -name obj -o -name bin -o -name dist )
+
+  # Language stacks — file presence.
+  if find "$root" -maxdepth 5 \( "${prune[@]}" \) -prune -o -type f \
+       \( -name '*.csproj' -o -name '*.sln' -o -name '*.fsproj' \) -print 2>/dev/null | grep -q .; then
+    found+=("stack-csharp")
+  fi
+  if find "$root" -maxdepth 5 \( "${prune[@]}" \) -prune -o -type f -name package.json -print 2>/dev/null | grep -q . \
+     && find "$root" -maxdepth 5 \( "${prune[@]}" \) -prune -o -type f \
+          \( -name tsconfig.json -o -name '*.ts' -o -name '*.tsx' \) -print 2>/dev/null | grep -q .; then
+    found+=("stack-typescript")
+  fi
+  if find "$root" -maxdepth 5 \( "${prune[@]}" \) -prune -o -type f \
+       \( -name pyproject.toml -o -name setup.py -o -name 'requirements*.txt' \) -print 2>/dev/null | grep -q .; then
+    found+=("stack-python")
+  fi
+
+  # Databases — precise driver signals in dependency manifests / config.
+  local inc=( --include='*.csproj' --include='*.fsproj' --include='package.json' \
+              --include='pyproject.toml' --include='requirements*.txt' \
+              --include='appsettings*.json' --include='.env*' )
+  grep -rqiE 'Npgsql|psycopg|postgres(ql)?://|"pg":'                                 "${inc[@]}" "$root" 2>/dev/null && found+=("db-postgres")
+  grep -rqiE 'Microsoft\.Data\.SqlClient|System\.Data\.SqlClient|"mssql":|sqlserver' "${inc[@]}" "$root" 2>/dev/null && found+=("db-mssql")
+  grep -rqiE 'MongoDB\.Driver|"mongoose":|pymongo|mongodb(\+srv)?://'                "${inc[@]}" "$root" 2>/dev/null && found+=("db-mongodb")
+  grep -rqiE 'StackExchange\.Redis|"ioredis":|redis-py|"redis":|redis://'           "${inc[@]}" "$root" 2>/dev/null && found+=("db-redis")
+
+  [[ ${#found[@]} -gt 0 ]] && printf '%s\n' "${found[@]}"
+  return 0
+}
+
+# ---------------------------------------------------------------------------
 # Manifest generation
 # ---------------------------------------------------------------------------
 _setup_generate_manifest() {
