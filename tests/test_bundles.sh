@@ -460,6 +460,28 @@ OCTOPUS_EXCLUDE=()
 rm -rf "$WORKDIR"
 echo "PASS: exclude subtracts the listed member"
 
+echo "Test 16: a focused stack repo resolves only its stack/DB (RM-138/141/143 end-to-end)"
+OCTOPUS_SKILLS=(); OCTOPUS_ROLES=(); OCTOPUS_RULES=(); OCTOPUS_MCP=(); OCTOPUS_EXCLUDE=()
+OCTOPUS_BUNDLES=(starter backend stack-csharp db-mssql)
+expand_bundles
+# Present: the affirmed stack/DB + agnostic backend + core loop.
+for s in dotnet dba-mssql backend-patterns implement; do
+  printf '%s\n' "${OCTOPUS_SKILLS[@]}" | grep -qx "$s" \
+    || { echo "FAIL: focused repo missing expected skill $s"; exit 1; }
+done
+printf '%s\n' "${OCTOPUS_RULES[@]}" | grep -qx "csharp" \
+  || { echo "FAIL: focused C# repo missing csharp rule"; exit 1; }
+# Absent: foreign DBs/stacks + situational defaults moved to workflow-extras.
+for s in dba-postgres dba-mongodb dba-redis frontend-patterns test-component map-system delegate; do
+  printf '%s\n' "${OCTOPUS_SKILLS[@]}" | grep -qx "$s" \
+    && { echo "FAIL: $s should not load in a focused C# backend repo"; exit 1; } || true
+done
+for r in python typescript; do
+  printf '%s\n' "${OCTOPUS_RULES[@]}" | grep -qx "$r" \
+    && { echo "FAIL: foreign rule $r present in a C# repo"; exit 1; } || true
+done
+echo "PASS: focused stack repo carries only its stack/DB + core loop"
+
 echo "Test: renamed skill dirs exist"
 for skill in doc-adr doc-lifecycle audit-money audit-security audit-tenant respond-to-review audit-contracts launch-feature launch-release debug plan-backlog test-e2e frontend-patterns test-component; do
   [[ -d "skills/${skill}" ]] \
