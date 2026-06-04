@@ -23,6 +23,7 @@ SETUP_REVIEWERS=""
 SETUP_HOOKS="true"
 SETUP_WORKFLOW="true"
 SETUP_DRY_RUN="false"
+SETUP_NO_DETECT="false"
 _setup_remaining_args=()
 _setup_prev_arg=""
 
@@ -34,6 +35,7 @@ for _setup_arg in "$@"; do
     --reviewers=*) SETUP_REVIEWERS="${_setup_arg#--reviewers=}" ;;
     --no-hooks)    SETUP_HOOKS="false" ;;
     --no-workflow) SETUP_WORKFLOW="false" ;;
+    --no-detect)   SETUP_NO_DETECT="true" ;;
     --dry-run)     SETUP_DRY_RUN="true"; export OCTOPUS_DRY_RUN="true" ;;
     --reconfigure) _setup_remaining_args+=("$_setup_arg") ;;
     --bundle|--scope|--stack|--reviewers) ;;  # value comes next iteration
@@ -124,28 +126,24 @@ _detect_stack() {
 # Manifest generation
 # ---------------------------------------------------------------------------
 _setup_generate_manifest() {
-  local bundles_str="$1" hooks="$2" workflow="$3" reviewers="$4" stack="$5"
+  local bundles_str="$1" hooks="$2" workflow="$3" reviewers="$4" profiles="$5"
 
   mkdir -p "$(dirname "$MANIFEST_PATH")"
+
+  # Merge intent bundles + resolved stack/db profiles (RM-139), order-stable and
+  # de-duplicated. Profiles are bundles, so they need no separate manifest key —
+  # expand_bundles turns stack-csharp into dotnet + csharp rules, db-mssql into
+  # dba-mssql, etc.
+  local _all=() _b
+  for _b in $bundles_str $profiles; do
+    case " ${_all[*]:-} " in *" $_b "*) ;; *) _all+=("$_b") ;; esac
+  done
 
   {
     printf '# Edit and re-run '"'"'octopus setup'"'"' to apply changes.\n'
     printf 'agents:\n  - claude\n'
     printf 'bundles:\n'
-    local _b
-    for _b in $bundles_str; do printf '  - %s\n' "$_b"; done
-
-    if [[ -n "$stack" ]]; then
-      case "$stack" in
-        dotnet)
-          printf 'skills:\n  - dotnet\n'
-          printf 'rules:\n  - csharp\n'
-          ;;
-        node)
-          printf 'rules:\n  - typescript\n'
-          ;;
-      esac
-    fi
+    for _b in "${_all[@]}"; do printf '  - %s\n' "$_b"; done
 
     [[ "$hooks" == "true" ]]    && printf 'hooks: true\n'
     [[ "$workflow" == "true" ]] && printf 'workflow: true\n'
@@ -176,15 +174,38 @@ _setup_prompt_reviewers() {
 }
 
 # ---------------------------------------------------------------------------
+# Resolve stack/DB profiles (RM-138/139)
+# ---------------------------------------------------------------------------
+# Profiles are category-tagged bundles (stack-*/db-*), so they flow into the
+# manifest's bundles: list. Source = legacy --stack mapping + auto-detection
+# (unless --no-detect). The picker pre-selects these (SETUP_PROFILES exported);
+# the user's confirmed selection stays authoritative there.
+SETUP_PROFILES=""
+case "$SETUP_STACK" in
+  dotnet|csharp)   SETUP_PROFILES="stack-csharp" ;;
+  node|typescript) SETUP_PROFILES="stack-typescript" ;;
+  python)          SETUP_PROFILES="stack-python" ;;
+esac
+if [[ "$SETUP_NO_DETECT" != "true" ]]; then
+  while IFS= read -r _p; do
+    [[ -n "$_p" ]] && SETUP_PROFILES+=" $_p"
+  done < <(_detect_stack "$PROJECT_ROOT")
+fi
+# De-duplicate, order-stable.
+SETUP_PROFILES="$(printf '%s\n' $SETUP_PROFILES | awk 'NF && !seen[$0]++' | tr '\n' ' ')"
+SETUP_PROFILES="${SETUP_PROFILES% }"
+export SETUP_PROFILES
+
+# ---------------------------------------------------------------------------
 # Main flow
 # ---------------------------------------------------------------------------
 if [[ ! -f "$MANIFEST_PATH" ]]; then
   if [[ -n "$SETUP_BUNDLE" ]]; then
-    # Flag-driven: no interaction
+    # Flag-driven: no interaction — detected/affirmed profiles join the bundles.
     _setup_generate_manifest \
-      "$SETUP_BUNDLE" "$SETUP_HOOKS" "$SETUP_WORKFLOW" "$SETUP_REVIEWERS" "$SETUP_STACK"
+      "$SETUP_BUNDLE" "$SETUP_HOOKS" "$SETUP_WORKFLOW" "$SETUP_REVIEWERS" "$SETUP_PROFILES"
   elif [[ -t 0 && -t 1 ]]; then
-    # Interactive: launch picker
+    # Interactive: picker pre-selects the profiles; its result is authoritative.
     source "$CLI_DIR/lib/setup-picker.sh"
     run_picker
     [[ "${PICKER_REVIEWERS:-}" == "__ask__" ]] && _setup_prompt_reviewers
@@ -193,10 +214,10 @@ if [[ ! -f "$MANIFEST_PATH" ]]; then
       "${PICKER_HOOKS:-true}" \
       "${PICKER_WORKFLOW:-true}" \
       "${SETUP_REVIEWERS:-}" \
-      "$SETUP_STACK"
+      ""
   else
-    # Non-interactive (CI/pipe): use defaults silently
-    _setup_generate_manifest "starter" "true" "true" "" ""
+    # Non-interactive (CI/pipe): starter + detected profiles, silently.
+    _setup_generate_manifest "starter" "true" "true" "" "$SETUP_PROFILES"
   fi
 elif [[ " ${_setup_remaining_args[*]:-} " == *" --reconfigure "* ]]; then
   # Reconfigure existing manifest
@@ -209,7 +230,7 @@ elif [[ " ${_setup_remaining_args[*]:-} " == *" --reconfigure "* ]]; then
       "${PICKER_HOOKS:-true}" \
       "${PICKER_WORKFLOW:-true}" \
       "${SETUP_REVIEWERS:-}" \
-      "$SETUP_STACK"
+      ""
   fi
 fi
 

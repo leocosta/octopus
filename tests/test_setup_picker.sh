@@ -47,7 +47,7 @@ grep -q "hooks: true" "$WORKDIR/.octopus.yml" 2>/dev/null \
 rm -rf "$WORKDIR"
 echo "PASS"
 
-echo "Test 4: --stack dotnet adds dotnet skill and csharp rule"
+echo "Test 4: --stack dotnet maps to the stack-csharp profile (RM-139)"
 WORKDIR=$(mktemp -d)
 (
   export PROJECT_ROOT="$WORKDIR"
@@ -56,10 +56,29 @@ WORKDIR=$(mktemp -d)
   CLI_DIR="$SCRIPT_DIR/cli"
   source "$SCRIPT_DIR/cli/lib/setup.sh" --bundle starter --stack dotnet --dry-run 2>/dev/null || true
 )
-grep -q "dotnet" "$WORKDIR/.octopus.yml" 2>/dev/null \
-  || { echo "FAIL: dotnet skill not in manifest"; rm -rf "$WORKDIR"; exit 1; }
-grep -q "csharp" "$WORKDIR/.octopus.yml" 2>/dev/null \
-  || { echo "FAIL: csharp rule not in manifest"; rm -rf "$WORKDIR"; exit 1; }
+# Profiles are bundles now: --stack dotnet → stack-csharp (which expands to the
+# dotnet skill + csharp rules via expand_bundles).
+grep -q "stack-csharp" "$WORKDIR/.octopus.yml" 2>/dev/null \
+  || { echo "FAIL: --stack dotnet did not add the stack-csharp profile"; rm -rf "$WORKDIR"; exit 1; }
+rm -rf "$WORKDIR"
+echo "PASS"
+
+echo "Test 4b: auto-detection writes detected profiles into the manifest (RM-138/139)"
+WORKDIR=$(mktemp -d)
+printf '<Project><ItemGroup><PackageReference Include="Microsoft.Data.SqlClient" Version="5"/></ItemGroup></Project>\n' > "$WORKDIR/Api.csproj"
+(
+  export PROJECT_ROOT="$WORKDIR"
+  export OCTOPUS_SCOPE="repo"
+  export OCTOPUS_SCOPE_PINNED=1
+  CLI_DIR="$SCRIPT_DIR/cli"
+  echo "" | source "$SCRIPT_DIR/cli/lib/setup.sh" --dry-run 2>/dev/null || true
+)
+grep -q "stack-csharp" "$WORKDIR/.octopus.yml" 2>/dev/null \
+  || { echo "FAIL: C# repo did not auto-add stack-csharp"; rm -rf "$WORKDIR"; exit 1; }
+grep -q "db-mssql" "$WORKDIR/.octopus.yml" 2>/dev/null \
+  || { echo "FAIL: MSSQL signal did not auto-add db-mssql"; rm -rf "$WORKDIR"; exit 1; }
+grep -q "stack-python\|stack-typescript\|db-postgres\|db-mongodb\|db-redis" "$WORKDIR/.octopus.yml" 2>/dev/null \
+  && { echo "FAIL: C# repo pulled a foreign stack/DB profile"; rm -rf "$WORKDIR"; exit 1; }
 rm -rf "$WORKDIR"
 echo "PASS"
 

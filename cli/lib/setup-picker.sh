@@ -134,6 +134,14 @@ _picker_load_current_state() {
       _CURRENT_WORKFLOW="${BASH_REMATCH[1]}"
     fi
   done < "$manifest"
+
+  # RM-139: pre-check auto-detected / --stack profiles (stack-*/db-*) even on a
+  # fresh repo, so the picker opens with the detected stack/DB already selected.
+  # The user's final toggles stay authoritative (unchecking removes it).
+  local _p
+  for _p in ${SETUP_PROFILES:-}; do
+    _picker_array_contains "$_p" "${_CURRENT_BUNDLES[@]}" || _CURRENT_BUNDLES+=("$_p")
+  done
 }
 
 _picker_array_contains() {
