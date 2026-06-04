@@ -29,14 +29,19 @@ Capture the diff for the dispatch phase.
 ## Phase 2-4 — Orchestrate Review
 
 Apply the same logic documented in
-[`commands/codereview.md`](codereview.md) Phases 1–4 against the
+[`commands/codereview.md`](codereview.md) Phases 0–4 against the
 PR diff:
 
+- **Size gate** (Phase 0) — a small, low-risk PR (under ~150 lines,
+  no data/auth/money/tenant path) gets one consolidated pass, not
+  the fan-out below.
 - **Detect** what the diff touches (DB, security, money, tenant,
-  contracts, general code)
-- **Dispatch** in parallel:
+  contracts, general code), recording the file subset per match.
+- **Dispatch** in parallel, each agent receiving **only its
+  domain-matching file subset** (not the whole PR diff):
   - `dba` role (if the diff touches the data layer) — `roles/dba.md`
-  - `architect` role (always, for non-trivial production code) —
+  - `architect` role (non-trivial production code: a matched
+    domain, >~150 lines, or a public-API/architecture change) —
     `roles/architect.md`
   - `audit-security` (auth, secrets, env vars, credential paths)
   - `audit-money` (billing, payment, fee, invoice, subscription)
@@ -44,6 +49,8 @@ PR diff:
     cross-tenant endpoints)
   - `audit-contracts` (DTO/endpoint changes touching both `api/`
     and `app/`/`lp/`)
+  Dispatch only the audits whose files matched (the
+  `cli/lib/audit-map.sh` map), never the full fixed set.
 - **Fallback checklist** for TODO/FIXME, debug statements,
   emoji, oversized files/functions, deep nesting
 - **Aggregate** all findings into a single severity-tiered

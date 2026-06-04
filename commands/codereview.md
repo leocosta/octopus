@@ -15,11 +15,23 @@ For **receiving** PR feedback, use `/octopus:respond-to-review`.
 For **reviewing** an open PR (self-review + assign reviewers),
 use `/octopus:pr-review`.
 
+## Phase 0 — Size Gate (single-pass vs fan-out)
+
+Measure the diff: `git diff --stat HEAD`. For a **small** diff —
+under ~150 changed lines and touching no data/auth/money/tenant
+path (Phase 1 matrix) — **do not fan out**. Run one consolidated
+review pass over the whole diff (the Phase 3 checklist plus a quick
+correctness/design read) and go straight to Phase 4. Fan-out's
+per-agent diff re-read is wasted on small, low-risk changes.
+
+Otherwise continue to Phase 1.
+
 ## Phase 1 — Detect Change Type
 
-1. `git diff --name-only HEAD` to list changed files
-2. Classify each path against the matrix below. A diff usually
-   matches multiple categories — run all that apply.
+1. `git diff --name-only HEAD` to list changed files.
+2. Classify each path against the matrix below, and **record which
+   files matched each row** — that file subset is what the dispatched
+   skill/role receives in Phase 2, not the whole diff.
 
 | Signal in the diff | Dispatch |
 |---|---|
@@ -28,7 +40,16 @@ use `/octopus:pr-review`.
 | `billing/`, `payment/`, money-touching code (`Decimal`, `cents`, fee/invoice/subscription) | skill `audit-money` |
 | New `DbSet<X>`, multi-tenant queries, `IgnoreQueryFilters()`, `tenant`/`org`/`workspace` predicates | skill `audit-tenant` |
 | Both `api/` and `app/`/`lp/` in same diff; DTO/endpoint/enum changes | skill `audit-contracts` |
-| Any non-trivial production code change | role `architect` (always) |
+
+Dispatch **only** the rows that matched — the same deterministic map
+the `pre-push-audit-suggest` hook uses (`cli/lib/audit-map.sh`); a
+row with no matching files is not dispatched.
+
+**`architect`** is dispatched when the change is non-trivial: it
+touches a data/auth/money/tenant/contract path above, OR the diff
+exceeds ~150 lines, OR it changes public API/architecture. A small,
+self-contained change that matched no matrix row was already handled
+by Phase 0 and needs no architect pass.
 
 If the diff touches the data layer, **both** `dba` and `architect`
 must approve (dual gate — see `.claude/core/pr-workflow.md`). Likewise, if the
@@ -38,11 +59,13 @@ baseline and adds threat modeling over the diff.
 
 ## Phase 2 — Dispatch in Parallel
 
-Invoke the matching skills and roles **concurrently** — they do
-not depend on each other. Pass each one the same diff context.
-Roles (`architect`, `dba`, `security`) emit findings in the format
-defined by their own role files; skills emit per their `audit-*`
-Output Format.
+Invoke the matched skills and roles **concurrently** — they do not
+depend on each other. Pass each one **only its domain-matching file
+subset** from Phase 1 (e.g. `audit-tenant` sees the tenant-scoped
+files, not the frontend diff) — this is the dominant token cost, so
+scoping it down is the point. Roles (`architect`, `dba`, `security`)
+emit findings in the format defined by their own role files; skills
+emit per their `audit-*` Output Format.
 
 ## Phase 3 — Fallback Checklist
 
