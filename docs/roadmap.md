@@ -256,7 +256,9 @@ _Follow-up vectors (RM-132…135, same branch — found by auditing what Cluster
 - _**RM-134** — harness now counts **role descriptions** (listed as agents every session, +~398 tok, previously invisible) and **per-stack rule budgets** (csharp/python/typescript), with ratchets._
 - _**RM-133** — trimmed the 4 verbose role descriptions (consigliere/mentor/dba/security). registry 6535 → 6493._
 - _**RM-132** — stack rules turned out **example-heavy** (code is the value) with terse prose; only safe automated cut was the csharp override boilerplate (3463 → 3353). python/typescript left intact rather than gut examples._
-- _**RM-135** — guard for SKILL.md bodies over the 250-line guideline (on-demand cost); locks the current 4 offenders (dotnet/launch-release/respond-to-review/delegate) and blocks new bloat. Bodies themselves are `compress-skill` follow-ups (anchor-preserving)._
+- _**RM-135** — guard for SKILL.md bodies over the 250-line guideline (on-demand cost); `respond-to-review` compressed 313→213 (also fixed a pre-existing `Batching` test gap), oversized 4→3. The other 3 (dotnet/delegate/launch-release) are example/template-heavy — left and locked._
+- _**RM-136** — narrowed over-broad `triggers:` (consumed by setup for the concatenate-agent stub decision): dropped `paths: ["**/*"]` on audit-grounding/style/verification and common-word keywords (token/sql/org/workspace/price/checkout/pattern/knowledge/plan) so concatenate agents stub them in repos that don't use them. No effect on Claude Code (description-driven)._
+- _**RM-137** — `implement` trivial-change fast path: a typo/rename/config bump (no testable behavior, nothing in data/auth/money/tenant/contract) skips the full five-practice loop. Cuts routine overhead on the highest-frequency auto-activated skill, the real per-task cost on Claude Code._
 
 ---
 
