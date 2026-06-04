@@ -22,10 +22,15 @@ for human interaction.
 - Capture the PR number from the output
 - Show the PR body that was submitted so the user can see what was proposed
 
-### Step 3: Self-Review
-- Run /octopus:pr-review with the captured PR number
-- After review and reviewer assignment, tell the user:
-  "PR is open and in review. Invoke /octopus:pr-comments <number> when there is feedback."
+### Step 3: Self-Review (optional)
+- Self-review is a multi-agent fan-out — run it **once, when the PR is
+  ready for humans**, not on every push. Ask the user:
+  "Run the self-review (/octopus:pr-review) before assigning humans? Say 'review' or 'skip'."
+- If the user says "review": run /octopus:pr-review with the captured
+  PR number (it size-gates and dispatches only matched audits), then:
+  "PR reviewed and reviewers assigned. Invoke /octopus:pr-comments <number> when there is feedback."
+- If the user says "skip": assign reviewers without the self-review and
+  tell the user pr-review is available on demand.
 
 ### PAUSE — Wait for human review
 
