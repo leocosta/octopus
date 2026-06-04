@@ -26,7 +26,11 @@ MAX_ALWAYS_TOKENS=3000
 MAX_REGISTRY_TOKENS=6600
 MAX_TOTAL_TOKENS=9500
 MAX_DUP_MARKERS=0
-MAX_STACK_CSHARP_TOKENS=3500
+# RM-132: stack rules are example-heavy (code blocks are the value) with
+# already-terse prose; the only safe automated cut was the csharp override
+# boilerplate (3463 -> 3353). python/typescript carry no boilerplate and were
+# left intact rather than gut their code examples.
+MAX_STACK_CSHARP_TOKENS=3400
 MAX_STACK_PYTHON_TOKENS=2600
 MAX_STACK_TYPESCRIPT_TOKENS=3950
 

@@ -1,6 +1,6 @@
 # C# Data Access
 
-> **Override:** create `data-access.local.md` in this directory to replace these conventions entirely. The local file takes full precedence.
+> **Override:** create `data-access.local.md` here to replace these entirely.
 
 ## EF Core + PostgreSQL
 

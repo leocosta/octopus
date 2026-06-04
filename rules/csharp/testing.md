@@ -1,6 +1,6 @@
 # C# Testing
 
-> **Override:** create `testing.local.md` in this directory to replace these conventions entirely. The local file takes full precedence.
+> **Override:** create `testing.local.md` here to replace these entirely.
 
 ## Stack
 

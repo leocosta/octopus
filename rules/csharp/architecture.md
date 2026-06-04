@@ -1,6 +1,6 @@
 # C# Architecture
 
-> **Override:** create `architecture.local.md` in this directory to replace these conventions entirely. The local file takes full precedence.
+> **Override:** create `architecture.local.md` here to replace these entirely.
 
 ## Vertical Slice
 
