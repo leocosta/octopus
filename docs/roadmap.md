@@ -298,9 +298,11 @@ _Proposed (added 2026-06-04). Seeds from [interview](specs/2026-06-04-quality-me
 
 | RM | Item | Theme |
 |----|------|-------|
-| RM-147 | `quality-metrics` — local PR-time dual-delta read of coverage/complexity/module-size/deps over a per-merge orphan-ref baseline; ratchet+absolute thresholds; LLM curation only on breach; C#/TS adapters; new `quality-metrics` bundle + writer-Action template | ready-for-agent |
+| RM-147 | `quality-metrics` — local PR-time dual-delta read of coverage/complexity/module-size/deps over a per-merge orphan-ref baseline; ratchet+absolute thresholds; LLM curation only on breach; C#/TS adapters; new `quality-metrics` bundle + writer-Action template | completed → #175 |
 
-_Status: **ready-for-agent**. Spec: [2026-06-04-quality-metrics.md](specs/2026-06-04-quality-metrics.md). Open questions deferred to the implementing agent: C# deps tooling depth (no free `madge` equivalent), concrete tool pinning per adapter, orphan-ref ruleset exception, the ref's data shape (snapshot vs. append-only history), local `gh`/auth assumption, and how the skill resolves "the harness's low-cost model"._
+_Status: **completed (#175, 2026-06-04)**. Spec: [2026-06-04-quality-metrics.md](specs/2026-06-04-quality-metrics.md). Open questions resolved during implementation: tool pinning (`lizard` for complexity+size; `coverlet`→Cobertura and `vitest`→LCOV for coverage; `madge` for TS cycles; `dotnet list reference`+Tarjan for C# cycles, thinner than TS); baseline shape = single `baseline.json` snapshot; an absolute target is authoritative when satisfied (no ratchet on top); low-cost model `claude-haiku-4-5`, overridable via `OCTOPUS_LOW_COST_MODEL`._
+
+_**Cluster 25 complete.** RM-147 landed via #175; suite green (`test_quality_metrics` 60/0 incl. injection guards, pytest 106, context-budget under ratchet, site build green). v1 caveats: adapter integration tests are structural (real tooling not installed locally), `vs_main` is a baseline-proxy approximation, and a security review of the merge closed an awk code-injection from untrusted config/baseline values._
 
 ---
 
