@@ -126,7 +126,7 @@ _detect_stack() {
 # Manifest generation
 # ---------------------------------------------------------------------------
 _setup_generate_manifest() {
-  local bundles_str="$1" hooks="$2" workflow="$3" reviewers="$4" profiles="$5"
+  local bundles_str="$1" hooks="$2" workflow="$3" reviewers="$4" profiles="$5" excludes="${6:-}"
 
   mkdir -p "$(dirname "$MANIFEST_PATH")"
 
@@ -146,6 +146,19 @@ _setup_generate_manifest() {
       _rest="${_rest#"$_b"}"
       case "$_seen" in *" $_b "*) ;; *) _seen+="$_b "; printf '  - %s\n' "$_b" ;; esac
     done
+
+    # Members the user deselected in the picker (RM-146) — same IFS-immune
+    # tokenizer. _apply_excludes subtracts them after bundle expansion.
+    if [[ "$excludes" == *[![:space:]]* ]]; then
+      printf 'exclude:\n'
+      local _erest="$excludes" _e _eseen=" "
+      while [[ "$_erest" == *[![:space:]]* ]]; do
+        _erest="${_erest#"${_erest%%[![:space:]]*}"}"
+        _e="${_erest%%[[:space:]]*}"
+        _erest="${_erest#"$_e"}"
+        case "$_eseen" in *" $_e "*) ;; *) _eseen+="$_e "; printf '  - %s\n' "$_e" ;; esac
+      done
+    fi
 
     [[ "$hooks" == "true" ]]    && printf 'hooks: true\n'
     [[ "$workflow" == "true" ]] && printf 'workflow: true\n'
@@ -220,7 +233,8 @@ if [[ ! -f "$MANIFEST_PATH" ]]; then
       "${PICKER_HOOKS:-true}" \
       "${PICKER_WORKFLOW:-true}" \
       "${SETUP_REVIEWERS:-}" \
-      ""
+      "" \
+      "${PICKER_EXCLUDE[*]:-}"
   else
     # Non-interactive (CI/pipe): starter + detected profiles, silently.
     _setup_generate_manifest "starter" "true" "true" "" "$SETUP_PROFILES"
@@ -236,7 +250,8 @@ elif [[ " ${_setup_remaining_args[*]:-} " == *" --reconfigure "* ]]; then
       "${PICKER_HOOKS:-true}" \
       "${PICKER_WORKFLOW:-true}" \
       "${SETUP_REVIEWERS:-}" \
-      ""
+      "" \
+      "${PICKER_EXCLUDE[*]:-}"
   fi
 fi
 

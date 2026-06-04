@@ -288,6 +288,19 @@ _**Cluster 24 complete** on `feat/stack-aware-setup`. All 8 RMs landed; suite gr
 - _**RM-143** — trimmed `starter` (9 skills); `map-system` + `delegate` moved to a new opt-in `workflow-extras` bundle._
 - _**RM-144** — manifest `exclude:` subtracts a member post-expansion (`_apply_excludes`)._
 - _**RM-145** — end-to-end focused-stack guarantee test locks the granularity win._
+- _**RM-146** — picker member-deselect (the RM-144 stretch): an opt-in `customize` step lists the skills/roles of the chosen bundles, all pre-checked; whatever you uncheck is written as the manifest `exclude:` and dropped by `_apply_excludes`. Tested via `test_member_deselect.sh` (member union + exclude write + end-to-end drop)._
+
+---
+
+### Cluster 25 — Code-quality metrics / health tracking
+
+_Proposed (added 2026-06-04). Seeds from [interview](specs/2026-06-04-quality-metrics.md): track the health of deterministic code-quality metrics (coverage, cyclomatic complexity, module size, dependency structure) over time and per-PR, motivated by the rising share of harness-authored code but measured identically for every PR. The author gets a **local, non-blocking** read at PR-open with a **dual delta** (vs. last-main baseline = trend; vs. local `main` HEAD = this-PR impact). Numbers are always cheap (tooling, ≈0 tokens); a low-cost model is invoked **only** on a threshold breach. History lives on a dedicated **orphan ref** (`octopus/quality-metrics`), written by a single Action reacting to `push:main` — fresh per-merge, conflict-free (reader/writer split + squash-merge serialization), and never pushing to the protected `main`/`release/*`. Thresholds are **ratchet-by-default + optional absolute** (cf. `.octopus.yml` precedence, ADR-005/RM-069). Adapters are **pluggable via the existing stack detection** (Cluster 24); v1 ships **C#** and **TypeScript**. Packaged as a new `quality-metrics` bundle (measurement axis, sibling to `quality-audits`/`quality-signals`); adapters ship inside `stack-csharp`/`stack-typescript`. Mutation testing, AI/agent attribution, the cross-repo manager dashboard, and a blocking gate are explicitly **out of v1**._
+
+| RM | Item | Theme |
+|----|------|-------|
+| RM-146 | `quality-metrics` — local PR-time dual-delta read of coverage/complexity/module-size/deps over a per-merge orphan-ref baseline; ratchet+absolute thresholds; LLM curation only on breach; C#/TS adapters; new `quality-metrics` bundle + writer-Action template | ready-for-agent |
+
+_Status: **ready-for-agent**. Spec: [2026-06-04-quality-metrics.md](specs/2026-06-04-quality-metrics.md). Open questions deferred to the implementing agent: C# deps tooling depth (no free `madge` equivalent), concrete tool pinning per adapter, orphan-ref ruleset exception, the ref's data shape (snapshot vs. append-only history), local `gh`/auth assumption, and how the skill resolves "the harness's low-cost model"._
 
 ---
 
