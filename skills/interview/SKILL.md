@@ -1,14 +1,11 @@
 ---
 name: interview
 description: >
-  Interactive requirements interview — one question at a time, walking
-  the decision tree of a new feature or problem until shared
-  understanding is reached. No dependency on CONTEXT.md or docs/adr/.
-  Produces a summary the user confirms, ready as input for doc-align,
-  doc-prd, or implement. The greenfield counterpart to doc-align
-  (which validates an existing plan against existing docs); pairs
-  with doc-research (area-level exploration that generates multiple
-  backlog items, while interview scopes one feature).
+  Interactive requirements interview — one question at a time down the
+  decision tree of a new feature/problem until shared understanding. No
+  dependency on CONTEXT.md/docs. Produces a confirmed summary ready for doc-
+  align, doc-prd, or implement. Greenfield counterpart to doc-align; pairs
+  with doc-research (area-level vs one feature).
 ---
 
 # Requirements Interview

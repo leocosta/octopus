@@ -14,11 +14,14 @@ BUDGET="$SCRIPT_DIR/scripts/context-budget.sh"
 # Baseline 2026-06-03 (pre-refactor): ALWAYS=8407 REGISTRY=2209 TOTAL=10616 DUP=3.
 # After RM-117 (dedup core<->rules): ALWAYS=7989 DUP=0.
 # After RM-119 (core reference on-demand): ALWAYS=5418 TOTAL=7627.
-# After RM-118 (exceptions.md on-demand): ALWAYS=3089 TOTAL=5298.
-# After RM-121 (compress rules/common): ALWAYS=2905 TOTAL=5114.
+# After RM-118 (exceptions.md on-demand): ALWAYS=3089.
+# After RM-121 (compress rules/common): ALWAYS=2905.
+# RM-128 corrected the registry counter to sum full multi-line descriptions:
+# the true registry was 8013 tok (not the 2209 the first-line counter showed).
+# After trimming 24 verbose descriptions: REGISTRY 8013 -> 6461 tok.
 MAX_ALWAYS_TOKENS=3000
-MAX_REGISTRY_TOKENS=2300
-MAX_TOTAL_TOKENS=5200
+MAX_REGISTRY_TOKENS=6500
+MAX_TOTAL_TOKENS=9450
 MAX_DUP_MARKERS=0
 
 PASS=0; FAIL=0

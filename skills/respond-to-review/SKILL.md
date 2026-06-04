@@ -1,15 +1,11 @@
 ---
 name: respond-to-review
 description: >
-  The Octopus PR-feedback discipline — verify the critique, ask
-  for evidence on generic comments, separate reasoned feedback
-  from preference, never make performative changes, ask for
-  clarification on ambiguity. After the fixes are applied, runs
-  the post-fix loop (commit, conditional push, hybrid inline
-  replies, resolve threads) in a single confirmation turn — the
-  skill is end-to-end and does not require a separate
-  /octopus:pr-comments invocation. Active by default on every PR
-  feedback loop.
+  The Octopus PR-feedback discipline — verify the critique, ask for evidence
+  on generic comments, separate reasoned feedback from preference, never make
+  performative changes, clarify ambiguity. Runs the post-fix loop (commit,
+  conditional push, inline replies, resolve threads) end-to-end in one turn.
+  Active by default on every PR feedback loop.
 ---
 
 # Respond-to-Review Protocol

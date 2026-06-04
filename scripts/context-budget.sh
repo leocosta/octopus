@@ -95,12 +95,22 @@ if [[ -n "$RULES_DIR" ]]; then
 fi
 
 # --- 3. registry listing (sum of `description:` frontmatter) ---------------
+# Sum the FULL frontmatter description value (including `description: >` /
+# `|` block-scalar continuation lines), not just the first line — that is what
+# the harness lists for every skill/command each session.
 _description_bytes() {
-  local dir="$1" name="$2" total=0 line
+  local dir="$1" name="$2" total=0 f n
   [[ -n "$dir" && -d "$dir" ]] || { echo 0; return; }
-  while IFS= read -r line; do
-    total=$((total + ${#line}))
-  done < <(find -L "$dir" -name "$name" -type f -exec grep -hE '^description:' {} + 2>/dev/null)
+  while IFS= read -r f; do
+    n=$(awk '
+      /^---[[:space:]]*$/ { fm++; next }
+      fm==1 && /^description:/ { cap=1; sum+=length($0); next }
+      fm==1 && cap && /^[[:space:]]/ { sum+=length($0); next }
+      fm==1 && cap { cap=0 }
+      END { print sum+0 }
+    ' "$f" 2>/dev/null)
+    total=$((total + ${n:-0}))
+  done < <(find -L "$dir" -name "$name" -type f 2>/dev/null)
   echo "$total"
 }
 registry_bytes=$(( $(_description_bytes "$SKILLS_DIR" "SKILL.md") + $(_description_bytes "$COMMANDS_DIR" "*.md") ))

@@ -1,15 +1,12 @@
 ---
 name: playbook-review
 description: >
-  Closes the consigliere's learning loop. Walks the queue of heuristics that
-  digest-source proposed (playbook-inbox.md) and lets the manager promote the good
-  ones into the right per-node playbook — contexts/<ctx>/playbook.md,
-  projects/<proj>/playbook.md, or people/<person>.md — edit, or discard. Also seeds a
-  heuristic the manager already holds directly (--seed), no queue round-trip. Agent
-  proposals must carry their (src: …) evidence to be promoted; manager seeds are
-  trusted. Per-node scope, no central playbook. Writes only inside
-  consigliere.workspace (the consigliere-bootstrap write-guard). Manual,
-  operator-run; completes the consigliere bundle.
+  Close the consigliere learning loop: walk the queue of heuristics digest-
+  source proposed (playbook-inbox.md) and let the manager promote good ones
+  into the right per-node playbook (contexts/projects/people), edit, or
+  discard; --seed adds a manager-held heuristic directly. Agent proposals need
+  their (src: …) evidence. Writes only inside consigliere.workspace. Manual;
+  consigliere bundle.
 triggers:
   keywords: ["playbook review", "review heuristics", "promote heuristic", "seed a heuristic", "my playbook", "what patterns did you notice"]
 ---

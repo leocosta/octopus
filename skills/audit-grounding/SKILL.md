@@ -1,15 +1,12 @@
 ---
 name: audit-grounding
 description: >
-  Signal-only audit that confronts the working diff against the repo's
-  living source of truth — CONTEXT.md (domain glossary), docs/adr/
-  (decisions of record), and the knowledge base — to surface semantic
-  hallucination an agent leaves behind: conventions invented without
-  agreement (invented-convention) and domain facts asserted without
-  support (unsupported-domain-fact). It never blocks; it reports
-  divergences and leaves the call to a human. Pairs with audit-config
-  (configuration drift) and audit-all (code audits); registered in the
-  quality bundle. Triggered at task end by the grounding-check stop hook.
+  Signal-only review confronting the working diff against the repo's source of
+  truth — CONTEXT.md (domain glossary), docs/adr/, and the knowledge base — to
+  surface semantic hallucination: conventions invented without agreement
+  (invented-convention) and domain facts asserted without support
+  (unsupported-domain-fact). Never blocks. Triggered at task end by the
+  grounding-check stop hook; quality bundle.
 triggers:
   paths: ["**/*"]
   keywords: ["audit grounding", "grounding check", "invented convention", "hallucination check", "source of truth"]

@@ -1,13 +1,11 @@
 ---
 name: audit-fleet
 description: >
-  Cross-repo adoption + drift audit. Given a fleet (resolved from the
-  workspace fleet.yml), reports each repo's Octopus surface against its
-  declared target — baseline + stack profile + adoption tier — plus version,
-  CONTEXT.md/ADR adoption. Signal-only: a per-repo table + a drift-hotspots
-  rollup, never a mutation. The detect half of detect → remediate; its report
-  feeds `fleet-bootstrap --from-audit`. The cross-repo analog of audit-config.
-  Interim in the quality bundle, final in tech-lead.
+  Cross-repo adoption + drift audit. Given a fleet (from the workspace
+  fleet.yml), reports each repo's Octopus surface against its declared target
+  — baseline + stack profile + adoption tier — plus version and CONTEXT.md/ADR
+  adoption. Signal-only: per-repo table + drift-hotspots rollup, feeds fleet-
+  bootstrap --from-audit. Quality/tech-lead bundle.
 triggers:
   keywords: ["fleet audit", "audit the fleet", "drift across repos", "across repos", "which repos", "fleet adoption", "fleet drift"]
 ---

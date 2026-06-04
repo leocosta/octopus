@@ -1,15 +1,11 @@
 ---
 name: audit-config
 description: >
-  Pre-merge audit of the Octopus configuration surface — rules/, skills/,
-  hooks/, commands/, bundles/. Inspects for model-specific assumptions
-  (Opus 3, Claude 3.5), stale date references without follow-up, skills
-  with no triggers and no description-driven hints, hooks untouched since
-  the last model-family change, and commands referencing deprecated paths.
-  Produces a severity-tiered report (block / warn / info) in the same
-  shape as audit-all. Active by default on the quality bundle; pairs
-  with plan-backlog (plan hygiene) and audit-all (code audits) to round
-  out the periodic-review surface.
+  Pre-merge audit of the Octopus configuration surface (rules/, skills/,
+  hooks/, commands/, bundles/): model-specific assumptions, stale dates,
+  skills with no triggers, hooks untouched since the last model-family change,
+  commands referencing deprecated paths. Severity-tiered report
+  (block/warn/info) like audit-all. Quality bundle.
 triggers:
   paths: ["rules/**/*.md", "skills/**/SKILL.md", "hooks/**/*.sh", "commands/**/*.md", "bundles/**/*.yml"]
   keywords: ["audit config", "config audit", "stale rules", "model drift"]

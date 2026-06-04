@@ -1,15 +1,11 @@
 ---
 name: standards
 description: >
-  Self-serve lookup that answers "what's our standard for X, and why?"
-  from the team's own sources — docs/adr/ (decisions), rules/ (coding
-  rules incl. *.local.md overrides), CONTEXT.md (vocabulary), and
-  knowledge/ (confirmed facts) — in that precedence, with the source
-  cited and the rationale. Never invents an answer: when no source
-  covers the topic it says so and routes to authoring (doc-adr or a
-  rules override). Read-only, never gates. Pairs with audit-grounding
-  (which flags drift in a diff using the same sources) and doc-adr
-  (which authors the missing standard). Registered in the docs bundle.
+  Self-serve lookup answering 'what's our standard for X, and why?' from the
+  team's own sources — docs/adr/ (decisions), rules/ (incl. *.local.md
+  overrides), CONTEXT.md (vocabulary), knowledge/ (facts) — in that
+  precedence, with the source cited. Never invents: routes to doc-adr or a
+  rules override when nothing covers it. Read-only. Docs bundle.
 triggers:
   keywords: ["what's our standard", "what is our standard", "our convention for", "is there a rule for", "why do we", "how do we do", "team standard"]
 ---

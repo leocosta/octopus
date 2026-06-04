@@ -1,16 +1,11 @@
 ---
 name: enforce-precommit
 description: >
-  Install and maintain a pre-commit framework configuration aligned with
-  the project's Octopus rules. Closes the git-level enforcement gap that
-  Octopus loop-level hooks (auto-format, typecheck, console-log-warn,
-  block-no-verify) cannot cover for Copilot edits or direct human commits.
-  Detects project stack(s) via file extensions, infers checks from
-  rules/common/*, and writes/updates `.pre-commit-config.yaml` (default)
-  or `lefthook.yml` / `.husky/` (documented alternatives) idempotently.
-  Respects existing config — merges hook entries by id rather than
-  overwriting. Project-level extension via enforce-precommit.local.md.
-  Pairs with the guardrails bundle and the qualityWorkflow CI template.
+  Install and maintain a pre-commit framework config (.pre-commit-config.yaml
+  by default, or lefthook/husky) aligned with the project's Octopus rules —
+  the git-level enforcement loop hooks can't cover for Copilot or direct human
+  commits. Detects the stack, infers checks from rules/common, merges
+  idempotently by hook id. Guardrails bundle.
 triggers:
   paths: [".pre-commit-config.yaml", "lefthook.yml", ".husky/**", ".octopus.yml"]
   keywords: ["enforce precommit", "install precommit", "precommit drift", "lefthook setup", "husky setup", "guardrails precommit"]

@@ -1,13 +1,11 @@
 ---
 name: continuous-learning
 description: >
-  Continuous learning system that captures insights, tests hypotheses, and
-  promotes confirmed patterns to rules. Inspired by the Claude.md learning
-  protocol — adapted for multi-agent environments (Kilo Code, Codex, Copilot, etc.).
-  Default mode is single-developer/session capture to knowledge/. Team mode
-  aggregates recurring review feedback across the fleet into
-  rule-promotion candidates — a fleet-wide pattern promotes to the shared
-  workspace rules, a single-repo pattern stays local.
+  Capture insights, test hypotheses, and promote confirmed patterns to rules
+  (adapted for multi-agent environments). Default mode is single-
+  developer/session capture to knowledge/. Team mode aggregates recurring
+  review feedback across the fleet into rule-promotion candidates — fleet-wide
+  patterns promote to shared workspace rules, single-repo patterns stay local.
 triggers:
   paths: ["knowledge/**", "docs/learning/**", "docs/research/**"]
   keywords: ["learning", "hypothesis", "knowledge", "insight", "pattern", "recurring feedback", "team pattern", "keeps coming up", "promote to rule"]

@@ -1,18 +1,12 @@
 ---
 name: audit-style
 description: >
-  Signal-only audit that confronts the working diff against the team's
-  opinionated design rules — exceptions.md (the custom-exception
-  gate), rules/common/patterns.md, rules/common/coding-style.md, and the active
-  stack rules — to surface two failures a formatter and type checker cannot see:
-  code that violates a stated rule (rule-violation) and abstraction the rules
-  call a cost (over-engineering — premature abstraction, speculative hierarchy,
-  DRY applied before three occurrences). It never blocks; it reports divergences
-  and leaves the call to a human. Registered in the quality bundle; orchestrated
-  on demand by codereview / pr-review / implement. It has no Stop hook — unlike
-  audit-grounding and audit-verification, it runs only when a review flow invokes
-  it. The complement to the native simplify: that one applies generic taste,
-  this one signals the house rules, including when NOT to simplify.
+  Signal-only review flagging code that violates the team's design rules
+  (exceptions gate, patterns, coding-style, active stack rules) and over-
+  engineering (premature abstraction, speculative hierarchy, DRY-before-three)
+  — what a formatter or type-checker can't see. Never blocks; runs on demand
+  via codereview/pr-review/implement. The house-rules complement to native
+  simplify.
 triggers:
   paths: ["**/*"]
   keywords: ["audit style", "style check", "over-engineering", "rule violation", "design quality", "premature abstraction"]

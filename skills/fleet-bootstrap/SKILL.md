@@ -1,15 +1,12 @@
 ---
 name: fleet-bootstrap
 description: >
-  Converge a fleet of repos onto a layered Octopus standard — a common
-  baseline + a per-stack profile + an adoption tier — by composing each
-  repo's .octopus.yml from a single fleet.yml (in the workspace repo) and
-  running `octopus setup` in each. Multi-stack and legacy are first-class:
-  the standard is layered (not one monolithic manifest) and adoption is
-  phased via tiers T0/T1/T2 so legacy repos are not broken by a hard
-  guardrail flip. Dry-run by default; per-key non-destructive merge; never
-  force-pushes. Pairs with audit-fleet (detect → remediate). Manual,
-  operator-run; interim in the quality bundle, final in tech-lead.
+  Converge a fleet of repos onto a layered Octopus standard (baseline + per-
+  stack profile + adoption tier) by composing each repo's .octopus.yml from
+  one fleet.yml and running octopus setup in each. Multi-stack and legacy
+  first-class; tiers T0/T1/T2 phase adoption. Dry-run by default, non-
+  destructive per-key merge, never force-pushes. Pairs with audit-fleet.
+  Manual; quality/tech-lead bundle.
 triggers:
   keywords: ["fleet bootstrap", "bootstrap the fleet", "roll out octopus", "standardize repos", "bulk octopus setup", "converge the fleet"]
 ---

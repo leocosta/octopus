@@ -1,14 +1,11 @@
 ---
 name: enforce-ide
 description: >
-  Write a baseline `.editorconfig` and (opt-in) `.vscode/settings.json` +
-  `.vscode/extensions.json` aligned with the project's chosen formatter
-  and linter. Reinforces the project's conventions in the editor
-  surface — the layer between the human's keystroke and the git commit.
-  Detects stack via file extensions and existing configs. Respects
-  existing files: merges keys conservatively, never overwrites a
-  user-set value. Pairs with enforce-precommit and the guardrails
-  bundle for defense-in-depth across loop / git / CI / IDE.
+  Write a baseline .editorconfig and (opt-in) .vscode/ settings + extensions
+  aligned with the project's formatter and linter — the editor layer between
+  keystroke and commit. Detects stack via file extensions; merges keys
+  conservatively, never overwrites a user value. Pairs with enforce-precommit
+  and the guardrails bundle.
 triggers:
   paths: [".editorconfig", ".vscode/settings.json", ".vscode/extensions.json", ".octopus.yml"]
   keywords: ["enforce ide", "editorconfig", "vscode settings", "guardrails ide", "editor consistency"]

@@ -1,15 +1,11 @@
 ---
 name: context-status
 description: >
-  The read side of the consigliere workspace. Answers a manager's natural-language
-  question — "how's payments?", "what's blocked on checkout-revamp?", "who owns the
-  fiscal approval?" — from the materialized state, strictly grounded and read-only.
-  Infers the target context or project from the question (the same way digest-source
-  routes), reads the node's state.md (drilling into journal.md history or a project's
-  detail only when needed), and answers concisely with source citations, applying the
-  consigliere lens (political risk, approved heuristics). If something is not in the
-  recorded state it says "not recorded" and points at digest-source — it never
-  invents and it never writes. Manual, operator-run; member of the consigliere bundle.
+  Read side of the consigliere workspace: answer a manager's natural-language
+  question ('how's payments?', 'what's blocked on checkout-revamp?', 'who owns
+  X?') from the materialized state — grounded, read-only, with source
+  citations and the consigliere lens. Says 'not recorded' rather than
+  inventing; never writes. Manual; consigliere bundle.
 triggers:
   keywords: ["context status", "how's", "what's blocked", "status of", "consult my workspace", "what do we know about"]
 ---
