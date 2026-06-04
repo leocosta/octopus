@@ -279,6 +279,16 @@ _Proposed (added 2026-06-04). Seeds from [research](research/2026-06-04-stack-aw
 
 _Decisions: profiles modeled as `category:`-tagged bundles to reuse `expand_bundles` (no new resolver); detection confirmed in the picker, not auto-applied; `quality` kept as a composer of the new sub-bundles to avoid breaking repos that list only `quality`. **Migration:** removing `dba-*` from `backend`/`fullstack` and splitting `quality` is breaking for repos that list those bundles and don't re-run setup — detection re-adds the right `db-*`/stack profiles on the next `octopus setup`/`update`, and `fleet-bootstrap` recomposes the fleet. Edits the source (`cli/lib/setup.sh`, `setup.sh`, `bundles/`, `setup-picker.sh`), never the generated `.octopus.yml`/`.claude/`._
 
+_**Cluster 24 complete** on `feat/stack-aware-setup`. All 8 RMs landed; suite green (86/86 bash + pytest). A C#+MSSQL repo's `octopus setup` now writes `bundles: [starter, …, stack-csharp, db-mssql]` and carries no foreign language/DB._
+- _**RM-140** — 7 profile bundles (`stack-csharp/typescript/python`, `db-mssql/postgres/mongodb/redis`); resolve granularly via `expand_bundles`, no new resolver._
+- _**RM-138** — `_detect_stack()` in `cli/lib/setup.sh`: stack from file presence, DB from driver signals. Self-contained, tested (`test_stack_detection.sh`)._
+- _**RM-139** — detection wired live: `--stack` maps to profiles, auto-detection appends them, picker pre-checks them; `_setup_generate_manifest` writes profiles into `bundles:` (dropped the hardcoded skills:/rules: case)._
+- _**RM-141** — `backend`/`fullstack` stack-agnostic: the 4 `dba-*` removed (come from `db-*` profiles); dba reviewer role kept._
+- _**RM-142** — split `quality` into `quality-audits`/`quality-signals`/`knowledge-ops` (additive; `quality` stays the full composer)._
+- _**RM-143** — trimmed `starter` (9 skills); `map-system` + `delegate` moved to a new opt-in `workflow-extras` bundle._
+- _**RM-144** — manifest `exclude:` subtracts a member post-expansion (`_apply_excludes`)._
+- _**RM-145** — end-to-end focused-stack guarantee test locks the granularity win._
+
 ---
 
 ## In Progress
