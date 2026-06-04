@@ -248,7 +248,9 @@ OCTOPUS_BUNDLES=("fullstack")
 
 expand_bundles
 
-expected_fs=(backend-patterns test-e2e dba-mssql dba-postgres dba-mongodb dba-redis frontend-patterns test-component audit-contracts)
+# RM-141: intent bundles are stack-agnostic — the per-engine dba-* skills now
+# come from db-* profiles (auto-detected), not from backend/fullstack.
+expected_fs=(backend-patterns test-e2e frontend-patterns test-component audit-contracts)
 printf '%s\n' "${OCTOPUS_SKILLS[@]}" | sort -u > /tmp/got_fs.$$
 printf '%s\n' "${expected_fs[@]}" | sort -u > /tmp/exp_fs.$$
 diff -q /tmp/got_fs.$$ /tmp/exp_fs.$$ >/dev/null \
@@ -263,6 +265,10 @@ for role in backend-developer dba frontend-developer; do
   printf '%s\n' "${OCTOPUS_ROLES[@]}" | grep -q "^${role}$" \
     || { echo "FAIL: fullstack missing role $role"; exit 1; }
 done
+
+# RM-141 guarantee: intent bundles carry no per-engine dba-* skill.
+printf '%s\n' "${OCTOPUS_SKILLS[@]}" | grep -q '^dba-' \
+  && { echo "FAIL: fullstack still pulls a dba-* skill (should come from db-* profile)"; exit 1; } || true
 
 echo "PASS: fullstack bundle expands and de-duplicates correctly"
 
