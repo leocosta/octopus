@@ -1,5 +1,5 @@
 name: stack-csharp
-description: C#/.NET stack profile — the dotnet patterns skill + C# coding rules. Auto-selected when *.csproj/*.sln is present.
+description: "C#/.NET stack profile — the dotnet patterns skill + C# coding rules + quality-metrics C# adapter (coverlet/lizard/dotnet-list-reference). Auto-selected when *.csproj/*.sln is present."
 category: stack
 persona_question: "Does this repo build C#/.NET (*.csproj, *.sln)?"
 persona_default: false

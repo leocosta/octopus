@@ -298,7 +298,7 @@ _Proposed (added 2026-06-04). Seeds from [interview](specs/2026-06-04-quality-me
 
 | RM | Item | Theme |
 |----|------|-------|
-| RM-146 | `quality-metrics` — local PR-time dual-delta read of coverage/complexity/module-size/deps over a per-merge orphan-ref baseline; ratchet+absolute thresholds; LLM curation only on breach; C#/TS adapters; new `quality-metrics` bundle + writer-Action template | ready-for-agent |
+| RM-147 | `quality-metrics` — local PR-time dual-delta read of coverage/complexity/module-size/deps over a per-merge orphan-ref baseline; ratchet+absolute thresholds; LLM curation only on breach; C#/TS adapters; new `quality-metrics` bundle + writer-Action template | ready-for-agent |
 
 _Status: **ready-for-agent**. Spec: [2026-06-04-quality-metrics.md](specs/2026-06-04-quality-metrics.md). Open questions deferred to the implementing agent: C# deps tooling depth (no free `madge` equivalent), concrete tool pinning per adapter, orphan-ref ruleset exception, the ref's data shape (snapshot vs. append-only history), local `gh`/auth assumption, and how the skill resolves "the harness's low-cost model"._
 
