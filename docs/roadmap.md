@@ -262,6 +262,25 @@ _Follow-up vectors (RM-132…135, same branch — found by auditing what Cluster
 
 ---
 
+### Cluster 24 — Stack-aware, granular setup
+
+_Proposed (added 2026-06-04). Seeds from [research](research/2026-06-04-stack-aware-setup.md): `octopus setup` installs coarsely and never detects the stack. `.octopus.yml` only gets `rules:` via the hardcoded `--stack` flag (no repo scan, no picker stack selection); intent bundles (`backend`/`fullstack`) pull all four `dba-*` regardless of DB; `starter`/`quality` ship situational skills atomically. `fleet-bootstrap` already auto-detects stack profiles (`*.csproj`→dotnet, `package.json`→node, `pyproject.toml`→python) for the multi-repo flow, and the `dba-*` skills carry DB signals in their `triggers.keywords` — the fix brings that detection down into single-repo setup and splits the axes (intent bundle vs stack/db profile). Decisions: detect + confirm in picker; stack/db profiles as a new axis; rebalance defaults (affirmed-DB only, split `quality`, trim `starter`). Build order: detection (RM-138/139) → profiles axis (RM-140/141) → rebalance (RM-142/143) → exclude + tests (RM-144/145)._
+
+| RM | Item | Theme |
+|----|------|-------|
+| RM-138 | Single-repo stack/DB auto-detection — `_detect_stack()` in `cli/lib/setup.sh` reusing fleet detect signals (`*.csproj`→csharp, `package.json`+framework→typescript, `pyproject.toml`→python) + DB signals from the `dba-*` `triggers.keywords`. Read-only; emits detected stacks+DBs | detection |
+| RM-139 | Picker confirmation + manifest population — a **Stack/Database** picker section with detected items pre-checked (`PICKER_STACK`/`PICKER_DBS`); `_setup_generate_manifest` writes resolved `rules:`+`profiles:`, replacing the hardcoded `--stack` case | detection |
+| RM-140 | Stack/DB profiles as a setup axis — bundles with `category:` (reuse `expand_bundles`): `stack-csharp` (dotnet + csharp rules), `stack-typescript`, `stack-python`; `db-mssql`…`db-redis` (each its `dba-*`); picker groups by category | profiles |
+| RM-141 | Intent bundles go stack-agnostic — remove the 4 `dba-*` from `backend`/`fullstack` (from `db-*` profiles now); remove `dotnet` from the `--stack` hardcode (from `stack-csharp`) | profiles |
+| RM-142 | Split the `quality` bundle — `quality-audits` (blocking), `quality-signals` (signal-only + audit-config + refactor-deepen), `knowledge-ops` (knowledge-*); move `fleet-*` to `tech-lead`/`fleet`. `quality` may stay a composer for compat | rebalance |
+| RM-143 | Trim `starter` defaults — move `map-system` (manual-only) and `delegate` (situational, 305L) into an opt-in `workflow-extras` bundle; `starter` keeps the core loop | rebalance |
+| RM-144 | Manifest `exclude:` — drop listed members from the resolved set after `expand_bundles` (e.g. `exclude: [dba-mongodb]`); picker member-deselect is a stretch | granularity |
+| RM-145 | Detection/profile tests + per-profile budget — `test_stack_detection.sh`, update `test_bundles.sh` (no `dba-*` in backend/fullstack), extend `context-budget`/ratchet with a per-bundle/profile budget | verification |
+
+_Decisions: profiles modeled as `category:`-tagged bundles to reuse `expand_bundles` (no new resolver); detection confirmed in the picker, not auto-applied; `quality` kept as a composer of the new sub-bundles to avoid breaking repos that list only `quality`. **Migration:** removing `dba-*` from `backend`/`fullstack` and splitting `quality` is breaking for repos that list those bundles and don't re-run setup — detection re-adds the right `db-*`/stack profiles on the next `octopus setup`/`update`, and `fleet-bootstrap` recomposes the fleet. Edits the source (`cli/lib/setup.sh`, `setup.sh`, `bundles/`, `setup-picker.sh`), never the generated `.octopus.yml`/`.claude/`._
+
+---
+
 ## In Progress
 
 _RM-088 (`audit-grounding`) shipped in v1.69.0. **Cluster 16** (manager-multiplier) is **complete on `feat/standards-lookup`** — all implemented & committed, pending merge/release: RM-089 (`mentor`), RM-090 (`onboarding`), RM-091 (`definition-of-done`), RM-092 (`standards`), RM-093 (team `continuous-learning`), RM-094 (`audit-fleet`), RM-095 (`fleet-bootstrap`), RM-096 (`tech-lead` bundle), RM-098 (`map-system` complete-mode deck). ADRs 002–006 recorded. See [research](research/2026-05-30-manager-multiplier.md)._
