@@ -63,9 +63,14 @@ Invoke the matched skills and roles **concurrently** — they do not
 depend on each other. Pass each one **only its domain-matching file
 subset** from Phase 1 (e.g. `audit-tenant` sees the tenant-scoped
 files, not the frontend diff) — this is the dominant token cost, so
-scoping it down is the point. Roles (`architect`, `dba`, `security`)
-emit findings in the format defined by their own role files; skills
-emit per their `audit-*` Output Format.
+scoping it down is the point.
+
+Dispatch the **`audit-*` skills on the cheapest model tier** (they are
+mechanical checklist passes — see each skill's *Model tier* note); run
+the **roles (`architect`, `dba`, `security`) on their declared model**
+(Opus — they adjudicate, see `roles/*.md`) (RM-130). Roles emit findings
+in the format defined by their own role files; skills emit per their
+`audit-*` Output Format.
 
 ## Phase 3 — Fallback Checklist
 

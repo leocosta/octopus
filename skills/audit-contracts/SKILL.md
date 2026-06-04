@@ -228,3 +228,10 @@ Skill-specific errors:
 Composes with `audit-money` and `audit-security`. Findings are
 guidance, not a gate — reviewers decide whether to block, require
 changes, or accept with a note.
+## Model tier
+
+This audit is mechanical — it pattern-matches a diff against a fixed
+checklist, not deep reasoning. Run it on the **cheapest model tier**
+(`--model haiku` / each assistant's cheapest). Reserve frontier models
+for the `architect`/`dba`/`security` roles that adjudicate the findings
+(RM-130).

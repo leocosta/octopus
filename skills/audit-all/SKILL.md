@@ -81,6 +81,9 @@ dispatched subagent gets:
 - The same `<ref>` and `--base`.
 - Instruction to produce output in the audit's existing format,
   unchanged.
+- The **cheapest model tier** — every `audit-*` skill is a mechanical
+  checklist pass (see each skill's *Model tier* note), so do not spend
+  a frontier model on them (RM-130).
 
 Each audit checks its own SHA cache (`skills/_shared/audit-cache.md`,
 keyed on the scoped diff + skill hash), so re-running `audit-all` on

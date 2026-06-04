@@ -167,3 +167,10 @@ design.
   re-flagged forever.
 - **`guardrails` bundle** — owns the syntactic, blocking layer this skill
   deliberately does not duplicate.
+## Model tier
+
+This audit is mechanical — it pattern-matches a diff against a fixed
+checklist, not deep reasoning. Run it on the **cheapest model tier**
+(`--model haiku` / each assistant's cheapest). Reserve frontier models
+for the `architect`/`dba`/`security` roles that adjudicate the findings
+(RM-130).

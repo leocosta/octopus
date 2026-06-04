@@ -187,3 +187,10 @@ Never auto-fix. Configuration is load-bearing; the user decides.
   warn-level "skill description too vague" finding
 - **`continuous-learning`** — when a finding recurs across audits,
   promote the underlying pattern to a tracked rule
+## Model tier
+
+This audit is mechanical — it pattern-matches a diff against a fixed
+checklist, not deep reasoning. Run it on the **cheapest model tier**
+(`--model haiku` / each assistant's cheapest). Reserve frontier models
+for the `architect`/`dba`/`security` roles that adjudicate the findings
+(RM-130).

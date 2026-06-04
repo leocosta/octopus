@@ -190,3 +190,10 @@ shared convention. Skill-specific wording:
 Run `audit-security` first (secrets/injection), then `audit-money`
 (money-logic). Both form the pre-merge safety net; output is plain
 markdown designed to paste into a PR comment as-is.
+## Model tier
+
+This audit is mechanical — it pattern-matches a diff against a fixed
+checklist, not deep reasoning. Run it on the **cheapest model tier**
+(`--model haiku` / each assistant's cheapest). Reserve frontier models
+for the `architect`/`dba`/`security` roles that adjudicate the findings
+(RM-130).
