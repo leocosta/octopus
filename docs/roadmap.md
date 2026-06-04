@@ -236,16 +236,21 @@ _Proposed (added 2026-06-03). Seeds from [research](research/2026-06-03-token-co
 
 _Decisions: edit source + regenerate (never the generated `.claude/CLAUDE.md`); baseline-for-all (not opt-in) with safety via the RM-131 budget check + cross-stack verification (C#/Python/TS); Stop hooks excluded (zero-LLM, deferred cost). Reuses existing machinery — `context-budget`, `compress-skill`, `skills/_shared/*`, `cli/lib/audit-map.sh`, `rules/{csharp,python,typescript}/` — rather than new abstractions._
 
-_**In progress** on `perf/token-cost-optimization` (added 2026-06-03). Measured baseline cut **always-loaded 8407 → 3089 tok (−63%)**, `core↔rules` dup 3 → 0; all touched tests green (`test_context_budget` ratchet enforces it):_
-- _**RM-131** — `scripts/context-budget.sh` (source-based measurement) + `tests/test_context_budget.sh` ratchet; ceilings lower as each RM lands._
-- _**RM-117** — `core/guidelines.md` reduced to a pointer; canonical principles/security/testing load once via `rules/common`. 8407 → 7989 tok._
-- _**RM-119** — `core` symlink delivery (`.claude/core/`) for template agents; only the `guidelines.md` pointer stays inline. Concatenate agents unchanged. CLAUDE.md 3199 → 628 tok; 7989 → 5418._
-- _**RM-118** — `exceptions.md` delivered on-demand (`ON_DEMAND_RULES` skipped by `deliver_rules`, picked up by `deliver_core`). 5418 → 3089._
-- _**RM-122/123/124** — `codereview`/`pr-review`: subset-route per domain, gate dispatch on `audit-map`, single-pass for small PRs._
-- _**RM-125/126** — `audit-all` skips empty-subset audits (per-audit SHA cache already memoizes); `dev-flow` self-review opt-in/pre-merge._
-- _**RM-130** — `audit-*` skills tiered to the cheapest model via a uniform "Model tier" note; orchestrators dispatch audits cheap, roles keep Opus._
+_**Cluster 23 complete** on `perf/token-cost-optimization` (added 2026-06-03). All 15 RMs (RM-117…131) landed. Measured per-session cut (corrected counter): **always-loaded 8407 → 2905 tok (−65%)**, **registry 8013 → 6461 tok (−19%)**, **total ~16420 → ~9366 tok (−43%)**, `core↔rules` dup 3 → 0. The `test_context_budget` ratchet enforces it; touched tests green (5 unrelated failures pre-exist on `main`: `test_workflow_commands`, `test_concatenate_agent`, `test_respond_to_review`, and the `mktemp`-env flakes `test_commands`/`test_hooks_injection`)._
 
-_**Reassessed (pending decision)** — RM-120, RM-121, RM-127, RM-128, RM-129. On close inspection these are lower-ROI or higher-risk than first scoped: RM-120/127 (lang-split + bundle-per-stack) largely overlap the existing `rules/<lang>` + `bundles/` + `OCTOPUS_RULES` mechanism with ~0 local payoff; RM-121 (compress) trades ~370 tok against 11 content-referencing tests; RM-128 (trim `description:`) is hard to measure (50 skills use multi-line YAML the registry counter can't sum) and risks skill activation; RM-129 (skill↔command consolidation) targets a separation that is partly by design. Recommend deliberate, separately-reviewed handling rather than tail-end bulk edits._
+_Key finding: the **registry listing** (every skill/command `description:`, loaded each session) was the biggest single cost — 8013 tok — and the first-line budget counter was blind to multi-line `description: >` blocks (RM-128 fixed the counter, then trimmed 24 descriptions). The always-loaded baseline work (RM-117/118/119/121) is the larger structural win._
+
+- _**RM-131** — `scripts/context-budget.sh` (source-based) + `tests/test_context_budget.sh` ratchet._
+- _**RM-117** — `core/guidelines.md` → pointer; principles/security/testing load once via `rules/common`. 8407 → 7989._
+- _**RM-119** — `core` symlink delivery (`.claude/core/`) for template agents; only the pointer stays inline. CLAUDE.md 3199 → 628; 7989 → 5418._
+- _**RM-118** — `exceptions.md` on-demand (`ON_DEMAND_RULES`). 5418 → 3089._
+- _**RM-121** — compress `rules/common` prose (patterns/security/testing). 3089 → 2905._
+- _**RM-122/123/124** — `codereview`/`pr-review`: subset-route per domain, gate dispatch on `audit-map`, single-pass small PRs._
+- _**RM-125/126** — `audit-all` skips empty-subset audits; `dev-flow` self-review opt-in/pre-merge._
+- _**RM-130** — `audit-*` tiered to the cheapest model; roles keep Opus._
+- _**RM-120/127** — lang-split + bundle-per-stack guarantees locked by `test_lang_split.sh` (mechanism pre-existed; coupling rules into intent bundles rejected as a design regression)._
+- _**RM-128** — registry counter fixed + 24 verbose descriptions trimmed to activation hints. 8013 → 6461._
+- _**RM-129** — `test_command_delegation.sh` locks the skill↔command delegation pattern (no always-loaded token to reclaim; bodies are on-demand)._
 
 ---
 
