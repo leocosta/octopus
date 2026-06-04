@@ -15,10 +15,10 @@ BUDGET="$SCRIPT_DIR/scripts/context-budget.sh"
 # After RM-117 (dedup core<->rules): ALWAYS=7989 DUP=0.
 # After RM-119 (core reference on-demand): ALWAYS=5418 TOTAL=7627.
 # After RM-118 (exceptions.md on-demand): ALWAYS=3089 TOTAL=5298.
-# Targets: REGISTRY ~1500 (RM-128). Ratchet down as each lands.
-MAX_ALWAYS_TOKENS=3200
+# After RM-121 (compress rules/common): ALWAYS=2905 TOTAL=5114.
+MAX_ALWAYS_TOKENS=3000
 MAX_REGISTRY_TOKENS=2300
-MAX_TOTAL_TOKENS=5400
+MAX_TOTAL_TOKENS=5200
 MAX_DUP_MARKERS=0
 
 PASS=0; FAIL=0
