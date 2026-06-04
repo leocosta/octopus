@@ -53,6 +53,7 @@ TEMPLATE="$ROOT/agents/claude/CLAUDE.md"
 RULES_DIR="$(_first_existing_dir "$ROOT/rules/common" "$ROOT/.claude/rules/common" || true)"
 SKILLS_DIR="$(_first_existing_dir "$ROOT/skills" "$ROOT/.claude/skills" || true)"
 COMMANDS_DIR="$(_first_existing_dir "$ROOT/commands" "$ROOT/.claude/commands" || true)"
+ROLES_DIR="$(_first_existing_dir "$ROOT/roles" "$ROOT/.claude/agents" || true)"
 
 # --- 1. CLAUDE.md (source-based when possible) -----------------------------
 core_paths=()
@@ -113,7 +114,21 @@ _description_bytes() {
   done < <(find -L "$dir" -name "$name" -type f 2>/dev/null)
   echo "$total"
 }
-registry_bytes=$(( $(_description_bytes "$SKILLS_DIR" "SKILL.md") + $(_description_bytes "$COMMANDS_DIR" "*.md") ))
+# Roles are listed as available agents every session, same as skills/commands.
+registry_bytes=$(( $(_description_bytes "$SKILLS_DIR" "SKILL.md") + $(_description_bytes "$COMMANDS_DIR" "*.md") + $(_description_bytes "$ROLES_DIR" "*.md") ))
+
+# Per-stack rule budgets: always loaded for a repo of that stack (not this
+# repo, which loads only `common`). Reported + ratcheted so compressing them
+# is locked, even though they don't count toward THIS repo's per-session total.
+stack_line=""
+for lang in csharp python typescript; do
+  d="$ROOT/rules/$lang"
+  [[ -d "$d" ]] || continue
+  lb=0
+  while IFS= read -r f; do lb=$((lb + $(wc -c <"$f" 2>/dev/null || echo 0))); done \
+    < <(find -L "$d" -maxdepth 1 -name '*.md' -type f 2>/dev/null)
+  stack_line+=" STACK_$(printf '%s' "$lang" | tr '[:lower:]' '[:upper:]')_TOKENS=$(_tokens "$lb")"
+done
 
 # --- totals ----------------------------------------------------------------
 always_bytes=$((claude_bytes + rules_bytes))
@@ -149,12 +164,15 @@ printf '  CLAUDE.md (%-22s) %7d bytes  ~%5d tok\n' "$claude_source" "$claude_byt
 printf '  rules (always loaded)            %7d bytes  ~%5d tok\n' "$rules_bytes" "$(_tokens "$rules_bytes")"
 printf '  ------------------------------------------------------\n'
 printf '  Always-loaded baseline           %7d bytes  ~%5d tok\n' "$always_bytes" "$always_tokens"
-printf '  Registry descriptions            %7d bytes  ~%5d tok  (skills+commands listing)\n' "$registry_bytes" "$registry_tokens"
+printf '  Registry descriptions            %7d bytes  ~%5d tok  (skills+commands+roles listing)\n' "$registry_bytes" "$registry_tokens"
 printf '  ------------------------------------------------------\n'
 printf '  TOTAL per session                                 ~%5d tok\n' "$total_tokens"
+printf '\n'
+printf '  Per-stack rule budgets (loaded for a repo of that stack, not here):\n'
+for kv in $stack_line; do printf '    %s\n' "$kv"; done
 printf '\n'
 printf '  core<->rules duplicated markers: %d  (target: 0 — RM-117)\n' "$dup_markers"
 printf '\n'
 # Machine-readable line for the CI ratchet (tests/test_context_budget.sh).
-printf 'ALWAYS_TOKENS=%d REGISTRY_TOKENS=%d TOTAL_TOKENS=%d DUP_MARKERS=%d\n' \
-  "$always_tokens" "$registry_tokens" "$total_tokens" "$dup_markers"
+printf 'ALWAYS_TOKENS=%d REGISTRY_TOKENS=%d TOTAL_TOKENS=%d DUP_MARKERS=%d%s\n' \
+  "$always_tokens" "$registry_tokens" "$total_tokens" "$dup_markers" "$stack_line"

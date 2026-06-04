@@ -20,10 +20,15 @@ BUDGET="$SCRIPT_DIR/scripts/context-budget.sh"
 # the true registry was 8013 tok (not the 2209 the first-line counter showed).
 # After trimming 24 verbose descriptions: REGISTRY 8013 -> 6461 tok.
 # After trimming 18 mid-size descriptions: REGISTRY 6461 -> 6137 tok.
+# RM-134: registry now includes role descriptions (+~398 tok) -> 6535.
+# RM-133 will trim roles; RM-132 will compress the per-stack rule budgets.
 MAX_ALWAYS_TOKENS=3000
-MAX_REGISTRY_TOKENS=6200
-MAX_TOTAL_TOKENS=9100
+MAX_REGISTRY_TOKENS=6600
+MAX_TOTAL_TOKENS=9500
 MAX_DUP_MARKERS=0
+MAX_STACK_CSHARP_TOKENS=3500
+MAX_STACK_PYTHON_TOKENS=2600
+MAX_STACK_TYPESCRIPT_TOKENS=3950
 
 PASS=0; FAIL=0
 check() {
@@ -52,6 +57,14 @@ check "always-loaded baseline <= $MAX_ALWAYS_TOKENS tok (got ${always:-?})" le "
 check "registry listing <= $MAX_REGISTRY_TOKENS tok (got ${registry:-?})"   le "$registry" "$MAX_REGISTRY_TOKENS"
 check "total per session <= $MAX_TOTAL_TOKENS tok (got ${total:-?})"        le "$total" "$MAX_TOTAL_TOKENS"
 check "core<->rules dup markers <= $MAX_DUP_MARKERS (got ${dup:-?})"        le "$dup" "$MAX_DUP_MARKERS"
+
+# --- per-stack rule budgets (RM-132/134) -----------------------------------
+mach="$(grep '^ALWAYS_TOKENS=' <<<"$REPORT" | tail -1)"
+for lang in CSHARP PYTHON TYPESCRIPT; do
+  got=$(grep -oE "STACK_${lang}_TOKENS=[0-9]+" <<<"$mach" | grep -oE '[0-9]+')
+  max_var="MAX_STACK_${lang}_TOKENS"; max="${!max_var}"
+  check "stack $lang rules <= $max tok (got ${got:-?})" le "$got" "$max"
+done
 
 # --- summary ---------------------------------------------------------------
 echo "-----------------------------------------"
