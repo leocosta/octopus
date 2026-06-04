@@ -14,10 +14,11 @@ BUDGET="$SCRIPT_DIR/scripts/context-budget.sh"
 # Baseline 2026-06-03 (pre-refactor): ALWAYS=8407 REGISTRY=2209 TOTAL=10616 DUP=3.
 # After RM-117 (dedup core<->rules): ALWAYS=7989 DUP=0.
 # After RM-119 (core reference on-demand): ALWAYS=5418 TOTAL=7627.
-# Targets: ALWAYS ~3500 (RM-118/120/121). Ratchet down as each lands.
-MAX_ALWAYS_TOKENS=5500
+# After RM-118 (exceptions.md on-demand): ALWAYS=3089 TOTAL=5298.
+# Targets: REGISTRY ~1500 (RM-128). Ratchet down as each lands.
+MAX_ALWAYS_TOKENS=3200
 MAX_REGISTRY_TOKENS=2300
-MAX_TOTAL_TOKENS=7700
+MAX_TOTAL_TOKENS=5400
 MAX_DUP_MARKERS=0
 
 PASS=0; FAIL=0

@@ -1134,6 +1134,12 @@ deliver_rules() {
       mkdir -p "$target/$rule"
       for f in "$source_dir"/*.md; do
         [[ -f "$f" ]] || continue
+        # RM-118: on-demand rules (e.g. the heavy exceptions gate) are delivered
+        # to .claude/core/ instead of the always-loaded rules dir, for agents
+        # that support on-demand core delivery (deliver_core picks them up).
+        if [[ -n "$MANIFEST_DELIVERY_CORE_METHOD" ]] && _is_on_demand_rule "$rule/$(basename "$f")"; then
+          continue
+        fi
         local dest_name
         dest_name="$(_rules_dest_name "$(basename "$f")" "$use_instructions_ext")"
         ln -sf "$f" "$target/$rule/$dest_name"
@@ -1240,7 +1246,25 @@ deliver_core() {
       ln -s "$src" "$target/$(basename "$core_file")"
       echo "  -> ${MANIFEST_DELIVERY_CORE_TARGET}$(basename "$core_file")"
     done
+    # RM-118: on-demand rules ride the same delivery (skipped by deliver_rules).
+    for rule_rel in "${ON_DEMAND_RULES[@]}"; do
+      local src="$OCTOPUS_DIR/rules/$rule_rel"
+      [[ -f "$src" ]] || continue
+      ln -s "$src" "$target/$(basename "$rule_rel")"
+      echo "  -> ${MANIFEST_DELIVERY_CORE_TARGET}$(basename "$rule_rel")"
+    done
   fi
+}
+
+# RM-118 — rule files delivered on demand (.claude/core/) rather than always
+# loaded. Rule-relative paths (e.g. "common/exceptions.md").
+ON_DEMAND_RULES=(
+  "common/exceptions.md"
+)
+_is_on_demand_rule() {
+  local needle="$1" r
+  for r in "${ON_DEMAND_RULES[@]}"; do [[ "$r" == "$needle" ]] && return 0; done
+  return 1
 }
 
 discover_knowledge() {

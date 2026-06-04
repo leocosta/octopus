@@ -2,7 +2,7 @@
 name: audit-style
 description: >
   Signal-only audit that confronts the working diff against the team's
-  opinionated design rules — rules/common/exceptions.md (the custom-exception
+  opinionated design rules — exceptions.md (the custom-exception
   gate), rules/common/patterns.md, rules/common/coding-style.md, and the active
   stack rules — to surface two failures a formatter and type checker cannot see:
   code that violates a stated rule (rule-violation) and abstraction the rules
@@ -75,7 +75,7 @@ Do **not** engage for:
 
 Load, in order, and degrade gracefully when an artifact is absent:
 
-1. **`rules/common/exceptions.md`** — the custom-exception gate (the
+1. **`exceptions.md`** — the custom-exception gate (the
    default-to-stdlib rule, the G1/G2/G3 justification gate, the forbidden
    smells) and the "delete the class when the last catch site goes" rule.
    The primary reference for exception-related `rule-violation` findings.

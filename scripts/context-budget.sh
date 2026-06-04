@@ -85,6 +85,11 @@ fi
 rules_bytes=0
 if [[ -n "$RULES_DIR" ]]; then
   while IFS= read -r f; do
+    # RM-118: on-demand rules (exceptions.md) are delivered to .claude/core/,
+    # not the always-loaded rules dir, when core is on-demand. Don't count them.
+    if [[ "${core_on_demand:-false}" == true && "$(basename "$f")" == "exceptions.md" ]]; then
+      continue
+    fi
     rules_bytes=$((rules_bytes + $(wc -c <"$f" 2>/dev/null || echo 0)))
   done < <(find -L "$RULES_DIR" -maxdepth 1 -name '*.md' -type f 2>/dev/null)
 fi

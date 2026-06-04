@@ -66,7 +66,7 @@ the others as supporting context.
 3. **Answer**, in this shape:
    - **Standard:** the rule/decision, in one or two sentences.
    - **Source:** the file path (clickable) — e.g.
-     `docs/adr/004-result-pattern.md`, `rules/common/exceptions.md`.
+     `docs/adr/004-result-pattern.md`, `exceptions.md`.
    - **Why:** the rationale, quoted or summarized from the source.
    - **Confidence:** `documented` (found) or `not-found`.
 4. **The not-found path:** when no source covers the topic, say so
