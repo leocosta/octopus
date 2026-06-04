@@ -73,6 +73,45 @@ GEMINI.md
 .opencode/rules.md, .opencode/commands/, .opencode/skills/, .opencode/agents/, .opencode/settings.json
 ```
 
+## Perfis na lista de bundles
+
+A lista `bundles:` aceita tanto intent bundles quanto perfis
+auto-detectados. Após o `octopus setup` rodar a detecção, um manifesto
+típico pode parecer com:
+
+```yaml
+bundles:
+  - starter
+  - backend
+  - quality
+  - stack-csharp   # auto-detectado a partir de *.csproj
+  - db-mssql       # auto-detectado a partir de Microsoft.Data.SqlClient
+```
+
+Perfis de stack e banco de dados seguem as mesmas regras de expansão dos
+intent bundles — são simplesmente entradas com categoria específica no
+catálogo de bundles.
+
+## Excluindo membros individuais com `exclude:`
+
+O manifesto suporta uma lista de nível raiz `exclude:` que subtrai skills
+ou roles individuais **depois** que toda a expansão de bundles e perfis é
+concluída. Use-a quando um perfil ou bundle traz um membro que você não
+quer:
+
+```yaml
+bundles:
+  - backend
+  - db-mongodb
+
+exclude:
+  - dba-mongodb   # db-mongodb detectado, mas este repo usa uma réplica somente-leitura
+```
+
+`exclude:` é aplicado por último, então funciona independentemente de qual
+bundle introduziu o membro. Não afeta dependências transitivas de outras
+skills que permanecem na lista efetiva.
+
 ## Por que o manifesto nunca é editado automaticamente
 
 `octopus setup` escreve arquivos gerados; nunca escreve de volta no

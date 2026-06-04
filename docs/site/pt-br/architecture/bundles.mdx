@@ -99,10 +99,12 @@ O setup padrão do Octopus usa vários bundles juntos:
 
 ```yaml
 bundles:
-  - starter        # the foundation
-  - quality        # audits for SaaS
-  - docs           # documentation lifecycle
-  - dotnet-api     # stack-specific
+  - starter          # the foundation
+  - quality          # audits for SaaS
+  - docs             # documentation lifecycle
+  - backend          # backend patterns and dba role
+  - stack-csharp     # auto-detected: dotnet skill + C# rules
+  - db-mssql         # auto-detected: dba-mssql skill
 ```
 
 A composição é associativa — a ordem não importa para a
@@ -111,12 +113,61 @@ posteriores sobrescrevem as anteriores (é assim que `language.local.md`
 funciona para overrides de rules por projeto), mas isso é um detalhe
 de carregamento de rules, não uma questão de composição de bundles.
 
+## Dois eixos: intent bundles e perfis
+
+O catálogo de bundles tem dois eixos distintos.
+
+**Intent bundles** respondem "que tipo de trabalho esse repo faz?"
+São pacotes curados escopados a um arquétipo de time — `starter`,
+`backend`, `fullstack`, `quality`, `docs`, `growth`, `tech-lead`.
+Você os escolhe explicitamente no setup.
+
+**Perfis** respondem "que linguagem e banco de dados esse repo usa?"
+São bundles com categoria específica que o `octopus setup` auto-detecta
+a partir do repo e pré-seleciona no seletor interativo. Você também pode
+defini-los explicitamente com `--stack` ou `--bundle`.
+
+### Perfis de stack
+
+| Perfil | Skill(s) | Sinal de detecção |
+|---|---|---|
+| `stack-csharp` | `dotnet` + rules de C# | `*.csproj` ou `*.sln` |
+| `stack-typescript` | rules de TypeScript | `package.json` + `tsconfig` ou `*.ts(x)` |
+| `stack-python` | rules de Python | `pyproject.toml` ou `requirements.txt` |
+
+### Perfis de banco de dados
+
+Cada perfil de banco de dados carrega exatamente uma skill `dba-*`
+específica de engine. A role `dba` (do `backend` ou `fullstack`) despacha
+os perfis instalados.
+
+| Perfil | Skill | Sinal de detecção |
+|---|---|---|
+| `db-mssql` | `dba-mssql` | `Microsoft.Data.SqlClient` nos manifests |
+| `db-postgres` | `dba-postgres` | `Npgsql`, `psycopg` ou `"pg"` nos manifests |
+| `db-mongodb` | `dba-mongodb` | `MongoDB.Driver`, `mongoose` ou `pymongo` |
+| `db-redis` | `dba-redis` | `StackExchange.Redis`, `ioredis` ou `redis-py` |
+
+Um repo C# + SQL Server recebe `stack-csharp` e `db-mssql`
+auto-selecionados — nunca os outros três perfis de banco de dados.
+
+### Outros bundles
+
+| Bundle | Propósito |
+|---|---|
+| `workflow-extras` | Skills de workflow opt-in (`map-system`, `delegate`) removidas do `starter` |
+| `quality-audits` | Camada de gate bloqueante do `quality`: `audit-all` + auditorias de domínio + roles |
+| `quality-signals` | Ferramentas signal-only do `quality`: `audit-grounding`, `audit-verification`, `audit-style`, `audit-config`, `refactor-deepen` |
+| `knowledge-ops` | Knowledge loop: `knowledge-hygiene`, `knowledge-synthesize`, `knowledge-briefing` |
+
 ## Quick mode vs Full mode
 
 `octopus setup` usa o Quick mode por padrão: 4–6 perguntas sim/não mapeiam
 para bundles ("Você está em um SaaS com billing?" → sim adiciona `quality`,
 "Esse é um projeto com muita documentação?" → sim adiciona `docs`). O wizard
-esconde o catálogo de bundles inteiramente.
+esconde o catálogo de bundles inteiramente. Perfis de stack e banco de dados
+são pré-selecionados automaticamente — você confirma ou desmarca antes de
+qualquer escrita.
 
 O Full mode é para usuários que querem controle por componente — escolher
 skills específicos, excluir membros de bundle, conjuntos de rules customizados. O Full

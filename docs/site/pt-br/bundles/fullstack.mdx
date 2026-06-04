@@ -1,6 +1,6 @@
 ---
 title: fullstack
-description: Um bundle para repos que têm tanto uma API quanto um frontend — padrões de backend mais review da camada de dados, padrões de frontend mais testes de componente e e2e, e detecção de drift de contrato cross-stack.
+description: Um bundle para repos que têm tanto uma API quanto um frontend — padrões de backend, padrões de frontend mais testes de componente e e2e, e detecção de drift de contrato cross-stack. O review per-engine da camada de dados vem dos perfis db-* auto-selecionados.
 sidebar:
   order: 7
 source_hash: "sha256:d69fc96d0a0ae06490b9918d0ecf328c3a70d7df48be67a07f27144b5a8fdfdc"
@@ -49,10 +49,6 @@ vai disparar.
 skills:
   - backend-patterns  # padrões de layering do lado servidor
   - test-e2e          # testes end-to-end (compartilhado pelas duas stacks)
-  - dba-mssql         # review de SQL Server
-  - dba-postgres      # review de Postgres
-  - dba-mongodb       # review de MongoDB
-  - dba-redis         # review de Redis
   - frontend-patterns # design de componente, estado, a11y
   - test-component    # testes em nível de componente (RTL)
   - audit-contracts  # detecção de drift de contrato API ↔ frontend
@@ -66,12 +62,17 @@ roles:
 
 Isto é `backend` ∪ `frontend` ∪ `audit-contracts`. `test-e2e` pertence
 às duas stacks; o expansor de bundles o de-duplica para uma única
-entrada.
+entrada. O review per-engine da camada de dados (`dba-mssql`,
+`dba-postgres`, `dba-mongodb`, `dba-redis`) **não está** aqui — vem dos
+**perfis de banco de dados** (`db-mssql`, `db-postgres`, `db-mongodb`,
+`db-redis`) que o setup auto-seleciona a partir dos drivers detectados no
+repo, da mesma forma que faz para o bundle `backend` isolado. Consulte a
+[visão geral de bundles](/octopus/pt-br/architecture/bundles/) para o
+eixo de perfis.
 
 ### Por que cada um está aqui
 
-- **Todo o `backend`** — `backend-patterns`, `test-e2e` e as quatro
-  skills `dba-*` de review da camada de dados, mais as roles
+- **Todo o `backend`** — `backend-patterns`, `test-e2e` e as roles
   `backend-developer` e `dba`. A metade de API do repo ganha os mesmos
   padrões e o gate pre-merge da camada de dados que ganharia do bundle
   isolado. (A role `dba` ainda casa com `architect`, que o `quality`
@@ -105,7 +106,8 @@ Uma mudança que cruza a costura fica coerente num PR só:
 1. Chega uma tarefa: "adicione um campo `status` à API de pedidos e
    exiba-o na lista de pedidos da UI."
 2. `backend-developer` + `backend-patterns` moldam a mudança de
-   endpoint; as skills `dba` revisam a migration que adiciona a coluna.
+   endpoint; a role `dba` (apoiada pelo perfil db auto-selecionado)
+   revisa a migration que adiciona a coluna.
 3. `frontend-developer` + `frontend-patterns` adicionam a coluna à UI,
    com os estados de loading/empty/error tratados.
 4. `test-component` cobre os estados de render da nova célula;

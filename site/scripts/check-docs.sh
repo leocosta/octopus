@@ -55,7 +55,15 @@ if [[ -d "$REPO_ROOT/skills" ]]; then
 fi
 [[ -d "$REPO_ROOT/commands" ]] && for f in "$REPO_ROOT"/commands/*.md;  do [[ -f "$f" ]] && require_pages "$(basename "$f" .md)"  commands; done
 [[ -d "$REPO_ROOT/roles" ]]    && for f in "$REPO_ROOT"/roles/*.md;     do [[ -f "$f" ]] && require_pages "$(basename "$f" .md)"  roles;    done
-[[ -d "$REPO_ROOT/bundles" ]]  && for f in "$REPO_ROOT"/bundles/*.yml;  do [[ -f "$f" ]] && require_pages "$(basename "$f" .yml)" bundles;  done
+# Stack/DB profiles (category: stack|db) are documented in the bundles overview,
+# not per-page — they are mechanical one-skill selectors auto-applied by setup.
+if [[ -d "$REPO_ROOT/bundles" ]]; then
+  for f in "$REPO_ROOT"/bundles/*.yml; do
+    [[ -f "$f" ]] || continue
+    case "$(awk '/^category:/{print $2; exit}' "$f")" in stack|db) continue ;; esac
+    require_pages "$(basename "$f" .yml)" bundles
+  done
+fi
 
 echo "----"
 echo "check-docs: $findings finding(s) in published pages under $DOCS_ROOT"

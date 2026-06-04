@@ -1,0 +1,87 @@
+---
+title: quality-signals
+description: The advisory (never-blocking) subset of quality — source-of-truth grounding, completion verification, design-rules style, config freshness, and architecture-depth refactoring.
+sidebar:
+  order: 10
+---
+
+`quality-signals` is the signal-only subset of
+[`quality`](/octopus/bundles/quality/). Every skill here is advisory by design:
+they surface divergences, flag incomplete work, and propose improvements, but
+none of them block a merge. The blocking layer is in
+[`quality-audits`](/octopus/bundles/quality-audits/).
+
+## Why this exists
+
+Not every team is ready for — or needs — blocking gates from day one. A team
+migrating an existing repo, or one that runs its own mandatory CI checks, may
+want Octopus to act as a second pair of eyes rather than a gatekeeper. These
+skills fit that role. They are also useful in repos where `quality-audits` is
+already installed but the team wants the advisory surface to be visually
+distinct from the blocking one.
+
+## What it includes
+
+```yaml
+skills:
+  - audit-grounding    # divergence from source of truth (CONTEXT.md, knowledge/)
+  - audit-verification # confirms all acceptance criteria are met before closing
+  - audit-style        # design-rules, over-engineering, readability patterns
+  - audit-config       # stale rules, phantom skills, deprecated hook/path references
+  - refactor-deepen    # shallow-module detection; proposes deepening via deletion test
+roles: []
+```
+
+[Source: `bundles/quality-signals.yml`](https://github.com/leocosta/octopus/blob/main/bundles/quality-signals.yml)
+
+### Why each one is in
+
+- **`audit-grounding`** — catches the semantic failure mode the domain audits
+  miss: an agent asserting a team convention or domain fact that contradicts the
+  source of truth (`CONTEXT.md`, `knowledge/`). Its Stop hook fires at every
+  task end; the skill reports divergences and leaves the call to a human.
+- **`audit-verification`** — checks that the work actually satisfies the
+  acceptance criteria before the session closes. Prevents the silent "done but
+  incomplete" failure where the agent marks a task finished before all the
+  specified cases are covered.
+- **`audit-style`** — inspects for design-rule violations (over-engineering,
+  premature abstraction, magic values, god modules) and readability issues that
+  don't rise to the level of a security or money-logic finding. Nudges toward
+  the canonical vocabulary for the module.
+- **`audit-config`** — catches configuration drift: rules calibrated for older
+  models, phantom skills referenced in bundles, stale hook paths, deprecated
+  command signatures. Recommended quarterly; never blocks a merge.
+- **`refactor-deepen`** — finds shallow modules and proposes concrete deepening
+  opportunities using the deletion test and vocabulary canonicalization. This is
+  architectural advisory work, not a gate.
+
+### Why not included
+
+- **`audit-all`, `audit-contracts`, `architect`, `security`** — those are the
+  blocking-gate layer; they belong in
+  [`quality-audits`](/octopus/bundles/quality-audits/).
+- **`knowledge-hygiene`, `knowledge-synthesize`, `knowledge-briefing`** — those
+  are knowledge-loop operations; they live in
+  [`knowledge-ops`](/octopus/bundles/knowledge-ops/).
+
+## Workflow this enables
+
+These skills run at natural pause points rather than as hard gates:
+
+- **`audit-grounding`** fires automatically via its Stop hook at the end of
+  every task with a diff. You review the divergence report; no merge is blocked.
+- **`audit-verification`** runs when you (or the agent) are about to close a
+  task. It checks acceptance criteria and surfaces any uncovered case.
+- **`audit-style`** and **`refactor-deepen`** are run on demand — typically
+  before a PR or after a feature is functionally complete — to catch design
+  issues before review.
+- **`audit-config`** is a periodic (quarterly) housekeeping run to keep the
+  Octopus configuration itself aligned with current model behaviour.
+
+## Composes with
+
+- **[starter](/octopus/bundles/starter/)** — required foundation.
+- **[quality-audits](/octopus/bundles/quality-audits/)** — the blocking complement;
+  together they cover the full `quality` surface.
+- **[quality](/octopus/bundles/quality/)** — if you want everything in one install,
+  use `quality` directly.

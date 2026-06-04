@@ -36,7 +36,10 @@ Vivem no shim e gerenciam a versão instalada:
 
 ## Flags do `setup`
 
-`octopus setup` é interativo por padrão. Para CI ou scripts, cada escolha tem
+`octopus setup` é interativo por padrão. Ele faz uma varredura no repo em
+busca de sinais de linguagem e banco de dados e pré-seleciona os perfis
+correspondentes de stack e banco de dados no seletor — você confirma ou
+desmarca antes de qualquer escrita. Para CI ou scripts, cada escolha tem
 uma flag:
 
 | Flag | Efeito |
@@ -44,8 +47,9 @@ uma flag:
 | `--scope` | Configura este repositório (`repo`, o padrão) ou a conta de usuário (`user`) |
 | `--reconfigure` | Reabre o seletor para editar uma configuração existente |
 | `--dry-run` | Imprime o que mudaria sem gravar nada |
-| `--bundle <nome>` | Pré-seleciona um bundle (repetível) |
-| `--stack <nome>` | Pré-seleciona um perfil de stack |
+| `--bundle <nome>` | Pré-seleciona um bundle ou perfil (repetível) |
+| `--stack <nome>` | Pré-seleciona um perfil de stack: `dotnet` → `stack-csharp`, `node` → `stack-typescript`, `python` → `stack-python` |
+| `--no-detect` | Pula a detecção automática de stack e banco de dados; inicia o seletor sem perfis pré-selecionados |
 | `--reviewers <lista>` | Predefine os reviewers de PR |
 | `--no-hooks` | Pula a instalação de hooks |
 | `--no-workflow` | Pula o conjunto de comandos de workflow |

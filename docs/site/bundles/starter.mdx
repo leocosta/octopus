@@ -1,6 +1,6 @@
 ---
 title: starter
-description: The foundation every repo should have — doc lifecycle, implement, debug, TDD, prototype, system mapping, review-feedback discipline, session handoff, and the lifecycle hooks that enforce them.
+description: The foundation every repo should have — doc lifecycle, implement, debug, TDD, prototype, review-feedback discipline, session handoff, and the lifecycle hooks that enforce them.
 sidebar:
   order: 1
 ---
@@ -24,7 +24,7 @@ lessons every quarter.
 
 `starter` codifies these as skills + commands + hooks, so every
 repo gets them on the first `octopus update`. The bundle is
-deliberately broad — eleven skills — because the cost of a
+deliberately broad — nine skills — because the cost of a
 *missing* foundational behaviour is much higher than the cost of
 shipping one you don't immediately use.
 
@@ -46,10 +46,8 @@ skills:
   - context-budget    # monitor token overhead
   - implement         # the Octopus implementation workflow (TDD, plan-gate, simplify)
   - debug             # 4-phase bug protocol (reproduce, isolate, fix, document)
-  - respond-to-review         # PR-feedback discipline
-  - delegate          # @role: dispatch with attribution
+  - respond-to-review # PR-feedback discipline
   - test-tdd          # standalone red-green-refactor loop
-  - map-system        # higher-level codebase map (manual-only)
   - prototype         # throwaway code to answer one design question
   - context-handoff   # session compaction for the next agent
 ```
@@ -73,21 +71,19 @@ skills:
   the critique, ask for evidence on generic comments, never make
   performative changes. Without this, agents agree with every
   suggestion in review.
-- **`delegate`** — the bundle includes the role-dispatch primitive
-  even though no roles ship in `starter` itself. Reason: most
-  teams add `backend` / writer / etc later and `delegate` should
-  be present from day one.
 - **`context-budget` + `context-handoff`** — the session
   management pair. `context-budget` measures token overhead;
   `context-handoff` compacts the session into a doc the next
   agent can pick up.
-- **`map-system`** — manual-invocation only. Quick higher-level
-  map of the codebase in the project's domain vocabulary.
 - **`prototype`** — design discipline: throwaway code to answer
   one question before committing to it.
 
 ### Why not included (deliberate exclusions)
 
+- **`map-system` + `delegate`** — moved to the opt-in
+  `workflow-extras` bundle. Both are useful, but not every repo
+  needs role-dispatch or a full codebase map from day one; keeping
+  `starter` lean avoids loading them unconditionally.
 - **`audit-*` skills** — those live in `quality`. `starter` is
   about *workflow*; audits are about *gates*. Different concern.
 - **`doc-rfc`, `doc-spec`, `doc-plan`, `doc-design`, `doc-prd`,

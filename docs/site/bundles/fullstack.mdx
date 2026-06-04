@@ -1,6 +1,6 @@
 ---
 title: fullstack
-description: One bundle for repos that hold both an API and a frontend — backend patterns plus data-layer review, frontend patterns plus component and e2e tests, and cross-stack contract drift detection.
+description: One bundle for repos that hold both an API and a frontend — backend patterns, frontend patterns plus component and e2e tests, and cross-stack contract drift detection. Per-engine data-layer review comes from auto-selected db-* profiles.
 sidebar:
   order: 7
 ---
@@ -44,10 +44,6 @@ a single-stack repo just loads skills you'll never trigger.
 skills:
   - backend-patterns  # server-side layering patterns
   - test-e2e          # end-to-end testing (shared by both stacks)
-  - dba-mssql         # SQL Server review
-  - dba-postgres      # Postgres review
-  - dba-mongodb       # MongoDB review
-  - dba-redis         # Redis review
   - frontend-patterns # component design, state, a11y
   - test-component    # component-level tests (RTL)
   - audit-contracts  # API ↔ frontend contract drift detection
@@ -61,14 +57,20 @@ roles:
 
 This is `backend` ∪ `frontend` ∪ `audit-contracts`. `test-e2e` belongs
 to both stacks; the bundle expander de-duplicates it to a single entry.
+Per-engine data-layer review (`dba-mssql`, `dba-postgres`, `dba-mongodb`,
+`dba-redis`) is **not** listed here — it comes from **database profiles**
+(`db-mssql`, `db-postgres`, `db-mongodb`, `db-redis`) that setup
+auto-selects from the drivers detected in your repo, exactly as it does
+for the standalone `backend` bundle. See the
+[bundles overview](/octopus/architecture/bundles/) for the profile axis.
 
 ### Why each one is in
 
-- **All of `backend`** — `backend-patterns`, `test-e2e`, and the four
-  `dba-*` data-layer review skills, plus the `backend-developer` and
-  `dba` roles. The API half of the repo gets the same patterns and
-  pre-merge data-layer gate it would get from the standalone bundle.
-  (The `dba` role still pairs with `architect`, which `quality` brings.)
+- **All of `backend`** — `backend-patterns`, `test-e2e`, and the
+  `backend-developer` and `dba` roles. The API half of the repo gets
+  the same patterns and pre-merge data-layer gate it would get from the
+  standalone bundle. (The `dba` role still pairs with `architect`,
+  which `quality` brings.)
 - **All of `frontend`** — `frontend-patterns`, `test-component`, and
   the `frontend-developer` role. The UI half gets its component
   patterns and the component-test layer.
@@ -97,7 +99,8 @@ A change that crosses the seam stays coherent in one PR:
 1. A task comes in: "add a `status` field to the order API and surface
    it in the order list UI."
 2. `backend-developer` + `backend-patterns` shape the endpoint change;
-   the `dba` skills review the migration that adds the column.
+   the `dba` role (backed by the auto-selected db profile) reviews the
+   migration that adds the column.
 3. `frontend-developer` + `frontend-patterns` add the column to the UI,
    with the loading/empty/error states handled.
 4. `test-component` covers the new cell's render states; `test-e2e`
