@@ -94,10 +94,11 @@ OCTOPUS_MCP=()
 
 _load_bundle "starter"
 
-# starter contributes doc-adr, doc-lifecycle, context-budget, implement, debug, respond-to-review, delegate,
-# test-tdd, map-system, prototype, context-handoff (Cluster 14 — RM-076, RM-078, RM-081, RM-082)
+# starter contributes doc-adr, doc-lifecycle, context-budget, implement, debug,
+# respond-to-review, test-tdd, prototype, context-handoff. map-system + delegate
+# moved to the workflow-extras bundle (RM-143).
 printf '%s\n' "${OCTOPUS_SKILLS[@]}" | sort > /tmp/got_skills.$$
-printf '%s\n' doc-adr doc-lifecycle context-budget implement debug respond-to-review delegate test-tdd map-system prototype context-handoff | sort > /tmp/exp_skills.$$
+printf '%s\n' doc-adr doc-lifecycle context-budget implement debug respond-to-review test-tdd prototype context-handoff | sort > /tmp/exp_skills.$$
 diff -q /tmp/got_skills.$$ /tmp/exp_skills.$$ >/dev/null \
   || { echo "FAIL: starter did not populate skills correctly"; exit 1; }
 rm -f /tmp/got_skills.$$ /tmp/exp_skills.$$
@@ -150,7 +151,7 @@ OCTOPUS_BUNDLES=("starter" "quality")
 
 expand_bundles
 
-expected_skills=(doc-adr doc-lifecycle context-budget implement debug respond-to-review delegate test-tdd map-system prototype context-handoff audit-all audit-security audit-money audit-tenant audit-contracts refactor-deepen audit-config audit-grounding audit-verification audit-style audit-fleet fleet-bootstrap knowledge-hygiene knowledge-synthesize knowledge-briefing)
+expected_skills=(doc-adr doc-lifecycle context-budget implement debug respond-to-review test-tdd prototype context-handoff audit-all audit-security audit-money audit-tenant audit-contracts refactor-deepen audit-config audit-grounding audit-verification audit-style audit-fleet fleet-bootstrap knowledge-hygiene knowledge-synthesize knowledge-briefing)
 printf '%s\n' "${OCTOPUS_SKILLS[@]}" | sort -u > /tmp/got.$$
 printf '%s\n' "${expected_skills[@]}" | sort -u > /tmp/exp.$$
 diff -q /tmp/got.$$ /tmp/exp.$$ >/dev/null \
@@ -205,11 +206,12 @@ OCTOPUS_RULES=()
 parse_octopus_yml "$WORKDIR/.octopus.yml"
 expand_bundles
 
-# starter (11 skills) + quality (15 unique skills: audit-all + its 3 deps, audit-contracts,
-# refactor-deepen, audit-config, audit-grounding, audit-verification, audit-style, audit-fleet,
-# fleet-bootstrap, knowledge-hygiene, knowledge-synthesize, knowledge-briefing) = 26 distinct skills
-[[ ${#OCTOPUS_SKILLS[@]} -eq 26 ]] \
-  || { echo "FAIL: expected 26 skills after bundle expansion, got ${#OCTOPUS_SKILLS[@]}"; exit 1; }
+# starter (9 skills after RM-143) + quality (15 unique: audit-all + its 4 deps,
+# audit-contracts, refactor-deepen, audit-config, audit-grounding,
+# audit-verification, audit-style, audit-fleet, fleet-bootstrap,
+# knowledge-hygiene, knowledge-synthesize, knowledge-briefing) = 24 distinct
+[[ ${#OCTOPUS_SKILLS[@]} -eq 24 ]] \
+  || { echo "FAIL: expected 24 skills after bundle expansion, got ${#OCTOPUS_SKILLS[@]}"; exit 1; }
 
 printf '%s\n' "${OCTOPUS_ROLES[@]}" | grep -q "^architect$" \
   || { echo "FAIL: architect role missing after expansion"; exit 1; }

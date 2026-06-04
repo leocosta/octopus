@@ -1,0 +1,12 @@
+name: workflow-extras
+description: Opt-in workflow skills that are situational rather than per-task — system mapping (manual-only repo orientation deck) and role delegation (@role pipelines). Split out of starter so they don't load by default.
+category: intent
+persona_question: "Do you want the situational workflow extras (map-system, delegate)?"
+persona_default: false
+skills:
+  - map-system
+  - delegate
+roles: []
+rules: []
+mcp: []
+hooks: null
