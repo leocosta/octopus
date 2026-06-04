@@ -1,11 +1,10 @@
 ---
 name: audit-contracts
 description: >
-  Detect API-vs-frontend contract drift in multi-stack monorepos
-  (.NET/Node API + React/Vue/Astro frontends). Given a branch or PR,
-  flags endpoint additions without consumers, removals/renames that
-  break callers, DTO/enum field drift, status-code changes, auth-rule
-  changes, and param changes. Produces a severity-tiered report with
+  Detect API-vs-frontend contract drift in multi-stack monorepos (.NET/Node
+  API + React/Vue/Astro). Given a branch/PR, flags endpoint additions without
+  consumers, removals/renames that break callers, DTO/enum drift, status-code
+  changes, auth-rule changes, and param changes. Severity-tiered report with
   confidence labels.
 triggers:
   paths: ["openapi/**", "contracts/**", "**/openapi.yaml", "**/openapi.json", "**/swagger.yaml"]

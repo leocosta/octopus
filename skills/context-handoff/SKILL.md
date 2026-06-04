@@ -1,12 +1,10 @@
 ---
 name: context-handoff
 description: >
-  Compact the current conversation into a handoff document another
-  agent can pick up — with explicit suggested-skills section, saved to
-  the OS tmp dir (not the workspace), referencing existing PRDs /
-  plans / ADRs / issues / commits by path rather than duplicating, with
-  mandatory redaction of secrets and PII. Sits in the starter bundle in
-  the context-* family next to context-budget.
+  Compact the current conversation into a handoff document another agent can
+  pick up — with a suggested-skills section, saved to the OS tmp dir (not the
+  workspace), referencing existing PRDs/plans/ADRs/issues/commits by path
+  rather than duplicating, with mandatory redaction of secrets and PII.
 ---
 
 # Conversation Handoff

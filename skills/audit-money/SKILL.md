@@ -1,10 +1,10 @@
 ---
 name: audit-money
 description: >
-  Pre-merge audit of money-touching code. Given a branch or PR, inspects
-  numeric types, rounding, tests for non-round cents, env-var consistency,
-  payment idempotency, webhook signature verification, and fee disclosure
-  coupling. Produces a severity-tiered report (block / warn / info).
+  Pre-merge audit of money-touching code (branch/PR): numeric types, rounding,
+  tests for non-round cents, env-var consistency, payment idempotency, webhook
+  signature verification, and fee-disclosure coupling. Severity-tiered report
+  (block/warn/info).
 triggers:
   paths: []
   keywords: ["payment", "invoice", "stripe", "billing", "subscription", "checkout", "price"]

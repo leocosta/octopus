@@ -1,12 +1,10 @@
 ---
 name: doc-align
 description: >
-  Stress-test a plan against the project's CONTEXT.md glossary and
-  docs/adr/ decisions by grilling the user one question at a time,
-  surfacing contradictions between user claims and the actual code,
-  and updating CONTEXT.md / ADRs lazily as terms resolve. Pairs with
-  doc-prd (publishes the aligned plan) and refactor-deepen (calls
-  into doc-align for grilling sub-loops).
+  Stress-test a plan against the project's CONTEXT.md glossary and docs/adr/
+  decisions by grilling the user one question at a time, surfacing
+  contradictions between user claims and the actual code, and updating
+  CONTEXT.md/ADRs lazily as terms resolve.
 ---
 
 # Plan Alignment Protocol

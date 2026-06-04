@@ -1,13 +1,11 @@
 ---
 name: audit-tenant
 description: >
-  Pre-merge audit of multi-tenant data-scope enforcement. Given a branch
-  or PR, detects queries that bypass tenant filters, DbContexts missing
-  HasQueryFilter for new entities, raw SQL without tenant restriction,
-  controllers that accept ids from routes without ownership checks,
-  joins to unfiltered tables, and cross-tenant admin endpoints without
-  explicit markers. Produces a severity-tiered report with confidence
-  labels.
+  Pre-merge audit of multi-tenant data-scope enforcement (branch/PR): queries
+  bypassing tenant filters, DbContexts missing HasQueryFilter on new entities,
+  raw SQL without tenant restriction, route ids used without ownership checks,
+  joins to unfiltered tables, cross-tenant admin endpoints. Severity-tiered
+  report with confidence labels.
 triggers:
   paths: []
   keywords: ["tenant", "org", "workspace", "multi-tenant", "organization"]

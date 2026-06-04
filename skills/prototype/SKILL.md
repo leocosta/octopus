@@ -1,12 +1,10 @@
 ---
 name: prototype
 description: >
-  Throwaway code to answer one design question before committing to it.
-  Bifurcates by question type — logic/state → runnable terminal app;
-  UI/look → multiple variants toggleable from one route. No persistence
-  by default. The most important deliverable is the answer, not the
-  code — capture durably before deleting. Sits in the starter bundle
-  as a design-time discipline.
+  Throwaway code to answer one design question before committing. Bifurcates
+  by question type — logic/state → runnable terminal app; UI/look → multiple
+  variants toggleable from one route. No persistence by default; the
+  deliverable is the answer, not the code — capture it before deleting.
 triggers:
   paths: ["**/__prototype__/**", "**/LOGIC.md", "**/UI.md"]
   keywords: ["prototype", "throwaway", "sanity-check"]

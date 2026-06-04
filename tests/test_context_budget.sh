@@ -19,9 +19,10 @@ BUDGET="$SCRIPT_DIR/scripts/context-budget.sh"
 # RM-128 corrected the registry counter to sum full multi-line descriptions:
 # the true registry was 8013 tok (not the 2209 the first-line counter showed).
 # After trimming 24 verbose descriptions: REGISTRY 8013 -> 6461 tok.
+# After trimming 18 mid-size descriptions: REGISTRY 6461 -> 6137 tok.
 MAX_ALWAYS_TOKENS=3000
-MAX_REGISTRY_TOKENS=6500
-MAX_TOTAL_TOKENS=9450
+MAX_REGISTRY_TOKENS=6200
+MAX_TOTAL_TOKENS=9100
 MAX_DUP_MARKERS=0
 
 PASS=0; FAIL=0

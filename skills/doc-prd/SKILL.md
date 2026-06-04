@@ -1,12 +1,11 @@
 ---
 name: doc-prd
 description: >
-  Synthesise the current conversation context into a PRD and publish it
-  to the issue tracker without re-interviewing the user — the knowledge
-  is assumed to be in context from a prior brainstorm or doc-align
-  grilling. Forbids file paths and code snippets in the body except for
-  prototype snippets that encode a decision more precisely than prose.
-  Skips directly to ready-for-agent. Family doc-*.
+  Synthesise the current conversation into a PRD and publish it to the issue
+  tracker without re-interviewing — knowledge is assumed in context from a
+  prior brainstorm or doc-align. Forbids file paths and code in the body
+  (except prototype snippets that encode a decision). Skips to ready-for-
+  agent.
 ---
 
 # PRD Synthesis Protocol

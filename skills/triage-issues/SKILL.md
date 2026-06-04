@@ -1,12 +1,11 @@
 ---
 name: triage-issues
 description: >
-  State-machine triage flow for incoming issues — categorise as bug or
-  enhancement, transition through needs-triage / needs-info /
-  ready-for-agent / ready-for-human / wontfix, reproduce bugs before
-  grilling, preserve grilling work in needs-info notes, record rejected
-  enhancements in .out-of-scope/. Every AI-generated comment carries a
-  mandatory disclaimer. Sits in the docs bundle next to plan-backlog.
+  State-machine triage for incoming issues — categorise bug/enhancement,
+  transition through needs-triage/needs-info/ready-for-agent/ready-for-
+  human/wontfix, reproduce bugs before grilling, preserve grilling in needs-
+  info notes, record rejected enhancements in .out-of-scope/. Every AI comment
+  carries a disclaimer.
 triggers:
   paths: [".github/ISSUE_TEMPLATE/**", ".out-of-scope/**"]
   keywords: ["triage", "wontfix", "needs-info", "ready-for-agent", "out-of-scope"]

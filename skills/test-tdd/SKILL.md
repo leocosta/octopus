@@ -1,11 +1,10 @@
 ---
 name: test-tdd
 description: >
-  Standalone red-green-refactor TDD skill — vertical tracer-bullet
-  slices, integration-style tests against the public interface, hard
-  ban on horizontal slicing (writing all tests then all code). The
-  loop lives here standalone so debug fixes and isolated bugfixes can
-  use it without the full implement workflow. Family test-*.
+  Standalone red-green-refactor TDD — vertical tracer-bullet slices,
+  integration-style tests against the public interface, hard ban on horizontal
+  slicing (all tests then all code). Standalone so debug and isolated bugfixes
+  can use it without the full implement workflow.
 ---
 
 # Test-Driven Development Protocol

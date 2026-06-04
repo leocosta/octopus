@@ -1,11 +1,10 @@
 ---
 name: plan-backlog
 description: >
-  Scan the repo's planning directories and roadmap for hygiene issues —
-  orphan plans, plans for already-completed RMs still sitting outside
-  `archive/`, duplicates for the same RM, broken internal links,
-  roadmap entries without a plan, and stale plans. Default mode is
-  read-only; `--fix` applies reversible moves to `plans/archive/`.
+  Scan the repo's planning directories and roadmap for hygiene issues — orphan
+  plans, plans for completed RMs outside archive/, duplicates for one RM,
+  broken internal links, roadmap entries without a plan, and stale plans.
+  Read-only by default; --fix applies reversible moves to plans/archive/.
 triggers:
   paths: ["plans/**", "docs/plans/**", "docs/roadmap.md", "roadmap.md"]
   keywords: ["plan", "backlog", "roadmap", "RM-"]

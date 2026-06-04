@@ -1,12 +1,11 @@
 ---
 name: launch-release
 description: >
-  Generate a themed release announcement for existing users from one
-  or more refs (tags, tag ranges, RM IDs). Produces canonical
-  artifacts (landing HTML, plain notes, theme snapshot) and paste-ready
-  channel messages (email, Slack, Discord, in-app banner, status page,
-  X/Twitter, WhatsApp, slide deck). Supports preset themes and on-demand
-  custom theme synthesis via frontend-design.
+  Generate a themed release announcement for existing users from one or more
+  refs (tags, ranges, RM IDs). Produces canonical artifacts (landing HTML,
+  plain notes, theme snapshot) and paste-ready channel messages (email, Slack,
+  Discord, in-app banner, status page, X, WhatsApp, slide deck). Preset or on-
+  demand custom themes.
 triggers:
   paths: ["CHANGELOG.md", "docs/releases/**", "releases/**"]
   keywords: ["release", "changelog", "announce", "version"]
