@@ -31,7 +31,7 @@ use `/octopus:pr-review`.
 | Any non-trivial production code change | role `architect` (always) |
 
 If the diff touches the data layer, **both** `dba` and `architect`
-must approve (dual gate — see `core/pr-workflow.md`). Likewise, if the
+must approve (dual gate — see `.claude/core/pr-workflow.md`). Likewise, if the
 diff touches auth/secrets, **both** `security` and `architect` must
 approve. The `security` role runs the `audit-security` checklist as its
 baseline and adds threat modeling over the diff.

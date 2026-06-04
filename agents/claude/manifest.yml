@@ -18,6 +18,9 @@ delivery:
   skills:
     method: symlink
     target: .claude/skills/
+  core:
+    method: symlink
+    target: .claude/core/
   hooks:
     method: settings_json
     target: .claude/settings.json
@@ -41,4 +44,5 @@ gitignore_extra:
   - .claude/agents/
   - .claude/rules/
   - .claude/skills/
+  - .claude/core/
   - .claude/knowledge/

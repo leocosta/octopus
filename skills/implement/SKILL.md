@@ -133,7 +133,7 @@ One commit per logical step, not one macro-commit at the end:
 - Doc updates get their own commit separate from code.
 - Each commit passes the project's pre-commit hooks (formatter,
   linter, typecheck). Never skip hooks with `--no-verify`.
-- Each commit message follows `core/commit-conventions.md` —
+- Each commit message follows `.claude/core/commit-conventions.md` —
   conventional-commit prefix, clear scope, imperative voice.
 
 ## Task Routing

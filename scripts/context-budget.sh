@@ -57,7 +57,16 @@ COMMANDS_DIR="$(_first_existing_dir "$ROOT/commands" "$ROOT/.claude/commands" ||
 # --- 1. CLAUDE.md (source-based when possible) -----------------------------
 core_paths=()
 if [[ -f "$SETUP" && -f "$TEMPLATE" ]]; then
-  while IFS= read -r rel; do [[ -n "$rel" ]] && core_paths+=("$ROOT/$rel"); done < <(_core_files "$SETUP")
+  # RM-119: when the claude manifest delivers core on demand, only the pointer
+  # (core/guidelines.md) is inlined into the generated CLAUDE.md — the heavy
+  # reference files load from .claude/core/. Reflect that in the budget.
+  core_on_demand=false
+  grep -qE '^[[:space:]]*core:[[:space:]]*$' "$ROOT/agents/claude/manifest.yml" 2>/dev/null && core_on_demand=true
+  while IFS= read -r rel; do
+    [[ -n "$rel" ]] || continue
+    if [[ "$core_on_demand" == true && "$rel" != "core/guidelines.md" ]]; then continue; fi
+    core_paths+=("$ROOT/$rel")
+  done < <(_core_files "$SETUP")
 fi
 
 if [[ ${#core_paths[@]} -gt 0 ]]; then

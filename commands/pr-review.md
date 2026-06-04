@@ -51,7 +51,7 @@ PR diff:
   `codereview` Phase 4
 
 The data-layer **dual gate** (both `dba` and `architect` must
-pass) applies — see `core/pr-workflow.md`.
+pass) applies — see `.claude/core/pr-workflow.md`.
 
 ## Phase 5 — Post Report and Assign Reviewers
 

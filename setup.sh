@@ -521,6 +521,8 @@ MANIFEST_DELIVERY_RULES_TARGET=""
 MANIFEST_DELIVERY_RULES_INSTRUCTIONS_EXT="false"
 MANIFEST_DELIVERY_SKILLS_METHOD=""
 MANIFEST_DELIVERY_SKILLS_TARGET=""
+MANIFEST_DELIVERY_CORE_METHOD=""
+MANIFEST_DELIVERY_CORE_TARGET=""
 MANIFEST_DELIVERY_HOOKS_METHOD=""
 MANIFEST_DELIVERY_HOOKS_TARGET=""
 MANIFEST_DELIVERY_COMMANDS_METHOD=""
@@ -558,6 +560,8 @@ load_manifest() {
   MANIFEST_DELIVERY_RULES_INSTRUCTIONS_EXT="false"
   MANIFEST_DELIVERY_SKILLS_METHOD=""
   MANIFEST_DELIVERY_SKILLS_TARGET=""
+  MANIFEST_DELIVERY_CORE_METHOD=""
+  MANIFEST_DELIVERY_CORE_TARGET=""
   MANIFEST_DELIVERY_HOOKS_METHOD=""
   MANIFEST_DELIVERY_HOOKS_TARGET=""
   MANIFEST_DELIVERY_COMMANDS_METHOD=""
@@ -649,6 +653,8 @@ load_manifest() {
         rules_instructions_ext)  MANIFEST_DELIVERY_RULES_INSTRUCTIONS_EXT="$dval" ;;
         skills_method)   MANIFEST_DELIVERY_SKILLS_METHOD="$dval" ;;
         skills_target)   MANIFEST_DELIVERY_SKILLS_TARGET="$dval" ;;
+        core_method)     MANIFEST_DELIVERY_CORE_METHOD="$dval" ;;
+        core_target)     MANIFEST_DELIVERY_CORE_TARGET="$dval" ;;
         hooks_method)    MANIFEST_DELIVERY_HOOKS_METHOD="$dval" ;;
         hooks_target)    MANIFEST_DELIVERY_HOOKS_TARGET="$dval" ;;
         commands_method) MANIFEST_DELIVERY_COMMANDS_METHOD="$dval" ;;
@@ -756,9 +762,14 @@ generate_from_template() {
   done
   skills_lines="${skills_lines%$'\n'}"
 
-  # Build core content from CORE_FILES
+  # Build core content from CORE_FILES. When core is delivered on demand
+  # (RM-119), inline only the lightweight pointer (guidelines.md); the heavy
+  # reference files load from the delivery target instead of every session.
   local core_content=""
   for core_file in "${CORE_FILES[@]}"; do
+    if [[ -n "$MANIFEST_DELIVERY_CORE_METHOD" && "$core_file" != "core/guidelines.md" ]]; then
+      continue
+    fi
     if [[ -f "$OCTOPUS_DIR/$core_file" ]]; then
       core_content+="$(cat "$OCTOPUS_DIR/$core_file")"
       core_content+=$'\n\n'
@@ -1197,6 +1208,37 @@ deliver_skills() {
       fi
       ln -s "$source_dir" "$target/$skill"
       echo "  -> ${MANIFEST_DELIVERY_SKILLS_TARGET}$skill"
+    done
+  fi
+}
+
+# RM-119 — deliver the heavy core reference files (commit-conventions,
+# pr-workflow, task-management, architecture) on demand instead of inlining
+# them into every session's CLAUDE.md. Only the lightweight pointer
+# (core/guidelines.md) stays inline. Native (template) agents reference the
+# delivered files; concatenate agents keep inlining all CORE_FILES and do not
+# declare core delivery, so this is a no-op for them.
+deliver_core() {
+  local agent="$1"
+  [[ -n "$MANIFEST_DELIVERY_CORE_METHOD" ]] || return
+  if [[ "${OCTOPUS_DRY_RUN:-}" == "true" ]]; then
+    _dry_run_log "would symlink core reference files → $MANIFEST_DELIVERY_CORE_TARGET"
+    return 0
+  fi
+
+  local method="$MANIFEST_DELIVERY_CORE_METHOD"
+  local target="$(_install_root)/$MANIFEST_DELIVERY_CORE_TARGET"
+
+  if [[ "$method" == "symlink" ]]; then
+    echo "Generating core reference symlinks for $agent..."
+    rm -rf "$target"
+    mkdir -p "$target"
+    for core_file in "${CORE_FILES[@]}"; do
+      [[ "$core_file" == "core/guidelines.md" ]] && continue
+      local src="$OCTOPUS_DIR/$core_file"
+      [[ -f "$src" ]] || continue
+      ln -s "$src" "$target/$(basename "$core_file")"
+      echo "  -> ${MANIFEST_DELIVERY_CORE_TARGET}$(basename "$core_file")"
     done
   fi
 }
@@ -2599,6 +2641,7 @@ _run_agent_pipeline() {
   generate_main_output "$agent"
   deliver_rules "$agent"
   deliver_skills "$agent"
+  deliver_core "$agent"
   deliver_knowledge "$agent"
   deliver_commands "$agent"
   deliver_roles "$agent"
