@@ -130,20 +130,22 @@ _setup_generate_manifest() {
 
   mkdir -p "$(dirname "$MANIFEST_PATH")"
 
-  # Merge intent bundles + resolved stack/db profiles (RM-139), order-stable and
-  # de-duplicated. Profiles are bundles, so they need no separate manifest key —
-  # expand_bundles turns stack-csharp into dotnet + csharp rules, db-mssql into
-  # dba-mssql, etc.
-  local _all=() _b
-  for _b in $bundles_str $profiles; do
-    case " ${_all[*]:-} " in *" $_b "*) ;; *) _all+=("$_b") ;; esac
-  done
-
   {
     printf '# Edit and re-run '"'"'octopus setup'"'"' to apply changes.\n'
     printf 'agents:\n  - claude\n'
     printf 'bundles:\n'
-    for _b in "${_all[@]}"; do printf '  - %s\n' "$_b"; done
+    # Merge intent bundles + resolved stack/db profiles (RM-139), order-stable
+    # and de-duplicated. Tokenize with parameter expansion only — no word
+    # splitting, no read — so it is immune to whatever IFS the caller left set.
+    # Profiles are bundles: expand_bundles turns stack-csharp into dotnet +
+    # csharp rules, db-mssql into dba-mssql, etc.
+    local _rest="$bundles_str $profiles" _b _seen=" "
+    while [[ "$_rest" == *[![:space:]]* ]]; do
+      _rest="${_rest#"${_rest%%[![:space:]]*}"}"   # strip leading whitespace
+      _b="${_rest%%[[:space:]]*}"                    # first whitespace-delimited token
+      _rest="${_rest#"$_b"}"
+      case "$_seen" in *" $_b "*) ;; *) _seen+="$_b "; printf '  - %s\n' "$_b" ;; esac
+    done
 
     [[ "$hooks" == "true" ]]    && printf 'hooks: true\n'
     [[ "$workflow" == "true" ]] && printf 'workflow: true\n'
@@ -180,20 +182,24 @@ _setup_prompt_reviewers() {
 # manifest's bundles: list. Source = legacy --stack mapping + auto-detection
 # (unless --no-detect). The picker pre-selects these (SETUP_PROFILES exported);
 # the user's confirmed selection stays authoritative there.
+# Built as a space-joined, de-duplicated string without relying on the ambient
+# IFS (dedup is pattern-matching on the quoted accumulator, no word-splitting).
 SETUP_PROFILES=""
+_setup_add_profile() {
+  local p="$1"
+  [[ -z "$p" ]] && return 0
+  case " $SETUP_PROFILES " in *" $p "*) ;; *) SETUP_PROFILES="${SETUP_PROFILES:+$SETUP_PROFILES }$p" ;; esac
+}
 case "$SETUP_STACK" in
-  dotnet|csharp)   SETUP_PROFILES="stack-csharp" ;;
-  node|typescript) SETUP_PROFILES="stack-typescript" ;;
-  python)          SETUP_PROFILES="stack-python" ;;
+  dotnet|csharp)   _setup_add_profile "stack-csharp" ;;
+  node|typescript) _setup_add_profile "stack-typescript" ;;
+  python)          _setup_add_profile "stack-python" ;;
 esac
 if [[ "$SETUP_NO_DETECT" != "true" ]]; then
   while IFS= read -r _p; do
-    [[ -n "$_p" ]] && SETUP_PROFILES+=" $_p"
+    _setup_add_profile "$_p"
   done < <(_detect_stack "$PROJECT_ROOT")
 fi
-# De-duplicate, order-stable.
-SETUP_PROFILES="$(printf '%s\n' $SETUP_PROFILES | awk 'NF && !seen[$0]++' | tr '\n' ' ')"
-SETUP_PROFILES="${SETUP_PROFILES% }"
 export SETUP_PROFILES
 
 # ---------------------------------------------------------------------------
