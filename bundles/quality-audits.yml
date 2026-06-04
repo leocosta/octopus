@@ -1,0 +1,14 @@
+name: quality-audits
+description: Blocking pre-merge audits — security, money-logic, multi-tenant scope, and cross-stack contract drift (the audit-all composer + its domain audits), with the architect and security reviewer roles. The gate subset of quality.
+category: intent
+persona_question: "Do you want the blocking pre-merge audits (security/money/tenant/contracts)?"
+persona_default: false
+skills:
+  - audit-all
+  - audit-contracts
+roles:
+  - architect
+  - security
+rules: []
+mcp: []
+hooks: null
