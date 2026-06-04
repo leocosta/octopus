@@ -433,6 +433,33 @@ printf '%s\n' "${OCTOPUS_SKILLS[@]}" | grep -q "^dba-postgres$" \
   && { echo "FAIL: db-mssql leaked a sibling dba-* skill"; exit 1; } || true
 echo "PASS: stack/db profiles resolve granularly"
 
+echo "Test 15: exclude: is parsed and subtracts a member after expansion (RM-144)"
+
+# Parse: exclude: list lands in OCTOPUS_EXCLUDE.
+WORKDIR=$(mktemp -d)
+cat > "$WORKDIR/.octopus.yml" <<'EOF'
+bundles:
+  - db-mssql
+  - db-postgres
+exclude:
+  - dba-postgres
+EOF
+OCTOPUS_BUNDLES=(); OCTOPUS_SKILLS=(); OCTOPUS_ROLES=(); OCTOPUS_RULES=(); OCTOPUS_MCP=(); OCTOPUS_EXCLUDE=()
+parse_octopus_yml "$WORKDIR/.octopus.yml"
+printf '%s\n' "${OCTOPUS_EXCLUDE[@]}" | grep -qx "dba-postgres" \
+  || { echo "FAIL: exclude: not parsed into OCTOPUS_EXCLUDE"; rm -rf "$WORKDIR"; exit 1; }
+
+# Apply: after expansion the excluded member is gone, the sibling remains.
+expand_bundles
+_apply_excludes
+printf '%s\n' "${OCTOPUS_SKILLS[@]}" | grep -qx "dba-mssql" \
+  || { echo "FAIL: dba-mssql should remain after exclude"; rm -rf "$WORKDIR"; exit 1; }
+printf '%s\n' "${OCTOPUS_SKILLS[@]}" | grep -qx "dba-postgres" \
+  && { echo "FAIL: exclude did not drop dba-postgres"; rm -rf "$WORKDIR"; exit 1; } || true
+OCTOPUS_EXCLUDE=()
+rm -rf "$WORKDIR"
+echo "PASS: exclude subtracts the listed member"
+
 echo "Test: renamed skill dirs exist"
 for skill in doc-adr doc-lifecycle audit-money audit-security audit-tenant respond-to-review audit-contracts launch-feature launch-release debug plan-backlog test-e2e frontend-patterns test-component; do
   [[ -d "skills/${skill}" ]] \
