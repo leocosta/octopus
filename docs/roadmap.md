@@ -236,6 +236,17 @@ _Proposed (added 2026-06-03). Seeds from [research](research/2026-06-03-token-co
 
 _Decisions: edit source + regenerate (never the generated `.claude/CLAUDE.md`); baseline-for-all (not opt-in) with safety via the RM-131 budget check + cross-stack verification (C#/Python/TS); Stop hooks excluded (zero-LLM, deferred cost). Reuses existing machinery — `context-budget`, `compress-skill`, `skills/_shared/*`, `cli/lib/audit-map.sh`, `rules/{csharp,python,typescript}/` — rather than new abstractions._
 
+_**In progress** on `perf/token-cost-optimization` (added 2026-06-03). Measured baseline cut **always-loaded 8407 → 3089 tok (−63%)**, `core↔rules` dup 3 → 0; all touched tests green (`test_context_budget` ratchet enforces it):_
+- _**RM-131** — `scripts/context-budget.sh` (source-based measurement) + `tests/test_context_budget.sh` ratchet; ceilings lower as each RM lands._
+- _**RM-117** — `core/guidelines.md` reduced to a pointer; canonical principles/security/testing load once via `rules/common`. 8407 → 7989 tok._
+- _**RM-119** — `core` symlink delivery (`.claude/core/`) for template agents; only the `guidelines.md` pointer stays inline. Concatenate agents unchanged. CLAUDE.md 3199 → 628 tok; 7989 → 5418._
+- _**RM-118** — `exceptions.md` delivered on-demand (`ON_DEMAND_RULES` skipped by `deliver_rules`, picked up by `deliver_core`). 5418 → 3089._
+- _**RM-122/123/124** — `codereview`/`pr-review`: subset-route per domain, gate dispatch on `audit-map`, single-pass for small PRs._
+- _**RM-125/126** — `audit-all` skips empty-subset audits (per-audit SHA cache already memoizes); `dev-flow` self-review opt-in/pre-merge._
+- _**RM-130** — `audit-*` skills tiered to the cheapest model via a uniform "Model tier" note; orchestrators dispatch audits cheap, roles keep Opus._
+
+_**Reassessed (pending decision)** — RM-120, RM-121, RM-127, RM-128, RM-129. On close inspection these are lower-ROI or higher-risk than first scoped: RM-120/127 (lang-split + bundle-per-stack) largely overlap the existing `rules/<lang>` + `bundles/` + `OCTOPUS_RULES` mechanism with ~0 local payoff; RM-121 (compress) trades ~370 tok against 11 content-referencing tests; RM-128 (trim `description:`) is hard to measure (50 skills use multi-line YAML the registry counter can't sum) and risks skill activation; RM-129 (skill↔command consolidation) targets a separation that is partly by design. Recommend deliberate, separately-reviewed handling rather than tail-end bulk edits._
+
 ---
 
 ## In Progress
