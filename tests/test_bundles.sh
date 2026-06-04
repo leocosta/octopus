@@ -15,7 +15,7 @@ echo "Test 2: every bundle has name/description/category"
 for f in "$BUNDLES_DIR"/*.yml; do
   grep -q "^name: " "$f" || { echo "FAIL: $f missing 'name:'"; exit 1; }
   grep -q "^description: " "$f" || { echo "FAIL: $f missing 'description:'"; exit 1; }
-  grep -qE "^category: (foundation|intent|stack)$" "$f" \
+  grep -qE "^category: (foundation|intent|stack|db)$" "$f" \
     || { echo "FAIL: $f missing valid 'category:'"; exit 1; }
 done
 echo "PASS: every bundle has required metadata"
@@ -406,6 +406,24 @@ OCTOPUS_DIR="$OCTOPUS_DIR_SAVED"
 
 rm -rf "$FAKE"
 echo "PASS: skills without depends_on are untouched"
+
+echo "Test 14: stack/db profiles resolve to their skills + rules (RM-140)"
+
+OCTOPUS_SKILLS=(); OCTOPUS_ROLES=(); OCTOPUS_RULES=(); OCTOPUS_MCP=()
+_load_bundle stack-csharp
+printf '%s\n' "${OCTOPUS_SKILLS[@]}" | grep -q "^dotnet$" \
+  || { echo "FAIL: stack-csharp did not pull dotnet"; exit 1; }
+printf '%s\n' "${OCTOPUS_RULES[@]}" | grep -q "^csharp$" \
+  || { echo "FAIL: stack-csharp did not add the csharp rule"; exit 1; }
+
+OCTOPUS_SKILLS=(); OCTOPUS_ROLES=(); OCTOPUS_RULES=(); OCTOPUS_MCP=()
+_load_bundle db-mssql
+printf '%s\n' "${OCTOPUS_SKILLS[@]}" | grep -q "^dba-mssql$" \
+  || { echo "FAIL: db-mssql did not pull dba-mssql"; exit 1; }
+# A db profile carries only its one dba-* skill — never a sibling DB.
+printf '%s\n' "${OCTOPUS_SKILLS[@]}" | grep -q "^dba-postgres$" \
+  && { echo "FAIL: db-mssql leaked a sibling dba-* skill"; exit 1; } || true
+echo "PASS: stack/db profiles resolve granularly"
 
 echo "Test: renamed skill dirs exist"
 for skill in doc-adr doc-lifecycle audit-money audit-security audit-tenant respond-to-review audit-contracts launch-feature launch-release debug plan-backlog test-e2e frontend-patterns test-component; do

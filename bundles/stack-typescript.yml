@@ -1,0 +1,11 @@
+name: stack-typescript
+description: TypeScript/JavaScript stack profile — TS/React/Next coding rules. Auto-selected when package.json + tsconfig/*.ts(x) is present.
+category: stack
+persona_question: "Does this repo use TypeScript/JavaScript (package.json, tsconfig)?"
+persona_default: false
+skills: []
+roles: []
+rules:
+  - typescript
+mcp: []
+hooks: null

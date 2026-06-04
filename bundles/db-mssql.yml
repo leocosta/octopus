@@ -1,0 +1,11 @@
+name: db-mssql
+description: mssql database profile — the dba-mssql heuristics skill. Auto-selected from mssql driver signals in the repo.
+category: db
+persona_question: "Does this repo use mssql?"
+persona_default: false
+skills:
+  - dba-mssql
+roles: []
+rules: []
+mcp: []
+hooks: null

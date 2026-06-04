@@ -1,0 +1,11 @@
+name: db-mongodb
+description: mongodb database profile — the dba-mongodb heuristics skill. Auto-selected from mongodb driver signals in the repo.
+category: db
+persona_question: "Does this repo use mongodb?"
+persona_default: false
+skills:
+  - dba-mongodb
+roles: []
+rules: []
+mcp: []
+hooks: null
