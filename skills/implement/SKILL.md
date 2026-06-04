@@ -40,6 +40,16 @@ Engagement is implicit — Claude Code discovers this skill from
 matches the task. Users who want explicit control can invoke
 `/octopus:implement <task>` for a single-task walk.
 
+### Trivial-change fast path
+
+The five-practice loop is for **observable behavior**; applying it to a
+one-liner is overhead. Trivial = no behavior a test could assert, one
+self-contained edit (typo, rename, import sort, constant/config value,
+formatting, dep bump), and nothing in data/auth/money/tenant/contract
+(those get the full loop however small). Then just apply it, run
+build/format/typecheck and commit — skip TDD and the plan gate, noting
+the fast path in one line; the moment it grows logic, use the full loop.
+
 ## The Five Practices
 
 The workflow is five practices applied in order on every task.
@@ -133,7 +143,7 @@ One commit per logical step, not one macro-commit at the end:
 - Doc updates get their own commit separate from code.
 - Each commit passes the project's pre-commit hooks (formatter,
   linter, typecheck). Never skip hooks with `--no-verify`.
-- Each commit message follows `core/commit-conventions.md` —
+- Each commit message follows `.claude/core/commit-conventions.md` —
   conventional-commit prefix, clear scope, imperative voice.
 
 ## Task Routing

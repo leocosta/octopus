@@ -1,11 +1,10 @@
 ---
 name: content-images
 description: >
-  Generate brand-consistent images for blog covers, Instagram feed posts,
-  and carousels using AI (Gemini Imagen with Pollinations.ai fallback).
-  Reads brand context from .octopus/content-images.json; GEMINI_API_KEY
-  from .env.octopus. Caches by output file path — skips existing files
-  unless --force is passed.
+  Generate brand-consistent images for blog covers, Instagram posts, and
+  carousels via AI (Gemini Imagen, Pollinations.ai fallback). Reads brand
+  context from .octopus/content-images.json and GEMINI_API_KEY from
+  .env.octopus. Caches by output path; --force overrides.
 triggers:
   paths: []
   keywords:

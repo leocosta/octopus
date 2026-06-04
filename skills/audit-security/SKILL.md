@@ -3,7 +3,7 @@ name: audit-security
 description: Security audit checklist for AI agent configurations, environment variables, and project dependencies
 triggers:
   paths: []
-  keywords: ["auth", "jwt", "oauth", "secret", "token", "sql", "password", "credential"]
+  keywords: ["auth", "jwt", "oauth", "secret", "password", "credential"]
   tools: []
 pre_pass:
   file_patterns: "auth|jwt|oauth|secret|token|password|credential|permission|role|middleware|\\.env"
@@ -141,3 +141,10 @@ Recommendations:
   3. Add `npm audit` step to CI workflow
   4. Enable branch protection rules
 ```
+## Model tier
+
+This audit is mechanical — it pattern-matches a diff against a fixed
+checklist, not deep reasoning. Run it on the **cheapest model tier**
+(`--model haiku` / each assistant's cheapest). Reserve frontier models
+for the `architect`/`dba`/`security` roles that adjudicate the findings
+(RM-130).

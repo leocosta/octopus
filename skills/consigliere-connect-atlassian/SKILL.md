@@ -1,16 +1,11 @@
 ---
 name: consigliere-connect-atlassian
 description: >
-  One-time, low-friction setup that connects the official Atlassian Rovo MCP Server to
-  Claude Code over OAuth 2.1 (per-user, no static token) so digest-source can read Jira
-  and Confluence — read-only. Registers the Streamable-HTTP endpoint at user scope,
-  writes a read-only permissions allow/deny block to .claude/settings.json (the real
-  read-only guardrail, since Atlassian's read scopes do not hide the write tools),
-  drives the single browser consent via /mcp, and verifies. After one approval the
-  consigliere reads Atlassian with zero repeated prompts and no write capability;
-  digest-source falls back to export-PDF/paste if the server is absent. Edits Claude
-  Code config, never the private workspace. Manual, operator-run; optional connector in
-  the consigliere bundle.
+  One-time OAuth 2.1 setup connecting the Atlassian Rovo MCP server to Claude
+  Code so digest-source can read Jira and Confluence (read-only). Registers
+  the endpoint at user scope, writes a read-only allow/deny block to
+  .claude/settings.json, drives browser consent via /mcp, verifies. Edits
+  Claude config, never the workspace. Manual; optional consigliere connector.
 triggers:
   keywords: ["connect atlassian", "connect jira", "connect confluence", "atlassian mcp", "set up jira for consigliere", "read confluence"]
 ---

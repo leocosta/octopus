@@ -1,6 +1,6 @@
 ---
 name: dba
-description: "Staff DBA specialist — reviews schemas, queries, migrations, and data modeling across MSSQL/Postgres/MongoDB/Redis with indexing and modeling heuristics; emits findings ranked by severity with ready-to-apply fix DDL"
+description: "Staff DBA — reviews schemas, queries, migrations, and data modeling across MSSQL/Postgres/MongoDB/Redis; emits severity-ranked findings with ready-to-apply fix DDL."
 model: opus
 color: "#0ea5e9"
 ---

@@ -1,12 +1,10 @@
 ---
 name: scaffold-skill
 description: >
-  Create new Octopus skills with the correct structure — frontmatter
-  with name + description, SKILL.md ≤ 250 lines, optional
-  REFERENCE.md / EXAMPLES.md / scripts/ at one level of depth — and
-  register the skill into a target bundle so no skill ships loose.
-  Complements compress-skill (which modifies existing skills). Family
-  *-skill.
+  Create new Octopus skills with the correct structure — frontmatter (name +
+  description), SKILL.md <= 250 lines, optional
+  REFERENCE.md/EXAMPLES.md/scripts/ at one level — and register the skill into
+  a target bundle so none ships loose. Complements compress-skill.
 triggers:
   keywords: ["new skill", "create skill", "scaffold skill", "author skill", "scaffold-skill"]
 ---

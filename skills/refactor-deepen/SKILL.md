@@ -1,12 +1,11 @@
 ---
 name: refactor-deepen
 description: >
-  Find deepening opportunities in the codebase — shallow modules with
-  interfaces as complex as their implementations, micro-modules with
-  no locality, pure functions extracted only for testability. Presents
-  a numbered candidate list (files / problem / solution / benefits)
-  without proposing interfaces, then grills the chosen candidate via
-  doc-align. Belongs to the quality bundle.
+  Find deepening opportunities — shallow modules with interfaces as complex as
+  their implementations, micro-modules with no locality, pure functions
+  extracted only for testability. Presents a numbered candidate list
+  (file/problem/solution/benefits) without proposing interfaces, then grills
+  the chosen one via doc-align.
 ---
 
 # Refactoring for Module Depth

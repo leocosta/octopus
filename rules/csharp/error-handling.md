@@ -1,6 +1,6 @@
 # C# Error Handling
 
-> **Override:** create `error-handling.local.md` in this directory to replace these conventions entirely. The local file takes full precedence.
+> **Override:** create `error-handling.local.md` here to replace these entirely.
 
 ## Result Pattern
 

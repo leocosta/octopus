@@ -1,13 +1,11 @@
 ---
 name: knowledge-hygiene
 description: >
-  Audit any registered knowledge root (docs/, the standards set, auto-memory,
-  the consigliere workspace) for decay: stale nodes, broken internal links,
-  orphans, and concluded items that drifted outside their archive. The
-  deterministic checks run in `octopus hygiene` over the `octopus kr`
-  registry; this skill wraps them with the fuzzy `--gaps` judgment (recurring
-  untracked entities, missing fields) and `--fix` confirmation. Read-only by
-  default; `--fix` applies reversible moves only.
+  Audit a registered knowledge root (docs/, standards, auto-memory,
+  consigliere workspace) for decay — stale nodes, broken links, orphans,
+  concluded items outside their archive. Deterministic checks via octopus
+  hygiene over the octopus kr registry; this skill adds --gaps judgment and
+  --fix confirmation. Read-only by default; --fix is reversible.
 triggers:
   paths: ["docs/**", "knowledge/**", "CONTEXT.md"]
   keywords: ["hygiene", "stale", "orphan", "broken link", "archive", "knowledge root"]

@@ -1,13 +1,11 @@
 ---
 name: doc-subcontext
 description: >
-  Create a scoped CLAUDE.md at a subdirectory of a large monorepo, capturing
-  the conventions unique to that area without duplicating the parent
-  CLAUDE.md. Reads the parent file first, asks only about the local
-  conventions, writes lean (target 50–100 lines), and cross-references the
-  parent with "inherits from ../CLAUDE.md" instead of copying. Pairs with
-  compress-skill for periodic shrinking and with doc-lifecycle when the
-  subcontext encodes a decision worth an ADR. Family doc-*.
+  Create a scoped CLAUDE.md at a monorepo subdirectory, capturing only that
+  area's conventions without duplicating the parent. Reads the parent first,
+  asks only about local conventions, writes lean (50–100 lines), cross-
+  references 'inherits from ../CLAUDE.md' instead of copying. Pairs with
+  compress-skill and doc-lifecycle. Family doc-*.
 ---
 
 # Subdirectory CLAUDE.md Authoring

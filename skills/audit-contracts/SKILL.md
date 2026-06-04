@@ -1,11 +1,10 @@
 ---
 name: audit-contracts
 description: >
-  Detect API-vs-frontend contract drift in multi-stack monorepos
-  (.NET/Node API + React/Vue/Astro frontends). Given a branch or PR,
-  flags endpoint additions without consumers, removals/renames that
-  break callers, DTO/enum field drift, status-code changes, auth-rule
-  changes, and param changes. Produces a severity-tiered report with
+  Detect API-vs-frontend contract drift in multi-stack monorepos (.NET/Node
+  API + React/Vue/Astro). Given a branch/PR, flags endpoint additions without
+  consumers, removals/renames that break callers, DTO/enum drift, status-code
+  changes, auth-rule changes, and param changes. Severity-tiered report with
   confidence labels.
 triggers:
   paths: ["openapi/**", "contracts/**", "**/openapi.yaml", "**/openapi.json", "**/swagger.yaml"]
@@ -228,3 +227,10 @@ Skill-specific errors:
 Composes with `audit-money` and `audit-security`. Findings are
 guidance, not a gate — reviewers decide whether to block, require
 changes, or accept with a note.
+## Model tier
+
+This audit is mechanical — it pattern-matches a diff against a fixed
+checklist, not deep reasoning. Run it on the **cheapest model tier**
+(`--model haiku` / each assistant's cheapest). Reserve frontier models
+for the `architect`/`dba`/`security` roles that adjudicate the findings
+(RM-130).

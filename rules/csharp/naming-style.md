@@ -1,6 +1,6 @@
 # C# Naming & Style
 
-> **Override:** create `naming-style.local.md` in this directory to replace these conventions entirely. The local file takes full precedence.
+> **Override:** create `naming-style.local.md` here to replace these entirely.
 
 ## Casing Rules
 

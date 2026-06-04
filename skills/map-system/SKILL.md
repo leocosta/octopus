@@ -1,16 +1,12 @@
 ---
 name: map-system
 description: >
-  Map a repository at a higher level, in the project's domain vocabulary.
-  Two modes: `simplified` is a one-shot ~30-line textual orientation map
-  (sample, do not crawl); `complete` (the default) does an exhaustive pass
-  and renders a self-contained, themed HTML deck of the whole repo —
-  overview, business insights, architecture diagrams, and API/data
-  contracts — themed via the launch-release theme system, refined by
-  frontend-design when available.
-  `--save` (default on) writes it to docs/system-map/; `--output
-  markdown|html` (default html) picks the format. Manual invocation only —
-  agents must not map-system on their own initiative. Ships in starter.
+  Map a repository at a higher level in its domain vocabulary. Two modes:
+  simplified is a one-shot ~30-line textual orientation; complete (default)
+  does an exhaustive pass and renders a self-contained themed HTML deck
+  (overview, business insights, architecture, API/data contracts). --save (on)
+  writes docs/system-map/; --output markdown|html. Manual invocation only.
+  Ships in starter.
 ---
 
 # System Mapping

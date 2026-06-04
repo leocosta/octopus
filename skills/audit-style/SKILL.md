@@ -1,20 +1,13 @@
 ---
 name: audit-style
 description: >
-  Signal-only audit that confronts the working diff against the team's
-  opinionated design rules — rules/common/exceptions.md (the custom-exception
-  gate), rules/common/patterns.md, rules/common/coding-style.md, and the active
-  stack rules — to surface two failures a formatter and type checker cannot see:
-  code that violates a stated rule (rule-violation) and abstraction the rules
-  call a cost (over-engineering — premature abstraction, speculative hierarchy,
-  DRY applied before three occurrences). It never blocks; it reports divergences
-  and leaves the call to a human. Registered in the quality bundle; orchestrated
-  on demand by codereview / pr-review / implement. It has no Stop hook — unlike
-  audit-grounding and audit-verification, it runs only when a review flow invokes
-  it. The complement to the native simplify: that one applies generic taste,
-  this one signals the house rules, including when NOT to simplify.
+  Signal-only review flagging code that violates the team's design rules
+  (exceptions gate, patterns, coding-style, active stack rules) and over-
+  engineering (premature abstraction, speculative hierarchy, DRY-before-three)
+  — what a formatter or type-checker can't see. Never blocks; runs on demand
+  via codereview/pr-review/implement. The house-rules complement to native
+  simplify.
 triggers:
-  paths: ["**/*"]
   keywords: ["audit style", "style check", "over-engineering", "rule violation", "design quality", "premature abstraction"]
 ---
 
@@ -75,7 +68,7 @@ Do **not** engage for:
 
 Load, in order, and degrade gracefully when an artifact is absent:
 
-1. **`rules/common/exceptions.md`** — the custom-exception gate (the
+1. **`exceptions.md`** — the custom-exception gate (the
    default-to-stdlib rule, the G1/G2/G3 justification gate, the forbidden
    smells) and the "delete the class when the last catch site goes" rule.
    The primary reference for exception-related `rule-violation` findings.
@@ -167,3 +160,10 @@ design.
   re-flagged forever.
 - **`guardrails` bundle** — owns the syntactic, blocking layer this skill
   deliberately does not duplicate.
+## Model tier
+
+This audit is mechanical — it pattern-matches a diff against a fixed
+checklist, not deep reasoning. Run it on the **cheapest model tier**
+(`--model haiku` / each assistant's cheapest). Reserve frontier models
+for the `architect`/`dba`/`security` roles that adjudicate the findings
+(RM-130).

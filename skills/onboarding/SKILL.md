@@ -2,14 +2,11 @@
 name: onboarding
 description: >
   Ramp a new engineer onto a repo's standards, architecture, and way of
-  working — a guided, scoped sequence that composes what already exists
-  (CONTEXT.md, ADRs, rules/, the map-system deck, the Definition of Done,
-  bundle config) instead of a new content store. Asks the engineer's
-  area/stack up front and scopes to it; leads with the manager's optional
-  curated seed (docs/onboarding/guide.md) when present. Ephemeral: a
-  resumable checklist lives gitignored under .octopus/onboarding/, nothing
-  is committed. The durable, manager-facing asset is the map-system deck,
-  not an onboarding file. Self-serve via /octopus:onboarding.
+  working — a guided, scoped sequence composing what exists (CONTEXT.md, ADRs,
+  rules/, the map-system deck, the Definition of Done, bundle config) rather
+  than a new content store. Scopes to the engineer's area/stack; leads with
+  the manager's optional seed (docs/onboarding/guide.md). Resumable checklist
+  gitignored under .octopus/onboarding/. Self-serve via /octopus:onboarding.
 triggers:
   keywords: ["onboard", "onboarding", "new to this repo", "getting started", "ramp up", "ramp me up", "first week"]
 ---

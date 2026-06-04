@@ -58,11 +58,11 @@ grep -q -- "- debug" "$BUNDLE" \
   || { echo "FAIL: debug missing from starter bundle"; exit 1; }
 echo "PASS: starter bundle lists debug"
 
-echo "Test 9: README + skills.md list debug + tutorial exists"
-grep -q "debug" "$SCRIPT_DIR/README.md" \
-  || { echo "FAIL: README missing 'debug'"; exit 1; }
+echo "Test 9: skills.md lists debug + tutorial exists"
+# README is category-level by design; docs/features/skills.md is the per-skill
+# catalog. Assert the catalog row and the tutorial page.
 grep -q "| \`debug\` |" "$SCRIPT_DIR/docs/features/skills.md" \
   || { echo "FAIL: skills.md missing debug row"; exit 1; }
 TUTORIAL="$SCRIPT_DIR/docs/features/debug.md"
 [[ -f "$TUTORIAL" ]] || { echo "FAIL: tutorial $TUTORIAL missing"; exit 1; }
-echo "PASS: README + skills.md + tutorial wired"
+echo "PASS: skills.md + tutorial wired"

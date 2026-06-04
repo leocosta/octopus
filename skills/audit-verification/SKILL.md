@@ -1,16 +1,13 @@
 ---
 name: audit-verification
 description: >
-  Signal-only audit that confronts a finished agent task against its run
-  evidence — the third side of the local-guardrail triad, beside the syntactic
-  block (guardrails bundle) and the semantic signal (audit-grounding). It
-  surfaces two failure modes: a completion claimed without the
-  build/test/typecheck ever running (unverified-completion-claim), and a diff
-  that references a file the build would reject (unresolved-reference). Never
-  blocks; runs on demand via /octopus:review-proposals, on the cheapest model
-  tier. Queued by the deterministic, zero-LLM verification-check Stop hook.
+  Signal-only audit confronting a finished task against its run evidence: a
+  completion claimed without build/test/typecheck running (unverified-
+  completion-claim), and a diff referencing a file the build would reject
+  (unresolved-reference). Never blocks; runs on demand via /octopus:review-
+  proposals on the cheapest tier. Queued by the zero-LLM verification-check
+  Stop hook.
 triggers:
-  paths: ["**/*"]
   keywords: ["audit verification", "verification check", "claimed done", "unverified", "did it run"]
 ---
 

@@ -1,6 +1,9 @@
 ---
 name: frontend-patterns
-description: Frontend architecture decision patterns for component-based UIs (React, Next.js, Vue). Component composition, state vs. server cache, data fetching, styling conventions, and accessibility as a first-class concern. Pairs with the frontend-developer role and the test-component / test-e2e skills.
+description: >
+  Frontend architecture decision patterns for component-based UIs (React,
+  Next.js, Vue) — component composition, state vs. server cache, data
+  fetching, styling conventions, and accessibility as first-class.
 triggers:
   paths: ["**/*.tsx", "**/*.jsx", "**/*.vue", "app/**", "components/**", "src/components/**"]
   keywords: ["react", "nextjs", "vue", "tailwind", "shadcn", "component"]

@@ -1,6 +1,9 @@
 ---
 name: test-component
-description: Component-level testing patterns with Testing Library (React Testing Library / Vue Testing Library) and Vitest. Tests behaviour through accessible queries and user-event, mocks at the network boundary with MSW, and draws the line between component tests and end-to-end tests. Pairs with frontend-patterns and complements test-e2e.
+description: >
+  Component-level testing with Testing Library (React/Vue) and Vitest —
+  behaviour through accessible queries and user-event, network-boundary
+  mocking with MSW, and the line between component tests and end-to-end.
 triggers:
   paths: ["**/*.test.tsx", "**/*.test.jsx", "**/__tests__/**", "**/*.spec.tsx"]
   keywords: ["testing-library", "rtl", "render", "screen", "user-event", "vitest"]

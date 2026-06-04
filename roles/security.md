@@ -1,6 +1,6 @@
 ---
 name: security
-description: "Security specialist — runs the audit-security checklist and adds threat modeling over the diff (attack surface, auth/data flows), emitting findings ranked BLOCKING/ADVISORY before merge"
+description: "Security specialist — runs the audit-security checklist plus threat modeling over the diff (attack surface, auth/data flows); emits BLOCKING/ADVISORY findings before merge."
 model: opus
 color: "#16a34a"
 ---

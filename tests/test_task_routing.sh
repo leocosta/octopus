@@ -30,7 +30,7 @@ canonical_body="$(extract_block "$CANONICAL")"
 for f in \
   "$SCRIPT_DIR/skills/implement/SKILL.md" \
   "$SCRIPT_DIR/skills/debug/SKILL.md" \
-  "$SCRIPT_DIR/skills/review-pr/SKILL.md"
+  "$SCRIPT_DIR/skills/respond-to-review/SKILL.md"
 do
   skill_body="$(extract_block "$f")"
   if [[ "$skill_body" != "$canonical_body" ]]; then
@@ -45,7 +45,7 @@ echo "Test 4: the RM-034 placeholder string is gone from all three skills"
 for f in \
   "$SCRIPT_DIR/skills/implement/SKILL.md" \
   "$SCRIPT_DIR/skills/debug/SKILL.md" \
-  "$SCRIPT_DIR/skills/review-pr/SKILL.md"
+  "$SCRIPT_DIR/skills/respond-to-review/SKILL.md"
 do
   if grep -q "RM-034 will replace this paragraph" "$f"; then
     echo "FAIL: $f still contains the v1 RM-034 stub"

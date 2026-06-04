@@ -1,12 +1,11 @@
 ---
 name: knowledge-briefing
 description: >
-  Proactive cadence summary over a knowledge root — surfaces "what changed /
-  what needs you today" without the reader asking. The deterministic core
-  (`octopus briefing`, over the `octopus kr` registry) computes the
-  change-delta since a per-root watermark and composes `octopus hygiene`
-  (attention) and `octopus synthesize` (connections, weekly); this skill
-  narrates the briefing, grounded to source nodes, on the cheapest model tier.
+  Proactive cadence summary over a knowledge root — 'what changed / what needs
+  you today' without being asked. Deterministic core (octopus briefing, over
+  the octopus kr registry) computes the change-delta since a per-root
+  watermark and composes octopus hygiene + synthesize; this skill narrates it,
+  grounded to source nodes, on the cheapest tier.
 triggers:
   paths: ["docs/**", "knowledge/**", "CONTEXT.md"]
   keywords: ["briefing", "daily", "weekly", "what changed", "what's new"]

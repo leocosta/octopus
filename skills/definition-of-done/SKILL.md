@@ -1,17 +1,12 @@
 ---
 name: definition-of-done
 description: >
-  Creates, updates, and validates the team's Definition of Done — a
-  first-class versioned artifact (docs/definition-of-done.md) that states
-  the bar every change meets before it's "done". Two modes: create/update
-  scaffolds the DoD from a template and grills the manager to fill
-  team-specific items (like doc-design fills a spec); validate walks a
-  diff/PR against the checklist and reports each item met / unmet /
-  not-applicable, with a pointer to the role or skill that closes the gap.
-  The DoD is a contract that *references* existing enforcement (architect,
-  security, audit-*, doc-adr, guardrails hooks) — it never reimplements an
-  audit and never gates a commit. Signal-only. Consumed by the codereview
-  flow so "is this done?" becomes a checked contract, not a judgment call.
+  Create, update, and validate the team's Definition of Done (docs/definition-
+  of-done.md). create/update scaffolds from a template and grills the manager
+  for team items; validate walks a diff/PR against the checklist
+  (met/unmet/not-applicable). Signal-only contract referencing existing
+  enforcement (architect, security, audit-*, guardrails) — never gates a
+  commit. Consumed by codereview.
 triggers:
   keywords: ["definition of done", "is this done", "done criteria", "ready to merge", "ready to ship", "our DoD", "definition-of-done"]
 ---

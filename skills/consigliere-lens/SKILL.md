@@ -1,12 +1,11 @@
 ---
 name: consigliere-lens
 description: >
-  Make the generic knowledge engines (hygiene/synthesize/briefing) read like the
-  consigliere when run against the private manager-workspace: political risk
-  surfaced, the per-node playbook.md heuristics applied, the "thinks like you"
-  voice. A wrapper — the engines stay generic; the deterministic `octopus lens`
-  helper surfaces the grounded material; the consigliere role (opus) frames it.
-  Read-only over the workspace.
+  Make the generic knowledge engines (hygiene/synthesize/briefing) read like
+  the consigliere over the private workspace — political risk surfaced, per-
+  node playbook heuristics applied, the 'thinks like you' voice. A wrapper:
+  engines stay generic, the octopus lens helper surfaces grounded material,
+  the consigliere role (opus) frames it. Read-only.
 triggers:
   paths: []
   keywords: ["consigliere", "lens", "political risk", "playbook", "manager briefing"]

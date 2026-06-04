@@ -1,17 +1,12 @@
 ---
 name: digest-source
 description: >
-  Capture skill for the consigliere workspace. Takes a diverse input — pasted text,
-  a local PDF/file, a Jira issue, or a Confluence page — plus a one-line
-  natural-language description, and turns it into grounded, routed memory: an
-  immutable snapshot under sources/, an inferred-then-confirmed route to a context or
-  cross-cutting project, a strictly-grounded 6-field extraction (status, blockers,
-  decisions, system map, actions, political risk) where every claim cites its source
-  line, a preview, and then the writes — a dated journal entry, a rewritten
-  materialized state, and fan-out pointers into each context a transversal project
-  crosses. Reuses the `consigliere-bootstrap` write-guard contract and
-  audit-grounding. Manual, operator-run; second member of the consigliere bundle.
-  Confluence depends on the Atlassian MCP — falls back to export-PDF/paste until then.
+  Consigliere capture: turn pasted text, a local PDF/file, a Jira issue, or a
+  Confluence page (plus a one-line description) into grounded, routed memory —
+  immutable snapshot, confirmed route to a context/project, a 6-field
+  extraction (status, blockers, decisions, system map, actions, political
+  risk) with source citations, then journal + state writes. Manual;
+  consigliere bundle.
 triggers:
   keywords: ["digest", "digest this", "digest source", "capture this meeting", "log this into my workspace", "add to consigliere"]
 ---

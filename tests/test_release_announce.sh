@@ -127,7 +127,7 @@ for f in notes.md.tmpl readme.md.tmpl; do
 done
 echo "PASS: remaining templates present"
 
-echo "Test 12: slash command + bundle + README + skills.md"
+echo "Test 12: slash command + bundle + skills.md"
 CMD="$SCRIPT_DIR/commands/launch-release.md"
 [[ -f "$CMD" ]] || { echo "FAIL: command file missing"; exit 1; }
 head -n 5 "$CMD" | grep -q "^name: launch-release$" \
@@ -137,9 +137,8 @@ BUNDLE="$SCRIPT_DIR/bundles/growth.yml"
 grep -q -- "- launch-release" "$BUNDLE" \
   || { echo "FAIL: growth bundle missing launch-release"; exit 1; }
 
-grep -q "launch-release" "$SCRIPT_DIR/README.md" \
-  || { echo "FAIL: README missing launch-release"; exit 1; }
-
+# README is category-level by design; docs/features/skills.md is the per-skill
+# catalog — assert the catalog row, not a README mention.
 grep -q "launch-release" "$SCRIPT_DIR/docs/features/skills.md" \
   || { echo "FAIL: skills.md missing launch-release row"; exit 1; }
 

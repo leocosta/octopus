@@ -1,6 +1,6 @@
 # C# API Patterns
 
-> **Override:** create `api-patterns.local.md` in this directory to replace these conventions entirely. The local file takes full precedence.
+> **Override:** create `api-patterns.local.md` here to replace these entirely.
 
 ## Minimal APIs Only
 

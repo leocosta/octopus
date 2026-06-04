@@ -1,20 +1,20 @@
 # Testing
 
-> **Override:** create `testing.local.md` in this directory to replace these conventions entirely. The local file takes full precedence.
+> **Override:** create `testing.local.md` here to replace these entirely.
 
 ## Principles
 
-- Write tests for **behavior**, not implementation details
+- Test **behavior**, not implementation details
 - A failing test should clearly indicate what went wrong
-- Test names should describe the scenario and expected outcome
-- Prefer integration tests for critical paths, unit tests for complex logic
-- Keep tests independent — no shared mutable state between tests
+- Test names describe the scenario and expected outcome
+- Integration tests for critical paths, unit tests for complex logic
+- Keep tests independent — no shared mutable state
 
 ## Structure
 
-- Follow the **AAA pattern**: Arrange, Act, Assert
-- One logical assertion per test — multiple asserts are fine if they verify the same behavior
-- Name tests descriptively: `should_return_error_when_email_is_invalid`
+- **AAA pattern**: Arrange, Act, Assert
+- One logical assertion per test (multiple asserts OK if they verify one behavior)
+- Descriptive names: `should_return_error_when_email_is_invalid`
 - Group related tests by feature or behavior
 
 ## What to Test
@@ -27,19 +27,19 @@
 
 ## What NOT to Test
 
-- Framework internals or third-party library behavior
+- Framework or third-party library internals
 - Trivial getters/setters with no logic
 - Implementation details that may change (private methods, internal state)
-- Exact UI layout or styling (unless visual regression testing)
+- Exact UI layout or styling (unless visual regression)
 
 ## Test Data
 
-- Use factories or builders for test data — avoid hardcoded fixtures
-- Each test should create its own data — no dependence on test execution order
+- Use factories or builders — avoid hardcoded fixtures
+- Each test creates its own data — no dependence on execution order
 - Clean up after integration tests (or use transactions/containers)
 
 ## Coverage
 
-- Target meaningful coverage, not a number — 80% is a guideline, not a goal
-- Uncovered code should be a conscious decision, not an oversight
-- Critical paths (auth, payments, data mutations) must have integration tests
+- Target meaningful coverage, not a number — 80% is a guideline
+- Uncovered code should be a conscious decision
+- Critical paths (auth, payments, data mutations) need integration tests

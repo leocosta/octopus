@@ -212,6 +212,56 @@ _**Cluster 22 implemented** (RM-113…116):_
 
 ---
 
+### Cluster 23 — Token-cost optimization (max usage efficiency)
+
+_Proposed (added 2026-06-03). Seeds from [research](research/2026-06-03-token-cost-optimization.md): a measured pass over the always-loaded surface and the fan-out orchestrators. The baseline is **~8.4k tokens/session/repo** (`.claude/CLAUDE.md` ~14.5 KB + `rules/common/*` ~19.2 KB) with **confirmed duplication** — `core/guidelines.md` (inlined into the generated CLAUDE.md as `{{CORE}}`) repeats Principles/Security/Testing already expanded in `rules/common/*`. At ~30 sessions/day × 6 repos that is ~7.5M tokens/month of cold re-injection. Governing fact: `.claude/CLAUDE.md` is **generated** by `setup.sh::generate_from_template()` from the `agents/claude/CLAUDE.md` template + `core/*.md`, so every fix edits the **source** and regenerates, never the generated file. Decision: **aggressive** (full progressive disclosure + lang-split + model tiering), shipped as the **baseline default for all repos**. Deepens Clusters 1 (RM-022) & 2 (RM-025/026), which closed individual wins. Build order: RM-131 (measurement) first → Item-1 baseline (RM-117→121) → orchestrators (RM-122→126) → registry/tiering (RM-127→130)._
+
+| RM | Item | Theme |
+|----|------|-------|
+| RM-117 | Dedup `core/guidelines.md` ↔ `rules/common/{coding-style,security,testing}.md` — rewrite `{{CORE}}` to **reference** the canonical/expanded rules instead of repeating Principles/KISS/DRY/Anti-Patterns/Security/Testing; regenerate via `setup.sh`. ~1.5k tok/session, zero coverage loss | baseline |
+| RM-118 | Move `rules/common/exceptions.md` (9.3 KB / ~2.3k tok) to on-demand — the G1–G4 gate + C#/Py/TS examples only matter when introducing `class XException`/`raise`/`throw new`; attach to `audit-style` (RM-112) skill/`REFERENCE.md`, trigger on those patterns, drop from baseline symlink | baseline |
+| RM-119 | Thin CLAUDE.md — stop inlining reference material (`commit-conventions`, `pr-workflow`, `task-management`, `architecture`) in `{{CORE}}`; load on-demand from the commands that use them (`commit`, `pr-open`, `triage-issues`, `doc-adr`). Adjust `generate_from_template()` (`CORE_FILES`) + template. Target generated CLAUDE.md ~14.5 KB → ~3–4 KB | baseline |
+| RM-120 | Lang-split rules — load `rules/<stack>/**` + minimal `common` per repo via stack profile in `.octopus.yml`/bundles + `setup.sh::deliver_rules`; reuse existing `rules/{csharp,python,typescript}/` and the package-manager detection in `load-context.sh`. Mono-stack repos stop loading other languages' guidance | baseline |
+| RM-121 | Compress remaining `rules/common` — deterministic `compress-skill` pass + `context-budget` over the post-dedup files; ~15–25% off the residual block, meaning preserved | baseline |
+| RM-122 | Subset-route the review fan-out — `codereview`/`pr-review` send each audit/role only its domain-matching file subset (mirror `audit-all` + `skills/_shared/audit-output-format.md`) instead of the full diff to all 6 agents. ~40–60% of diff tokens | orchestrators |
+| RM-123 | Gate dispatch on the zero-LLM audit map — feed `cli/lib/audit-map.sh` (already used by `pre-push-audit-suggest`) into `codereview`/`pr-review` to dispatch only matched audits; `architect` conditional on size/risk, not always-on | orchestrators |
+| RM-124 | Single-pass review for small PRs (< ~150 lines) — one consolidated reviewer, diff read once, instead of fan-out | orchestrators |
+| RM-125 | `audit-all` default = triggers-matched audits (not the fixed 4) + memoize by SHA to skip re-audit of an unchanged ref (reuse `skills/_shared/audit-cache.md`) | orchestrators |
+| RM-126 | `dev-flow` — make expensive steps opt-in (Step 3 self-review, Step 6 release); run self-review only pre-merge, not every iteration | orchestrators |
+| RM-127 | Bundle-per-stack delivery — deliver only the skills/roles the repo's stack needs (backend repo doesn't list frontend/vercel/launch-*); reuse `bundles/` + `expand_bundles`/`deliver_skills`. Trims the ~117-item session registry to what's reachable | registry |
+| RM-128 | Trim `description:` frontmatter across ~117 skills/commands to one dense line (it's the text the session registry lists) | registry |
+| RM-129 | Consolidate families (`audit-*`/`doc-*`/`knowledge-*` sub-modes) + remove skill↔command redundancy (items duplicated in both `skills/` and `commands/`) | registry |
+| RM-130 | Global model tiering — cheap-tier (Sonnet/Haiku) for `audit-*` skills + non-`architect` roles, reserve Opus for `architect`/`dba`/code; add `model:` to skills + enforcement (`.octopus.yml` + `.claude/agents/` delivery). Biggest **$** multiplier on the 6-agent fan-out | cross-cutting |
+| RM-131 | Measurement harness + CI budget check — extend `context-budget` to report tokens (CLAUDE.md, each `rules/**`, registry-description sum, total) + `tests/test_context_budget.sh` failing over a ceiling (CLAUDE.md > 4 KB; any core↔rules dup). **Build first**: provides before/after for every RM and stops silent regrowth | cross-cutting |
+
+_Decisions: edit source + regenerate (never the generated `.claude/CLAUDE.md`); baseline-for-all (not opt-in) with safety via the RM-131 budget check + cross-stack verification (C#/Python/TS); Stop hooks excluded (zero-LLM, deferred cost). Reuses existing machinery — `context-budget`, `compress-skill`, `skills/_shared/*`, `cli/lib/audit-map.sh`, `rules/{csharp,python,typescript}/` — rather than new abstractions._
+
+_**Cluster 23 complete** on `perf/token-cost-optimization` (added 2026-06-03). All 15 RMs (RM-117…131) landed. Measured per-session cut (corrected counter): **always-loaded 8407 → 2905 tok (−65%)**, **registry 8013 → 6137 tok (−23%)**, **total ~16420 → ~9042 tok (−45%)**, `core↔rules` dup 3 → 0. The `test_context_budget` ratchet enforces it; touched tests green (5 unrelated failures pre-exist on `main`: `test_workflow_commands`, `test_concatenate_agent`, `test_respond_to_review`, and the `mktemp`-env flakes `test_commands`/`test_hooks_injection`)._
+
+_Key finding: the **registry listing** (every skill/command `description:`, loaded each session) was the biggest single cost — 8013 tok — and the first-line budget counter was blind to multi-line `description: >` blocks (RM-128 fixed the counter, then trimmed 42 descriptions). The always-loaded baseline work (RM-117/118/119/121) is the larger structural win._
+
+- _**RM-131** — `scripts/context-budget.sh` (source-based) + `tests/test_context_budget.sh` ratchet._
+- _**RM-117** — `core/guidelines.md` → pointer; principles/security/testing load once via `rules/common`. 8407 → 7989._
+- _**RM-119** — `core` symlink delivery (`.claude/core/`) for template agents; only the pointer stays inline. CLAUDE.md 3199 → 628; 7989 → 5418._
+- _**RM-118** — `exceptions.md` on-demand (`ON_DEMAND_RULES`). 5418 → 3089._
+- _**RM-121** — compress `rules/common` prose (patterns/security/testing). 3089 → 2905._
+- _**RM-122/123/124** — `codereview`/`pr-review`: subset-route per domain, gate dispatch on `audit-map`, single-pass small PRs._
+- _**RM-125/126** — `audit-all` skips empty-subset audits; `dev-flow` self-review opt-in/pre-merge._
+- _**RM-130** — `audit-*` tiered to the cheapest model; roles keep Opus._
+- _**RM-120/127** — lang-split + bundle-per-stack guarantees locked by `test_lang_split.sh` (mechanism pre-existed; coupling rules into intent bundles rejected as a design regression)._
+- _**RM-128** — registry counter fixed + 42 descriptions trimmed to activation hints (24 verbose + 18 mid-size). 8013 → 6137._
+- _**RM-129** — `test_command_delegation.sh` locks the skill↔command delegation pattern (no always-loaded token to reclaim; bodies are on-demand)._
+
+_Follow-up vectors (RM-132…135, same branch — found by auditing what Cluster 23 didn't touch):_
+- _**RM-134** — harness now counts **role descriptions** (listed as agents every session, +~398 tok, previously invisible) and **per-stack rule budgets** (csharp/python/typescript), with ratchets._
+- _**RM-133** — trimmed the 4 verbose role descriptions (consigliere/mentor/dba/security). registry 6535 → 6493._
+- _**RM-132** — stack rules turned out **example-heavy** (code is the value) with terse prose; only safe automated cut was the csharp override boilerplate (3463 → 3353). python/typescript left intact rather than gut examples._
+- _**RM-135** — guard for SKILL.md bodies over the 250-line guideline (on-demand cost); `respond-to-review` compressed 313→213 (also fixed a pre-existing `Batching` test gap), oversized 4→3. The other 3 (dotnet/delegate/launch-release) are example/template-heavy — left and locked._
+- _**RM-136** — narrowed over-broad `triggers:` (consumed by setup for the concatenate-agent stub decision): dropped `paths: ["**/*"]` on audit-grounding/style/verification and common-word keywords (token/sql/org/workspace/price/checkout/pattern/knowledge/plan) so concatenate agents stub them in repos that don't use them. No effect on Claude Code (description-driven)._
+- _**RM-137** — `implement` trivial-change fast path: a typo/rename/config bump (no testable behavior, nothing in data/auth/money/tenant/contract) skips the full five-practice loop. Cuts routine overhead on the highest-frequency auto-activated skill, the real per-task cost on Claude Code._
+
+---
+
 ## In Progress
 
 _RM-088 (`audit-grounding`) shipped in v1.69.0. **Cluster 16** (manager-multiplier) is **complete on `feat/standards-lookup`** — all implemented & committed, pending merge/release: RM-089 (`mentor`), RM-090 (`onboarding`), RM-091 (`definition-of-done`), RM-092 (`standards`), RM-093 (team `continuous-learning`), RM-094 (`audit-fleet`), RM-095 (`fleet-bootstrap`), RM-096 (`tech-lead` bundle), RM-098 (`map-system` complete-mode deck). ADRs 002–006 recorded. See [research](research/2026-05-30-manager-multiplier.md)._

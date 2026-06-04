@@ -1,11 +1,10 @@
 ---
 name: compress-skill
 description: >
-  Shrink a SKILL.md without changing its meaning. Deterministic
-  cleanup pass first, LLM rewrite pass only if the target is not met.
-  Anchors extracted from the skill's test file are preserved;
-  frontmatter, headings, and code blocks are never modified. Dry-run
-  by default; `--apply` writes the result.
+  Shrink a SKILL.md without changing meaning — deterministic cleanup first,
+  LLM rewrite only if the target isn't met. Test-file anchors preserved;
+  frontmatter, headings, and code blocks never modified. Dry-run by default;
+  --apply writes.
 triggers:
   paths: ["skills/**/*.md", ".octopus/**", "octopus/**"]
   keywords: []

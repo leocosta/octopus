@@ -22,9 +22,10 @@ triggers:
 
 This skill is a composer: it does not invent new audit logic. It
 resolves the diff once, classifies each touched file into domain
-tags, dispatches the four audit skills in parallel against their
-domain-matching file subsets, then merges the four reports into a
-single severity-tiered output with a cross-audit hotspots table.
+tags, dispatches in parallel the audit skills that have
+domain-matching files (skipping any whose subset is empty), then
+merges their reports into a single severity-tiered output with a
+cross-audit hotspots table.
 
 The default path is deterministic — same inputs produce the same
 set of files routed to the same audits. Copy inside each sub-report
@@ -66,8 +67,11 @@ exit 0. Do not proceed to dispatch.
 
 ## Parallel Execution
 
-Dispatch four subagents via `superpowers:dispatching-parallel-agents`,
-one per installed audit, each with:
+Dispatch one subagent per installed audit **whose file subset is
+non-empty** via `superpowers:dispatching-parallel-agents`. An audit
+with no domain-matching files is **not dispatched** (RM-125) — there
+is nothing for it to review, so spawning it only burns tokens. Each
+dispatched subagent gets:
 
 - The subset of files tagged with at least one of the audit's
   domains (audit-money gets files tagged `money`; audit-tenant
@@ -77,12 +81,19 @@ one per installed audit, each with:
 - The same `<ref>` and `--base`.
 - Instruction to produce output in the audit's existing format,
   unchanged.
+- The **cheapest model tier** — every `audit-*` skill is a mechanical
+  checklist pass (see each skill's *Model tier* note), so do not spend
+  a frontier model on them (RM-130).
+
+Each audit checks its own SHA cache (`skills/_shared/audit-cache.md`,
+keyed on the scoped diff + skill hash), so re-running `audit-all` on
+an unchanged ref returns cached sub-reports without re-analysis.
 
 Rules:
 
-- If a subagent returns no findings because its file subset was
-  empty, emit a single line `<audit>: no domain-matching files` in
-  place of the sub-report.
+- For an audit skipped because its file subset was empty, emit a
+  single line `<audit>: no domain-matching files` in place of the
+  sub-report (so the consolidated report still accounts for it).
 - If a subagent errors, log the error and continue — one failure
   does not kill the run. The final summary notes how many audits
   completed.

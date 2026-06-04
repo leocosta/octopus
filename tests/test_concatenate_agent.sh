@@ -30,9 +30,12 @@ grep -q "Coding Guidelines" "$OUTPUT" || { echo "FAIL: guidelines.md not include
 grep -q "Architecture" "$OUTPUT" || { echo "FAIL: architecture.md not included"; exit 1; }
 grep -q "Commit Conventions" "$OUTPUT" || { echo "FAIL: commit-conventions.md not included"; exit 1; }
 
-# Verify rules files are included (from rules/ directory)
-grep -q "Coding Style" "$OUTPUT" || { echo "FAIL: common/coding-style.md not included"; exit 1; }
-grep -q "Security" "$OUTPUT" || { echo "FAIL: common/security.md not included"; exit 1; }
+# Verify rules are referenced. copilot has native_rules: true, so rules are
+# symlinked to .github/instructions/ (the `.instructions.md` mechanism), not
+# inlined; the concatenated file carries a reference section instead.
+grep -q "## Coding Rules" "$OUTPUT" || { echo "FAIL: Coding Rules reference section missing"; exit 1; }
+grep -q ".github/instructions/common/" "$OUTPUT" || { echo "FAIL: common rules reference missing"; exit 1; }
+grep -q ".github/instructions/typescript/" "$OUTPUT" || { echo "FAIL: typescript rules reference missing"; exit 1; }
 
 # Verify skills content is appended
 grep -q "Architecture Decision Records" "$OUTPUT" || { echo "FAIL: adr SKILL.md not included"; exit 1; }

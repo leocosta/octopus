@@ -1,16 +1,14 @@
 ---
 name: audit-tenant
 description: >
-  Pre-merge audit of multi-tenant data-scope enforcement. Given a branch
-  or PR, detects queries that bypass tenant filters, DbContexts missing
-  HasQueryFilter for new entities, raw SQL without tenant restriction,
-  controllers that accept ids from routes without ownership checks,
-  joins to unfiltered tables, and cross-tenant admin endpoints without
-  explicit markers. Produces a severity-tiered report with confidence
-  labels.
+  Pre-merge audit of multi-tenant data-scope enforcement (branch/PR): queries
+  bypassing tenant filters, DbContexts missing HasQueryFilter on new entities,
+  raw SQL without tenant restriction, route ids used without ownership checks,
+  joins to unfiltered tables, cross-tenant admin endpoints. Severity-tiered
+  report with confidence labels.
 triggers:
   paths: []
-  keywords: ["tenant", "org", "workspace", "multi-tenant", "organization"]
+  keywords: ["tenant", "multi-tenant", "organization"]
   tools: []
 pre_pass:
   file_patterns: "tenant|org|workspace|organization|scope"
@@ -193,3 +191,10 @@ Composes with `audit-security`, `audit-money`, and
 `audit-contracts`. In multi-tenant code, reviewers should treat
 🚫 Block findings as merge blockers — each one is a potential
 data-leak path.
+## Model tier
+
+This audit is mechanical — it pattern-matches a diff against a fixed
+checklist, not deep reasoning. Run it on the **cheapest model tier**
+(`--model haiku` / each assistant's cheapest). Reserve frontier models
+for the `architect`/`dba`/`security` roles that adjudicate the findings
+(RM-130).

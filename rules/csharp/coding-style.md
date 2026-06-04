@@ -1,6 +1,6 @@
 # C# Coding Style
 
-> **Override:** create `coding-style.local.md` in this directory to replace these conventions entirely. The local file takes full precedence.
+> **Override:** create `coding-style.local.md` here to replace these entirely.
 
 ## Braces — Always Required
 

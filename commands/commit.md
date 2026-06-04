@@ -58,7 +58,7 @@ etc.). If none found, omit silently.
 
 ### Step 5 — Suggest the commit message
 
-Write a commit message following `core/commit-conventions.md`:
+Write a commit message following `.claude/core/commit-conventions.md`:
 - First line: `<type>(<scope>): <imperative description>` — under 72 characters,
   lowercase, no trailing period.
 - Body (optional): one short paragraph explaining the *why*, wrapped at 72

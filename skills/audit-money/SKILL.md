@@ -1,13 +1,13 @@
 ---
 name: audit-money
 description: >
-  Pre-merge audit of money-touching code. Given a branch or PR, inspects
-  numeric types, rounding, tests for non-round cents, env-var consistency,
-  payment idempotency, webhook signature verification, and fee disclosure
-  coupling. Produces a severity-tiered report (block / warn / info).
+  Pre-merge audit of money-touching code (branch/PR): numeric types, rounding,
+  tests for non-round cents, env-var consistency, payment idempotency, webhook
+  signature verification, and fee-disclosure coupling. Severity-tiered report
+  (block/warn/info).
 triggers:
   paths: []
-  keywords: ["payment", "invoice", "stripe", "billing", "subscription", "checkout", "price"]
+  keywords: ["payment", "invoice", "stripe", "billing", "subscription"]
   tools: []
 pre_pass:
   file_patterns: "billing|payment|charge|cobran|split|invoice|subscription|asaas|stripe|pix|webhook|refund|reembolso|tax|taxa|fee"
@@ -190,3 +190,10 @@ shared convention. Skill-specific wording:
 Run `audit-security` first (secrets/injection), then `audit-money`
 (money-logic). Both form the pre-merge safety net; output is plain
 markdown designed to paste into a PR comment as-is.
+## Model tier
+
+This audit is mechanical — it pattern-matches a diff against a fixed
+checklist, not deep reasoning. Run it on the **cheapest model tier**
+(`--model haiku` / each assistant's cheapest). Reserve frontier models
+for the `architect`/`dba`/`security` roles that adjudicate the findings
+(RM-130).

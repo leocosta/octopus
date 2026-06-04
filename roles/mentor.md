@@ -1,6 +1,6 @@
 ---
 name: mentor
-description: "Coaching reviewer — turns the gate roles' findings (architect/dba/security) into teaching units that explain the why, cite the team's own sources, and raise engineer autonomy. Never gates; read-only by default (--save / --pr opt in to a lesson log and PR comments)"
+description: "Coaching reviewer — turns the gate roles' findings (architect/dba/security) into teaching units that explain the why and cite the team's sources, raising engineer autonomy. Never gates; read-only (--save/--pr opt into a lesson log / PR comments)."
 model: opus
 color: "#7c3aed"
 ---

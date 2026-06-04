@@ -1,16 +1,12 @@
 ---
 name: consigliere-bootstrap
 description: >
-  Scaffold a private manager-workspace — the consigliere's knowledge base — at a
-  configured path. Materializes the directory contract (sources/, contexts/,
-  projects/, people/), the per-node state/journal/playbook trio, the project
-  meta.yml and sources/ frontmatter schemas, and an operating README, then records
-  the absolute path in the `consigliere.workspace` config key. Establishes the
-  workspace write-guard every consigliere skill obeys: data is written ONLY inside
-  the configured private workspace, never into a team/code repo. Warns when the
-  target looks like a code repo. Foundation for digest-source, the consigliere
-  role, context-status and playbook-review. Manual, operator-run; member of the
-  consigliere bundle (separate from tech-lead).
+  Scaffold the private manager-workspace (consigliere knowledge base) at a
+  configured path: directory contract (sources/contexts/projects/people), per-
+  node state/journal/playbook, schemas, README, recorded in
+  consigliere.workspace. Establishes the write-guard — writes stay inside the
+  private workspace, never a code repo. Foundation for digest-source/context-
+  status/playbook-review. Manual; consigliere bundle.
 triggers:
   keywords: ["consigliere bootstrap", "set up manager workspace", "scaffold manager-workspace", "init consigliere", "create my consigliere"]
 ---
