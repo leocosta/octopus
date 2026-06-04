@@ -12,189 +12,106 @@ description: >
 
 ## Overview
 
-This skill codifies the discipline side of processing review
-feedback. `/octopus:pr-comments` owns the mechanics (walking the
-thread, iterating comments); this skill owns the protocol for
-what an agent does with each comment before acting on it.
+The discipline side of processing review feedback: what an agent does
+with each comment before acting. `/octopus:pr-comments` owns the
+mechanics (walking the thread). With `implement` (new code) and `debug`
+(broken code), this completes the `starter` workflow trio — one skill
+per working state.
 
-`implement` covers writing new code; `debug` covers fixing
-broken code; `respond-to-review` covers responding to
-feedback on code that exists. The three form the `starter`
-bundle's workflow trio — one skill per common working state.
-
-The skill is stack-neutral. It describes a five-rule protocol,
-not a specific tool or review platform. It never duplicates
-`rules/common/*`. When the `superpowers:*` plugin is installed,
-its `receiving-code-review` skill wins per rule on the practices
-it already covers; this skill still owns Octopus-native
-integration with `pr-comments` and the hand-offs to `implement`
-and `debug`.
+Stack-neutral: a five-rule protocol, not a tool or platform. Never
+duplicates `rules/common/*`. When `superpowers:receiving-code-review`
+is installed it wins per rule on what it covers; this skill still owns
+the `pr-comments` integration and the hand-offs to `implement`/`debug`.
 
 ## When to Engage
 
-Engage whenever the task involves **processing PR feedback** —
-a reviewer left a comment, `/octopus:pr-comments <n>` is running,
-the user quotes a reviewer's message, a thread is open awaiting
-response. Do not engage for:
+Engage whenever the task is **processing PR feedback** — a reviewer
+comment, `/octopus:pr-comments <n>` running, the user quoting a
+reviewer, an open thread awaiting response. Do **not** engage for:
+writing a review on someone else's PR (`/octopus:pr-review`); feature
+work or bug triage not originating from a review comment (`implement` /
+`debug`); docs-only changes with no review attached.
 
-- Writing a review for someone else's PR (that is
-  `/octopus:pr-review`)
-- Feature work or refactor that does not originate from a review
-  comment (that is `implement`)
-- Bug triage that does not originate from a review comment (that
-  is `debug`)
-- Documentation-only changes with no code review attached
-
-Engagement is implicit — Claude Code discovers this skill from
-`.claude/skills/` and applies it automatically when the
-description matches the task. Users who want explicit control
-can invoke `/octopus:respond-to-review <ref>` for a
-single-comment walk.
+Engagement is implicit (Claude Code matches the description); invoke
+`/octopus:respond-to-review <ref>` for an explicit single-comment walk.
 
 ## The Five Rules
 
-The protocol is five rules applied to every comment before any
-code change. Skip a rule only with a stated reason.
+Five rules applied to every comment before any code change. Skip a
+rule only with a stated reason.
 
 ### Rule 1. Verify the critique against the code
 
-Before accepting any feedback as valid, read the code the
-reviewer pointed at. Confirm the critique is actually correct —
-does the code behave the way the reviewer claims? Does the
-concern apply?
-
-If the reviewer is wrong (the code already handles the case, or
-the claim doesn't match what the code does), say so. Politely
-and with evidence: quote the specific lines that contradict the
-critique. A reviewer who is wrong wants to know, not to be
-agreed with.
-
-If the reviewer is right, acknowledge it and proceed to the
-remaining rules before making any change.
+Read the code the reviewer pointed at before accepting the feedback —
+does the code actually behave as claimed? If the reviewer is wrong, say
+so with evidence (quote the lines that contradict it); a wrong reviewer
+wants to know. If right, acknowledge and proceed through the rest.
 
 ### Rule 2. Ask for evidence on generic comments
 
-Generic critiques — "this is ugly", "seems wrong", "could be
-better", "I don't like this" — cannot be acted on because they
-don't describe a concrete concern. Respond asking for
-specificity: "which part is ugly — the name, the structure,
-the nesting?" or "what would you expect instead?".
-
-Never infer what a generic comment probably means and change
-code based on your inference. The reviewer has context you
-don't; ask them to share it.
+Generic critiques ("ugly", "seems wrong", "could be better") describe
+no concrete concern — ask for specificity ("which part — name,
+structure, nesting?"). Never infer what a generic comment means and
+edit on that inference; the reviewer has context you don't.
 
 ### Rule 3. Separate reasoned feedback from preference
 
-Some critiques carry a technical reason (performance,
-maintainability, consistency with the project, correctness,
-security). Others are preference (aesthetic choice, personal
-style, "I would write it differently").
-
-Reasoned feedback gets weight — restate the reason in your
-acknowledgement so the reviewer sees you understood it, then
-decide whether to apply, push back with a counter-reason, or
-propose an alternative.
-
-Preference feedback is valid too, but it's a negotiation, not
-an instruction. Say so honestly: "I'd stick with X because Y,
-but happy to switch if you feel strongly." Don't treat
-preference as authority.
+Reasoned critiques carry a technical reason (performance,
+maintainability, correctness, security); restate the reason so the
+reviewer sees you got it, then apply, push back with a counter-reason,
+or propose an alternative. Preference is a negotiation, not an
+instruction — "I'd keep X because Y, but happy to switch if you feel
+strongly." Don't treat preference as authority.
 
 ### Rule 4. Never make performative changes
 
-A performative change is one made to close a review thread
-without understanding why. It's an anti-pattern because:
-
-- The reviewer's actual concern stays unaddressed (you shipped
-  something, but not what they asked for).
-- The code gets worse (you edited something you didn't
-  understand).
-- The next similar comment creates the same pattern.
-
-If you don't understand the feedback, engage Rule 2 (ask for
-evidence) or Rule 5 (ask for clarification). If you understand
-and disagree, engage Rule 3 (separate reasoned from preference
-and push back on preference). Never change code with the goal
-of closing a thread.
+A performative change closes a thread without understanding why — the
+real concern stays unaddressed, the code gets worse, and the pattern
+repeats. If you don't understand, use Rule 2 or 5; if you understand
+and disagree, use Rule 3. Never edit code just to close a thread.
 
 ### Rule 5. Ask for clarification on ambiguity
 
-When a critique is ambiguous — the words allow more than one
-reading, the example points at several possible issues, the
-suggestion has multiple implementations — ask before acting.
-
-Examples of ambiguity to clarify:
-
-- "This could be a helper" — which scope? A function in this
-  file, a module-level helper, a shared utility?
-- "Handle the error case" — which error case? What should the
-  handler do?
-- "Rename this" — to what?
-
-Acting on your best guess creates a second round of feedback
-and wastes the reviewer's time. One clarifying question saves
-that.
+When a critique allows more than one reading ("this could be a helper"
+— which scope?; "handle the error case" — which case, doing what?;
+"rename this" — to what?), ask before acting. One clarifying question
+beats a second feedback round on a wrong guess.
 
 ## Post-Fix Loop
 
-The five rules end when the *right* change has been applied to
-each comment. The skill does **not** end there. After the last
-fix lands, the agent opens a single **post-fix turn** that
-proposes the four closing actions in one consolidated menu:
+The rules end when the *right* change is applied; the skill does not.
+After the last fix, open a single **post-fix turn** proposing four
+closing actions in one consolidated menu:
 
-1. **Commit** — one batch commit covering all review-driven
-   edits, with a proposed message
-   (`fix(<scope>): address review feedback on #<pr>` or
-   equivalent derived from the touched scopes). The user may
-   approve, edit, or skip.
-2. **Push** — automatic if the branch already has an upstream
-   tracking ref (`git rev-parse --abbrev-ref --symbolic-full-name
-   @{u}` succeeds). If not, the menu surfaces it as an explicit
-   confirmation (`git push -u origin HEAD`). Never push `-u`
-   silently.
-3. **Reply inline on each thread** — hybrid strategy:
-   - **Canned** `Addressed in <sha>.` for threads that ended in
-     a direct fix.
-   - **Contextual** for threads that ended in push-back or
-     partial action — restate the reason briefly:
-     `Renamed to <X> as suggested — <sha>.`
-     `Kept current behavior because <reason>. — <sha>.`
-   The agent composes the contextual variant from the Rule 3
-   verdict it already produced; it does not re-derive it.
-4. **Mark threads resolved** — close threads that the agent
-   considers settled from its side:
-   - Threads with a fix applied → resolve.
-   - Threads with push-back/refutation where the agent posted a
-     reasoned counter-argument → resolve.
-   - Threads pending clarification (Rule 5) → **leave open**;
-     they wait on reviewer input.
-   Uses the GitHub GraphQL `resolveReviewThread` mutation; the
-   thread IDs are collected at the start of the flow alongside
-   the comment payload.
+1. **Commit** — one batch commit for all review-driven edits, with a
+   proposed message (`fix(<scope>): address review feedback on #<pr>`).
+   Approve / edit / skip.
+2. **Push** — automatic when an upstream tracking ref exists
+   (`git rev-parse --abbrev-ref --symbolic-full-name @{u}` succeeds);
+   otherwise surface `git push -u origin HEAD` as an explicit
+   confirmation. Never push `-u` silently.
+3. **Reply inline per thread** — canned `Addressed in <sha>.` for
+   direct fixes; contextual for push-back/partial (e.g.
+   `Kept current behavior because <reason>. — <sha>.`), composed from
+   the Rule 3 verdict already produced.
+4. **Mark threads resolved** — resolve threads with a fix applied or a
+   reasoned counter-argument; **leave open** threads pending a Rule 5
+   clarification. Uses the GraphQL `resolveReviewThread` mutation;
+   thread IDs are collected at the start alongside the comment payload.
 
 ### Menu shape
 
-The post-fix turn is a single block, defaults pre-filled,
-approve-edit-skip in one round-trip. Keep it tight — one line
-per action plus the proposed commit message and the
+A single block, defaults pre-filled, approve-edit-skip in one
+round-trip — one line per action plus the commit message and
 classification counts (e.g. `Resolve: 3 fix + 1 push-back, 1
-clarification stays open`).
-
-The user can:
-
-- Approve the whole block in one word.
-- Edit any line in place (commit message, which threads to
-  resolve, reply text on a specific thread).
-- Skip individual items; the skill ends reporting what was done
-  and what was left so the user can finish manually.
+clarification stays open`). The user approves in a word, edits any line
+in place, or skips items (the skill then reports what was left).
 
 ### Failure handling
 
-If the commit succeeds but a later step fails (push rejected,
-GraphQL mutation errors), report the partial state explicitly:
-which threads got replies, which got resolved, which did not.
-Do **not** roll back the commit. Do **not** silently retry — the
+If the commit succeeds but a later step fails (push rejected, GraphQL
+error), report the partial state (which threads got replies / resolved)
+explicitly. Do **not** roll back the commit or silently retry — the
 user decides whether to re-run the failed step.
 
 ## Task Routing
@@ -255,59 +172,42 @@ would have provided — point at the gap and move on.
 
 ## Integration with Other Skills
 
-- **`/octopus:pr-comments`** — alternative entry point that
-  walks a PR's review threads from scratch (useful when you
-  want to triage a PR you have not opened yet). This skill is
-  end-to-end on its own (five rules + post-fix loop); use
-  `pr-comments` when you want the older iterate-one-thread-at-
-  a-time mechanics instead of the batch post-fix turn.
-- **`/octopus:pr-review`** — writes a review for someone
-  else's PR. Different role, different skill; this skill never
-  engages on that flow.
-- **`implement`** — when a comment asks for a code change
-  (feature, refactor, new test), `implement`'s five practices
-  drive the edit itself. This skill ensures the change is the
-  right change before `implement` runs.
-- **`debug`** — when a comment flags a bug the reviewer
-  spotted, hand off to `debug` (reproduce → isolate → fix
-  with regression test → document). This skill still owns
-  Rule 1 (verify the critique) before the handoff.
-- **`rules/common/*`** — always-on static rules. This skill
-  never re-states rule content; reference only.
-- **`superpowers:receiving-code-review`** — when the
-  superpowers plugin is installed, that skill wins per rule on
-  the practices it covers. This skill still owns Octopus-native
-  integration with `pr-comments` and the handoffs to
-  `implement` / `debug`.
+- **`/octopus:pr-comments`** — alternative entry point that walks a
+  PR's threads from scratch. This skill is end-to-end on its own (five
+  rules + post-fix loop); use `pr-comments` for the older
+  one-thread-at-a-time mechanics.
+- **`/octopus:pr-review`** — writes a review for someone else's PR;
+  different flow, this skill never engages there.
+- **`implement`** — when a comment asks for a code change, `implement`
+  drives the edit; this skill ensures it's the *right* change first.
+- **`debug`** — when a comment flags a bug, hand off to `debug`
+  (reproduce → isolate → fix with regression test); Rule 1 (verify)
+  runs before the handoff.
+- **`rules/common/*`** — always-on static rules; reference only, never
+  restated.
+- **`superpowers:receiving-code-review`** — when installed it wins per
+  rule on what it covers; this skill keeps the `pr-comments`
+  integration and the `implement`/`debug` handoffs.
 
 ## Anti-Patterns
 
 This skill forbids, by name:
 
-- Accepting a critique as correct without reading the code it
-  points at.
-- Changing code to close a review thread without understanding
-  the concern (performative compliance).
+- Accepting a critique without reading the code it points at.
+- Performative compliance — changing code to close a thread without
+  understanding the concern.
 - Treating reviewer preference as a technical requirement.
-- Acting on your inference of what a generic comment "probably"
-  means instead of asking.
-- Making a change and then discovering during the diff review
-  that it doesn't match the reviewer's actual ask — should have
-  been a clarifying question on ambiguity first.
-- Pushing back on every comment without reading the code first
-  (the opposite failure from blind deference).
-- Deleting a reviewer's comment thread without resolving or
-  acknowledging it.
-- Mixing review-driven edits with unrelated work in the same
-  commit — the post-fix batch commit covers *only* the changes
-  that answer review comments. Unrelated cleanup goes in its
+- Acting on your inference of a generic comment instead of asking.
+- Skipping the ambiguity clarification, then finding the change didn't
+  match the reviewer's actual ask.
+- Pushing back on every comment without reading the code (the opposite
+  failure from blind deference).
+- Deleting a reviewer's thread without resolving or acknowledging it.
+- **Batching** unrelated cleanup into the post-fix commit — it covers
+  *only* the changes that answer review comments; other work gets its
   own commit.
-- Ending the skill after the last fix lands without running the
-  post-fix loop — leaving the user to invoke commit / reply /
-  resolve as separate manual steps is the regression this skill
-  exists to prevent.
-- Pushing `-u` to a new remote branch silently — the post-fix
-  loop must surface that as an explicit confirmation, not bury
-  it in the automatic path.
-- Auto-resolving a thread that ended in a Rule 5 clarification
-  request — those wait on reviewer input by definition.
+- Ending after the last fix without running the post-fix loop (the
+  manual commit/reply/resolve regression this skill prevents).
+- Pushing `-u` to a new remote branch silently instead of via explicit
+  confirmation.
+- Auto-resolving a thread that ended in a Rule 5 clarification request.

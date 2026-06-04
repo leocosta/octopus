@@ -38,7 +38,7 @@ MAX_STACK_TYPESCRIPT_TOKENS=3950
 # respond-to-review, delegate) and blocks NEW bloat. Lower this as offenders are
 # run through `compress-skill` (the anchor-preserving tool built for it);
 # dotnet is example-heavy and won't shrink much.
-MAX_OVERSIZED_SKILLS=4
+MAX_OVERSIZED_SKILLS=3
 
 PASS=0; FAIL=0
 check() {
