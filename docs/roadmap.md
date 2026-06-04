@@ -252,6 +252,12 @@ _Key finding: the **registry listing** (every skill/command `description:`, load
 - _**RM-128** — registry counter fixed + 42 descriptions trimmed to activation hints (24 verbose + 18 mid-size). 8013 → 6137._
 - _**RM-129** — `test_command_delegation.sh` locks the skill↔command delegation pattern (no always-loaded token to reclaim; bodies are on-demand)._
 
+_Follow-up vectors (RM-132…135, same branch — found by auditing what Cluster 23 didn't touch):_
+- _**RM-134** — harness now counts **role descriptions** (listed as agents every session, +~398 tok, previously invisible) and **per-stack rule budgets** (csharp/python/typescript), with ratchets._
+- _**RM-133** — trimmed the 4 verbose role descriptions (consigliere/mentor/dba/security). registry 6535 → 6493._
+- _**RM-132** — stack rules turned out **example-heavy** (code is the value) with terse prose; only safe automated cut was the csharp override boilerplate (3463 → 3353). python/typescript left intact rather than gut examples._
+- _**RM-135** — guard for SKILL.md bodies over the 250-line guideline (on-demand cost); locks the current 4 offenders (dotnet/launch-release/respond-to-review/delegate) and blocks new bloat. Bodies themselves are `compress-skill` follow-ups (anchor-preserving)._
+
 ---
 
 ## In Progress
