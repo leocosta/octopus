@@ -8,7 +8,6 @@ description: >
   (unsupported-domain-fact). Never blocks. Triggered at task end by the
   grounding-check stop hook; quality bundle.
 triggers:
-  paths: ["**/*"]
   keywords: ["audit grounding", "grounding check", "invented convention", "hallucination check", "source of truth"]
 ---
 

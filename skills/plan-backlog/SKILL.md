@@ -7,7 +7,7 @@ description: >
   Read-only by default; --fix applies reversible moves to plans/archive/.
 triggers:
   paths: ["plans/**", "docs/plans/**", "docs/roadmap.md", "roadmap.md"]
-  keywords: ["plan", "backlog", "roadmap", "RM-"]
+  keywords: ["backlog", "roadmap", "RM-"]
   tools: []
 ---
 

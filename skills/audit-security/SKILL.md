@@ -3,7 +3,7 @@ name: audit-security
 description: Security audit checklist for AI agent configurations, environment variables, and project dependencies
 triggers:
   paths: []
-  keywords: ["auth", "jwt", "oauth", "secret", "token", "sql", "password", "credential"]
+  keywords: ["auth", "jwt", "oauth", "secret", "password", "credential"]
   tools: []
 pre_pass:
   file_patterns: "auth|jwt|oauth|secret|token|password|credential|permission|role|middleware|\\.env"

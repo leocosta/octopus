@@ -7,7 +7,7 @@ description: >
   (block/warn/info).
 triggers:
   paths: []
-  keywords: ["payment", "invoice", "stripe", "billing", "subscription", "checkout", "price"]
+  keywords: ["payment", "invoice", "stripe", "billing", "subscription"]
   tools: []
 pre_pass:
   file_patterns: "billing|payment|charge|cobran|split|invoice|subscription|asaas|stripe|pix|webhook|refund|reembolso|tax|taxa|fee"

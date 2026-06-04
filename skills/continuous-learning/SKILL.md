@@ -8,7 +8,7 @@ description: >
   patterns promote to shared workspace rules, single-repo patterns stay local.
 triggers:
   paths: ["knowledge/**", "docs/learning/**", "docs/research/**"]
-  keywords: ["learning", "hypothesis", "knowledge", "insight", "pattern", "recurring feedback", "team pattern", "keeps coming up", "promote to rule"]
+  keywords: ["hypothesis", "recurring feedback", "team pattern", "keeps coming up", "promote to rule"]
   tools: []
 ---
 

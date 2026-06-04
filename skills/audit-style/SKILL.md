@@ -8,7 +8,6 @@ description: >
   via codereview/pr-review/implement. The house-rules complement to native
   simplify.
 triggers:
-  paths: ["**/*"]
   keywords: ["audit style", "style check", "over-engineering", "rule violation", "design quality", "premature abstraction"]
 ---
 

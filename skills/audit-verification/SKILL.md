@@ -8,7 +8,6 @@ description: >
   proposals on the cheapest tier. Queued by the zero-LLM verification-check
   Stop hook.
 triggers:
-  paths: ["**/*"]
   keywords: ["audit verification", "verification check", "claimed done", "unverified", "did it run"]
 ---
 

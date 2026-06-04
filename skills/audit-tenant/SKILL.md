@@ -8,7 +8,7 @@ description: >
   report with confidence labels.
 triggers:
   paths: []
-  keywords: ["tenant", "org", "workspace", "multi-tenant", "organization"]
+  keywords: ["tenant", "multi-tenant", "organization"]
   tools: []
 pre_pass:
   file_patterns: "tenant|org|workspace|organization|scope"
