@@ -58,11 +58,12 @@ grep -q -- "- respond-to-review" "$BUNDLE" \
   || { echo "FAIL: respond-to-review missing from starter bundle"; exit 1; }
 echo "PASS: starter bundle lists respond-to-review"
 
-echo "Test 9: README + skills.md list respond-to-review + tutorial exists"
-grep -q "respond-to-review" "$SCRIPT_DIR/README.md" \
-  || { echo "FAIL: README missing 'respond-to-review'"; exit 1; }
+echo "Test 9: skills.md lists respond-to-review + tutorial exists"
+# The README is category-level by design (it never enumerates individual
+# skills); docs/features/skills.md is the per-skill catalog. Assert the real
+# discovery surfaces: the catalog row and the tutorial page.
 grep -q "| \`respond-to-review\` |" "$SCRIPT_DIR/docs/features/skills.md" \
   || { echo "FAIL: skills.md missing respond-to-review row"; exit 1; }
 TUTORIAL="$SCRIPT_DIR/docs/features/respond-to-review.md"
 [[ -f "$TUTORIAL" ]] || { echo "FAIL: tutorial $TUTORIAL missing"; exit 1; }
-echo "PASS: README + skills.md + tutorial wired"
+echo "PASS: skills.md + tutorial wired"

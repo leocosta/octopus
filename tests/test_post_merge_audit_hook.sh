@@ -96,15 +96,15 @@ check "fresh install: deliver_git_hooks function defined in setup.sh" \
 # ---------------------------------------------------------------------------
 # T9: opt-out — postMergeAuditHook: false skips install
 # ---------------------------------------------------------------------------
-check "setup.sh: postMergeAuditHook=false exits deliver_git_hooks early" bash -c '
-  grep -A5 "postMergeAuditHook.*false" "$1" | grep -q "return 0"
+check "setup.sh: postMergeAuditHook=false skips the audit hook (guarded)" bash -c '
+  grep -q "OCTOPUS_POST_MERGE_AUDIT_HOOK\" != \"false\"" "$1"
 ' _ "$OCTOPUS_DIR/setup.sh"
 
 # ---------------------------------------------------------------------------
-# T10: chain mode — existing pre-push hook is preserved
+# T10: chain mode — an existing pre-push hook is appended to, not overwritten
 # ---------------------------------------------------------------------------
-check "deliver_git_hooks appends to existing hook (chain mode)" bash -c '
-  grep -A50 "deliver_git_hooks()" "$1" | grep -q "Chaining"
+check "deliver_git_hooks appends to an existing hook (chain mode)" bash -c '
+  grep -A60 "deliver_git_hooks()" "$1" | grep -q ">> \"\$audit_target\""
 ' _ "$OCTOPUS_DIR/setup.sh"
 
 # ---------------------------------------------------------------------------

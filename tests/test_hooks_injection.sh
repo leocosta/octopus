@@ -7,12 +7,12 @@ source "$SCRIPT_DIR/setup.sh" --source-only
 
 echo "Test 1: deliver_hooks rewrites relative hook paths to absolute"
 
-TMPDIR=$(mktemp -d)
-mkdir -p "$TMPDIR/.claude"
-echo '{"permissions": {}, "hooks": {}, "mcpServers": {}}' > "$TMPDIR/.claude/settings.json"
+WORKDIR=$(mktemp -d)
+mkdir -p "$WORKDIR/.claude"
+echo '{"permissions": {}, "hooks": {}, "mcpServers": {}}' > "$WORKDIR/.claude/settings.json"
 
 export OCTOPUS_HOOKS="true"
-export PROJECT_ROOT="$TMPDIR"
+export PROJECT_ROOT="$WORKDIR"
 MANIFEST_CAP_HOOKS="true"
 MANIFEST_DELIVERY_HOOKS_METHOD="settings_json"
 MANIFEST_DELIVERY_HOOKS_TARGET=".claude/settings.json"
@@ -20,7 +20,7 @@ MANIFEST_DELIVERY_HOOKS_TARGET=".claude/settings.json"
 deliver_hooks "claude" >/dev/null
 
 # Every hook command should start with "/" (absolute path)
-python3 - "$TMPDIR/.claude/settings.json" <<'PYEOF'
+python3 - "$WORKDIR/.claude/settings.json" <<'PYEOF'
 import json, sys
 with open(sys.argv[1]) as f:
     settings = json.load(f)
@@ -36,7 +36,7 @@ PYEOF
 
 echo "Test 2: deliver_hooks does not emit PostToolUseFailure"
 
-python3 - "$TMPDIR/.claude/settings.json" <<'PYEOF'
+python3 - "$WORKDIR/.claude/settings.json" <<'PYEOF'
 import json, sys
 with open(sys.argv[1]) as f:
     settings = json.load(f)
@@ -46,15 +46,15 @@ if "PostToolUseFailure" in settings["hooks"]:
 print("PASS: no invalid hook events")
 PYEOF
 
-rm -rf "$TMPDIR"
+rm -rf "$WORKDIR"
 
 echo "Test 3: deliver_boris_settings drops unsupported keys and normalizes permissionMode"
 
-TMPDIR=$(mktemp -d)
-mkdir -p "$TMPDIR/.claude"
-echo '{"permissions": {}, "hooks": {}, "mcpServers": {}}' > "$TMPDIR/.claude/settings.json"
+WORKDIR=$(mktemp -d)
+mkdir -p "$WORKDIR/.claude"
+echo '{"permissions": {}, "hooks": {}, "mcpServers": {}}' > "$WORKDIR/.claude/settings.json"
 
-PROJECT_ROOT="$TMPDIR"
+PROJECT_ROOT="$WORKDIR"
 MANIFEST_CAP_HOOKS="true"
 MANIFEST_DELIVERY_HOOKS_METHOD="settings_json"
 MANIFEST_DELIVERY_HOOKS_TARGET=".claude/settings.json"
@@ -69,7 +69,7 @@ OCTOPUS_OUTPUT_STYLE="explanatory"
 
 deliver_boris_settings "claude" >/dev/null 2>&1 || true
 
-python3 - "$TMPDIR/.claude/settings.json" <<'PYEOF'
+python3 - "$WORKDIR/.claude/settings.json" <<'PYEOF'
 import json, sys
 with open(sys.argv[1]) as f:
     settings = json.load(f)
@@ -88,7 +88,7 @@ for bad in ("worktree", "autoMemory", "autoDream", "sandbox"):
 print("PASS: boris passthroughs filtered safely")
 PYEOF
 
-rm -rf "$TMPDIR"
+rm -rf "$WORKDIR"
 
 echo "Test: destructive-guard is injected by default"
 TMPDIR2=$(mktemp -d)
