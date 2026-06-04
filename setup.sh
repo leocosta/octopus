@@ -2134,6 +2134,18 @@ deliver_roles() {
 # Track generated workflow command names for collision detection
 declare -a GENERATED_WORKFLOW_CMDS=()
 
+# Strip Octopus-internal frontmatter fields (name:, cli:) from a command file
+# on delivery — they are source metadata (the CLI dispatches via
+# cli/lib/commands.default, not the delivered .md), and only add noise to the
+# slash command the agent loads. Keeps description:/agent: and the body intact.
+_deliver_cmd_file() {
+  awk '
+    /^---[[:space:]]*$/ { d++; print; next }
+    d==1 && /^(name|cli):/ { next }
+    { print }
+  ' "$1"
+}
+
 deliver_commands() {
   local agent="$1"
   local output_path="${OCTOPUS_AGENT_OUTPUT[$agent]:-$MANIFEST_OUTPUT}"
@@ -2156,7 +2168,7 @@ deliver_commands() {
         local cmd_name
         cmd_name=$(basename "$cmd_file" .md)
         GENERATED_WORKFLOW_CMDS+=("$cmd_name")
-        cat "$cmd_file" \
+        _deliver_cmd_file "$cmd_file" \
           > "$commands_dir/${prefix}${cmd_name}.md"
         echo "  → ${MANIFEST_DELIVERY_COMMANDS_TARGET}${prefix}${cmd_name}.md"
       done
