@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.78.0] - 2026-06-04
+
+⚡ This release roughly halves the per-session token cost and makes setup install only what each repo actually uses.
+
+**Token-cost optimization** (⚡ ♻️): the always-loaded context dropped ~65% — the core coding guidelines were de-duplicated against `rules/common`, the heavy custom-exception gate and the commit/PR/task conventions now ship on-demand instead of inline, and the remaining common rules were compressed. The skill/role registry that loads every session was trimmed across ~40 descriptions. Review orchestrators (`codereview`/`pr-review`/`audit-all`) now route each audit only its domain files, skip empty audits, and run on the cheapest model tier, while over-broad auto-activation triggers were narrowed. A `context-budget` measurement harness with a CI ratchet locks the savings against regression.
+
+✨ **Stack-aware, granular setup**: `octopus setup` now detects a repo's language and database from its files and writes the matching profiles into `.octopus.yml` — a C# + SQL Server repo gets the C# rules and the SQL Server review skill, and nothing for Python, TypeScript, or the databases it doesn't use. Intent bundles (`backend`/`fullstack`) are now stack-agnostic; per-engine database review ships as auto-selected `db-*` profiles. The `quality` bundle can be taken granularly via `quality-audits`, `quality-signals`, and `knowledge-ops`; `map-system` and `delegate` moved to an opt-in `workflow-extras` bundle. A new manifest `exclude:` key — and an opt-in **customize** step in the picker — lets you drop individual members from a bundle without abandoning it.
+
+📝 **Docs**: the published site documents the two-axis bundle model (intent bundles vs stack/db profiles), the new bundles, the setup detection flags, and `exclude:`.
+
 ## [1.77.1] - 2026-06-03
 
 🐛 `octopus update` now propagates changes to the shim itself, not just the cached release. The shim (`bin/octopus`) is copied into `~/.local/bin`, but `command_update` invoked the installer with `--no-shim-setup`, so a change to the shim — like the `version` command added in v1.77.0 — only reached users through a full reinstall, never through `update`; the shim could stay frozen across releases while the cache moved forward. Two complementary layers fix this: `sync_shim` in the shim refreshes the running binary from the target release via an atomic rename (safe to overwrite the executing script — the open inode survives until exit), making every future shim change self-propagating; and because old shims re-fetch `install.sh` fresh from `main` on every update, `heal_stale_shim` in the installer heals an already-installed stale shim on a forward-version move (never a downgrade or pinned-older backfill, never creating a stray shim), closing the gap for the installed base with no manual copy. 🧪 New regression tests lock both paths: `test_shim_sync.sh` (update refreshes a stale shim, second update is a no-op) and `test_shim_heal.sh` (forward heal, no-downgrade, no stray shim, no temp leak).
