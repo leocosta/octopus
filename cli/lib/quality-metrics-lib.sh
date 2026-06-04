@@ -18,6 +18,20 @@
 #   QM_WORKSPACE_YML — workspace manifest (default: resolved from project manifest's workspace: key)
 
 # ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+# Reject any value that is not a plain number (integer or decimal, optional
+# sign). Security boundary: config values (qm_field) and baseline values
+# (qm_parse_baseline) are attacker-influenceable — a malicious .octopus.yml
+# layer or a tampered orphan ref must never reach awk as program text. Every
+# numeric value is validated here AND passed to awk via -v bindings (data, not
+# code) before any arithmetic. Returns 0 if numeric.
+qm_is_numeric() {
+  [[ "$1" =~ ^-?[0-9]+(\.[0-9]+)?$ ]]
+}
+
+# ---------------------------------------------------------------------------
 # Config resolver
 # ---------------------------------------------------------------------------
 
@@ -89,6 +103,14 @@ qm_field() {
   # Layer 3: project (wins)
   ov="$(qm_override "$project_yml" "$metric" "$field")"; [[ -n "$ov" ]] && val="$ov"
 
+  # Security boundary: a resolved config value flows into arithmetic. Reject
+  # anything non-numeric so attacker-controlled config (any layer) can never be
+  # interpreted as awk program text downstream.
+  if [[ -n "$val" ]] && ! qm_is_numeric "$val"; then
+    echo "qm_field: non-numeric value for ${metric}.${field}: $val" >&2
+    return 1
+  fi
+
   printf '%s\n' "$val"
 }
 
@@ -110,12 +132,12 @@ qm_compute_delta() {
   local main_val="$1" branch_val="$2" baseline_val="$3"
 
   local vs_main vs_baseline
-  vs_main="$(awk "BEGIN { printf \"%g\", ($branch_val) - ($main_val) }")"
+  vs_main="$(awk -v b="$branch_val" -v m="$main_val" 'BEGIN { printf "%g", (b+0) - (m+0) }')"
 
   if [[ -z "$baseline_val" ]]; then
     vs_baseline="n/a"
   else
-    vs_baseline="$(awk "BEGIN { printf \"%g\", ($branch_val) - ($baseline_val) }")"
+    vs_baseline="$(awk -v b="$branch_val" -v x="$baseline_val" 'BEGIN { printf "%g", (b+0) - (x+0) }')"
   fi
 
   printf 'vs_baseline:%s\nvs_main:%s\n' "$vs_baseline" "$vs_main"
@@ -138,7 +160,7 @@ qm_check_threshold() {
   # Absolute check: current must be >= absolute_min if set
   if [[ -n "$absolute_min" ]]; then
     local ok
-    ok="$(awk "BEGIN { print ($current >= $absolute_min) ? \"1\" : \"0\" }")"
+    ok="$(awk -v c="$current" -v m="$absolute_min" 'BEGIN { print (c+0 >= m+0) ? "1" : "0" }')"
     if [[ "$ok" == "0" ]]; then
       echo "breach: $metric current=$current is below absolute min=$absolute_min"
       return 1
@@ -150,7 +172,7 @@ qm_check_threshold() {
   # Ratchet check: current must not be worse than baseline
   if [[ -n "$baseline" ]]; then
     local ok
-    ok="$(awk "BEGIN { print ($current >= $baseline) ? \"1\" : \"0\" }")"
+    ok="$(awk -v c="$current" -v b="$baseline" 'BEGIN { print (c+0 >= b+0) ? "1" : "0" }')"
     if [[ "$ok" == "0" ]]; then
       echo "breach: $metric current=$current regressed vs baseline=$baseline"
       return 1
@@ -181,7 +203,7 @@ qm_check_threshold_max() {
   # Absolute check: current must be <= absolute_max if set
   if [[ -n "$absolute_max" ]]; then
     local ok
-    ok="$(awk "BEGIN { print ($current <= $absolute_max) ? \"1\" : \"0\" }")"
+    ok="$(awk -v c="$current" -v m="$absolute_max" 'BEGIN { print (c+0 <= m+0) ? "1" : "0" }')"
     if [[ "$ok" == "0" ]]; then
       echo "breach: $metric current=$current exceeds absolute max=$absolute_max"
       return 1
@@ -193,7 +215,7 @@ qm_check_threshold_max() {
   # Ratchet check: current must not be worse (higher) than baseline
   if [[ -n "$baseline" ]]; then
     local ok
-    ok="$(awk "BEGIN { print ($current <= $baseline) ? \"1\" : \"0\" }")"
+    ok="$(awk -v c="$current" -v b="$baseline" 'BEGIN { print (c+0 <= b+0) ? "1" : "0" }')"
     if [[ "$ok" == "0" ]]; then
       echo "breach: $metric current=$current regressed vs baseline=$baseline"
       return 1

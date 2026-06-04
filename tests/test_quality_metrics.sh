@@ -442,6 +442,47 @@ t8_breach_absolute_emits_curation() {
 check "smoke: absolute breach → curation:needed" t8_breach_absolute_emits_curation
 
 # ---------------------------------------------------------------------------
+# SECTION 9 — awk code-injection guard (config + baseline are untrusted)
+# ---------------------------------------------------------------------------
+# Purpose: a malicious .octopus.yml layer or tampered orphan ref must never
+# reach awk as program text. Values are validated numeric at the qm_field
+# boundary and passed to awk via -v bindings (data, not code).
+echo "=== Section 9: awk code-injection guard ==="
+
+# A config value crafted to break out of an interpolated awk program and run a
+# command. With the fix it is rejected as non-numeric (and could never execute
+# even if it slipped through, because awk receives it via -v).
+QM_EVIL=$(mktemp); FIXTURES+=("$QM_EVIL")
+SENTINEL="$(mktemp -u)"; FIXTURES+=("$SENTINEL")
+printf 'quality_metrics:\n  coverage:\n    min: 0); system("touch %s"); print(0\n' "$SENTINEL" > "$QM_EVIL"
+
+t9_malicious_config_rejected() {
+  # qm_field must fail (non-zero) for a non-numeric value.
+  ! QM_PROJECT_YML="$QM_EVIL" qm_field "coverage" "min" 2>/dev/null
+}
+check "injection: malicious config value rejected by qm_field" t9_malicious_config_rejected
+
+t9_no_command_executed() {
+  # The injected system("touch …") must NOT have run.
+  QM_PROJECT_YML="$QM_EVIL" qm_field "coverage" "min" &>/dev/null || true
+  [[ ! -e "$SENTINEL" ]]
+}
+check "injection: no command executed via config" t9_no_command_executed
+
+t9_numeric_validator() {
+  qm_is_numeric "80" && qm_is_numeric "-3.5" && ! qm_is_numeric '0); system("x")'
+}
+check "injection: qm_is_numeric accepts numbers, rejects code" t9_numeric_validator
+
+t9_threshold_safe_with_injection() {
+  # Even passed directly (bypassing qm_field), an arithmetic fn must not execute
+  # injected code — -v bindings treat the value as data, coerced to 0.
+  qm_check_threshold "coverage" '0); system("touch '"$SENTINEL"'") #' "" "80" &>/dev/null || true
+  [[ ! -e "$SENTINEL" ]]
+}
+check "injection: qm_check_threshold passes value as awk data, not code" t9_threshold_safe_with_injection
+
+# ---------------------------------------------------------------------------
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]
