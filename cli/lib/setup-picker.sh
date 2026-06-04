@@ -16,6 +16,8 @@ PICKER_HOOKS="true"
 PICKER_WORKFLOW="true"
 PICKER_REVIEWERS=""
 PICKER_MCP_ENABLED="false"
+PICKER_CUSTOMIZE="false"
+PICKER_EXCLUDE=()
 
 # ---------------------------------------------------------------------------
 # fzf resolution: system fzf → bundled fzf → empty (bash fallback)
@@ -77,15 +79,16 @@ _picker_load_bundles() {
 
 _picker_load_bundles
 
-_PICKER_FEATURES=(hooks workflow reviewers mcp)
+_PICKER_FEATURES=(hooks workflow reviewers mcp customize)
 _PICKER_FEATURE_DESCS=(
   "destructive-guard, session-start"
   "pr-open, pr-merge, release"
   "→ prompted after install"
   "→ prompted after install"
+  "→ deselect individual skills from the chosen bundles"
 )
 # Built-in defaults — used only when manifest absent OR key missing.
-_PICKER_FEATURE_DEFAULTS=(true true false false)
+_PICKER_FEATURE_DEFAULTS=(true true false false false)
 
 # ---------------------------------------------------------------------------
 # Current state — read existing .octopus.yml so the picker reflects what's
@@ -281,6 +284,7 @@ _picker_run_fzf() {
   PICKER_WORKFLOW="false"
   PICKER_REVIEWERS=""
   PICKER_MCP_ENABLED="false"
+  PICKER_CUSTOMIZE="false"
   local feat_lines
   feat_lines=$(printf '%s\n' "$selected" | grep "^feature:" || true)
   while IFS= read -r line; do
@@ -292,8 +296,66 @@ _picker_run_fzf() {
       workflow)  PICKER_WORKFLOW="true" ;;
       reviewers) PICKER_REVIEWERS="__ask__" ;;
       mcp)       PICKER_MCP_ENABLED="true" ;;
+      customize) PICKER_CUSTOMIZE="true" ;;
     esac
   done <<< "$feat_lines"
+
+  # RM-146: optional second pass — deselect individual skills/roles from the
+  # chosen bundles. Whatever the user unchecks becomes the manifest exclude:.
+  if [[ "$PICKER_CUSTOMIZE" == "true" ]]; then
+    _picker_member_deselect "$fzf_bin"
+  fi
+}
+
+# Shallow union of the skills + roles listed across the given bundle ymls
+# (de-duplicated, stable order). Pure/testable — no fzf, no globals consumed.
+_picker_member_union() {
+  local b f line in_list seen=" " name
+  for b in "$@"; do
+    f="$_PICKER_RELEASE_ROOT/bundles/$b.yml"
+    [[ -f "$f" ]] || continue
+    in_list=""
+    while IFS= read -r line || [[ -n "$line" ]]; do
+      case "$line" in
+        skills:*|roles:*) in_list="yes" ;;
+        rules:*|mcp:*|hooks:*|name:*|category:*|description:*|persona_*) in_list="" ;;
+        [[:space:]]*-*)
+          [[ -n "$in_list" ]] || continue
+          name="${line#*- }"; name="${name%%#*}"; name="${name//[[:space:]]/}"
+          [[ -z "$name" || "$name" == "[]" ]] && continue
+          case "$seen" in *" $name "*) ;; *) seen+="$name "; printf '%s\n' "$name" ;; esac
+          ;;
+      esac
+    done < "$f"
+  done
+}
+
+# Phase-2 fzf: pre-check every member; PICKER_EXCLUDE = union minus what stays.
+_picker_member_deselect() {
+  local fzf_bin="$1"
+  PICKER_EXCLUDE=()
+  local -a _union=()
+  while IFS= read -r m; do [[ -n "$m" ]] && _union+=("$m"); done \
+    < <(_picker_member_union "${PICKER_BUNDLES[@]}")
+  [[ ${#_union[@]} -eq 0 ]] && return 0
+
+  # All members start checked (load:toggle every row); unchecking = exclude.
+  local load_bind="" i
+  for (( i=0; i<${#_union[@]}; i++ )); do load_bind+="pos($((i+1)))+toggle+"; done
+  load_bind="${load_bind%+}"
+
+  local kept
+  kept=$(printf '%s\n' "${_union[@]}" | "$fzf_bin" \
+    --multi --no-sort --layout=reverse --height=~80% --border=rounded \
+    --prompt="  Keep these skills › " --pointer="▶" --marker="✓" \
+    --header="  SPACE/TAB = toggle   ENTER = confirm   (unchecked → excluded)" \
+    --bind="load:$load_bind" 2>/dev/tty) || kept=""
+
+  # Exclude = union members not in the kept set.
+  local u keptnl=$'\n'"$kept"$'\n'
+  for u in "${_union[@]}"; do
+    case "$keptnl" in *$'\n'"$u"$'\n'*) ;; *) PICKER_EXCLUDE+=("$u") ;; esac
+  done
 }
 
 # ---------------------------------------------------------------------------
