@@ -33,6 +33,12 @@ MAX_DUP_MARKERS=0
 MAX_STACK_CSHARP_TOKENS=3400
 MAX_STACK_PYTHON_TOKENS=2600
 MAX_STACK_TYPESCRIPT_TOKENS=3950
+# RM-135: SKILL.md bodies over the scaffold-skill 250-line guideline (on-demand
+# cost per activation). Locks the current 4 (dotnet, launch-release,
+# respond-to-review, delegate) and blocks NEW bloat. Lower this as offenders are
+# run through `compress-skill` (the anchor-preserving tool built for it);
+# dotnet is example-heavy and won't shrink much.
+MAX_OVERSIZED_SKILLS=4
 
 PASS=0; FAIL=0
 check() {
@@ -69,6 +75,8 @@ for lang in CSHARP PYTHON TYPESCRIPT; do
   max_var="MAX_STACK_${lang}_TOKENS"; max="${!max_var}"
   check "stack $lang rules <= $max tok (got ${got:-?})" le "$got" "$max"
 done
+oversized=$(grep -oE 'OVERSIZED_SKILLS=[0-9]+' <<<"$mach" | grep -oE '[0-9]+')
+check "oversized skill bodies <= $MAX_OVERSIZED_SKILLS (got ${oversized:-?})" le "$oversized" "$MAX_OVERSIZED_SKILLS"
 
 # --- summary ---------------------------------------------------------------
 echo "-----------------------------------------"

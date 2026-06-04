@@ -130,6 +130,17 @@ for lang in csharp python typescript; do
   stack_line+=" STACK_$(printf '%s' "$lang" | tr '[:lower:]' '[:upper:]')_TOKENS=$(_tokens "$lb")"
 done
 
+# --- oversized skill bodies (RM-135: on-demand cost per activation) ---------
+# scaffold-skill sets a <=250-line guideline for SKILL.md. Count the bodies
+# over it so the ratchet prevents new bloat and tracks compression of offenders.
+oversized=0
+if [[ -n "$SKILLS_DIR" ]]; then
+  while IFS= read -r f; do
+    bl=$(wc -l <"$f" 2>/dev/null || echo 0)
+    [[ "$bl" -gt 250 ]] && oversized=$((oversized + 1))
+  done < <(find -L "$SKILLS_DIR" -name 'SKILL.md' -type f 2>/dev/null)
+fi
+
 # --- totals ----------------------------------------------------------------
 always_bytes=$((claude_bytes + rules_bytes))
 always_tokens=$(_tokens "$always_bytes")
@@ -174,5 +185,5 @@ printf '\n'
 printf '  core<->rules duplicated markers: %d  (target: 0 — RM-117)\n' "$dup_markers"
 printf '\n'
 # Machine-readable line for the CI ratchet (tests/test_context_budget.sh).
-printf 'ALWAYS_TOKENS=%d REGISTRY_TOKENS=%d TOTAL_TOKENS=%d DUP_MARKERS=%d%s\n' \
-  "$always_tokens" "$registry_tokens" "$total_tokens" "$dup_markers" "$stack_line"
+printf 'ALWAYS_TOKENS=%d REGISTRY_TOKENS=%d TOTAL_TOKENS=%d DUP_MARKERS=%d OVERSIZED_SKILLS=%d%s\n' \
+  "$always_tokens" "$registry_tokens" "$total_tokens" "$dup_markers" "$oversized" "$stack_line"
