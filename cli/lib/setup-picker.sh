@@ -307,8 +307,10 @@ _picker_run_fzf() {
   fi
 }
 
-# Shallow union of the skills + roles listed across the given bundle ymls
-# (de-duplicated, stable order). Pure/testable — no fzf, no globals consumed.
+# Shallow union of the skills + roles + rules listed across the given bundle
+# ymls (de-duplicated, stable order). Rules are included so a stack/db profile's
+# rule (e.g. `typescript`) is deselectable too — `_apply_excludes` already drops
+# from OCTOPUS_RULES. Pure/testable — no fzf, no globals consumed.
 _picker_member_union() {
   local b f line in_list seen=" " name
   for b in "$@"; do
@@ -317,8 +319,8 @@ _picker_member_union() {
     in_list=""
     while IFS= read -r line || [[ -n "$line" ]]; do
       case "$line" in
-        skills:*|roles:*) in_list="yes" ;;
-        rules:*|mcp:*|hooks:*|name:*|category:*|description:*|persona_*) in_list="" ;;
+        skills:*|roles:*|rules:*) in_list="yes" ;;
+        mcp:*|hooks:*|name:*|category:*|description:*|persona_*) in_list="" ;;
         [[:space:]]*-*)
           [[ -n "$in_list" ]] || continue
           name="${line#*- }"; name="${name%%#*}"; name="${name//[[:space:]]/}"
@@ -347,7 +349,7 @@ _picker_member_deselect() {
   local kept
   kept=$(printf '%s\n' "${_union[@]}" | "$fzf_bin" \
     --multi --no-sort --layout=reverse --height=~80% --border=rounded \
-    --prompt="  Keep these skills › " --pointer="▶" --marker="✓" \
+    --prompt="  Keep these members › " --pointer="▶" --marker="✓" \
     --header="  SPACE/TAB = toggle   ENTER = confirm   (unchecked → excluded)" \
     --bind="load:$load_bind" 2>/dev/tty) || kept=""
 
@@ -356,6 +358,42 @@ _picker_member_deselect() {
   for u in "${_union[@]}"; do
     case "$keptnl" in *$'\n'"$u"$'\n'*) ;; *) PICKER_EXCLUDE+=("$u") ;; esac
   done
+}
+
+# Map a space/comma-separated list of 1-based indices to the union members they
+# select (for exclusion). Out-of-range and non-numeric tokens are ignored.
+# Pure/testable — no tty, no globals. Mirrors the bundle index parsing.
+_picker_indices_to_members() {
+  local raw="$1"; shift
+  local -a union=("$@")
+  local norm tok
+  norm=$(printf '%s' "$raw" | tr ',\t' '  ' | tr -s ' ')
+  for tok in $norm; do
+    [[ "$tok" =~ ^[1-9][0-9]*$ ]] || continue
+    (( tok >= 1 && tok <= ${#union[@]} )) || continue
+    printf '%s\n' "${union[$((tok-1))]}"
+  done
+}
+
+# Bash-fallback counterpart of _picker_member_deselect: numbered union, the user
+# enters the indices to EXCLUDE (default none → keep all). Sets PICKER_EXCLUDE.
+_picker_member_deselect_bash() {
+  PICKER_EXCLUDE=()
+  local -a _union=()
+  while IFS= read -r m; do [[ -n "$m" ]] && _union+=("$m"); done \
+    < <(_picker_member_union "${PICKER_BUNDLES[@]}")
+  [[ ${#_union[@]} -eq 0 ]] && return 0
+
+  echo ""
+  echo "  Members from your bundles (all kept by default):"
+  local i
+  for (( i=0; i<${#_union[@]}; i++ )); do
+    printf "    %2d. %s\n" "$((i+1))" "${_union[$i]}"
+  done
+  printf "  Numbers to EXCLUDE — space/comma-separated [none]: "
+  local raw; read -r raw </dev/tty; raw="${raw:-}"
+  while IFS= read -r m; do [[ -n "$m" ]] && PICKER_EXCLUDE+=("$m"); done \
+    < <(_picker_indices_to_members "$raw" "${_union[@]}")
 }
 
 # ---------------------------------------------------------------------------
@@ -435,6 +473,12 @@ _picker_run_bash() {
     && PICKER_REVIEWERS="__ask__" || PICKER_REVIEWERS=""
   _picker_bash_yn "  Configure MCP servers" "n" \
     && PICKER_MCP_ENABLED="true" || PICKER_MCP_ENABLED="false"
+
+  # Granular member-deselect — parity with the fzf `customize` step.
+  if _picker_bash_yn "  Customize (deselect individual skills/roles/rules)" "n"; then
+    PICKER_CUSTOMIZE="true"
+    _picker_member_deselect_bash
+  fi
   echo ""
 }
 
