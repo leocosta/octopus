@@ -23,9 +23,15 @@ QM_ADAPTER_DIR="${QM_ADAPTER_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}
 qm_adapter_csharp_coverage() {
   local repo_root="${1:-$PWD}"
 
-  # Find test projects
+  # Find a test project. Prefer a *.Tests.csproj / *Test.csproj — running
+  # `dotnet test` on a non-test project yields no coverage, so picking the
+  # first csproj on disk (alphabetical/traversal order) was unreliable.
   local test_proj
-  test_proj="$(find "$repo_root" -name '*.csproj' -not -path '*/obj/*' | head -1)"
+  test_proj="$(find "$repo_root" -name '*.csproj' -not -path '*/obj/*' -not -path '*/bin/*' \
+    | grep -iE '[._-]tests?\.csproj$' | head -1)"
+  if [[ -z "$test_proj" ]]; then
+    test_proj="$(find "$repo_root" -name '*.csproj' -not -path '*/obj/*' | head -1)"
+  fi
   if [[ -z "$test_proj" ]]; then
     echo "coverage:0"
     return 0
@@ -62,10 +68,14 @@ qm_adapter_csharp_complexity() {
     return 0
   fi
 
+  # lizard's C# language id is "csharp" (not "cs" — that matches nothing).
+  # The average lives in the tabular footer, not in an "Average ..." line:
+  #   Total nloc | Avg.NLOC | AvgCCN | Avg.token | Fun Cnt | ...
+  # The totals row is the only line with >=8 all-numeric fields; AvgCCN is $3.
   local complexity
-  complexity="$(lizard "$repo_root" --languages cs \
-    --exclude "*/obj/*" --exclude "*/bin/*" \
-    2>/dev/null | awk '/^Average cyclomatic/ {print $NF}' | head -1)"
+  complexity="$(lizard "$repo_root" --languages csharp \
+    --exclude "*/obj/*" --exclude "*/bin/*" 2>/dev/null \
+    | awk 'NF>=8 && $1 ~ /^[0-9]+$/ && $NF ~ /^[0-9.]+$/ {v=$3} END{print (v==""?0:v)}')"
   echo "complexity:${complexity:-0}"
 }
 
@@ -79,10 +89,12 @@ qm_adapter_csharp_module_size() {
     return 0
   fi
 
+  # See qm_adapter_csharp_complexity: "csharp" language id + tabular footer.
+  # Avg.NLOC (average lines per function) is column $2 of the totals row.
   local nloc
-  nloc="$(lizard "$repo_root" --languages cs \
-    --exclude "*/obj/*" --exclude "*/bin/*" \
-    2>/dev/null | awk '/^Average nloc/ {print $NF}' | head -1)"
+  nloc="$(lizard "$repo_root" --languages csharp \
+    --exclude "*/obj/*" --exclude "*/bin/*" 2>/dev/null \
+    | awk 'NF>=8 && $1 ~ /^[0-9]+$/ && $NF ~ /^[0-9.]+$/ {v=$2} END{print (v==""?0:v)}')"
   echo "module_size:${nloc:-0}"
 }
 
@@ -123,7 +135,9 @@ for p in projs:
             ['dotnet', 'list', p, 'reference'],
             text=True, stderr=subprocess.DEVNULL)
         refs = re.findall(r'([A-Za-z0-9._-]+)\.csproj', out)
-        graph[name] = refs
+        # Drop self-edges: the "no Project to Project references in project
+        # .../<name>.csproj" message makes the regex capture the project itself.
+        graph[name] = [r for r in refs if r != name]
     except Exception:
         graph[name] = []
 
