@@ -176,7 +176,7 @@ _picker_effective_default() {
 }
 
 # ---------------------------------------------------------------------------
-# Tree helpers (consumed by _picker_tree_rows)
+# Tree helpers (consumed by _picker_bundle_rows / _picker_member_rows)
 # ---------------------------------------------------------------------------
 
 # Emit a bundle's members as `name<TAB>kind` (skill|role|rule), in file order.
@@ -220,12 +220,11 @@ _picker_current_excludes() {
   done < "$manifest"
 }
 
-# Emit the pre-expanded tree, one row per line, as:
+# Screen-1 rows — features + bundles grouped by category, NO members. Emits
 #   id <TAB> visible <TAB> default(0|1) <TAB> desc
-# id ∈ h:<cat> | f:<name> | b:<name> | m:<name>. default=1 means pre-selected
-# (features on, current bundles, members kept unless already excluded). Pure /
-# testable — no fzf, no temp files. Consumed by _picker_run_fzf.
-_picker_tree_rows() {
+# id ∈ h:<cat> | f:<name> | b:<name>. default=1 = pre-selected (features on,
+# current bundles). Pure / testable — no fzf, no temp files.
+_picker_bundle_rows() {
   local i fname d
   printf 'h:Features\t  ── Features ──\t0\t\n'
   for (( i=0; i<${#_PICKER_FEATURES[@]}; i++ )); do
@@ -237,7 +236,7 @@ _picker_tree_rows() {
   # Bundle categories in display order, then an "Other" catch-all so no bundle
   # is dropped if it carries an unrecognized category.
   local cats=("foundation:Foundation" "intent:Intent" "stack:Stack" "db:Database")
-  local written=" " pair key disp name desc selflag wrote_head mname mkind mdef
+  local written=" " pair key disp name desc selflag wrote_head
   for pair in "${cats[@]}" "*:Other"; do
     key="${pair%%:*}"; disp="${pair#*:}"; wrote_head=""
     for (( i=0; i<${#_PICKER_BUNDLES[@]}; i++ )); do
@@ -251,15 +250,26 @@ _picker_tree_rows() {
       selflag=0
       _picker_array_contains "$name" "${_CURRENT_BUNDLES[@]}" && selflag=1
       printf 'b:%s\t %s\t%s\t%s\n' "$name" "$name" "$selflag" "$desc"
-      while IFS=$'\t' read -r mname mkind; do
-        [[ -n "$mname" ]] || continue
-        mdef=1
-        _picker_array_contains "$mname" "${_CURRENT_EXCLUDES[@]}" && mdef=0
-        printf 'm:%s\t      %s (%s)\t%s\t%s\n' \
-          "$mname" "$mname" "$mkind" "$mdef" "$mkind in the $name bundle"
-      done < <(_picker_bundle_members "$name")
       written+="$name "
     done
+  done
+}
+
+# Screen-2 rows — for each given bundle that has members, a header + its members
+# (default checked unless already in _CURRENT_EXCLUDES). Same 4 columns. Pure /
+# testable. Empty output when no given bundle has members.
+_picker_member_rows() {
+  local name mname mkind mdef first
+  for name in "$@"; do
+    first=1
+    while IFS=$'\t' read -r mname mkind; do
+      [[ -n "$mname" ]] || continue
+      [[ -n "$first" ]] && { printf 'h:%s\t  ── %s ──\t0\t\n' "$name" "$name"; first=""; }
+      mdef=1
+      _picker_array_contains "$mname" "${_CURRENT_EXCLUDES[@]}" && mdef=0
+      printf 'm:%s\t      %s (%s)\t%s\t%s\n' \
+        "$mname" "$mname" "$mkind" "$mdef" "$mkind in the $name bundle"
+    done < <(_picker_bundle_members "$name")
   done
 }
 
@@ -274,17 +284,14 @@ _picker_diff_union_kept() {
 }
 
 # ---------------------------------------------------------------------------
-# fzf picker — pre-expanded tree, native multi-select (no reload/execute).
-# Every bundle's skills/roles/rules are listed indented beneath it, checked by
-# default; SPACE marks/unmarks. Pre-selection via the load/pos/toggle bind that
-# the flat picker already proved works. Selection is read from fzf's own marks
-# on ENTER — nothing depends on `{1}` (only the best-effort preview does).
+# One fzf screen, native multi-select. Reads rows (id<TAB>vis<TAB>def<TAB>desc)
+# on stdin; pre-selects def=1 rows via load/pos/toggle; guards category headers
+# (the `──` rows) from being marked. Echoes the marked ids (field 1), one per
+# line. Exit status: 0 confirm (ENTER), 1 cancel (Ctrl-C), 2 back (ESC — only
+# when $4 "back" is set; otherwise ESC cancels). No reload/execute/state.
 # ---------------------------------------------------------------------------
-_picker_run_fzf() {
-  local fzf_bin="$1"
-  _picker_load_current_state
-
-  # Build the rows once, then derive: fzf input, pre-select positions, desc map.
+_picker_fzf_screen() {
+  local fzf_bin="$1" prompt="$2" header="$3" back="${4:-}"
   local tmp; tmp="$(mktemp -d)"
   local input="" loadbind="" n=0 id vis def desc
   : > "$tmp/desc"
@@ -294,61 +301,112 @@ _picker_run_fzf() {
     input+="$id"$'\t'"$vis"$'\n'
     printf '%s\t%s\n' "$id" "$desc" >> "$tmp/desc"
     [[ "$def" == "1" ]] && loadbind+="pos($n)+toggle+"
-  done < <(_picker_tree_rows)
+  done
   loadbind="${loadbind%+}"
 
-  # Preview wrapper — best-effort (selection never depends on it). Quoted
-  # heredoc, so no escaping; the desc file path comes in via $QM_DESC.
+  # Preview wrapper — best-effort (selection never depends on it). Takes the
+  # whole line ({}) and extracts the id, so it's immune to --with-nth/{1}.
   local prev="$tmp/desc.sh"
   cat > "$prev" <<'PREV'
 #!/usr/bin/env bash
-awk -F'\t' -v id="$1" '$1==id{sub(/^[^\t]*\t/,""); print; exit}' "$QM_DESC"
+line="$1"; id="${line%%$'\t'*}"
+awk -F'\t' -v id="$id" '$1==id{sub(/^[^\t]*\t/,""); print; exit}' "$QM_DESC"
 PREV
   chmod +x "$prev"
 
-  local header="  SPACE select/deselect · ↑↓ move · ENTER confirm · Ctrl-C cancel"
-  local fzf_args=(
+  local args=(
     --multi --no-sort --layout=reverse --height=~85% --border=rounded
     --delimiter=$'\t' --with-nth=2 --nth=2
-    --prompt="  Octopus Setup › " --pointer="▶" --marker="✓"
-    --header="$header"
-    --preview="QM_DESC=$tmp/desc $prev {1}" --preview-window='right,42%,wrap'
-    --bind='space:toggle' --bind='tab:toggle+down' --bind='btab:toggle+up'
+    --prompt="$prompt" --pointer="▶" --marker="✓" --header="$header"
+    --preview="QM_DESC=$tmp/desc $prev {}" --preview-window='right,42%,wrap'
+    # Header rows (the `──` separators) must not be selectable.
+    --bind='space:transform:[[ {} == *──* ]] && echo ignore || echo toggle'
+    --bind='tab:transform:[[ {} == *──* ]] && echo down || echo toggle+down'
+    --bind='btab:transform:[[ {} == *──* ]] && echo up || echo toggle+up'
   )
-  [[ -n "$loadbind" ]] && fzf_args+=(--bind="load:$loadbind")
+  [[ -n "$loadbind" ]] && args+=(--bind="load:$loadbind")
+  # When a back step exists, ESC reports "esc" (accept) instead of aborting, so
+  # we can distinguish it from Ctrl-C (which still aborts → cancel).
+  [[ -n "$back" ]] && args+=(--expect=esc)
 
-  local selected
-  selected="$(printf '%s' "$input" | "$fzf_bin" "${fzf_args[@]}" 2>/dev/tty)" \
-    || { ui_warn "Setup cancelled."; rm -rf "$tmp"; exit 0; }
-
-  # Parse the marked rows by their id (field 1) — no {1} dependency.
-  PICKER_BUNDLES=()
-  PICKER_HOOKS="false"; PICKER_WORKFLOW="false"; PICKER_REVIEWERS=""
-  PICKER_MCP_ENABLED="false"; PICKER_CUSTOMIZE="false"
-  : > "$tmp/kept"
-  local sid
-  while IFS=$'\t' read -r sid _; do
-    [[ -n "$sid" ]] || continue
-    case "$sid" in
-      b:*)         PICKER_BUNDLES+=("${sid#b:}") ;;
-      f:hooks)     PICKER_HOOKS="true" ;;
-      f:workflow)  PICKER_WORKFLOW="true" ;;
-      f:reviewers) PICKER_REVIEWERS="__ask__" ;;
-      f:mcp)       PICKER_MCP_ENABLED="true" ;;
-      m:*)         printf '%s\n' "${sid#m:}" >> "$tmp/kept" ;;
-    esac
-  done <<< "$selected"
-  [[ ${#PICKER_BUNDLES[@]} -eq 0 ]] && PICKER_BUNDLES=("starter")
-
-  # exclude = members of the selected bundles that were NOT left checked.
-  _picker_member_union "${PICKER_BUNDLES[@]}" > "$tmp/union"
-  PICKER_EXCLUDE=()
-  local ex
-  while IFS= read -r ex; do
-    [[ -n "$ex" ]] && PICKER_EXCLUDE+=("$ex")
-  done < <(_picker_diff_union_kept "$tmp/union" "$tmp/kept")
-
+  local out rc
+  out="$(printf '%s' "$input" | "$fzf_bin" "${args[@]}" 2>/dev/tty)"; rc=$?
   rm -rf "$tmp"
+  [[ $rc -ne 0 ]] && return 1   # Ctrl-C / no-match → cancel
+  if [[ -n "$back" ]]; then
+    # --expect prepends a key line: empty for ENTER, "esc" for the back key.
+    [[ "$(printf '%s' "$out" | head -1)" == "esc" ]] && return 2
+    out="$(printf '%s' "$out" | tail -n +2)"
+  fi
+  printf '%s' "$out" | cut -f1
+}
+
+# ---------------------------------------------------------------------------
+# Two-screen fzf picker: (1) choose bundles + features, (2) fine-tune the
+# members of the chosen bundles. Each screen is a flat, coherent native
+# multi-select — no parent/child live coupling, hence no inverted state and no
+# reload/execute. Screen 2 is skipped when no chosen bundle has members.
+# ---------------------------------------------------------------------------
+_picker_run_fzf() {
+  local fzf_bin="$1"
+  _picker_load_current_state
+
+  local id rc kept memrows
+  while :; do
+    # --- Screen 1: bundles + features -------------------------------------
+    # Pre-selection reflects _CURRENT_* — updated below so ESC-back re-opens
+    # screen 1 with the choices the user already made, not the original state.
+    local sel1
+    sel1="$(_picker_bundle_rows | _picker_fzf_screen "$fzf_bin" \
+      "  Octopus Setup › bundles  " \
+      "  SPACE select · ENTER → next · Ctrl-C cancel")" \
+      || { ui_warn "Setup cancelled."; exit 0; }
+
+    PICKER_BUNDLES=()
+    PICKER_HOOKS="false"; PICKER_WORKFLOW="false"; PICKER_REVIEWERS=""
+    PICKER_MCP_ENABLED="false"; PICKER_CUSTOMIZE="false"
+    while IFS= read -r id; do
+      case "$id" in
+        b:*)         PICKER_BUNDLES+=("${id#b:}") ;;
+        f:hooks)     PICKER_HOOKS="true" ;;
+        f:workflow)  PICKER_WORKFLOW="true" ;;
+        f:reviewers) PICKER_REVIEWERS="__ask__" ;;
+        f:mcp)       PICKER_MCP_ENABLED="true" ;;
+      esac
+    done <<< "$sel1"
+    [[ ${#PICKER_BUNDLES[@]} -eq 0 ]] && PICKER_BUNDLES=("starter")
+
+    # Carry the screen-1 choices into the pre-selection state, so going back
+    # from screen 2 returns here with them intact.
+    _CURRENT_BUNDLES=("${PICKER_BUNDLES[@]}")
+    _CURRENT_HOOKS="$PICKER_HOOKS"; _CURRENT_WORKFLOW="$PICKER_WORKFLOW"
+    _CURRENT_MCP="$PICKER_MCP_ENABLED"
+
+    # --- Screen 2: fine-tune members of the chosen bundles ----------------
+    PICKER_EXCLUDE=()
+    memrows="$(_picker_member_rows "${PICKER_BUNDLES[@]}")"
+    [[ -z "$memrows" ]] && break   # no members to tune → done
+
+    kept="$(printf '%s\n' "$memrows" | _picker_fzf_screen "$fzf_bin" \
+      "  Fine-tune members ›  " \
+      "  uncheck to EXCLUDE · ENTER confirm · ESC ← back · Ctrl-C cancel" \
+      back)"; rc=$?
+    case "$rc" in
+      2) continue ;;                                  # ESC → back to screen 1
+      0) ;;                                           # ENTER → compute excludes
+      *) ui_warn "Setup cancelled."; exit 0 ;;        # Ctrl-C → cancel
+    esac
+
+    local tmp2; tmp2="$(mktemp -d)"
+    printf '%s\n' "$kept" | sed -n 's/^m://p' | sort -u > "$tmp2/kept"
+    _picker_member_union "${PICKER_BUNDLES[@]}" > "$tmp2/union"
+    local ex
+    while IFS= read -r ex; do
+      [[ -n "$ex" ]] && PICKER_EXCLUDE+=("$ex")
+    done < <(_picker_diff_union_kept "$tmp2/union" "$tmp2/kept")
+    rm -rf "$tmp2"
+    break
+  done
 }
 
 # Shallow union of the skills + roles + rules listed across the given bundle

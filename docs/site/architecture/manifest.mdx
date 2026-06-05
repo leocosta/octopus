@@ -110,12 +110,12 @@ exclude:
 introduced the member. It does not affect transitive dependencies
 of other skills that remain in the effective list.
 
-You don't have to hand-write it: the interactive `octopus setup`
-picker shows a tree — each bundle's skills, roles, and rules are listed
-indented beneath it, all checked by default. Uncheck any member
-(`SPACE`) and it is written here as `exclude:`. The plain-terminal
-fallback (no `fzf`) offers the same as a numbered list where you enter
-the members to exclude.
+You don't have to hand-write it: the interactive `octopus setup` runs
+in two steps. First you pick the bundles (and features) you want;
+then, if any chosen bundle has members, a second screen lists those
+skills, roles, and rules — all checked by default — and whatever you
+uncheck (`SPACE`) is written here as `exclude:`. The plain-terminal
+fallback (no `fzf`) offers the same two steps as numbered lists.
 
 ## Why the manifest is never auto-edited
 
