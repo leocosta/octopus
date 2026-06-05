@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.80.0] - 2026-06-05
+
+✨ The interactive `octopus setup` picker is redesigned as a **two-step flow**, replacing the old flat wall-of-text list. First you pick **bundles**, grouped by category (Foundation / Intent / Stack / Database) so the choice reads at a glance, with each item's full description in a side preview instead of crammed into the row. Then, if a chosen bundle carries skills/roles/rules, a **second screen** lists those members grouped per bundle, all checked by default — uncheck any to drop it (written to the manifest `exclude:`). `ESC` steps back from the member screen to the bundle screen with your choices intact, `ENTER` confirms, `Ctrl-C` cancels. The non-`fzf` terminal fallback offers the same two steps as numbered lists. 📝 The site's manifest page documents the flow.
+
 ## [1.79.1] - 2026-06-04
 
 🐛 The interactive setup's **customize** step (deselect individual members from your chosen bundles) gains two fixes. It now lists a stack/database profile's **rules** alongside skills and roles, so a profile rule (e.g. the TypeScript ruleset) can be deselected too — the manifest `exclude:` and delivery already supported dropping a rule, only the picker hadn't surfaced it. And the plain-terminal fallback (used when `fzf` isn't installed) now offers the customize step at all — a numbered list where you enter the items to exclude — instead of skipping past it; granular deselection was previously `fzf`-only. 🧪 The member-deselect tests grew to cover rule inclusion, the fallback's index→member mapping, and the rule's end-to-end removal. 📝 The site's manifest page documents both.
