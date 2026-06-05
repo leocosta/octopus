@@ -332,7 +332,9 @@ PREV
   [[ -n "$back" ]] && args+=(--bind='esc:print(__BACK__)+accept')
 
   local out rc
-  out="$(printf '%s' "$input" | "$fzf_bin" "${args[@]}" 2>/dev/tty)"; rc=$?
+  # set -e-safe: capture rc in an if-condition so a non-zero fzf exit (Ctrl-C)
+  # doesn't abort the whole `octopus setup` (cli/octopus.sh runs set -euo).
+  if out="$(printf '%s' "$input" | "$fzf_bin" "${args[@]}" 2>/dev/tty)"; then rc=0; else rc=$?; fi
   rm -rf "$tmp"
   [[ $rc -ne 0 ]] && return 1   # Ctrl-C / no-match → cancel
   # ESC (back) printed the sentinel as the first output line.
@@ -386,10 +388,13 @@ _picker_run_fzf() {
     memrows="$(_picker_member_rows "${PICKER_BUNDLES[@]}")"
     [[ -z "$memrows" ]] && break   # no members to tune → done
 
-    kept="$(printf '%s\n' "$memrows" | _picker_fzf_screen "$fzf_bin" \
+    # set -e-safe rc capture: ESC returns 2 (back); without the if-guard, set -e
+    # would abort `octopus setup` on that non-zero before the case runs — which
+    # is exactly why ESC appeared to "abandon" setup.
+    if kept="$(printf '%s\n' "$memrows" | _picker_fzf_screen "$fzf_bin" \
       "  Fine-tune members ›  " \
       "  uncheck to EXCLUDE · ENTER confirm · ESC ← back · Ctrl-C cancel" \
-      back)"; rc=$?
+      back)"; then rc=0; else rc=$?; fi
     case "$rc" in
       2) continue ;;                                  # ESC → back to screen 1
       0) ;;                                           # ENTER → compute excludes

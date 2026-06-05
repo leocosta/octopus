@@ -52,6 +52,15 @@ printf 'audit-all\naudit-contracts\ntypescript\n' > "$K"
 check "nothing excluded when all kept"  test -z "$(_picker_diff_union_kept "$U" "$K")"
 rm -f "$U" "$K"
 
+# --- regression guard: rc capture must be set -e-safe -----------------------
+# cli/octopus.sh runs `set -euo pipefail`; capturing a non-zero exit with a bare
+# `cmd; rc=$?` aborts the whole setup before the back/cancel branch runs (that
+# was the "ESC abandons setup" bug). Both screens must use the if-form.
+PICKER="$SCRIPT_DIR/cli/lib/setup-picker.sh"
+check "no set -e-unsafe '; rc=\$?' capture" bash -c '! grep -q "; rc=\$?" "$1"' _ "$PICKER"
+check "fzf-screen run uses if-form rc capture" \
+  grep -q 'if out=.*fzf_bin.*then rc=0; else rc=$?; fi' "$PICKER"
+
 echo "-----------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]
