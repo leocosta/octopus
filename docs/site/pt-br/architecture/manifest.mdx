@@ -112,12 +112,12 @@ exclude:
 bundle introduziu o membro. Não afeta dependências transitivas de outras
 skills que permanecem na lista efetiva.
 
-Você não precisa escrevê-lo à mão: no `octopus setup` interativo, ligue
-**customize** para abrir uma segunda tela listando todas as skills, roles
-e rules dos bundles escolhidos, todas pré-marcadas — o que você desmarcar é
-gravado aqui como `exclude:`. O passo funciona tanto no picker `fzf` quanto
-no fallback de terminal simples (uma lista numerada onde você informa os
-itens a excluir).
+Você não precisa escrevê-lo à mão: o picker interativo do `octopus setup`
+é uma árvore colapsável. Cada bundle expande (tecla `→`) nas skills, roles
+e rules que carrega, todas marcadas por padrão; desmarque qualquer membro
+(`SPACE`) e ele é gravado aqui como `exclude:`. O fallback de terminal
+simples (sem `fzf`) oferece o mesmo como uma lista numerada onde você informa
+os membros a excluir.
 
 ## Por que o manifesto nunca é editado automaticamente
 
