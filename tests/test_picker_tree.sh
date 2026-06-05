@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 # tests/test_picker_tree.sh
-# Pre-expanded tree picker. The fzf front-end isn't unit-testable, but the row
-# builder (_picker_tree_rows) and the keep→exclude diff (_picker_diff_union_kept)
-# are pure. This drives them headlessly against the real bundles and asserts the
-# tree shape, the pre-select defaults, and that an unchecked member becomes an
-# exclude. Grep/exit-code, per project convention.
+# Two-screen native-multiselect picker. The fzf front-end isn't unit-testable,
+# but the two row builders (_picker_bundle_rows = screen 1, _picker_member_rows
+# = screen 2) and the keep→exclude diff (_picker_diff_union_kept) are pure. Drive
+# them headless against the real bundles. Grep/exit-code, per project convention.
 set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PASS=0; FAIL=0
@@ -13,38 +12,43 @@ check() { local d="$1"; shift; if "$@"; then echo "PASS: $d"; PASS=$((PASS+1)); 
 export MANIFEST_PATH="/nonexistent" SETUP_PROFILES=""
 source "$SCRIPT_DIR/cli/lib/setup-picker.sh"
 
-# --- _picker_tree_rows: shape + defaults -----------------------------------
+# --- Screen 1: bundles + features, NO members ------------------------------
 _CURRENT_BUNDLES=(starter); _CURRENT_EXCLUDES=()
-rows="$(_picker_tree_rows)"
-field() { cut -f"$1"; }   # tab field helper
-
-# Pull a row's default (field 3) by its id (field 1). Real tabs throughout.
+rows="$(_picker_bundle_rows)"
 rowdef() { grep -F "$1"$'\t' <<<"$rows" | head -1 | cut -f3; }
 
-check "rows have a Features header"      grep -q $'^h:Features\t' <<<"$rows"
-check "rows have a Foundation header"    grep -q $'^h:Foundation\t' <<<"$rows"
-check "rows have a Stack header"         grep -q $'^h:Stack\t' <<<"$rows"
+check "screen 1 has a Features header"   grep -q $'^h:Features\t' <<<"$rows"
+check "screen 1 has a Foundation header" grep -q $'^h:Foundation\t' <<<"$rows"
+check "screen 1 has a Stack header"      grep -q $'^h:Stack\t' <<<"$rows"
+check "screen 1 has NO member rows"      test "$(grep -c $'^m:' <<<"$rows")" -eq 0
 check "hooks pre-selected (default 1)"   test "$(rowdef f:hooks)" = "1"
 check "reviewers off by default (0)"     test "$(rowdef f:reviewers)" = "0"
-check "starter bundle pre-selected"      test "$(rowdef b:starter)" = "1"
-check "a non-current bundle is off"      test "$(rowdef b:quality-metrics)" = "0"
-check "members are indented + kinded"    grep -q $'^m:implement\t      implement (skill)\t1\t' <<<"$rows"
-check "a stack rule appears as a member" grep -q $'^m:typescript\t.*(rule)\t1\t' <<<"$rows"
-check "member is kept (default 1)"       test "$(rowdef m:implement)" = "1"
+check "current bundle pre-selected"      test "$(rowdef b:starter)" = "1"
+check "non-current bundle off"           test "$(rowdef b:quality-metrics)" = "0"
 
-# A member already in the manifest exclude: starts unchecked (default 0).
+# --- Screen 2: members of the chosen bundles, grouped, kept by default -----
+_CURRENT_BUNDLES=(starter); _CURRENT_EXCLUDES=()
+m="$(_picker_member_rows starter stack-typescript)"
+mdef() { grep -F "$1"$'\t' <<<"$m" | head -1 | cut -f3; }
+check "screen 2 groups by bundle header"   grep -q $'^h:starter\t' <<<"$m"
+check "screen 2 has the stack header"      grep -q $'^h:stack-typescript\t' <<<"$m"
+check "screen 2 lists a skill member"      grep -q $'^m:implement\t      implement (skill)\t1\t' <<<"$m"
+check "screen 2 lists a stack rule member" grep -q $'^m:typescript\t.*(rule)\t1\t' <<<"$m"
+check "member kept by default (1)"         test "$(mdef m:implement)" = "1"
+check "member of an unchosen bundle absent" bash -c '! grep -q "audit-all" <<<"$1"' _ "$m"
+check "no members → empty output"          test -z "$(_picker_member_rows __nonexistent__)"
+
+# Excluded member starts unchecked (default 0).
 _CURRENT_BUNDLES=(starter); _CURRENT_EXCLUDES=(prototype)
-rows="$(_picker_tree_rows)"
-check "excluded member starts unchecked" test "$(rowdef m:prototype)" = "0"
+m2="$(_picker_member_rows starter)"
+check "excluded member starts unchecked"   test "$(grep -F 'm:prototype'$'\t' <<<"$m2" | cut -f3)" = "0"
 
-# --- _picker_diff_union_kept: union minus kept = excludes ------------------
+# --- keep → exclude diff ---------------------------------------------------
 U="$(mktemp)"; K="$(mktemp)"
-printf 'audit-all\naudit-contracts\narchitect\ntypescript\n' > "$U"
-printf 'audit-all\naudit-contracts\narchitect\n' > "$K"   # typescript NOT kept
-out="$(_picker_diff_union_kept "$U" "$K")"
-check "diff yields the unkept member"   grep -qx "typescript" <<<"$out"
-check "diff keeps the rest out"         test "$(grep -c . <<<"$out")" -eq 1
-printf 'audit-all\naudit-contracts\narchitect\ntypescript\n' > "$K"   # all kept
+printf 'audit-all\naudit-contracts\ntypescript\n' > "$U"
+printf 'audit-all\naudit-contracts\n' > "$K"   # typescript NOT kept
+check "diff yields the unkept member"   grep -qx "typescript" <<<"$(_picker_diff_union_kept "$U" "$K")"
+printf 'audit-all\naudit-contracts\ntypescript\n' > "$K"
 check "nothing excluded when all kept"  test -z "$(_picker_diff_union_kept "$U" "$K")"
 rm -f "$U" "$K"
 
