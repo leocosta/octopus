@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.80.1] - 2026-06-05
+
+🐛 Fixes the `octopus setup` two-screen picker on two counts: the cursor now opens at the **top** of the list instead of the bottom, and **`ESC`** on the member screen steps **back** to the bundle screen (choices intact) instead of abandoning setup — `Ctrl-C` still cancels. 🐛 The C# **`quality-metrics`** adapter is corrected so complexity, module size, and coverage are no longer reported as zero: `lizard` runs with the `csharp` language id (not `cs`) and the averages are read from its table footer; coverage now prefers a test project (`*.Tests.csproj`) over the first `.csproj` on disk; and the project-reference cycle detector no longer records false self-edges. The same adapter fixes ship in the writer Action template.
+
 ## [1.80.0] - 2026-06-05
 
 ✨ The interactive `octopus setup` picker is redesigned as a **two-step flow**, replacing the old flat wall-of-text list. First you pick **bundles**, grouped by category (Foundation / Intent / Stack / Database) so the choice reads at a glance, with each item's full description in a side preview instead of crammed into the row. Then, if a chosen bundle carries skills/roles/rules, a **second screen** lists those members grouped per bundle, all checked by default — uncheck any to drop it (written to the manifest `exclude:`). `ESC` steps back from the member screen to the bundle screen with your choices intact, `ENTER` confirms, `Ctrl-C` cancels. The non-`fzf` terminal fallback offers the same two steps as numbered lists. 📝 The site's manifest page documents the flow.
