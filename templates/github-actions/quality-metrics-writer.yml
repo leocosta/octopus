@@ -101,9 +101,12 @@ jobs:
         if: steps.stack.outputs.name == 'csharp'
         id: csharp_lizard
         run: |
-          OUTPUT=$(lizard . --languages cs -C 1000 -L 100000 -E 0 2>/dev/null || true)
-          COMPLEXITY=$(echo "$OUTPUT" | awk '/^Average cyclomatic/ {print $NF}' | head -1)
-          MOD_SIZE=$(echo "$OUTPUT" | awk '/^Average nloc/ {print $NF}' | head -1)
+          # lizard's C# language id is "csharp" (not "cs"). The averages live in
+          # the tabular footer, not in "Average ..." lines:
+          #   Total nloc | Avg.NLOC | AvgCCN | ...   (totals row: $2=nloc, $3=ccn)
+          OUTPUT=$(lizard . --languages csharp -C 1000 -L 100000 -E 0 2>/dev/null || true)
+          COMPLEXITY=$(echo "$OUTPUT" | awk 'NF>=8 && $1 ~ /^[0-9]+$/ && $NF ~ /^[0-9.]+$/ {v=$3} END{print (v==""?0:v)}')
+          MOD_SIZE=$(echo "$OUTPUT" | awk 'NF>=8 && $1 ~ /^[0-9]+$/ && $NF ~ /^[0-9.]+$/ {v=$2} END{print (v==""?0:v)}')
           echo "complexity=${COMPLEXITY:-0}" >> "$GITHUB_OUTPUT"
           echo "module_size=${MOD_SIZE:-0}" >> "$GITHUB_OUTPUT"
 
@@ -131,7 +134,9 @@ jobs:
               out = subprocess.check_output(
                 ['dotnet', 'list', p, 'reference'], text=True, stderr=subprocess.DEVNULL)
               refs = re.findall(r'([A-Za-z0-9._-]+)\.csproj', out)
-              graph[name] = refs
+              # Drop self-edges: the "no references in project .../<name>.csproj"
+              # message makes the regex capture the project itself.
+              graph[name] = [r for r in refs if r != name]
             except Exception:
               graph[name] = []
 
@@ -184,7 +189,9 @@ jobs:
               out = subprocess.check_output(
                 ['dotnet', 'list', p, 'reference'], text=True, stderr=subprocess.DEVNULL)
               refs = re.findall(r'([A-Za-z0-9._-]+)\.csproj', out)
-              graph[name] = refs
+              # Drop self-edges: the "no references in project .../<name>.csproj"
+              # message makes the regex capture the project itself.
+              graph[name] = [r for r in refs if r != name]
             except Exception:
               graph[name] = []
 
