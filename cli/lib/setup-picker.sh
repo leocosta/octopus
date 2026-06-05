@@ -324,20 +324,19 @@ PREV
     --bind='tab:transform:[[ {} == *──* ]] && echo down || echo toggle+down'
     --bind='btab:transform:[[ {} == *──* ]] && echo up || echo toggle+up'
   )
-  [[ -n "$loadbind" ]] && args+=(--bind="load:$loadbind")
-  # When a back step exists, ESC reports "esc" (accept) instead of aborting, so
-  # we can distinguish it from Ctrl-C (which still aborts → cancel).
-  [[ -n "$back" ]] && args+=(--expect=esc)
+  # Pre-selection runs pos()+toggle for each default row; without a final
+  # `first` the cursor is left on the last toggled row (bottom of the list).
+  [[ -n "$loadbind" ]] && args+=(--bind="load:${loadbind}+first")
+  # Back step: explicitly rebind ESC to emit a sentinel and accept (overrides
+  # ESC's default `abort` reliably, unlike --expect). Ctrl-C still aborts.
+  [[ -n "$back" ]] && args+=(--bind='esc:print(__BACK__)+accept')
 
   local out rc
   out="$(printf '%s' "$input" | "$fzf_bin" "${args[@]}" 2>/dev/tty)"; rc=$?
   rm -rf "$tmp"
   [[ $rc -ne 0 ]] && return 1   # Ctrl-C / no-match → cancel
-  if [[ -n "$back" ]]; then
-    # --expect prepends a key line: empty for ENTER, "esc" for the back key.
-    [[ "$(printf '%s' "$out" | head -1)" == "esc" ]] && return 2
-    out="$(printf '%s' "$out" | tail -n +2)"
-  fi
+  # ESC (back) printed the sentinel as the first output line.
+  [[ -n "$back" && "$(printf '%s' "$out" | head -1)" == "__BACK__" ]] && return 2
   printf '%s' "$out" | cut -f1
 }
 
