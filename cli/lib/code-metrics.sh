@@ -86,7 +86,10 @@ source "$ADAPTER_SCRIPT"
 # Fetch orphan-ref baseline (read-only; never writes)
 # ---------------------------------------------------------------------------
 BASELINE_JSON=""
-if git fetch origin "refs/octopus/code-metrics:refs/octopus/code-metrics" \
+# Skip the orphan-ref fetch when only emitting the baseline (the writer path
+# needs current metrics + HEAD, not the prior baseline) — saves a round-trip.
+if [[ "$CM_EMIT_BASELINE" -eq 0 ]] \
+    && git fetch origin "refs/octopus/code-metrics:refs/octopus/code-metrics" \
     --no-tags --quiet 2>/dev/null; then
   BASELINE_JSON="$(git show refs/octopus/code-metrics:baseline.json 2>/dev/null || true)"
 fi

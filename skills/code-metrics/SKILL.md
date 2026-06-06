@@ -81,6 +81,13 @@ by default** so a legacy repo (5,000 existing TODOs) is never born "red".
 `perf_risk` is `info` — it is reported in the delta line but never produces a
 `curation:needed` breach.
 
+**Known approximation:** `nesting_depth`, `doc_coverage`, and `perf_risk` are
+repo-level reads over the concatenated source and assume brace-balanced files. A
+file with an unbalanced `{`/`}` inside a string, comment, or `#region`/`#if`
+block can leak nesting/loop state into the next file, mildly inflating the
+number. Bounded (ratchet-only / info) and rare in real source; documented rather
+than over-engineered.
+
 ## Dual Delta
 
 ```

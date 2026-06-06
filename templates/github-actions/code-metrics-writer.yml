@@ -20,11 +20,20 @@
 #   2. Stack-specific tooling must be available in the runner:
 #      - C#:  dotnet + dotnet-coverage (global tool) + lizard (pip)
 #      - TS:  node + vitest + lizard (pip) + madge (npm)
-#   3. The Octopus CLI is cloned into the runner (step below). Override the
-#      source with the OCTOPUS_REPO / OCTOPUS_REF env vars if you vendor it.
+#   3. The Octopus CLI is cloned into the runner and executed (step below).
+#      SUPPLY CHAIN: this runs third-party code in a contents:write job, so
+#      OCTOPUS_REF is PINNED to a release tag below — do not point it at a
+#      moving branch like `main`. For maximum integrity pin OCTOPUS_REF to an
+#      immutable commit SHA and bump it deliberately on a vetted upgrade.
+#      Overriding OCTOPUS_REPO points CI at arbitrary code — only ever set it
+#      to a trusted, pinned mirror.
 #   4. GITHUB_TOKEN needs contents:write for the orphan-ref push.
 #      The default token works if branch-protection does not block it.
 #   5. fetch-depth: 0 — the hotspots metric reads git history (churn).
+#   6. Keep the trigger restricted to `push: main`. Do NOT add a
+#      `pull_request`/`pull_request_target` trigger without first dropping
+#      contents:write — a fork PR would otherwise run attacker build scripts
+#      (dotnet build / npx) with a write-scoped token.
 #
 # Edit freely once installed — Octopus does not overwrite this file.
 
@@ -44,7 +53,8 @@ concurrency:
 
 env:
   OCTOPUS_REPO: https://github.com/leocosta/octopus
-  OCTOPUS_REF: main
+  # PINNED — a release tag, never a moving branch. Prefer an immutable SHA.
+  OCTOPUS_REF: v1.83.0
 
 jobs:
   write-baseline:
@@ -57,8 +67,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0   # hotspots churn needs history
-          # Fetch the existing orphan ref so we can overwrite it
-          fetch-refs: 'refs/octopus/*'
+          # (The push step resolves the existing orphan ref via `git ls-remote
+          # origin` directly — no local fetch of refs/octopus/* is needed.)
 
       # -----------------------------------------------------------------------
       # Stack detection — determines which adapter/tooling to set up
@@ -66,7 +76,10 @@ jobs:
       - name: Detect stack
         id: stack
         run: |
-          if ls *.csproj src/**/*.csproj 2>/dev/null | head -1 | grep -q csproj; then
+          # find (not `src/**`) so a deeply-nested *.csproj is still detected —
+          # the runner shell has no globstar by default. Mirrors the CLI's own
+          # detection in cli/lib/code-metrics.sh.
+          if find . -name '*.csproj' -not -path '*/obj/*' -not -path '*/bin/*' | head -1 | grep -q .; then
             echo "name=csharp" >> "$GITHUB_OUTPUT"
           elif [[ -f package.json && (-f tsconfig.json || -n "$(find . -name '*.ts' -not -path '*/node_modules/*' | head -1)") ]]; then
             echo "name=typescript" >> "$GITHUB_OUTPUT"
@@ -121,18 +134,27 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Get Octopus CLI
         run: |
-          export PATH="$HOME/.dotnet/tools:$PATH"
+          # Defense-in-depth: refuse to clone+run from anywhere but the trusted,
+          # pinned source. OCTOPUS_REF is a pinned tag/SHA (see env block).
+          case "$OCTOPUS_REPO" in
+            https://github.com/leocosta/octopus*) ;;
+            *) echo "Refusing to run untrusted OCTOPUS_REPO: $OCTOPUS_REPO" >&2; exit 1 ;;
+          esac
           git clone --depth 1 --branch "$OCTOPUS_REF" "$OCTOPUS_REPO" /tmp/octopus
 
       - name: Compute baseline.json
         id: baseline
         if: steps.stack.outputs.name != 'unknown'
+        env:
+          # Bind the detected stack into the environment rather than
+          # interpolating ${{ }} into the run script (script-injection hygiene).
+          STACK: ${{ steps.stack.outputs.name }}
         run: |
           export PATH="$HOME/.dotnet/tools:$PATH"
           # The CLI runs the same adapters the local skill uses and prints the
           # flat baseline record. No metric logic is duplicated in this YAML.
           bash /tmp/octopus/cli/octopus.sh code-metrics \
-            --stack "${{ steps.stack.outputs.name }}" --emit-baseline > baseline.json
+            --stack "$STACK" --emit-baseline > baseline.json
           echo "json=$(cat baseline.json)" >> "$GITHUB_OUTPUT"
           cat baseline.json
 
