@@ -1216,9 +1216,11 @@ declare -a KNOWLEDGE_MODULES=()         # resolved modules after discover_knowle
 deliver_skills() {
   local agent="$1"
   if [[ "$MANIFEST_CAP_SKILLS" != "true" ]]; then return; fi
-  if [[ ${#OCTOPUS_SKILLS[@]} -eq 0 ]]; then return; fi
+  # No early-return on an empty skill set: we still wipe-and-rebuild the target
+  # so a manifest that dropped all its skills doesn't leave stale symlinks behind
+  # (matches deliver_rules, which already prunes on empty).
   if [[ "${OCTOPUS_DRY_RUN:-}" == "true" ]]; then
-    _dry_run_log "would symlink skills → $MANIFEST_DELIVERY_SKILLS_TARGET (${OCTOPUS_SKILLS[*]})"
+    _dry_run_log "would symlink skills → $MANIFEST_DELIVERY_SKILLS_TARGET (${OCTOPUS_SKILLS[*]:-none})"
     return 0
   fi
 
@@ -1229,7 +1231,7 @@ deliver_skills() {
     echo "Generating skills symlinks for $agent..."
     rm -rf "$target"
     mkdir -p "$target"
-    for skill in "${OCTOPUS_SKILLS[@]}"; do
+    for skill in ${OCTOPUS_SKILLS[@]+"${OCTOPUS_SKILLS[@]}"}; do
       local source_dir="$OCTOPUS_DIR/skills/$skill"
       if [[ ! -d "$source_dir" ]]; then
         echo "  WARNING: Skill directory '$source_dir' not found. Skipping."
