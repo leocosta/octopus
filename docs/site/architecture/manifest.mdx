@@ -111,11 +111,14 @@ introduced the member. It does not affect transitive dependencies
 of other skills that remain in the effective list.
 
 You don't have to hand-write it: the interactive `octopus setup` runs
-in two steps. First you pick the bundles (and features) you want;
-then, if any chosen bundle has members, a second screen lists those
-skills, roles, and rules — all checked by default — and whatever you
-uncheck (`SPACE`) is written here as `exclude:`. The plain-terminal
-fallback (no `fzf`) offers the same two steps as numbered lists.
+in two steps. First you pick the bundles, stack/database **profiles**,
+and features you want; then, if any chosen **intent bundle** carries
+members, a second screen lists those skills, roles, and rules — all
+checked by default — and whatever you uncheck (`SPACE`) is written here
+as `exclude:`. Stack/DB profiles are atomic (one engine/stack each), so
+they're chosen as single items in step one and never get a step-two
+group. The plain-terminal fallback (no `fzf`) offers the same two steps
+as numbered lists.
 
 ## Why the manifest is never auto-edited
 

@@ -236,7 +236,7 @@ _picker_bundle_rows() {
   # Bundle categories in display order, then an "Other" catch-all so no bundle
   # is dropped if it carries an unrecognized category.
   local cats=("foundation:Foundation" "intent:Intent" "stack:Stack" "db:Database")
-  local written=" " pair key disp name desc selflag wrote_head
+  local written=" " pair key disp name desc selflag wrote_head label
   for pair in "${cats[@]}" "*:Other"; do
     key="${pair%%:*}"; disp="${pair#*:}"; wrote_head=""
     for (( i=0; i<${#_PICKER_BUNDLES[@]}; i++ )); do
@@ -249,7 +249,11 @@ _picker_bundle_rows() {
       desc="${_PICKER_BUNDLE_DESCS[$i]}"
       selflag=0
       _picker_array_contains "$name" "${_CURRENT_BUNDLES[@]}" && selflag=1
-      printf 'b:%s\t %s\t%s\t%s\n' "$name" "$name" "$selflag" "$desc"
+      # Stack/DB profiles read as the bare engine/stack (mssql, csharp) — they are
+      # atomic profiles, not multi-item bundles, so the db-/stack- prefix is noise.
+      label="$name"
+      case "$key" in stack) label="${name#stack-}" ;; db) label="${name#db-}" ;; esac
+      printf 'b:%s\t %s\t%s\t%s\n' "$name" "$label" "$selflag" "$desc"
       written+="$name "
     done
   done
@@ -259,8 +263,12 @@ _picker_bundle_rows() {
 # (default checked unless already in _CURRENT_EXCLUDES). Same 4 columns. Pure /
 # testable. Empty output when no given bundle has members.
 _picker_member_rows() {
-  local name mname mkind mdef first
+  local name mname mkind mdef first cat
   for name in "$@"; do
+    # Stack/DB profiles are atomic (their single member IS the profile) — no
+    # member-level fine-tuning, so they get no screen-2 group.
+    cat="$(_picker_bundle_category "$name")"
+    [[ "$cat" == "stack" || "$cat" == "db" ]] && continue
     first=1
     while IFS=$'\t' read -r mname mkind; do
       [[ -n "$mname" ]] || continue

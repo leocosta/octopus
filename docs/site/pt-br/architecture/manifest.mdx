@@ -113,11 +113,14 @@ bundle introduziu o membro. Não afeta dependências transitivas de outras
 skills que permanecem na lista efetiva.
 
 Você não precisa escrevê-lo à mão: o `octopus setup` interativo roda em
-duas etapas. Primeiro você escolhe os bundles (e features); depois, se
-algum bundle escolhido tiver membros, uma segunda tela lista essas
-skills, roles e rules — todas marcadas por padrão — e o que você
-desmarcar (`SPACE`) é gravado aqui como `exclude:`. O fallback de
-terminal (sem `fzf`) oferece as mesmas duas etapas como listas numeradas.
+duas etapas. Primeiro você escolhe os bundles, os **profiles** de
+stack/database e as features; depois, se algum **intent bundle**
+escolhido tiver membros, uma segunda tela lista essas skills, roles e
+rules — todas marcadas por padrão — e o que você desmarcar (`SPACE`) é
+gravado aqui como `exclude:`. Profiles de stack/DB são atômicos (um
+engine/stack cada), então são escolhidos como itens únicos na etapa um e
+nunca ganham um grupo na etapa dois. O fallback de terminal (sem `fzf`)
+oferece as mesmas duas etapas como listas numeradas.
 
 ## Por que o manifesto nunca é editado automaticamente
 
