@@ -682,6 +682,47 @@ t12_ts_run_emits_all() {
 check "adapter(TS): _run emits all 13 metric lines" t12_ts_run_emits_all
 
 # ---------------------------------------------------------------------------
+# SECTION 13 — RM-149 hotspots (churn × complexity)
+# ---------------------------------------------------------------------------
+# Purpose: the decay metric joins git churn with per-file complexity. The two
+# pure cores — churn aggregation from `git log --numstat` and the quadrant
+# count — are fixture-tested; the adapter wires git + lizard.
+echo "=== Section 13: RM-149 hotspots ==="
+
+t13_git_churn_aggregates() {
+  # added+deleted summed per path; binary (`-`) rows ignored; repeated paths add.
+  local out
+  out="$(printf '12\t3\tsrc/a.ts\n0\t5\tsrc/b.ts\n4\t1\tsrc/a.ts\n-\t-\tlogo.png\n' | cm_git_churn)"
+  [[ "$(awk '$2=="src/a.ts"{print $1}' <<<"$out")" == "20" ]] &&
+  [[ "$(awk '$2=="src/b.ts"{print $1}' <<<"$out")" == "5" ]] &&
+  ! grep -q "logo.png" <<<"$out"
+}
+check "hotspots: cm_git_churn sums added+deleted per file, skips binary" t13_git_churn_aggregates
+
+t13_hotspot_quadrant() {
+  local cf xf; cf="$(mktemp)"; xf="$(mktemp)"; FIXTURES+=("$cf" "$xf")
+  printf '20\tsrc/a.ts\n5\tsrc/b.ts\n30\tsrc/c.ts\n' > "$cf"   # churn
+  printf '18\tsrc/a.ts\n2\tsrc/b.ts\n3\tsrc/c.ts\n'  > "$xf"   # ccn
+  # threshold churn>=10 AND ccn>=10: only a.ts (20,18). b.ts low churn; c.ts low ccn.
+  [[ "$(cm_hotspot_count 10 10 "$cf" "$xf")" == "1" ]]
+}
+check "hotspots: cm_hotspot_count counts high-churn AND high-complexity files" t13_hotspot_quadrant
+
+t13_hotspot_none() {
+  local cf xf; cf="$(mktemp)"; xf="$(mktemp)"; FIXTURES+=("$cf" "$xf")
+  printf '3\tsrc/a.ts\n' > "$cf"; printf '2\tsrc/a.ts\n' > "$xf"
+  [[ "$(cm_hotspot_count 10 10 "$cf" "$xf")" == "0" ]]
+}
+check "hotspots: cm_hotspot_count → 0 when nothing in the quadrant" t13_hotspot_none
+
+t13_adapter_emits_hotspots() {
+  # Integration shape only: with no C# history/files the value is 0, but the
+  # contract is a single hotspots:<n> line.
+  grep -qE '^hotspots:[0-9]+$' <<<"$(cm_adapter_csharp_hotspots "$CS_FIX" 2>/dev/null)"
+}
+check "hotspots: cm_adapter_csharp_hotspots emits hotspots:<n>" t13_adapter_emits_hotspots
+
+# ---------------------------------------------------------------------------
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]

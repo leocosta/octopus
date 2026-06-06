@@ -335,6 +335,36 @@ cm_doc_ratio() {
 }
 
 # ---------------------------------------------------------------------------
+# RM-149 hotspots — churn × complexity (decay)
+# ---------------------------------------------------------------------------
+
+# Aggregate per-file churn from `git log --numstat --format=` on stdin.
+# numstat rows are: <added>\t<deleted>\t<path>; binary files show `-` and are
+# skipped. Repeated paths accumulate.
+# Reads stdin, emits one `<churn>\t<path>` line per file.
+cm_git_churn() {
+  awk '
+    NF == 3 && $1 != "-" { churn[$3] += $1 + $2 }
+    END { for (f in churn) printf "%d\t%s\n", churn[f], f }
+  '
+}
+
+# Count files in the high-churn AND high-complexity quadrant.
+#   $1 — churn threshold (>=)
+#   $2 — ccn threshold   (>=)
+#   $3 — churn file: "<churn>\t<path>" lines (from cm_git_churn)
+#   $4 — ccn file:   "<ccn>\t<path>"   lines (max CCN per file)
+# Echoes the count. A file must appear in BOTH and clear BOTH thresholds.
+cm_hotspot_count() {
+  local ct="$1" xt="$2" churn_file="$3" ccn_file="$4"
+  awk -v ct="$ct" -v xt="$xt" '
+    FNR == NR { churn[$2] = $1; next }
+    { if (($2 in churn) && churn[$2] + 0 >= ct + 0 && $1 + 0 >= xt + 0) c++ }
+    END { print c + 0 }
+  ' "$churn_file" "$ccn_file"
+}
+
+# ---------------------------------------------------------------------------
 # Metric registry — single source of truth for dispatch  (RM-148)
 # ---------------------------------------------------------------------------
 

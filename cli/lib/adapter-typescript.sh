@@ -208,6 +208,37 @@ cm_adapter_typescript_doc_coverage() {
   echo "doc_coverage:$(cm_doc_ratio "${counts%|*}" "${counts#*|}")"
 }
 
+# ---------------------------------------------------------------------------
+# RM-149 — hotspots (churn × complexity). See the C# adapter for the rationale.
+# Config: code_metrics.hotspots.{window_days(90),churn_min(20),ccn_min(10)}.
+# ---------------------------------------------------------------------------
+cm_adapter_typescript_hotspots() {
+  local repo_root="${1:-$PWD}"
+  if ! command -v git &>/dev/null || ! command -v lizard &>/dev/null; then
+    echo "hotspots:0"; return 0
+  fi
+  local window churn_min ccn_min
+  window="$(cm_field hotspots window_days 2>/dev/null || true)";  window="${window:-90}"
+  churn_min="$(cm_field hotspots churn_min 2>/dev/null || true)"; churn_min="${churn_min:-20}"
+  ccn_min="$(cm_field hotspots ccn_min 2>/dev/null || true)";     ccn_min="${ccn_min:-10}"
+
+  local churn_f ccn_f; churn_f="$(mktemp)"; ccn_f="$(mktemp)"
+  ( cd "$repo_root" 2>/dev/null \
+      && git log --since="${window} days ago" --numstat --format= \
+           -- '*.ts' '*.tsx' '*.js' '*.jsx' 2>/dev/null ) \
+    | cm_git_churn > "$churn_f"
+  ( cd "$repo_root" 2>/dev/null \
+      && lizard . --languages javascript --languages typescript \
+           --exclude "*/node_modules/*" --exclude "*/.next/*" \
+           --exclude "*/dist/*" --exclude "*/build/*" 2>/dev/null ) \
+    | awk '/@[0-9]+-[0-9]+@/ { loc=$NF; sub(/.*@/,"",loc); sub(/^\.\//,"",loc);
+                               if ($2+0 > m[loc]) m[loc]=$2 }
+           END { for (f in m) printf "%d\t%s\n", m[f], f }' > "$ccn_f"
+
+  echo "hotspots:$(cm_hotspot_count "$churn_min" "$ccn_min" "$churn_f" "$ccn_f")"
+  rm -f "$churn_f" "$ccn_f"
+}
+
 # Run all TypeScript metrics and print one line per metric.
 cm_adapter_typescript_run() {
   local repo_root="${1:-$PWD}"
@@ -226,4 +257,6 @@ cm_adapter_typescript_run() {
   cm_adapter_typescript_magic_numbers "$repo_root"
   cm_adapter_typescript_lint_density  "$repo_root"
   cm_adapter_typescript_doc_coverage  "$repo_root"
+  # v3 (RM-149)
+  cm_adapter_typescript_hotspots      "$repo_root"
 }
