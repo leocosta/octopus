@@ -50,6 +50,9 @@ skills:
   - refactor-deepen   # find shallow modules, propose deepening
   - audit-config      # configuration freshness (rules, skills, hooks)
   - audit-grounding   # signal-only divergence from the source of truth
+  - audit-verification # completion-verification signal
+  - audit-style        # design-rules/over-engineering style signal
+  - code-metrics       # PR-time dual-delta measurement read (folded in from standalone; uncheck in picker if unwanted)
 roles:
   - architect         # senior reviewer with BLOCKING/ADVISORY/QUESTION discipline
   - security          # security specialist — audit-security checklist + threat modeling
@@ -98,6 +101,14 @@ as transitive dependencies.
   with `architect` — the same pattern `dba` follows on data-layer
   diffs.
 
+### Why each one is in (continued)
+
+- **`code-metrics`** — the quantitative measurement axis: a local, non-blocking
+  dual-delta read of coverage, cyclomatic complexity, module size, and
+  dependency cycles at PR-open. Folded into `quality` (was a standalone bundle)
+  because measurement and gates belong to the same code-quality concern. Uncheck
+  it in the interactive picker (`exclude: [code-metrics]`) if you don't need it.
+
 ### Why not included
 
 - **`debug`, `implement`, `respond-to-review`** — in `starter`. `quality`
@@ -135,10 +146,8 @@ use the interactive picker (uncheck members → `exclude:`) rather than
 picking a sub-bundle. For example, to run only the blocking gates, keep
 `audit-all` and `audit-contracts` and uncheck the signal-only skills.
 
-Two neighbouring axes are deliberately **not** folded in: knowledge-base
-operations (`knowledge-hygiene`/`synthesize`/`briefing`) live in the
-separate **`knowledge-ops`** bundle, and cross-repo audit + fleet
-bootstrap in **`tech-lead`**.
+Knowledge-base operations (`knowledge-hygiene`/`synthesize`/`briefing`) live in the
+separate **`knowledge`** bundle. Cross-repo audit + fleet bootstrap live in **`tech-lead`**.
 
 ## Composes with
 

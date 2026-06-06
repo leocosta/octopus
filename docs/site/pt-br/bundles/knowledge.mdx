@@ -1,5 +1,5 @@
 ---
-title: knowledge-ops
+title: knowledge
 description: Manutenção da base de conhecimento — higiene (obsolescência, órfãos, links quebrados), síntese (conexões cross-node, contexto esquecido, contradições) e briefing proativo (o que mudou, o que precisa de atenção).
 sidebar:
   order: 11
@@ -7,11 +7,10 @@ source_hash: ""
 needs_retranslation: false
 ---
 
-`knowledge-ops` contém as três skills que mantêm uma base de conhecimento viva
-e útil ao longo do tempo. É um subconjunto focado do
-[`quality`](/octopus/bundles/quality/) para times que têm uma árvore `knowledge/`
+`knowledge` contém as três skills que mantêm uma base de conhecimento viva
+e útil ao longo do tempo. É para times que têm uma árvore `knowledge/`
 estabelecida e querem operações dedicadas sobre ela — sem necessariamente adotar
-toda a superfície de auditoria.
+toda a superfície de auditoria do [`quality`](/octopus/bundles/quality/).
 
 ## Por que isso existe
 
@@ -35,7 +34,7 @@ skills:
 roles: []
 ```
 
-[Fonte: `bundles/knowledge-ops.yml`](https://github.com/leocosta/octopus/blob/main/bundles/knowledge-ops.yml)
+[Fonte: `bundles/knowledge.yml`](https://github.com/leocosta/octopus/blob/main/bundles/knowledge.yml)
 
 ### Por que cada uma está aqui
 
@@ -86,6 +85,5 @@ Essas skills mapeiam para três ritmos distintos:
 - **[docs](/octopus/bundles/docs/)** — para o ciclo de vida completo de
   documentação (RFC → Spec → ADR → Knowledge → Changelog) que alimenta a
   árvore de conhecimento.
-- **[quality](/octopus/bundles/quality/)** — `knowledge-ops` é um subconjunto do
-  `quality`; o bundle completo inclui essas skills junto com os gates de
-  auditoria.
+- **[quality](/octopus/bundles/quality/)** — inclui os gates de auditoria e sinais
+  advisory ao lado dos quais o `knowledge` provê as operações do knowledge loop.

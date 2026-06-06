@@ -24,7 +24,7 @@ check "screen 1 has NO member rows"      test "$(grep -c $'^m:' <<<"$rows")" -eq
 check "hooks pre-selected (default 1)"   test "$(rowdef f:hooks)" = "1"
 check "reviewers off by default (0)"     test "$(rowdef f:reviewers)" = "0"
 check "current bundle pre-selected"      test "$(rowdef b:starter)" = "1"
-check "non-current bundle off"           test "$(rowdef b:code-metrics)" = "0"
+check "non-current bundle off"           test "$(rowdef b:knowledge)" = "0"
 # Stack/DB are atomic profiles: shown under their category with a BARE label
 # (no db-/stack- prefix), since they aren't multi-item bundles.
 check "stack profile labeled bare"       grep -q $'^b:stack-csharp\t csharp\t' <<<"$rows"

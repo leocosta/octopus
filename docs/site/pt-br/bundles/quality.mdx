@@ -52,6 +52,9 @@ skills:
   - refactor-deepen   # find shallow modules, propose deepening
   - audit-config      # configuration freshness (rules, skills, hooks)
   - audit-grounding   # signal-only divergence from the source of truth
+  - audit-verification # completion-verification signal
+  - audit-style        # design-rules/over-engineering style signal
+  - code-metrics       # leitura de medição PR-time com delta duplo (incorporada ao quality; desmarque no picker se não precisar)
 roles:
   - architect         # senior reviewer with BLOCKING/ADVISORY/QUESTION discipline
   - security          # security specialist — audit-security checklist + threat modeling
@@ -97,6 +100,15 @@ dependências transitivas.
   despacha em diffs de auth/secret, em dual gate com o `architect` — o mesmo
   padrão que o `dba` segue em diffs da camada de dados.
 
+### Por que cada uma está aqui (continuação)
+
+- **`code-metrics`** — o eixo quantitativo de medição: uma leitura local e
+  não-bloqueante com delta duplo de cobertura, complexidade ciclomática, tamanho
+  de módulo e ciclos de dependência no PR-open. Incorporada ao `quality` (era um
+  bundle standalone) porque medição e gates pertencem à mesma preocupação de
+  qualidade de código. Desmarque no seletor interativo (`exclude: [code-metrics]`)
+  se não precisar.
+
 ### Por que algumas coisas não estão aqui
 
 - **`debug`, `implement`, `respond-to-review`** — estão no `starter`. O `quality`
@@ -133,10 +145,8 @@ em vez de escolher um sub-bundle. Por exemplo, para rodar apenas os gates
 bloqueantes, mantenha `audit-all` e `audit-contracts` e desmarque as skills
 signal-only.
 
-Dois eixos vizinhos ficam de fora de propósito: operações de
-knowledge base (`knowledge-hygiene`/`synthesize`/`briefing`) ficam no
-bundle separado **`knowledge-ops`**, e auditoria cross-repo + fleet
-bootstrap no **`tech-lead`**.
+Operações de knowledge base (`knowledge-hygiene`/`synthesize`/`briefing`) ficam no
+bundle separado **`knowledge`**. Auditoria cross-repo + fleet bootstrap ficam no **`tech-lead`**.
 
 ## Compõe com
 
