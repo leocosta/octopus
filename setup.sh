@@ -2184,6 +2184,16 @@ deliver_commands() {
     local commands_dir="$(_install_root)/$MANIFEST_DELIVERY_COMMANDS_TARGET"
     mkdir -p "$commands_dir"
 
+    # Prune previously-delivered Octopus-owned commands before regenerating, so
+    # a command that was renamed or removed between versions (e.g.
+    # quality-metrics → code-metrics) doesn't orphan a stale file. Only the
+    # prefix-owned set is touched; user-authored, non-prefixed commands stay.
+    # (Skills/rules already wipe-and-rebuild their dirs; this is the same
+    # guarantee for commands — mirrors the hook prune-by-prefix.)
+    if [[ -n "$prefix" ]]; then
+      rm -f "$commands_dir/${prefix}"*.md 2>/dev/null || true
+    fi
+
     # Workflow commands
     if [[ "$OCTOPUS_WORKFLOW" == "true" ]]; then
       for cmd_file in "$OCTOPUS_DIR/commands/"*.md; do
