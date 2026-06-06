@@ -482,6 +482,17 @@ t9_threshold_safe_with_injection() {
 }
 check "injection: qm_check_threshold passes value as awk data, not code" t9_threshold_safe_with_injection
 
+t9_safe_filter_validator() {
+  # Accepts real dotnet test --filter expressions; rejects quote-breaking and
+  # shell/command metacharacters that could inject extra args.
+  qm_is_safe_filter "Category!=Integration" \
+    && qm_is_safe_filter "Category=A&Category=B|Name~Foo" \
+    && ! qm_is_safe_filter 'X" --results-directory /tmp' \
+    && ! qm_is_safe_filter 'X; touch /tmp/pwned' \
+    && ! qm_is_safe_filter 'X$(touch /tmp/pwned)'
+}
+check "injection: qm_is_safe_filter accepts filters, rejects arg/command injection" t9_safe_filter_validator
+
 # ---------------------------------------------------------------------------
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"

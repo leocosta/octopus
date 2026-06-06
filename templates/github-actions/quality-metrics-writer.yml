@@ -13,7 +13,7 @@
 #      catch-all branch-protection rule. If your repo has a `**` rule, add
 #      an explicit exception for `octopus/*` refs before enabling this Action.
 #   2. Stack-specific tooling must be available in the runner:
-#      - C#:  dotnet + coverlet.console + lizard (pip)
+#      - C#:  dotnet + dotnet-coverage (global tool) + lizard (pip)
 #      - TS:  node + vitest + lizard (pip) + madge (npm)
 #   3. GITHUB_TOKEN needs contents:write for the orphan-ref push.
 #      The default token works if branch-protection does not block it.
@@ -77,25 +77,31 @@ jobs:
         with:
           dotnet-version: '8.x'
 
-      - name: Install coverlet.console
+      - name: Install dotnet-coverage
         if: steps.stack.outputs.name == 'csharp'
-        run: dotnet tool install --global coverlet.console --ignore-failed-sources || true
+        run: dotnet tool install --global dotnet-coverage --ignore-failed-sources
+          || dotnet tool update --global dotnet-coverage || true
 
-      - name: C# — run coverage (coverlet → Cobertura)
+      - name: C# — run coverage (dotnet-coverage → Cobertura)
         if: steps.stack.outputs.name == 'csharp'
         id: csharp_coverage
         run: |
-          dotnet test --no-build --collect:"XPlat Code Coverage" \
-            --results-directory ./coverage_results \
-            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura \
+          export PATH="$HOME/.dotnet/tools:$PATH"
+          # dotnet-coverage (binary instrumentation) — much faster than coverlet's
+          # XPlat collector on large/async-heavy codebases. If the repo ships a
+          # coverage.settings.xml (module include/exclude, source exclusions), use
+          # it; add a --filter inside the inner command to scope tests if needed.
+          SETTINGS=""; [[ -f coverage.settings.xml ]] && SETTINGS="-s coverage.settings.xml"
+          mkdir -p ./coverage_results
+          OUT=./coverage_results/coverage.cobertura.xml
+          dotnet-coverage collect $SETTINGS -f cobertura -o "$OUT" "dotnet test --no-build" \
             2>/dev/null || true
-          COV_FILE=$(find ./coverage_results -name 'coverage.cobertura.xml' | head -1)
-          if [[ -f "$COV_FILE" ]]; then
-            RATE=$(awk -F'"' '/line-rate=/ && /package/ {sum+=$2; n++} END{if(n>0) printf "%.1f", sum/n*100; else print "0"}' "$COV_FILE")
+          if [[ -f "$OUT" ]]; then
+            RATE=$(awk -F'"' '/<coverage /{for(i=1;i<=NF;i++) if($i ~ /line-rate=/){printf "%.1f", $(i+1)*100; exit}}' "$OUT")
           else
             RATE="0"
           fi
-          echo "value=$RATE" >> "$GITHUB_OUTPUT"
+          echo "value=${RATE:-0}" >> "$GITHUB_OUTPUT"
 
       - name: C# — cyclomatic complexity + module size (lizard)
         if: steps.stack.outputs.name == 'csharp'
