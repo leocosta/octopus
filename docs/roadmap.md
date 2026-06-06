@@ -315,6 +315,7 @@ _Proposed (added 2026-06-06). Seeds from [research](research/2026-06-06-code-met
 | RM-148 | v2 metric pack — debt markers + readability counters + doc coverage | v2 / leverage |
 | RM-149 | v3 hotspots — churn × complexity (new git-history capability) | v3 / decay |
 | RM-150 | v3 perf-proxy — static performance-risk heuristic for high-traffic paths | v3 / load risk |
+| RM-151 | `perf_risk` — detect loops with the brace on the next line (Allman) | follow-up / fix |
 
 _**Cluster 26 implemented** on `feat/code-metrics-expansion` (#191, pending merge). All three RMs landed as 11 new metrics (9 v2 + hotspots + perf_risk) on both stacks. Key decisions resolved in build: the hardcoded dispatch `case` became a data-driven registry (`cm_metric_spec`: direction|block|field); all new metrics are deterministic shell heuristics (grep/awk/lizard/git), ratchet-only by default; `perf_risk` is `info`-only (never gated); dead-code counts only *marked* dead code; the writer-Action now produces `baseline.json` via `octopus code-metrics --emit-baseline` (shared adapters, zero YAML re-implementation) and runs with `fetch-depth: 0` for the hotspots churn window. Suite: `test_code_metrics` 95/0 (Sections 10–15 added)._
 
@@ -382,6 +383,29 @@ path), **not** a real load test. Per-language AST heuristic.
 **Rationale:** The only B3 survivor (real load testing was discarded as
 out-of-contract). Highest effort and **high false-positive risk** of the three,
 so deliberately sequenced last.
+
+---
+
+### RM-151 — `perf_risk`: detect Allman-brace loops
+
+- **Priority:** 🟡 Medium
+- **Effort:** low
+- **Status:** proposed
+- **Added:** 2026-06-06
+- **Research:** [code-metrics-expansion](research/2026-06-06-code-metrics-expansion.md)
+
+`cm_perf_scan` only opens a loop's scope when the loop keyword and its `{` share
+a line. In Allman-brace codebases — idiomatic C#, where `{` sits on its own line
+— no loop is ever "active", so `perf_risk` reads **0** regardless of real
+query/alloc-in-loop or nested loops. Found while configuring a real C# repo
+(`tatame`): `perf_risk` was 0 across the whole api.
+
+Fix: track a *pending loop* across the opener line and the next `{` (look-ahead),
+so an Allman `foreach (...) \n {` registers the loop scope. Keep it info-only.
+Add a C# Allman fixture to `test_code_metrics.sh`.
+
+**Rationale:** Without this, `perf_risk` is dead weight for the entire .NET
+fleet — the stack the metric most needs to serve (high-traffic APIs).
 
 ---
 
