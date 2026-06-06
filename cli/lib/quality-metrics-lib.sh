@@ -31,6 +31,20 @@ qm_is_numeric() {
   [[ "$1" =~ ^-?[0-9]+(\.[0-9]+)?$ ]]
 }
 
+# Reject any value that is not a well-formed `dotnet test --filter` expression.
+# Security boundary (mirrors qm_is_numeric): coverage.test_filter comes from a
+# config layer (attacker-influenceable .octopus.yml) and is embedded in the
+# command string handed to `dotnet-coverage collect`. dotnet-coverage tokenises
+# that string itself (no shell), so the residual risk is argument injection via a
+# stray quote breaking out of `--filter "<value>"`. This allowlist covers the
+# full filter grammar — identifiers, comparison (= != ~), boolean (& |),
+# grouping ( ), and value chars — while excluding quotes, $, ;, backticks and
+# slashes that could break tokenisation. Returns 0 if safe.
+qm_is_safe_filter() {
+  local re='^[A-Za-z0-9_.,=!~&|()+ -]+$'
+  [[ "$1" =~ $re ]]
+}
+
 # ---------------------------------------------------------------------------
 # Config resolver
 # ---------------------------------------------------------------------------

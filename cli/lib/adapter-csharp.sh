@@ -58,6 +58,15 @@ qm_adapter_csharp_coverage() {
   test_filter="$(qm_field_str coverage test_filter 2>/dev/null || true)"
   settings_path="$(qm_field_str coverage settings 2>/dev/null || true)"
 
+  # Security gate: test_filter is attacker-influenceable config that ends up in
+  # the command string parsed by dotnet-coverage. Fail closed on anything outside
+  # the filter grammar so a poisoned value cannot inject extra dotnet arguments.
+  if [[ -n "$test_filter" ]] && ! qm_is_safe_filter "$test_filter"; then
+    echo "qm_adapter_csharp_coverage: rejecting unsafe coverage.test_filter: $test_filter" >&2
+    echo "coverage:0"
+    return 0
+  fi
+
   local cov_dir; cov_dir="$(mktemp -d)"
   local rate="0"
 
@@ -65,8 +74,9 @@ qm_adapter_csharp_coverage() {
     # Preferred: dotnet-coverage (binary instrumentation). coverlet's XPlat
     # collector can be pathologically slow on large/async-heavy codebases
     # (observed: a full suite that never finished in 10min vs ~40s here).
-    # The inner test command is passed as one string; the filter value is
-    # quoted as a single argv element (never interpolated as program text).
+    # dotnet-coverage tokenises this command string itself (no shell); the
+    # filter value is wrapped in quotes and was allowlisted by qm_is_safe_filter
+    # above, so it stays a single --filter argument (no shell/arg injection).
     local inner="dotnet test \"$test_proj\" --no-build"
     [[ -n "$test_filter" ]] && inner="$inner --filter \"$test_filter\""
     local settings_args=()
