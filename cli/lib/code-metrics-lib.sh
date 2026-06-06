@@ -262,6 +262,57 @@ cm_check_threshold_max() {
   return 0
 }
 
+# Threshold rule — info-only metrics (e.g. perf_risk).
+# Always passes (returns 0): the value is reported via the delta line but never
+# produces a curation:needed marker. Used by the dispatch loop for registry
+# entries whose direction is "info" — high-false-positive heuristics that must
+# inform, not gate (RM-150).
+cm_check_noop() {
+  return 0
+}
+
+# ---------------------------------------------------------------------------
+# Metric registry — single source of truth for dispatch  (RM-148)
+# ---------------------------------------------------------------------------
+
+# Map a metric name to its dispatch spec: "direction|config_block|config_field".
+#   direction — "higher" (higher is better, e.g. coverage), "lower" (lower is
+#               better, e.g. complexity), or "info" (reported, never gated).
+#   config_block / config_field — where its absolute threshold lives in the
+#               code_metrics: block of .octopus.yml (empty for info metrics).
+#
+# This replaces the hardcoded case in code-metrics.sh: the dispatch loop reads
+# the registry to pick cm_check_threshold (higher) / cm_check_threshold_max
+# (lower) / skip (info) and to resolve the absolute threshold via cm_field.
+# Adding a metric is a one-line entry here plus its adapter function.
+# Unknown metric → empty string (caller skips it; no phantom dispatch).
+cm_metric_spec() {
+  case "$1" in
+    # v1 (RM-147)
+    coverage)          echo "higher|coverage|min" ;;
+    complexity)        echo "lower|complexity|max" ;;
+    module_size)       echo "lower|module_size|max" ;;
+    dependency_cycles) echo "lower|dependencies|cycles_allowed" ;;
+    # v2 pack (RM-148) — debt markers
+    todo_markers)      echo "lower|todo_markers|max" ;;
+    deprecations)      echo "lower|deprecations|max" ;;
+    dead_code)         echo "lower|dead_code|max" ;;
+    suppressions)      echo "lower|suppressions|max" ;;
+    # v2 pack (RM-148) — readability counters
+    nesting_depth)     echo "lower|nesting_depth|max" ;;
+    param_count)       echo "lower|param_count|max" ;;
+    magic_numbers)     echo "lower|magic_numbers|max" ;;
+    lint_density)      echo "lower|lint_density|max" ;;
+    # v2 pack (RM-148) — documentation
+    doc_coverage)      echo "higher|doc_coverage|min" ;;
+    # v3 (RM-149) — decay hotspots
+    hotspots)          echo "lower|hotspots|max" ;;
+    # v3 (RM-150) — perf risk proxy: info-only (high false-positive, never gated)
+    perf_risk)         echo "info|perf_risk|" ;;
+    *)                 return 0 ;;
+  esac
+}
+
 # ---------------------------------------------------------------------------
 # Orphan-ref record parsing
 # ---------------------------------------------------------------------------

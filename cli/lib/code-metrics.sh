@@ -115,30 +115,30 @@ BREACH_FOUND=0
 while IFS=: read -r metric current; do
   [[ -z "$metric" ]] && continue
 
-  # Resolve baseline value for this metric
+  # Resolve dispatch from the registry (single source of truth, RM-148):
+  #   direction|config_block|config_field
+  spec="$(cm_metric_spec "$metric")"
+  if [[ -z "$spec" ]]; then
+    # Unregistered metric — surface the raw value, no threshold dispatch.
+    echo "metric:$metric current:$current vs_baseline:n/a vs_main:n/a (unregistered)"
+    continue
+  fi
+  IFS='|' read -r cm_direction cm_block cm_field_name <<<"$spec"
+
   baseline_val="$(cm_parse_baseline "$BASELINE_JSON" "$metric")"
 
-  # Load threshold config and pick the right threshold function
-  absolute_threshold=""
-  threshold_fn="cm_check_threshold"
-  case "$metric" in
-    coverage)
-      absolute_threshold="$(cm_field "coverage" "min")"
-      threshold_fn="cm_check_threshold"
-      ;;
-    complexity)
-      absolute_threshold="$(cm_field "complexity" "max")"
-      threshold_fn="cm_check_threshold_max"
-      ;;
-    module_size)
-      absolute_threshold="$(cm_field "module_size" "max")"
-      threshold_fn="cm_check_threshold_max"
-      ;;
-    dependency_cycles)
-      absolute_threshold="$(cm_field "dependencies" "cycles_allowed")"
-      threshold_fn="cm_check_threshold_max"
-      ;;
+  # Pick the threshold function from the direction.
+  case "$cm_direction" in
+    higher) threshold_fn="cm_check_threshold" ;;
+    lower)  threshold_fn="cm_check_threshold_max" ;;
+    info|*) threshold_fn="cm_check_noop" ;;   # info-only: report, never gate
   esac
+
+  # Resolve the optional absolute threshold (info metrics have no config field).
+  absolute_threshold=""
+  if [[ -n "$cm_field_name" ]]; then
+    absolute_threshold="$(cm_field "$cm_block" "$cm_field_name" 2>/dev/null || true)"
+  fi
 
   REPORT="$(cm_format_report "$metric" "$current" "$baseline_val" "$absolute_threshold" "$threshold_fn")"
   echo "$REPORT"

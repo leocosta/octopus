@@ -493,6 +493,61 @@ t9_safe_filter_validator() {
 check "injection: cm_is_safe_filter accepts filters, rejects arg/command injection" t9_safe_filter_validator
 
 # ---------------------------------------------------------------------------
+# SECTION 10 — metric registry (cm_metric_spec)  [RM-148]
+# ---------------------------------------------------------------------------
+# Purpose: cm_metric_spec is the single source of truth mapping each metric to
+# its `direction|config_block|config_field`. The dispatch loop in
+# code-metrics.sh reads it instead of a hardcoded case, so adding a metric is a
+# one-line registry entry. Direction ∈ {higher, lower, info}.
+echo "=== Section 10: metric registry (cm_metric_spec) ==="
+
+t10_existing_unchanged() {
+  [[ "$(cm_metric_spec coverage)"          == "higher|coverage|min" ]] &&
+  [[ "$(cm_metric_spec complexity)"        == "lower|complexity|max" ]] &&
+  [[ "$(cm_metric_spec module_size)"       == "lower|module_size|max" ]] &&
+  [[ "$(cm_metric_spec dependency_cycles)" == "lower|dependencies|cycles_allowed" ]]
+}
+check "registry: 4 existing metrics map to unchanged direction/field" t10_existing_unchanged
+
+t10_rm148_counters() {
+  [[ "$(cm_metric_spec todo_markers)"  == "lower|todo_markers|max" ]] &&
+  [[ "$(cm_metric_spec deprecations)"  == "lower|deprecations|max" ]] &&
+  [[ "$(cm_metric_spec dead_code)"     == "lower|dead_code|max" ]] &&
+  [[ "$(cm_metric_spec suppressions)"  == "lower|suppressions|max" ]] &&
+  [[ "$(cm_metric_spec nesting_depth)" == "lower|nesting_depth|max" ]] &&
+  [[ "$(cm_metric_spec param_count)"   == "lower|param_count|max" ]] &&
+  [[ "$(cm_metric_spec magic_numbers)" == "lower|magic_numbers|max" ]] &&
+  [[ "$(cm_metric_spec lint_density)"  == "lower|lint_density|max" ]] &&
+  [[ "$(cm_metric_spec doc_coverage)"  == "higher|doc_coverage|min" ]]
+}
+check "registry: RM-148 counters mapped (doc_coverage higher, rest lower)" t10_rm148_counters
+
+t10_rm149_hotspots() {
+  [[ "$(cm_metric_spec hotspots)" == "lower|hotspots|max" ]]
+}
+check "registry: RM-149 hotspots → lower|hotspots|max" t10_rm149_hotspots
+
+t10_rm150_perf_info_only() {
+  # perf_risk is info-only: no config field, must resolve to the info direction
+  # so the dispatch loop skips the threshold check entirely.
+  [[ "$(cm_metric_spec perf_risk)" == "info|perf_risk|" ]]
+}
+check "registry: RM-150 perf_risk → info direction, no threshold field" t10_rm150_perf_info_only
+
+t10_unknown_empty() {
+  [[ -z "$(cm_metric_spec definitely_not_a_metric)" ]]
+}
+check "registry: unknown metric → empty (no phantom dispatch)" t10_unknown_empty
+
+t10_info_never_gates() {
+  # An info-only metric routed through cm_format_report with cm_check_noop must
+  # print its delta line and NEVER emit curation:needed, even on a "regression".
+  local out; out="$(cm_format_report "perf_risk" 9 3 "" "cm_check_noop")"
+  grep -q "metric:perf_risk current:9" <<<"$out" && ! grep -q "curation:needed" <<<"$out"
+}
+check "registry: cm_check_noop reports info metric without ever gating" t10_info_never_gates
+
+# ---------------------------------------------------------------------------
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]
