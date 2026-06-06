@@ -22,11 +22,11 @@
 #      - TS:  node + vitest + lizard (pip) + madge (npm)
 #   3. The Octopus CLI is cloned into the runner and executed (step below).
 #      SUPPLY CHAIN: this runs third-party code in a contents:write job, so
-#      OCTOPUS_REF is PINNED to a release tag below — do not point it at a
-#      moving branch like `main`. For maximum integrity pin OCTOPUS_REF to an
-#      immutable commit SHA and bump it deliberately on a vetted upgrade.
-#      Overriding OCTOPUS_REPO points CI at arbitrary code — only ever set it
-#      to a trusted, pinned mirror.
+#      OCTOPUS_REF is PINNED to an immutable commit SHA below (never a moving
+#      branch like `main` — a branch/tag can be force-moved under you). The
+#      clone step verifies the checked-out HEAD matches the pinned SHA. Bump it
+#      deliberately on a vetted upgrade. Overriding OCTOPUS_REPO points CI at
+#      arbitrary code — only ever set it to a trusted, pinned mirror.
 #   4. GITHUB_TOKEN needs contents:write for the orphan-ref push.
 #      The default token works if branch-protection does not block it.
 #   5. fetch-depth: 0 — the hotspots metric reads git history (churn).
@@ -53,8 +53,9 @@ concurrency:
 
 env:
   OCTOPUS_REPO: https://github.com/leocosta/octopus
-  # PINNED — a release tag, never a moving branch. Prefer an immutable SHA.
-  OCTOPUS_REF: v1.83.0
+  # PINNED to an immutable commit SHA (= tag v1.83.0). Never a moving branch.
+  # Bump deliberately on a vetted upgrade; the clone step verifies this SHA.
+  OCTOPUS_REF: 1322543082aa98e19c5d2373a50a5de9997d8522
 
 jobs:
   write-baseline:
@@ -132,15 +133,27 @@ jobs:
       # -----------------------------------------------------------------------
       # Compute baseline.json via the shared adapters (single source of truth)
       # -----------------------------------------------------------------------
-      - name: Get Octopus CLI
+      - name: Get Octopus CLI (pinned SHA)
         run: |
-          # Defense-in-depth: refuse to clone+run from anywhere but the trusted,
-          # pinned source. OCTOPUS_REF is a pinned tag/SHA (see env block).
+          # Defense-in-depth: refuse to clone+run from anywhere but the trusted
+          # source.
           case "$OCTOPUS_REPO" in
             https://github.com/leocosta/octopus*) ;;
             *) echo "Refusing to run untrusted OCTOPUS_REPO: $OCTOPUS_REPO" >&2; exit 1 ;;
           esac
-          git clone --depth 1 --branch "$OCTOPUS_REF" "$OCTOPUS_REPO" /tmp/octopus
+          # Fetch the exact pinned ref (works for a SHA, tag, or branch; GitHub
+          # serves reachable SHAs). `git clone --branch` cannot take a SHA, hence
+          # init + fetch + checkout FETCH_HEAD.
+          git init --quiet /tmp/octopus
+          git -C /tmp/octopus remote add origin "$OCTOPUS_REPO"
+          git -C /tmp/octopus fetch --depth 1 --quiet origin "$OCTOPUS_REF"
+          git -C /tmp/octopus checkout --quiet FETCH_HEAD
+          # Integrity: when OCTOPUS_REF is a full commit SHA, verify we got it.
+          if printf '%s' "$OCTOPUS_REF" | grep -qE '^[0-9a-f]{40}$'; then
+            got="$(git -C /tmp/octopus rev-parse HEAD)"
+            [ "$got" = "$OCTOPUS_REF" ] \
+              || { echo "Pin mismatch: got $got, expected $OCTOPUS_REF" >&2; exit 1; }
+          fi
 
       - name: Compute baseline.json
         id: baseline
