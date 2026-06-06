@@ -1,9 +1,9 @@
 ---
-title: quality-metrics
+title: code-metrics
 description: "Local, non-blocking dual-delta read of coverage, complexity, module size, and dependency cycles at PR-open; numbers free, model only on a threshold breach."
 ---
 
-`/octopus:quality-metrics` runs a local read of how your branch moves four
+`/octopus:code-metrics` runs a local read of how your branch moves four
 deterministic code-quality metrics, before you open the PR — and stays
 near-free unless something actually regresses.
 
@@ -21,7 +21,7 @@ model.
 A per-stack adapter — chosen from the detected stack — runs the real tooling
 (coverage, cyclomatic complexity, module size, dependency cycles) and normalizes
 the output to a shared contract. The command fetches the per-merge baseline from
-the `octopus/quality-metrics` ref and prints a **dual delta**: your branch vs.
+the `octopus/code-metrics` ref and prints a **dual delta**: your branch vs.
 that baseline (the trend) and vs. your local `main` (this PR's impact).
 
 Thresholds are ratchet-by-default (no regression vs. baseline), with optional
@@ -32,7 +32,7 @@ a fix.
 ## Usage & parameters
 
 ```
-octopus quality-metrics [--stack <id>] [--against <ref>]
+octopus code-metrics [--stack <id>] [--against <ref>]
 ```
 
 - `--stack <id>` — force a stack adapter (`csharp`, `typescript`) instead of
@@ -40,4 +40,4 @@ octopus quality-metrics [--stack <id>] [--against <ref>]
 - `--against <ref>` — the local ref used as the "vs. main" comparator; default
   `main`.
 
-[Source: `commands/quality-metrics.md`](https://github.com/leocosta/octopus/blob/main/commands/quality-metrics.md)
+[Source: `commands/code-metrics.md`](https://github.com/leocosta/octopus/blob/main/commands/code-metrics.md)

@@ -1,22 +1,22 @@
 ---
-name: quality-metrics
+name: code-metrics
 description: PR-time dual-delta read of coverage/complexity/module-size/dependency-cycles vs. orphan-ref baseline; ratchet+absolute thresholds; LLM curation only on breach.
 triggers:
   paths: ["**/*.cs", "**/*.ts", "**/*.tsx", "**/*.js"]
-  keywords: ["quality metrics", "coverage", "complexity", "module size", "dependency cycles", "quality-metrics"]
+  keywords: ["code metrics", "coverage", "complexity", "module size", "dependency cycles", "code-metrics"]
   tools: []
 ---
 
-# /octopus:quality-metrics
+# /octopus:code-metrics
 
 ## Purpose
 
 Give the PR author a local, non-blocking read of how their change moves a
-fixed set of deterministic quality metrics **before** they open the PR. Two
+fixed set of deterministic code metrics **before** they open the PR. Two
 deltas are always reported:
 
 - **vs_baseline** — change versus the last-main baseline (trend anchor stored
-  on the `octopus/quality-metrics` orphan ref after each merge to `main`)
+  on the `octopus/code-metrics` orphan ref after each merge to `main`)
 - **vs_main** — change versus local `main` HEAD (this-PR's direct impact)
 
 Numbers are computed cheaply by stack-specific tooling (zero LLM tokens in
@@ -28,14 +28,14 @@ This is a **signal, never a gate**. It does not block the PR.
 ## Invocation
 
 ```
-/octopus:quality-metrics [--stack <csharp|typescript>] [--metric <name>] [--verbose]
+/octopus:code-metrics [--stack <csharp|typescript>] [--metric <name>] [--verbose]
 ```
 
 - `--stack <name>` — force the adapter (default: auto-detected via stack-detection).
 - `--metric <name>` — report only one metric (default: all four).
 - `--verbose` — show raw tooling output alongside the summary.
 
-Run the deterministic core directly: `octopus quality-metrics [args]`
+Run the deterministic core directly: `octopus code-metrics [args]`
 
 ## Metrics (v1)
 
@@ -61,14 +61,14 @@ did this PR actually change?").
 
 ## Threshold Configuration
 
-Thresholds live in `.octopus.yml` under `quality_metrics:` with
+Thresholds live in `.octopus.yml` under `code_metrics:` with
 **per-field, per-layer** resolution (`default < workspace < personal <
 project`; **project wins**). A field absent from all layers defaults to
 **ratchet only** — a change may not regress versus baseline, but there is no
 absolute floor or ceiling.
 
 ```yaml
-quality_metrics:
+code_metrics:
   coverage:
     min: 80          # absolute floor; ratchet applies if below this
     test_filter: "Category!=Integration"   # (C#) dotnet test --filter; e.g. unit-only
@@ -87,9 +87,8 @@ leaving slow e2e/integration tests as a separate CI gate — and scope the
 dotnet-coverage report to production assemblies (excluding generated code such as
 EF migrations). They are honoured by the C# adapter; absent fields are no-ops.
 
-Precedence order: workspace → personal → **project (wins)**. This mirrors the
-rules-layer precedence (RM-067/069): the committed repo state is authoritative
-for a quality contract.
+Precedence order: workspace → personal → **project (wins)**. The committed repo
+state is authoritative for a quality contract.
 
 ## Ratchet vs. Absolute Thresholds
 
@@ -117,7 +116,7 @@ The harness's low-cost model is resolved as:
 
 ## Baseline Store (orphan ref)
 
-Baseline snapshots are stored on the `octopus/quality-metrics` orphan ref
+Baseline snapshots are stored on the `octopus/code-metrics` orphan ref
 (not on `main` or any protected branch) as a single `baseline.json` file.
 
 ```json
@@ -161,21 +160,19 @@ Use `--stack` to override.
 
 ## Writer Action
 
-Install `templates/github-actions/quality-metrics-writer.yml` into
+Install `templates/github-actions/code-metrics-writer.yml` into
 `.github/workflows/` in each repo that uses this bundle. It fires on
 `push:main`, recomputes full-repo metrics on the merged commit, and writes
 the orphan ref. It **never pushes to `main` or `release/*`**.
 
-See `templates/github-actions/quality-metrics-writer.yml` for the full
+See `templates/github-actions/code-metrics-writer.yml` for the full
 template and installation notes.
 
-## Relationship to quality-audits / quality-signals
+## Relationship to quality and knowledge-ops
 
-- **quality-audits** — blocking pre-merge audits (security, money, tenant,
-  contracts). *Gate axis.*
-- **quality-signals** — advisory signals (grounding, verification, style).
-  *Signal axis.*
-- **quality-metrics** — deterministic measurement over time + per-PR delta.
+- **quality** — blocking pre-merge audits and advisory signals (security, money,
+  tenant, contracts, grounding, verification, style). Fine-tune members down via
+  the interactive picker (uncheck → `exclude:`).
+- **knowledge-ops** — knowledge-base operations (`knowledge-hygiene`/`synthesize`/`briefing`).
+- **code-metrics** — deterministic measurement over time + per-PR delta.
   *Measurement axis (this bundle).*
-
-All three can coexist; they are siblings, not alternatives.

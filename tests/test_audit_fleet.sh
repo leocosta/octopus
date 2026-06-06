@@ -48,7 +48,7 @@ check "reuses audit-config rather than reimplement" grep -qi "audit-config" "$SK
 check "v1 operates on local checkouts" grep -qiE "local checkout|local checkouts|locally|checked-out" "$SKILL"
 
 # --- bundle registration ------------------------------------------------
-check "registered in quality bundle (interim)" grep -q "audit-fleet" "$OCTOPUS_DIR/bundles/quality.yml"
+check "registered in tech-lead bundle" grep -q "audit-fleet" "$OCTOPUS_DIR/bundles/tech-lead.yml"
 
 echo "PASS=$PASS FAIL=$FAIL"
 test "$FAIL" -eq 0

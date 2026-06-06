@@ -56,7 +56,7 @@ roles: []
 
 - **`audit-grounding`** — also reads the knowledge tree, but it does so as a
   signal-only divergence check tied to the code diff. It belongs in
-  [`quality-signals`](/octopus/bundles/quality-signals/) because its trigger
+  [`quality`](/octopus/bundles/quality/) because its trigger
   and scope are diff-centric, not knowledge-tree-centric.
 - **`doc-lifecycle`, `doc-adr`** — those produce knowledge; these three consume
   and maintain it. Producers live in `starter` and `docs`.
@@ -82,5 +82,4 @@ These skills map to three distinct rhythms:
   `doc-lifecycle`, which produce the knowledge entries this bundle maintains.
 - **[docs](/octopus/bundles/docs/)** — for the full documentation lifecycle
   (RFC → Spec → ADR → Knowledge → Changelog) that feeds the knowledge tree.
-- **[quality](/octopus/bundles/quality/)** — `knowledge-ops` is a subset of
-  `quality`; the full bundle includes these skills alongside the audit gates.
+- **[quality](/octopus/bundles/quality/)** — includes the audit gates and advisory signals alongside which `knowledge-ops` provides the knowledge-loop operations.

@@ -58,7 +58,7 @@ roles: []
 
 - **`audit-grounding`** — também lê a árvore de conhecimento, mas faz isso como
   uma verificação de divergência signal-only atrelada ao diff de código. Pertence
-  ao [`quality-signals`](/octopus/bundles/quality-signals/) porque seu trigger e
+  ao [`quality`](/octopus/bundles/quality/) porque seu trigger e
   escopo são centrados no diff, não na árvore de conhecimento.
 - **`doc-lifecycle`, `doc-adr`** — essas produzem conhecimento; as três deste
   bundle o consomem e mantêm. Os produtores vivem no `starter` e no `docs`.
