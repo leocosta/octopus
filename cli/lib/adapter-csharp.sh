@@ -85,8 +85,12 @@ cm_adapter_csharp_coverage() {
       [[ -f "$settings_path" ]] && settings_args=(-s "$settings_path")
     fi
     local cov_file="$cov_dir/coverage.cobertura.xml"
+    # Redirect stdout too: dotnet-coverage and the inner `dotnet test` print
+    # progress to stdout, which would otherwise leak into this function's output
+    # (the metric contract is a single `coverage:<n>` line). The report goes to
+    # the -o file, so suppressing the console stream is safe.
     dotnet-coverage collect "${settings_args[@]}" -f cobertura -o "$cov_file" "$inner" \
-      2>/dev/null || true
+      >/dev/null 2>&1 || true
     if [[ -f "$cov_file" ]]; then
       # dotnet-coverage cobertura: a single root <coverage line-rate="..."> over
       # all included modules — use it directly (covered/valid, not a package mean).
@@ -96,11 +100,13 @@ cm_adapter_csharp_coverage() {
     # Fallback: coverlet XPlat collector → Cobertura (average of package line-rate).
     local filter_args=()
     [[ -n "$test_filter" ]] && filter_args=(--filter "$test_filter")
+    # Suppress stdout+stderr: `dotnet test` prints progress to stdout, which
+    # would leak into the metric output. Coverage is read from the results dir.
     dotnet test "$test_proj" --no-build "${filter_args[@]}" \
       --collect:"XPlat Code Coverage" \
       --results-directory "$cov_dir" \
       -- "DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura" \
-      2>/dev/null || true
+      >/dev/null 2>&1 || true
     local cov_file; cov_file="$(find "$cov_dir" -name 'coverage.cobertura.xml' | head -1)"
     if [[ -f "$cov_file" ]]; then
       rate="$(awk -F'"' '
