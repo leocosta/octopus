@@ -138,6 +138,14 @@ cm_field() {
   printf '%s\n' "$val"
 }
 
+# Resolve a numeric config field, falling back to a default when unset.
+# Thin wrapper over cm_field for the common "config value or built-in default"
+# pattern (e.g. the hotspots window/thresholds).
+cm_field_or() {
+  local v; v="$(cm_field "$1" "$2" 2>/dev/null || true)"
+  printf '%s\n' "${v:-$3}"
+}
+
 # Resolve a string-valued config field (e.g. coverage.test_filter,
 # coverage.settings) across the same layers as cm_field, WITHOUT numeric
 # validation. Security: the returned value is attacker-influenceable (any config

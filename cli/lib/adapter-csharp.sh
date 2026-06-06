@@ -332,9 +332,9 @@ cm_adapter_csharp_hotspots() {
     echo "hotspots:0"; return 0
   fi
   local window churn_min ccn_min
-  window="$(cm_field hotspots window_days 2>/dev/null || true)";  window="${window:-90}"
-  churn_min="$(cm_field hotspots churn_min 2>/dev/null || true)"; churn_min="${churn_min:-20}"
-  ccn_min="$(cm_field hotspots ccn_min 2>/dev/null || true)";     ccn_min="${ccn_min:-10}"
+  window="$(cm_field_or hotspots window_days 90)"
+  churn_min="$(cm_field_or hotspots churn_min 20)"
+  ccn_min="$(cm_field_or hotspots ccn_min 10)"
 
   local churn_f ccn_f; churn_f="$(mktemp)"; ccn_f="$(mktemp)"
   # Per-file churn over the window (repo-relative paths).

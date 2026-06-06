@@ -715,6 +715,18 @@ t13_hotspot_none() {
 }
 check "hotspots: cm_hotspot_count → 0 when nothing in the quadrant" t13_hotspot_none
 
+t13_field_or_default() {
+  # Unset → default; set → configured value (project layer).
+  local d s; local proj; proj="$(mktemp)"; FIXTURES+=("$proj")
+  d="$(CM_WORKSPACE_YML=/nonexistent CM_PERSONAL_YML=/nonexistent CM_PROJECT_YML=/nonexistent \
+        cm_field_or hotspots window_days 90)"
+  printf 'code_metrics:\n  hotspots:\n    window_days: 30\n' > "$proj"
+  s="$(CM_WORKSPACE_YML=/nonexistent CM_PERSONAL_YML=/nonexistent CM_PROJECT_YML="$proj" \
+        cm_field_or hotspots window_days 90)"
+  [[ "$d" == "90" && "$s" == "30" ]]
+}
+check "hotspots: cm_field_or returns default when unset, value when set" t13_field_or_default
+
 t13_adapter_emits_hotspots() {
   # Integration shape only: with no C# history/files the value is 0, but the
   # contract is a single hotspots:<n> line.
