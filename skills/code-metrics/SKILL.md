@@ -37,14 +37,56 @@ This is a **signal, never a gate**. It does not block the PR.
 
 Run the deterministic core directly: `octopus code-metrics [args]`
 
-## Metrics (v1)
+## Metrics
 
-| Metric | Direction | Default threshold |
+Every metric is dispatched from a single registry (`cm_metric_spec`):
+`direction|config_block|config_field`. `direction` is `higher` (higher is
+better), `lower` (lower is better), or `info` (reported, never gated). Adding a
+metric is a one-line registry entry plus its adapter function — there is no
+hardcoded per-metric branching in the orchestrator.
+
+**v1 (RM-147) — structure**
+
+| Metric | Direction | Default |
 |---|---|---|
-| `coverage` | higher is better | ratchet only (no regression) |
-| `complexity` | lower is better | ratchet only (per-function cyclomatic) |
-| `module_size` | lower is better | ratchet only (lines per module) |
-| `dependency_cycles` | lower is better | ratchet only (cycle count) |
+| `coverage` | higher | ratchet only |
+| `complexity` | lower | ratchet only (per-function cyclomatic) |
+| `module_size` | lower | ratchet only (lines per module) |
+| `dependency_cycles` | lower | ratchet only (cycle count) |
+
+**v2 pack (RM-148) — debt + readability + docs**
+
+| Metric | Direction | Heuristic |
+|---|---|---|
+| `todo_markers` | lower | `TODO`/`FIXME`/`HACK`/`XXX` counts |
+| `deprecations` | lower | `@deprecated` (TS) · `[Obsolete]` (C#) |
+| `dead_code` | lower | marked dead (`#if false`, `// dead`, unused-disable) |
+| `suppressions` | lower | `eslint-disable`/`@ts-ignore` · `#pragma warning disable`/`[SuppressMessage]` |
+| `nesting_depth` | lower | deepest brace level |
+| `param_count` | lower | avg parameters per function (lizard) |
+| `magic_numbers` | lower | numeric literals (excl 0/1/-1, named consts, strings) |
+| `lint_density` | lower | linter findings per 1000 NLOC (best-effort; 0 if absent) |
+| `doc_coverage` | higher | documented public/exported symbols ÷ total |
+
+**v3 (RM-149/150) — decay + load risk**
+
+| Metric | Direction | Heuristic |
+|---|---|---|
+| `hotspots` | lower | files that are high-churn **and** high-complexity (git history × lizard) |
+| `perf_risk` | **info** | query/alloc inside loops + nested loops; high false-positive, never gated |
+
+All new metrics are deterministic shell heuristics (grep/awk/lizard/git) in the
+spirit of the v1 adapters — approximate by design, ≈0 tokens, and **ratchet-only
+by default** so a legacy repo (5,000 existing TODOs) is never born "red".
+`perf_risk` is `info` — it is reported in the delta line but never produces a
+`curation:needed` breach.
+
+**Known approximation:** `nesting_depth`, `doc_coverage`, and `perf_risk` are
+repo-level reads over the concatenated source and assume brace-balanced files. A
+file with an unbalanced `{`/`}` inside a string, comment, or `#region`/`#if`
+block can leak nesting/loop state into the next file, mildly inflating the
+number. Bounded (ratchet-only / info) and rare in real source; documented rather
+than over-engineered.
 
 ## Dual Delta
 
@@ -79,7 +121,24 @@ code_metrics:
     max: 400         # absolute ceiling in lines
   dependencies:
     cycles_allowed: 0
+  # v2 pack (RM-148) — all optional; absent ⇒ ratchet-only
+  suppressions:
+    max: 0           # e.g. forbid new linter/compiler suppressions
+  nesting_depth:
+    max: 4
+  param_count:
+    max: 5
+  doc_coverage:
+    min: 60
+  # v3 (RM-149) — hotspots window + quadrant thresholds
+  hotspots:
+    window_days: 90  # churn lookback (default 90)
+    churn_min: 20    # a file is "hot" at >= this added+deleted in the window
+    ccn_min: 10      # and "complex" at >= this max cyclomatic
+    max: 0           # absolute ceiling on the hot-and-complex file count
 ```
+
+`perf_risk` (RM-150) takes no threshold — it is `info`-only.
 
 `coverage.test_filter` and `coverage.settings` are **string** fields (not numeric
 thresholds). They let a repo run coverage over a subset — e.g. unit tests only,

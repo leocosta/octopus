@@ -493,6 +493,313 @@ t9_safe_filter_validator() {
 check "injection: cm_is_safe_filter accepts filters, rejects arg/command injection" t9_safe_filter_validator
 
 # ---------------------------------------------------------------------------
+# SECTION 10 — metric registry (cm_metric_spec)  [RM-148]
+# ---------------------------------------------------------------------------
+# Purpose: cm_metric_spec is the single source of truth mapping each metric to
+# its `direction|config_block|config_field`. The dispatch loop in
+# code-metrics.sh reads it instead of a hardcoded case, so adding a metric is a
+# one-line registry entry. Direction ∈ {higher, lower, info}.
+echo "=== Section 10: metric registry (cm_metric_spec) ==="
+
+t10_existing_unchanged() {
+  [[ "$(cm_metric_spec coverage)"          == "higher|coverage|min" ]] &&
+  [[ "$(cm_metric_spec complexity)"        == "lower|complexity|max" ]] &&
+  [[ "$(cm_metric_spec module_size)"       == "lower|module_size|max" ]] &&
+  [[ "$(cm_metric_spec dependency_cycles)" == "lower|dependencies|cycles_allowed" ]]
+}
+check "registry: 4 existing metrics map to unchanged direction/field" t10_existing_unchanged
+
+t10_rm148_counters() {
+  [[ "$(cm_metric_spec todo_markers)"  == "lower|todo_markers|max" ]] &&
+  [[ "$(cm_metric_spec deprecations)"  == "lower|deprecations|max" ]] &&
+  [[ "$(cm_metric_spec dead_code)"     == "lower|dead_code|max" ]] &&
+  [[ "$(cm_metric_spec suppressions)"  == "lower|suppressions|max" ]] &&
+  [[ "$(cm_metric_spec nesting_depth)" == "lower|nesting_depth|max" ]] &&
+  [[ "$(cm_metric_spec param_count)"   == "lower|param_count|max" ]] &&
+  [[ "$(cm_metric_spec magic_numbers)" == "lower|magic_numbers|max" ]] &&
+  [[ "$(cm_metric_spec lint_density)"  == "lower|lint_density|max" ]] &&
+  [[ "$(cm_metric_spec doc_coverage)"  == "higher|doc_coverage|min" ]]
+}
+check "registry: RM-148 counters mapped (doc_coverage higher, rest lower)" t10_rm148_counters
+
+t10_rm149_hotspots() {
+  [[ "$(cm_metric_spec hotspots)" == "lower|hotspots|max" ]]
+}
+check "registry: RM-149 hotspots → lower|hotspots|max" t10_rm149_hotspots
+
+t10_rm150_perf_info_only() {
+  # perf_risk is info-only: no config field, must resolve to the info direction
+  # so the dispatch loop skips the threshold check entirely.
+  [[ "$(cm_metric_spec perf_risk)" == "info|perf_risk|" ]]
+}
+check "registry: RM-150 perf_risk → info direction, no threshold field" t10_rm150_perf_info_only
+
+t10_unknown_empty() {
+  [[ -z "$(cm_metric_spec definitely_not_a_metric)" ]]
+}
+check "registry: unknown metric → empty (no phantom dispatch)" t10_unknown_empty
+
+t10_info_never_gates() {
+  # An info-only metric routed through cm_format_report with cm_check_noop must
+  # print its delta line and NEVER emit curation:needed, even on a "regression".
+  local out; out="$(cm_format_report "perf_risk" 9 3 "" "cm_check_noop")"
+  grep -q "metric:perf_risk current:9" <<<"$out" && ! grep -q "curation:needed" <<<"$out"
+}
+check "registry: cm_check_noop reports info metric without ever gating" t10_info_never_gates
+
+# ---------------------------------------------------------------------------
+# SECTION 11 — RM-148 counter helpers (pure, fixture-tested)
+# ---------------------------------------------------------------------------
+# Purpose: the v2 pack metrics are deterministic shell heuristics. Their cores
+# are pure helpers tested here against inline fixtures; the adapters only feed
+# them language-specific file lists / grep patterns.
+echo "=== Section 11: RM-148 counter helpers ==="
+
+CM_SRC=$(mktemp -d); FIXTURES+=("$CM_SRC")
+mkdir -p "$CM_SRC/node_modules" "$CM_SRC/src"
+printf '// TODO: fix\nint x=2; // FIXME later\nok\n' > "$CM_SRC/src/a.ts"
+printf 'TODO everywhere\n' > "$CM_SRC/node_modules/vendor.ts"   # must be pruned
+
+t11_count_matches() {
+  # 2 matching lines under src/, node_modules pruned.
+  [[ "$(cm_count_matches 'TODO|FIXME' "$CM_SRC")" == "2" ]]
+}
+check "counter: cm_count_matches counts matches, prunes vendor dirs" t11_count_matches
+
+t11_count_matches_absent_path() {
+  [[ "$(cm_count_matches 'TODO' /nonexistent/path)" == "0" ]]
+}
+check "counter: cm_count_matches → 0 for absent path" t11_count_matches_absent_path
+
+t11_magic_numbers() {
+  # magic: 7 (line2), 2 and 3 (line5) = 3. 42 is a named const; 0/1 excluded;
+  # 8080 lives inside a string; identifiers like x2 are not literals.
+  local n
+  n="$(printf 'const MAX = 42;\nif (x == 7) {}\nfor (i=0;i<1;i++){}\nlet s = "port 8080";\narr[2] = 3;\n' | cm_magic_numbers)"
+  [[ "$n" == "3" ]]
+}
+check "counter: cm_magic_numbers excludes const/0/1/strings/identifiers" t11_magic_numbers
+
+t11_max_nesting() {
+  local d
+  d="$(printf 'fn(){\n if(a){\n  for(){\n   x;\n  }\n }\n}\n' | cm_max_nesting)"
+  [[ "$d" == "3" ]]
+}
+check "counter: cm_max_nesting returns deepest brace level" t11_max_nesting
+
+t11_max_nesting_flat() {
+  [[ "$(printf 'a;\nb;\n' | cm_max_nesting)" == "0" ]]
+}
+check "counter: cm_max_nesting → 0 with no braces" t11_max_nesting_flat
+
+t11_doc_ratio() {
+  [[ "$(cm_doc_ratio 3 4)" == "75.0" ]] && [[ "$(cm_doc_ratio 0 0)" == "100.0" ]]
+}
+check "counter: cm_doc_ratio percentage; empty surface → 100.0" t11_doc_ratio
+
+# ---------------------------------------------------------------------------
+# SECTION 12 — RM-148 adapters (C# + TS) over real fixtures
+# ---------------------------------------------------------------------------
+# Purpose: the grep/awk/lizard metrics run end-to-end against a fixture repo.
+# Values are asserted where the tool is deterministic and present (grep always;
+# lizard is installed → param_count is real). The output contract is one
+# `metric:value` line per function.
+echo "=== Section 12: RM-148 adapters (fixtures) ==="
+
+# shellcheck source=../cli/lib/adapter-csharp.sh
+source "$OCTOPUS_DIR/cli/lib/adapter-csharp.sh"
+# shellcheck source=../cli/lib/adapter-typescript.sh
+source "$OCTOPUS_DIR/cli/lib/adapter-typescript.sh"
+
+CS_FIX=$(mktemp -d); FIXTURES+=("$CS_FIX")
+cat > "$CS_FIX/Sample.cs" <<'EOF'
+public class Foo {
+    // TODO: refactor
+    [Obsolete]
+    public int Bar(int a, int b) {
+        if (a == 42) { return 0; }
+        #pragma warning disable CS1591
+        return b;
+    }
+}
+EOF
+
+t12_cs_todo()         { [[ "$(cm_adapter_csharp_todo_markers "$CS_FIX")"  == "todo_markers:1" ]]; }
+t12_cs_deprecations() { [[ "$(cm_adapter_csharp_deprecations "$CS_FIX")"  == "deprecations:1" ]]; }
+t12_cs_suppressions() { [[ "$(cm_adapter_csharp_suppressions "$CS_FIX")"  == "suppressions:1" ]]; }
+t12_cs_magic()        { [[ "$(cm_adapter_csharp_magic_numbers "$CS_FIX")" == "magic_numbers:1" ]]; }
+t12_cs_nesting()      { [[ "$(cm_adapter_csharp_nesting_depth "$CS_FIX")" == "nesting_depth:3" ]]; }
+t12_cs_param()        { [[ "$(cm_adapter_csharp_param_count "$CS_FIX")"   == "param_count:2.0" ]]; }
+t12_cs_doc()          { [[ "$(cm_adapter_csharp_doc_coverage "$CS_FIX")"  == "doc_coverage:0.0" ]]; }
+check "adapter(C#): todo_markers counts TODO"          t12_cs_todo
+check "adapter(C#): deprecations counts [Obsolete]"    t12_cs_deprecations
+check "adapter(C#): suppressions counts #pragma disable" t12_cs_suppressions
+check "adapter(C#): magic_numbers excludes 0, counts 42" t12_cs_magic
+check "adapter(C#): nesting_depth = 3"                 t12_cs_nesting
+check "adapter(C#): param_count = 2.0 (lizard)"        t12_cs_param
+check "adapter(C#): doc_coverage = 0.0 (no ///)"       t12_cs_doc
+
+t12_cs_run_emits_all() {
+  local out; out="$(cm_adapter_csharp_run "$CS_FIX" 2>/dev/null)"
+  for m in coverage complexity module_size dependency_cycles \
+           todo_markers deprecations dead_code suppressions \
+           nesting_depth param_count magic_numbers lint_density doc_coverage; do
+    grep -qE "^${m}:" <<<"$out" || return 1
+  done
+}
+check "adapter(C#): _run emits all 13 metric lines" t12_cs_run_emits_all
+
+TS_FIX=$(mktemp -d); FIXTURES+=("$TS_FIX")
+cat > "$TS_FIX/sample.ts" <<'EOF'
+/** documented */
+export function foo(x: number, y: number) {
+  // TODO later
+  if (x === 7) { return 0; }
+  return y;
+}
+export const bar = 1;
+EOF
+
+t12_ts_todo()    { [[ "$(cm_adapter_typescript_todo_markers "$TS_FIX")"  == "todo_markers:1" ]]; }
+t12_ts_magic()   { [[ "$(cm_adapter_typescript_magic_numbers "$TS_FIX")" == "magic_numbers:1" ]]; }
+t12_ts_nesting() { [[ "$(cm_adapter_typescript_nesting_depth "$TS_FIX")" == "nesting_depth:2" ]]; }
+t12_ts_param()   { [[ "$(cm_adapter_typescript_param_count "$TS_FIX")"   == "param_count:2.0" ]]; }
+t12_ts_doc()     { [[ "$(cm_adapter_typescript_doc_coverage "$TS_FIX")"  == "doc_coverage:50.0" ]]; }
+check "adapter(TS): todo_markers counts TODO"        t12_ts_todo
+check "adapter(TS): magic_numbers = 1 (7 only)"      t12_ts_magic
+check "adapter(TS): nesting_depth = 2"               t12_ts_nesting
+check "adapter(TS): param_count = 2.0 (lizard)"      t12_ts_param
+check "adapter(TS): doc_coverage = 50.0 (1 of 2 exports)" t12_ts_doc
+
+t12_ts_run_emits_all() {
+  local out; out="$(cm_adapter_typescript_run "$TS_FIX" 2>/dev/null)"
+  for m in coverage complexity module_size dependency_cycles \
+           todo_markers deprecations dead_code suppressions \
+           nesting_depth param_count magic_numbers lint_density doc_coverage; do
+    grep -qE "^${m}:" <<<"$out" || return 1
+  done
+}
+check "adapter(TS): _run emits all 13 metric lines" t12_ts_run_emits_all
+
+# ---------------------------------------------------------------------------
+# SECTION 13 — RM-149 hotspots (churn × complexity)
+# ---------------------------------------------------------------------------
+# Purpose: the decay metric joins git churn with per-file complexity. The two
+# pure cores — churn aggregation from `git log --numstat` and the quadrant
+# count — are fixture-tested; the adapter wires git + lizard.
+echo "=== Section 13: RM-149 hotspots ==="
+
+t13_git_churn_aggregates() {
+  # added+deleted summed per path; binary (`-`) rows ignored; repeated paths add.
+  local out
+  out="$(printf '12\t3\tsrc/a.ts\n0\t5\tsrc/b.ts\n4\t1\tsrc/a.ts\n-\t-\tlogo.png\n' | cm_git_churn)"
+  [[ "$(awk '$2=="src/a.ts"{print $1}' <<<"$out")" == "20" ]] &&
+  [[ "$(awk '$2=="src/b.ts"{print $1}' <<<"$out")" == "5" ]] &&
+  ! grep -q "logo.png" <<<"$out"
+}
+check "hotspots: cm_git_churn sums added+deleted per file, skips binary" t13_git_churn_aggregates
+
+t13_hotspot_quadrant() {
+  local cf xf; cf="$(mktemp)"; xf="$(mktemp)"; FIXTURES+=("$cf" "$xf")
+  printf '20\tsrc/a.ts\n5\tsrc/b.ts\n30\tsrc/c.ts\n' > "$cf"   # churn
+  printf '18\tsrc/a.ts\n2\tsrc/b.ts\n3\tsrc/c.ts\n'  > "$xf"   # ccn
+  # threshold churn>=10 AND ccn>=10: only a.ts (20,18). b.ts low churn; c.ts low ccn.
+  [[ "$(cm_hotspot_count 10 10 "$cf" "$xf")" == "1" ]]
+}
+check "hotspots: cm_hotspot_count counts high-churn AND high-complexity files" t13_hotspot_quadrant
+
+t13_hotspot_none() {
+  local cf xf; cf="$(mktemp)"; xf="$(mktemp)"; FIXTURES+=("$cf" "$xf")
+  printf '3\tsrc/a.ts\n' > "$cf"; printf '2\tsrc/a.ts\n' > "$xf"
+  [[ "$(cm_hotspot_count 10 10 "$cf" "$xf")" == "0" ]]
+}
+check "hotspots: cm_hotspot_count → 0 when nothing in the quadrant" t13_hotspot_none
+
+t13_field_or_default() {
+  # Unset → default; set → configured value (project layer).
+  local d s; local proj; proj="$(mktemp)"; FIXTURES+=("$proj")
+  d="$(CM_WORKSPACE_YML=/nonexistent CM_PERSONAL_YML=/nonexistent CM_PROJECT_YML=/nonexistent \
+        cm_field_or hotspots window_days 90)"
+  printf 'code_metrics:\n  hotspots:\n    window_days: 30\n' > "$proj"
+  s="$(CM_WORKSPACE_YML=/nonexistent CM_PERSONAL_YML=/nonexistent CM_PROJECT_YML="$proj" \
+        cm_field_or hotspots window_days 90)"
+  [[ "$d" == "90" && "$s" == "30" ]]
+}
+check "hotspots: cm_field_or returns default when unset, value when set" t13_field_or_default
+
+t13_adapter_emits_hotspots() {
+  # Integration shape only: with no C# history/files the value is 0, but the
+  # contract is a single hotspots:<n> line.
+  grep -qE '^hotspots:[0-9]+$' <<<"$(cm_adapter_csharp_hotspots "$CS_FIX" 2>/dev/null)"
+}
+check "hotspots: cm_adapter_csharp_hotspots emits hotspots:<n>" t13_adapter_emits_hotspots
+
+# ---------------------------------------------------------------------------
+# SECTION 14 — RM-150 perf_risk scanner (info-only)
+# ---------------------------------------------------------------------------
+# Purpose: a static, heuristic proxy for load risk — risky calls inside loops,
+# nested loops (O(n²)), allocations inside loops. High false-positive by nature,
+# so it is reported as `info` and never gates. The brace-depth scanner core is
+# fixture-tested; the adapter supplies per-language patterns.
+echo "=== Section 14: RM-150 perf_risk scanner ==="
+
+t14_perf_scan_counts() {
+  # await/.find inside a loop (1) + nested loop (1) + new X inside a loop (1) = 3.
+  local n
+  n="$(printf '%s\n' \
+    'for (const u of users) {' \
+    '  await db.find(u.id);' \
+    '  for (const t of u.tags) {' \
+    '    new Thing();' \
+    '  }' \
+    '}' \
+    | cm_perf_scan '(^|[^A-Za-z])(for|foreach|while)([^A-Za-z]|$)|[.](forEach|map)[(]' 'await|[.]find[(]|new [A-Z]')"
+  [[ "$n" == "3" ]]
+}
+check "perf: cm_perf_scan counts risk-in-loop + nested-loop + alloc-in-loop" t14_perf_scan_counts
+
+t14_perf_scan_outside_loop_zero() {
+  # risky calls with no enclosing loop must not count.
+  local n
+  n="$(printf '%s\n' 'await db.find(1);' 'new Thing();' \
+    | cm_perf_scan '(^|[^A-Za-z])(for|while)([^A-Za-z]|$)' 'await|new [A-Z]')"
+  [[ "$n" == "0" ]]
+}
+check "perf: cm_perf_scan ignores risky calls outside any loop" t14_perf_scan_outside_loop_zero
+
+t14_perf_adapter_info_only() {
+  # Adapter emits perf_risk:<n>; registry marks it info (never gated).
+  grep -qE '^perf_risk:[0-9]+$' <<<"$(cm_adapter_typescript_perf_risk "$TS_FIX" 2>/dev/null)" &&
+  [[ "$(cm_metric_spec perf_risk)" == "info|perf_risk|" ]]
+}
+check "perf: adapter emits perf_risk:<n>, registry is info-only" t14_perf_adapter_info_only
+
+# ---------------------------------------------------------------------------
+# SECTION 15 — baseline.json assembly (cm_emit_baseline_json)  [RM-148/149/150]
+# ---------------------------------------------------------------------------
+# Purpose: the writer-Action produces baseline.json from the SAME adapter output
+# (single source of truth, no YAML re-implementation drift). cm_emit_baseline_json
+# turns the metric:value stream + commit/timestamp into the flat JSON record the
+# orphan-ref stores, so new metrics become vs_baseline-capable for free.
+echo "=== Section 15: baseline.json assembly ==="
+
+t15_emit_baseline_json() {
+  local out
+  out="$(printf 'coverage:78.5\ncomplexity:9\ntodo_markers:3\nperf_risk:2\n' \
+    | cm_emit_baseline_json abc123 2026-06-06T00:00:00Z)"
+  [[ "$out" == '{"commit":"abc123","timestamp":"2026-06-06T00:00:00Z","coverage":78.5,"complexity":9,"todo_markers":3,"perf_risk":2}' ]]
+}
+check "baseline: cm_emit_baseline_json emits flat JSON with commit+timestamp+metrics" t15_emit_baseline_json
+
+t15_emit_baseline_json_nonnumeric_zeroed() {
+  # A non-numeric/garbage value must not break the JSON — coerced to 0.
+  local out
+  out="$(printf 'coverage:n/a\ncomplexity:9\n' | cm_emit_baseline_json x y)"
+  [[ "$out" == '{"commit":"x","timestamp":"y","coverage":0,"complexity":9}' ]]
+}
+check "baseline: non-numeric metric value coerced to 0 (valid JSON)" t15_emit_baseline_json_nonnumeric_zeroed
+
+# ---------------------------------------------------------------------------
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]

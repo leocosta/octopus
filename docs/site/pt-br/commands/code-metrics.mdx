@@ -3,9 +3,10 @@ title: code-metrics
 description: "Leitura local e não-bloqueante com delta duplo de cobertura, complexidade, tamanho de módulo e ciclos de dependência no PR-open; números de graça, modelo só na quebra de threshold."
 ---
 
-`/octopus:code-metrics` roda uma leitura local de como seu branch move quatro
-métricas determinísticas de qualidade de código, antes de você abrir o PR — e
-continua quase de graça a menos que algo de fato regrida.
+`/octopus:code-metrics` roda uma leitura local de como seu branch move um
+catálogo de métricas determinísticas de qualidade — estrutura, dívida,
+legibilidade, decay e risco de carga — antes de você abrir o PR, e continua
+quase de graça a menos que algo de fato regrida.
 
 ## O que resolve
 
@@ -19,26 +20,31 @@ seu próprio stack em vez de um modelo.
 ## Como funciona
 
 Um adapter por-stack — escolhido a partir do stack detectado — roda o tooling
-real (cobertura, complexidade ciclomática, tamanho de módulo, ciclos de
-dependência) e normaliza a saída para um contrato compartilhado. O comando faz
-fetch do baseline por-merge no ref `octopus/code-metrics` e imprime um **delta
-duplo**: seu branch vs. esse baseline (a tendência) e vs. seu `main` local (o
-impacto deste PR).
+real e normaliza a saída para um contrato compartilhado. Além das métricas de
+estrutura da v1 (cobertura, complexidade, tamanho de módulo, ciclos de
+dependência) ele agora lê contadores de dívida e legibilidade (contagens de
+TODO/supressões, profundidade de aninhamento, nº de parâmetros, magic numbers,
+doc coverage), `hotspots` (churn × complexidade) e um proxy estático `perf_risk`
+(só info). O comando faz fetch do baseline por-merge no ref
+`octopus/code-metrics` e imprime um **delta duplo**: seu branch vs. esse baseline
+(a tendência) e vs. seu `main` local (o impacto deste PR).
 
 Os thresholds são ratchet por padrão (sem regressão vs. baseline), com alvos
 absolutos opcionais no `.octopus.yml`. A rodada numérica nunca chama um modelo;
 só uma quebra de threshold aciona um modelo de baixo custo para explicar a
-regressão e sugerir um fix.
+regressão e sugerir um fix. `perf_risk` é só-info e nunca vira gate.
 
 ## Uso & parâmetros
 
 ```
-octopus code-metrics [--stack <id>] [--against <ref>]
+octopus code-metrics [--stack <id>] [--metric <name>] [--verbose] [--emit-baseline]
 ```
 
 - `--stack <id>` — força um adapter de stack (`csharp`, `typescript`) em vez de
   auto-detectar a partir do repo.
-- `--against <ref>` — o ref local usado como comparador "vs. main"; padrão
-  `main`.
+- `--metric <name>` — reporta uma única métrica em vez do catálogo todo.
+- `--verbose` — mostra a saída crua do tooling junto do resumo.
+- `--emit-baseline` — imprime o `baseline.json` plano desta rodada (usado pela
+  writer-Action).
 
 [Source: `commands/code-metrics.md`](https://github.com/leocosta/octopus/blob/main/commands/code-metrics.md)

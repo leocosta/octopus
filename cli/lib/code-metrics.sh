@@ -17,9 +17,10 @@ source "$CM_LIB_DIR/code-metrics-lib.sh"
 CM_STACK=""
 CM_METRIC=""
 CM_VERBOSE=0
+CM_EMIT_BASELINE=0
 
 _cm_usage() {
-  echo "usage: octopus code-metrics [--stack <csharp|typescript>] [--metric <name>] [--verbose]" >&2
+  echo "usage: octopus code-metrics [--stack <csharp|typescript>] [--metric <name>] [--verbose] [--emit-baseline]" >&2
 }
 
 while [[ $# -gt 0 ]]; do
@@ -27,6 +28,7 @@ while [[ $# -gt 0 ]]; do
     --stack)   CM_STACK="${2:-}"; shift 2 ;;
     --metric)  CM_METRIC="${2:-}"; shift 2 ;;
     --verbose) CM_VERBOSE=1; shift ;;
+    --emit-baseline) CM_EMIT_BASELINE=1; shift ;;
     -h|--help) _cm_usage; exit 0 ;;
     *)
       echo "Unknown code-metrics option: $1" >&2
@@ -84,7 +86,10 @@ source "$ADAPTER_SCRIPT"
 # Fetch orphan-ref baseline (read-only; never writes)
 # ---------------------------------------------------------------------------
 BASELINE_JSON=""
-if git fetch origin "refs/octopus/code-metrics:refs/octopus/code-metrics" \
+# Skip the orphan-ref fetch when only emitting the baseline (the writer path
+# needs current metrics + HEAD, not the prior baseline) — saves a round-trip.
+if [[ "$CM_EMIT_BASELINE" -eq 0 ]] \
+    && git fetch origin "refs/octopus/code-metrics:refs/octopus/code-metrics" \
     --no-tags --quiet 2>/dev/null; then
   BASELINE_JSON="$(git show refs/octopus/code-metrics:baseline.json 2>/dev/null || true)"
 fi
@@ -103,6 +108,18 @@ fi
 CURRENT_METRICS="$("$ADAPTER_FN" "$PWD")"
 
 # ---------------------------------------------------------------------------
+# --emit-baseline: print the flat baseline.json from this run and exit.
+# Used by the writer-Action so the producer shares the adapters (no YAML
+# re-implementation / drift). Skips the delta/threshold report entirely.
+# ---------------------------------------------------------------------------
+if [[ "$CM_EMIT_BASELINE" -eq 1 ]]; then
+  cm_commit="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
+  cm_ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  cm_emit_baseline_json "$cm_commit" "$cm_ts" <<<"$CURRENT_METRICS"
+  exit 0
+fi
+
+# ---------------------------------------------------------------------------
 # Compute deltas, apply thresholds, print report
 # ---------------------------------------------------------------------------
 echo "=== code-metrics report ==="
@@ -114,31 +131,34 @@ BREACH_FOUND=0
 
 while IFS=: read -r metric current; do
   [[ -z "$metric" ]] && continue
+  # Skip malformed adapter output: a metric name is lower_snake_case. This
+  # guards against stray non-metric lines a tool may leak into the stream.
+  [[ "$metric" =~ ^[a-z_]+$ ]] || continue
 
-  # Resolve baseline value for this metric
+  # Resolve dispatch from the registry (single source of truth, RM-148):
+  #   direction|config_block|config_field
+  spec="$(cm_metric_spec "$metric")"
+  if [[ -z "$spec" ]]; then
+    # Unregistered metric — surface the raw value, no threshold dispatch.
+    echo "metric:$metric current:$current vs_baseline:n/a vs_main:n/a (unregistered)"
+    continue
+  fi
+  IFS='|' read -r cm_direction cm_block cm_field_name <<<"$spec"
+
   baseline_val="$(cm_parse_baseline "$BASELINE_JSON" "$metric")"
 
-  # Load threshold config and pick the right threshold function
-  absolute_threshold=""
-  threshold_fn="cm_check_threshold"
-  case "$metric" in
-    coverage)
-      absolute_threshold="$(cm_field "coverage" "min")"
-      threshold_fn="cm_check_threshold"
-      ;;
-    complexity)
-      absolute_threshold="$(cm_field "complexity" "max")"
-      threshold_fn="cm_check_threshold_max"
-      ;;
-    module_size)
-      absolute_threshold="$(cm_field "module_size" "max")"
-      threshold_fn="cm_check_threshold_max"
-      ;;
-    dependency_cycles)
-      absolute_threshold="$(cm_field "dependencies" "cycles_allowed")"
-      threshold_fn="cm_check_threshold_max"
-      ;;
+  # Pick the threshold function from the direction.
+  case "$cm_direction" in
+    higher) threshold_fn="cm_check_threshold" ;;
+    lower)  threshold_fn="cm_check_threshold_max" ;;
+    info|*) threshold_fn="cm_check_noop" ;;   # info-only: report, never gate
   esac
+
+  # Resolve the optional absolute threshold (info metrics have no config field).
+  absolute_threshold=""
+  if [[ -n "$cm_field_name" ]]; then
+    absolute_threshold="$(cm_field "$cm_block" "$cm_field_name" 2>/dev/null || true)"
+  fi
 
   REPORT="$(cm_format_report "$metric" "$current" "$baseline_val" "$absolute_threshold" "$threshold_fn")"
   echo "$REPORT"
