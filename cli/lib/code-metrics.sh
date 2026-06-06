@@ -17,9 +17,10 @@ source "$CM_LIB_DIR/code-metrics-lib.sh"
 CM_STACK=""
 CM_METRIC=""
 CM_VERBOSE=0
+CM_EMIT_BASELINE=0
 
 _cm_usage() {
-  echo "usage: octopus code-metrics [--stack <csharp|typescript>] [--metric <name>] [--verbose]" >&2
+  echo "usage: octopus code-metrics [--stack <csharp|typescript>] [--metric <name>] [--verbose] [--emit-baseline]" >&2
 }
 
 while [[ $# -gt 0 ]]; do
@@ -27,6 +28,7 @@ while [[ $# -gt 0 ]]; do
     --stack)   CM_STACK="${2:-}"; shift 2 ;;
     --metric)  CM_METRIC="${2:-}"; shift 2 ;;
     --verbose) CM_VERBOSE=1; shift ;;
+    --emit-baseline) CM_EMIT_BASELINE=1; shift ;;
     -h|--help) _cm_usage; exit 0 ;;
     *)
       echo "Unknown code-metrics option: $1" >&2
@@ -101,6 +103,18 @@ if [[ -n "$CM_METRIC" ]]; then
 fi
 
 CURRENT_METRICS="$("$ADAPTER_FN" "$PWD")"
+
+# ---------------------------------------------------------------------------
+# --emit-baseline: print the flat baseline.json from this run and exit.
+# Used by the writer-Action so the producer shares the adapters (no YAML
+# re-implementation / drift). Skips the delta/threshold report entirely.
+# ---------------------------------------------------------------------------
+if [[ "$CM_EMIT_BASELINE" -eq 1 ]]; then
+  cm_commit="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
+  cm_ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  cm_emit_baseline_json "$cm_commit" "$cm_ts" <<<"$CURRENT_METRICS"
+  exit 0
+fi
 
 # ---------------------------------------------------------------------------
 # Compute deltas, apply thresholds, print report

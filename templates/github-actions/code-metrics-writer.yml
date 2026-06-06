@@ -8,6 +8,11 @@
 # NEVER pushes to main, release/*, or any protected branch.
 # The orphan ref is written only; the protected tree is never touched.
 #
+# The baseline is produced by the SAME adapters the local skill uses, via
+# `octopus code-metrics --emit-baseline` — there is no metric logic duplicated
+# in this YAML, so new metrics (RM-148/149/150 and beyond) are picked up
+# automatically with no edit here.
+#
 # Prerequisites:
 #   1. The octopus/code-metrics orphan ref must not be blocked by a
 #      catch-all branch-protection rule. If your repo has a `**` rule, add
@@ -15,8 +20,11 @@
 #   2. Stack-specific tooling must be available in the runner:
 #      - C#:  dotnet + dotnet-coverage (global tool) + lizard (pip)
 #      - TS:  node + vitest + lizard (pip) + madge (npm)
-#   3. GITHUB_TOKEN needs contents:write for the orphan-ref push.
+#   3. The Octopus CLI is cloned into the runner (step below). Override the
+#      source with the OCTOPUS_REPO / OCTOPUS_REF env vars if you vendor it.
+#   4. GITHUB_TOKEN needs contents:write for the orphan-ref push.
 #      The default token works if branch-protection does not block it.
+#   5. fetch-depth: 0 — the hotspots metric reads git history (churn).
 #
 # Edit freely once installed — Octopus does not overwrite this file.
 
@@ -34,6 +42,10 @@ concurrency:
   group: code-metrics-writer
   cancel-in-progress: false  # serialized: one writer at a time
 
+env:
+  OCTOPUS_REPO: https://github.com/leocosta/octopus
+  OCTOPUS_REF: main
+
 jobs:
   write-baseline:
     name: Recompute metrics and write baseline
@@ -44,12 +56,12 @@ jobs:
       - name: Checkout full history
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0   # hotspots churn needs history
           # Fetch the existing orphan ref so we can overwrite it
           fetch-refs: 'refs/octopus/*'
 
       # -----------------------------------------------------------------------
-      # Stack detection — determines which adapter to run
+      # Stack detection — determines which adapter/tooling to set up
       # -----------------------------------------------------------------------
       - name: Detect stack
         id: stack
@@ -63,13 +75,14 @@ jobs:
           fi
 
       # -----------------------------------------------------------------------
-      # Common tooling
+      # Common tooling — lizard powers complexity, module_size, param_count,
+      # lint_density (denominator) and hotspots (per-file CCN).
       # -----------------------------------------------------------------------
-      - name: Install lizard (complexity + module size)
+      - name: Install lizard
         run: pip install lizard --quiet
 
       # -----------------------------------------------------------------------
-      # C# adapter
+      # C# tooling
       # -----------------------------------------------------------------------
       - name: Setup .NET
         if: steps.stack.outputs.name == 'csharp'
@@ -77,165 +90,17 @@ jobs:
         with:
           dotnet-version: '8.x'
 
+      - name: Build C# (so coverage has assemblies)
+        if: steps.stack.outputs.name == 'csharp'
+        run: dotnet restore && dotnet build --no-restore || true
+
       - name: Install dotnet-coverage
         if: steps.stack.outputs.name == 'csharp'
         run: dotnet tool install --global dotnet-coverage --ignore-failed-sources
           || dotnet tool update --global dotnet-coverage || true
 
-      - name: C# — run coverage (dotnet-coverage → Cobertura)
-        if: steps.stack.outputs.name == 'csharp'
-        id: csharp_coverage
-        run: |
-          export PATH="$HOME/.dotnet/tools:$PATH"
-          # dotnet-coverage (binary instrumentation) — much faster than coverlet's
-          # XPlat collector on large/async-heavy codebases. If the repo ships a
-          # coverage.settings.xml (module include/exclude, source exclusions), use
-          # it; add a --filter inside the inner command to scope tests if needed.
-          SETTINGS=""; [[ -f coverage.settings.xml ]] && SETTINGS="-s coverage.settings.xml"
-          mkdir -p ./coverage_results
-          OUT=./coverage_results/coverage.cobertura.xml
-          dotnet-coverage collect $SETTINGS -f cobertura -o "$OUT" "dotnet test --no-build" \
-            2>/dev/null || true
-          if [[ -f "$OUT" ]]; then
-            RATE=$(awk -F'"' '/<coverage /{for(i=1;i<=NF;i++) if($i ~ /line-rate=/){printf "%.1f", $(i+1)*100; exit}}' "$OUT")
-          else
-            RATE="0"
-          fi
-          echo "value=${RATE:-0}" >> "$GITHUB_OUTPUT"
-
-      - name: C# — cyclomatic complexity + module size (lizard)
-        if: steps.stack.outputs.name == 'csharp'
-        id: csharp_lizard
-        run: |
-          # lizard's C# language id is "csharp" (not "cs"). The averages live in
-          # the tabular footer, not in "Average ..." lines:
-          #   Total nloc | Avg.NLOC | AvgCCN | ...   (totals row: $2=nloc, $3=ccn)
-          OUTPUT=$(lizard . --languages csharp -C 1000 -L 100000 -E 0 2>/dev/null || true)
-          COMPLEXITY=$(echo "$OUTPUT" | awk 'NF>=8 && $1 ~ /^[0-9]+$/ && $NF ~ /^[0-9.]+$/ {v=$3} END{print (v==""?0:v)}')
-          MOD_SIZE=$(echo "$OUTPUT" | awk 'NF>=8 && $1 ~ /^[0-9]+$/ && $NF ~ /^[0-9.]+$/ {v=$2} END{print (v==""?0:v)}')
-          echo "complexity=${COMPLEXITY:-0}" >> "$GITHUB_OUTPUT"
-          echo "module_size=${MOD_SIZE:-0}" >> "$GITHUB_OUTPUT"
-
-      - name: C# — dependency cycles (dotnet list reference)
-        if: steps.stack.outputs.name == 'csharp'
-        id: csharp_deps
-        run: |
-          # Build a project-reference adjacency list and detect cycles using DFS.
-          # This covers project-to-project cycles (assembly-level). Package cycles
-          # are not detected in v1 (no free C# equivalent of madge for NuGet graphs).
-          python3 - <<'PYEOF'
-          import subprocess, sys, re, os
-
-          projs = []
-          for root, dirs, files in os.walk('.'):
-            dirs[:] = [d for d in dirs if d not in ['bin','obj','.git','node_modules']]
-            for f in files:
-              if f.endswith('.csproj'):
-                projs.append(os.path.join(root, f))
-
-          graph = {}
-          for p in projs:
-            name = os.path.splitext(os.path.basename(p))[0]
-            try:
-              out = subprocess.check_output(
-                ['dotnet', 'list', p, 'reference'], text=True, stderr=subprocess.DEVNULL)
-              refs = re.findall(r'([A-Za-z0-9._-]+)\.csproj', out)
-              # Drop self-edges: the "no references in project .../<name>.csproj"
-              # message makes the regex capture the project itself.
-              graph[name] = [r for r in refs if r != name]
-            except Exception:
-              graph[name] = []
-
-          # Tarjan's SCC — count components with >1 node or self-loop
-          index_counter = [0]
-          stack = []
-          lowlink = {}
-          index = {}
-          on_stack = {}
-          scc_count = [0]
-
-          def strongconnect(v):
-            index[v] = index_counter[0]; lowlink[v] = index_counter[0]
-            index_counter[0] += 1
-            stack.append(v); on_stack[v] = True
-            for w in graph.get(v, []):
-              if w not in index:
-                strongconnect(w)
-                lowlink[v] = min(lowlink[v], lowlink.get(w, lowlink[v]))
-              elif on_stack.get(w):
-                lowlink[v] = min(lowlink[v], index[w])
-            if lowlink[v] == index[v]:
-              scc = []
-              while True:
-                w = stack.pop(); on_stack[w] = False; scc.append(w)
-                if w == v: break
-              if len(scc) > 1:
-                scc_count[0] += 1
-
-          for v in list(graph.keys()):
-            if v not in index:
-              strongconnect(v)
-
-          print(scc_count[0])
-          PYEOF
-          CYCLES=$(python3 -c "
-          import subprocess, sys, re, os
-
-          projs = []
-          for root, dirs, files in os.walk('.'):
-            dirs[:] = [d for d in dirs if d not in ['bin','obj','.git','node_modules']]
-            for f in files:
-              if f.endswith('.csproj'):
-                projs.append(os.path.join(root, f))
-
-          graph = {}
-          for p in projs:
-            name = os.path.splitext(os.path.basename(p))[0]
-            try:
-              out = subprocess.check_output(
-                ['dotnet', 'list', p, 'reference'], text=True, stderr=subprocess.DEVNULL)
-              refs = re.findall(r'([A-Za-z0-9._-]+)\.csproj', out)
-              # Drop self-edges: the "no references in project .../<name>.csproj"
-              # message makes the regex capture the project itself.
-              graph[name] = [r for r in refs if r != name]
-            except Exception:
-              graph[name] = []
-
-          index_counter = [0]
-          stack = []
-          lowlink = {}
-          index = {}
-          on_stack = {}
-          scc_count = [0]
-
-          def strongconnect(v):
-            index[v] = index_counter[0]; lowlink[v] = index_counter[0]
-            index_counter[0] += 1
-            stack.append(v); on_stack[v] = True
-            for w in graph.get(v, []):
-              if w not in index:
-                strongconnect(w)
-                lowlink[v] = min(lowlink[v], lowlink.get(w, lowlink[v]))
-              elif on_stack.get(w):
-                lowlink[v] = min(lowlink[v], index[w])
-            if lowlink[v] == index[v]:
-              scc = []
-              while True:
-                w = stack.pop(); on_stack[w] = False; scc.append(w)
-                if w == v: break
-              if len(scc) > 1:
-                scc_count[0] += 1
-
-          for v in list(graph.keys()):
-            if v not in index:
-              strongconnect(v)
-
-          print(scc_count[0])
-          " 2>/dev/null || echo "0")
-          echo "value=${CYCLES:-0}" >> "$GITHUB_OUTPUT"
-
       # -----------------------------------------------------------------------
-      # TypeScript adapter
+      # TypeScript tooling
       # -----------------------------------------------------------------------
       - name: Setup Node
         if: steps.stack.outputs.name == 'typescript'
@@ -247,80 +112,35 @@ jobs:
         if: steps.stack.outputs.name == 'typescript'
         run: npm ci --ignore-scripts 2>/dev/null || npm install --ignore-scripts 2>/dev/null || true
 
-      - name: TS — run coverage (vitest → LCOV)
-        if: steps.stack.outputs.name == 'typescript'
-        id: ts_coverage
-        run: |
-          npx vitest run --coverage --reporter=verbose 2>/dev/null || true
-          LCOV_FILE=$(find . -name 'lcov.info' -not -path '*/node_modules/*' | head -1)
-          if [[ -f "$LCOV_FILE" ]]; then
-            RATE=$(awk '
-              /^LH:/ { lh += substr($0,4) }
-              /^LF:/ { lf += substr($0,4) }
-              END { if (lf>0) printf "%.1f", lh/lf*100; else print "0" }
-            ' "$LCOV_FILE")
-          else
-            RATE="0"
-          fi
-          echo "value=$RATE" >> "$GITHUB_OUTPUT"
-
-      - name: TS — cyclomatic complexity + module size (lizard)
-        if: steps.stack.outputs.name == 'typescript'
-        id: ts_lizard
-        run: |
-          OUTPUT=$(lizard . --languages javascript --exclude "*/node_modules/*" \
-            -C 1000 -L 100000 -E 0 2>/dev/null || true)
-          COMPLEXITY=$(echo "$OUTPUT" | awk '/^Average cyclomatic/ {print $NF}' | head -1)
-          MOD_SIZE=$(echo "$OUTPUT" | awk '/^Average nloc/ {print $NF}' | head -1)
-          echo "complexity=${COMPLEXITY:-0}" >> "$GITHUB_OUTPUT"
-          echo "module_size=${MOD_SIZE:-0}" >> "$GITHUB_OUTPUT"
-
       - name: Install madge
         if: steps.stack.outputs.name == 'typescript'
         run: npm install --global madge 2>/dev/null || npx --yes madge --version 2>/dev/null || true
 
-      - name: TS — dependency cycles (madge)
-        if: steps.stack.outputs.name == 'typescript'
-        id: ts_deps
+      # -----------------------------------------------------------------------
+      # Compute baseline.json via the shared adapters (single source of truth)
+      # -----------------------------------------------------------------------
+      - name: Get Octopus CLI
         run: |
-          ENTRY=$(find . -name 'index.ts' -not -path '*/node_modules/*' | head -1 || \
-                  find . -name 'main.ts'  -not -path '*/node_modules/*' | head -1 || \
-                  echo ".")
-          CYCLES=$(madge --circular --extensions ts,js "$ENTRY" 2>/dev/null | \
-            grep -c "→\|->") || CYCLES=0
-          echo "value=${CYCLES:-0}" >> "$GITHUB_OUTPUT"
+          export PATH="$HOME/.dotnet/tools:$PATH"
+          git clone --depth 1 --branch "$OCTOPUS_REF" "$OCTOPUS_REPO" /tmp/octopus
+
+      - name: Compute baseline.json
+        id: baseline
+        if: steps.stack.outputs.name != 'unknown'
+        run: |
+          export PATH="$HOME/.dotnet/tools:$PATH"
+          # The CLI runs the same adapters the local skill uses and prints the
+          # flat baseline record. No metric logic is duplicated in this YAML.
+          bash /tmp/octopus/cli/octopus.sh code-metrics \
+            --stack "${{ steps.stack.outputs.name }}" --emit-baseline > baseline.json
+          echo "json=$(cat baseline.json)" >> "$GITHUB_OUTPUT"
+          cat baseline.json
 
       # -----------------------------------------------------------------------
       # Write baseline.json to octopus/code-metrics orphan ref
       # -----------------------------------------------------------------------
-      - name: Assemble baseline.json
-        id: baseline
-        run: |
-          COMMIT="${{ github.sha }}"
-          TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          STACK="${{ steps.stack.outputs.name }}"
-
-          if [[ "$STACK" == "csharp" ]]; then
-            COVERAGE="${{ steps.csharp_coverage.outputs.value }}"
-            COMPLEXITY="${{ steps.csharp_lizard.outputs.complexity }}"
-            MODULE_SIZE="${{ steps.csharp_lizard.outputs.module_size }}"
-            DEP_CYCLES="${{ steps.csharp_deps.outputs.value }}"
-          elif [[ "$STACK" == "typescript" ]]; then
-            COVERAGE="${{ steps.ts_coverage.outputs.value }}"
-            COMPLEXITY="${{ steps.ts_lizard.outputs.complexity }}"
-            MODULE_SIZE="${{ steps.ts_lizard.outputs.module_size }}"
-            DEP_CYCLES="${{ steps.ts_deps.outputs.value }}"
-          else
-            echo "Unsupported stack '$STACK' — skipping baseline write" >&2
-            exit 0
-          fi
-
-          JSON="{\"commit\":\"${COMMIT}\",\"timestamp\":\"${TIMESTAMP}\",\"coverage\":${COVERAGE:-0},\"complexity\":${COMPLEXITY:-0},\"module_size\":${MODULE_SIZE:-0},\"dependency_cycles\":${DEP_CYCLES:-0}}"
-          echo "$JSON" > baseline.json
-          echo "json=$JSON" >> "$GITHUB_OUTPUT"
-          cat baseline.json
-
       - name: Push baseline to octopus/code-metrics orphan ref
+        if: steps.stack.outputs.name != 'unknown'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -331,17 +151,10 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name  "github-actions[bot]"
 
-          # Create or reset a worktree pointing at the orphan ref.
-          # We use a detached commit so the orphan ref history is a single
-          # overwritten file — minimal fetch payload, no growing log.
-          TMPDIR_WK=$(mktemp -d)
-          cp baseline.json "$TMPDIR_WK/baseline.json"
-
-          TREE=$(git hash-object -w --stdin < baseline.json | xargs -I{} \
-            git write-tree --prefix= 2>/dev/null || true)
-
-          # Build a minimal tree with just baseline.json
-          BLOB=$(git hash-object -w "$TMPDIR_WK/baseline.json")
+          # Build a minimal tree containing only baseline.json and commit it
+          # parented on the existing orphan ref (single overwritten file —
+          # minimal fetch payload, no growing log).
+          BLOB=$(git hash-object -w baseline.json)
           TREE=$(printf '100644 blob %s\tbaseline.json\n' "$BLOB" | git mktree)
           PARENT=$(git ls-remote origin "$TARGET_REF" | awk '{print $1}' | head -1 || echo "")
 
@@ -354,5 +167,4 @@ jobs:
           fi
 
           git push origin "${COMMIT_SHA}:${TARGET_REF}"
-          rm -rf "$TMPDIR_WK"
           echo "Baseline pushed to ${TARGET_REF}: ${{ steps.baseline.outputs.json }}"

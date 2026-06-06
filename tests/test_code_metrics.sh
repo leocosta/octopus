@@ -763,6 +763,31 @@ t14_perf_adapter_info_only() {
 check "perf: adapter emits perf_risk:<n>, registry is info-only" t14_perf_adapter_info_only
 
 # ---------------------------------------------------------------------------
+# SECTION 15 — baseline.json assembly (cm_emit_baseline_json)  [RM-148/149/150]
+# ---------------------------------------------------------------------------
+# Purpose: the writer-Action produces baseline.json from the SAME adapter output
+# (single source of truth, no YAML re-implementation drift). cm_emit_baseline_json
+# turns the metric:value stream + commit/timestamp into the flat JSON record the
+# orphan-ref stores, so new metrics become vs_baseline-capable for free.
+echo "=== Section 15: baseline.json assembly ==="
+
+t15_emit_baseline_json() {
+  local out
+  out="$(printf 'coverage:78.5\ncomplexity:9\ntodo_markers:3\nperf_risk:2\n' \
+    | cm_emit_baseline_json abc123 2026-06-06T00:00:00Z)"
+  [[ "$out" == '{"commit":"abc123","timestamp":"2026-06-06T00:00:00Z","coverage":78.5,"complexity":9,"todo_markers":3,"perf_risk":2}' ]]
+}
+check "baseline: cm_emit_baseline_json emits flat JSON with commit+timestamp+metrics" t15_emit_baseline_json
+
+t15_emit_baseline_json_nonnumeric_zeroed() {
+  # A non-numeric/garbage value must not break the JSON — coerced to 0.
+  local out
+  out="$(printf 'coverage:n/a\ncomplexity:9\n' | cm_emit_baseline_json x y)"
+  [[ "$out" == '{"commit":"x","timestamp":"y","coverage":0,"complexity":9}' ]]
+}
+check "baseline: non-numeric metric value coerced to 0 (valid JSON)" t15_emit_baseline_json_nonnumeric_zeroed
+
+# ---------------------------------------------------------------------------
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]

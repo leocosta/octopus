@@ -474,6 +474,30 @@ cm_parse_baseline() {
 }
 
 # ---------------------------------------------------------------------------
+# Baseline assembly (writer side)
+# ---------------------------------------------------------------------------
+
+# Turn an adapter `metric:value` stream (stdin) plus commit + timestamp into the
+# flat baseline.json record stored on the orphan ref. Single source of truth:
+# the writer-Action runs the adapter and pipes it here, so new metrics become
+# vs_baseline-capable with no YAML re-implementation.
+#   $1 — commit sha
+#   $2 — ISO timestamp
+# Non-numeric metric values are coerced to 0 so the JSON is always valid.
+cm_emit_baseline_json() {
+  awk -v commit="$1" -v ts="$2" '
+    BEGIN { printf "{\"commit\":\"%s\",\"timestamp\":\"%s\"", commit, ts }
+    /^[a-z_]+:/ {
+      key = $0; sub(/:.*$/, "", key)
+      val = $0; sub(/^[a-z_]+:/, "", val)
+      if (val !~ /^-?[0-9]+(\.[0-9]+)?$/) val = 0
+      printf ",\"%s\":%s", key, val
+    }
+    END { print "}" }
+  '
+}
+
+# ---------------------------------------------------------------------------
 # Report formatting (cost-contract guard)
 # ---------------------------------------------------------------------------
 
