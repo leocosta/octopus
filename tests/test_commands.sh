@@ -83,6 +83,45 @@ grep -q 'make db-migration NAME=$ARGUMENTS' "$WORKDIR/.claude/commands/octopus:d
 rm -rf "$WORKDIR"
 echo "PASS: Claude slash command files generated"
 
+# --- Test 3b: deliver_commands prunes renamed/removed Octopus commands ---
+echo "Test 3b: deliver_commands prunes stale Octopus commands, keeps user ones"
+
+# Hermetic: save the shared command globals this test mutates, restore after so
+# later tests keep the db-reset + db-migration set they expect.
+_b_names=("${OCTOPUS_CMD_NAMES[@]}"); _b_descs=("${OCTOPUS_CMD_DESCS[@]}")
+_b_runs=("${OCTOPUS_CMD_RUNS[@]}");   _b_wf="${OCTOPUS_WORKFLOW:-}"
+
+OCTOPUS_CMD_NAMES=(db-reset)
+OCTOPUS_CMD_DESCS=("Reset the database")
+OCTOPUS_CMD_RUNS=("make db-reset")
+OCTOPUS_WORKFLOW=false
+
+WORKDIR=$(mktemp -d)
+PROJECT_ROOT="$WORKDIR"
+mkdir -p "$WORKDIR/.claude/commands"
+# stale Octopus command from a previous version (e.g. a renamed/removed one) +
+# a user-authored, non-prefixed command that must survive.
+echo "stale" > "$WORKDIR/.claude/commands/octopus:quality-metrics.md"
+echo "mine"  > "$WORKDIR/.claude/commands/my-own.md"
+
+agent="claude"
+load_manifest "$agent"
+OCTOPUS_WORKFLOW=false
+deliver_commands "$agent"
+
+[[ ! -f "$WORKDIR/.claude/commands/octopus:quality-metrics.md" ]] \
+  || { echo "FAIL: stale octopus: command not pruned"; rm -rf "$WORKDIR"; exit 1; }
+[[ -f "$WORKDIR/.claude/commands/my-own.md" ]] \
+  || { echo "FAIL: user-authored command wrongly pruned"; rm -rf "$WORKDIR"; exit 1; }
+[[ -f "$WORKDIR/.claude/commands/octopus:db-reset.md" ]] \
+  || { echo "FAIL: current command not regenerated after prune"; rm -rf "$WORKDIR"; exit 1; }
+
+rm -rf "$WORKDIR"
+# restore shared globals for subsequent tests
+OCTOPUS_CMD_NAMES=("${_b_names[@]}"); OCTOPUS_CMD_DESCS=("${_b_descs[@]}")
+OCTOPUS_CMD_RUNS=("${_b_runs[@]}");   OCTOPUS_WORKFLOW="$_b_wf"
+echo "PASS: stale Octopus commands pruned, user commands kept"
+
 # --- Test 4: Commands section appended to concatenation agents ---
 echo "Test 4: Commands section in concatenated output"
 
