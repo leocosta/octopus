@@ -1,5 +1,5 @@
 ---
-title: quality-metrics
+title: code-metrics
 description: O eixo de medição do quality no Octopus — uma leitura local e não-bloqueante no PR-open de como sua mudança move cobertura, complexidade ciclomática, tamanho de módulo e ciclos de dependência, com um delta duplo contra um baseline por-merge.
 sidebar:
   order: 13
@@ -7,9 +7,9 @@ source_hash: ""
 needs_retranslation: false
 ---
 
-`quality-metrics` é o irmão de **medição** do
-[`quality-audits`](/octopus/bundles/quality-audits/) (o gate bloqueante) e do
-[`quality-signals`](/octopus/bundles/quality-signals/) (a revisão advisory).
+`code-metrics` é o irmão de **medição** do
+[`quality`](/octopus/bundles/quality/) (o gate bloqueante) e do
+[`quality`](/octopus/bundles/quality/) (a revisão advisory).
 Enquanto esses dois raciocinam sobre um diff *semanticamente*, este reporta
 **números**: como seu branch move cobertura de testes, complexidade ciclomática,
 tamanho de módulo e ciclos no grafo de dependências — medidos da mesma forma para
@@ -23,7 +23,7 @@ cobertura que cai dois pontos, um novo ciclo de import — nada disso se anuncia
 review. Quando um dashboard finalmente mostra a tendência, a mudança já tem
 semanas e o contexto se perdeu.
 
-`quality-metrics` move essa leitura para a **esquerda**, para o momento em que o
+`code-metrics` move essa leitura para a **esquerda**, para o momento em que o
 autor ainda pode agir: você recebe o delta localmente, *antes* de abrir o PR. E
 precisa ser quase de graça, ou não vai ser rodado — então os números são sempre
 computados pelo tooling do seu próprio stack (sem modelo, ≈0 tokens), e um modelo
@@ -34,7 +34,7 @@ para explicar a regressão e apontar a causa.
 
 ```yaml
 skills:
-  - quality-metrics   # a leitura /octopus:quality-metrics + o template da Action escritora
+  - code-metrics   # a leitura /octopus:code-metrics + o template da Action escritora
 ```
 
 O bundle carrega a skill de orquestração e um template de GitHub Action que você
@@ -43,7 +43,7 @@ viajam dentro dos stack profiles, não aqui: escolha
 [`stack-csharp`](/octopus/bundles/) ou `stack-typescript` e o adapter
 correspondente vem junto.
 
-[Source: `bundles/quality-metrics.yml`](https://github.com/leocosta/octopus/blob/main/bundles/quality-metrics.yml)
+[Source: `bundles/code-metrics.yml`](https://github.com/leocosta/octopus/blob/main/bundles/code-metrics.yml)
 
 ## O delta duplo
 
@@ -70,7 +70,7 @@ Quando um time quer puxar o repo pra cima, ele soma alvos absolutos por cima, no
 `.octopus.yml`:
 
 ```yaml
-quality_metrics:
+code_metrics:
   coverage:
     min: 80
   complexity:
@@ -90,15 +90,15 @@ desenvolvedor).
 ## O store do baseline
 
 A tendência precisa vir de algum lugar sempre fresco e que nunca conflite com um
-branch de PR. O `quality-metrics` o mantém num git ref dedicado e não-protegido
-(`octopus/quality-metrics`), escrito por uma única Action que reage a um push na
+branch de PR. O `code-metrics` o mantém num git ref dedicado e não-protegido
+(`octopus/code-metrics`), escrito por uma única Action que reage a um push na
 `main`. Como a main é serializada pelo squash-merge, há exatamente um escritor —
 sem conflito por construção — e a Action só *escreve o ref*, nunca dá push de
 volta na `main` ou num branch de release. Sua leitura local apenas faz o fetch.
 
 ## O fluxo que isso habilita
 
-1. Você termina uma mudança e, antes de abrir o PR, roda `/octopus:quality-metrics`.
+1. Você termina uma mudança e, antes de abrir o PR, roda `/octopus:code-metrics`.
 2. O adapter do seu stack computa as quatro métricas no seu branch; a leitura faz
    fetch do ref de baseline e imprime o delta duplo. Nenhum modelo entra.
 3. Se nada cruzou um threshold, essa é a interação inteira — custo quase zero.
@@ -110,7 +110,7 @@ volta na `main` ou num branch de release. Sua leitura local apenas faz o fetch.
 ## O que ele deliberadamente não é
 
 - **Não é um gate bloqueante.** É um sinal para o autor, nunca uma parede de CI.
-  A camada bloqueante é o [`quality-audits`](/octopus/bundles/quality-audits/).
+  A camada bloqueante é o [`quality`](/octopus/bundles/quality/).
 - **Não é atribuição por autor.** Todo PR é medido de forma idêntica — não há
   score "humano vs. assistente".
 - **Não é mutation testing nem julgamento de layering** — a métrica de
@@ -120,8 +120,8 @@ volta na `main` ou num branch de release. Sua leitura local apenas faz o fetch.
 
 - **[starter](/octopus/bundles/starter/)** — a fundação que produz o código
   sendo medido.
-- **[quality-audits](/octopus/bundles/quality-audits/)** /
-  **[quality-signals](/octopus/bundles/quality-signals/)** — os eixos de gate e
-  sinal; o `quality-metrics` é o terceiro eixo, quantitativo, ao lado deles.
+- **[quality](/octopus/bundles/quality/)** /
+  **[quality](/octopus/bundles/quality/)** — os eixos de gate e
+  sinal; o `code-metrics` é o terceiro eixo, quantitativo, ao lado deles.
 - **um stack profile** (`stack-csharp`, `stack-typescript`) — obrigatório, já que
   o adapter numérico da sua linguagem vive lá.

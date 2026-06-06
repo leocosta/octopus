@@ -1,9 +1,9 @@
 ---
-title: quality-metrics
+title: code-metrics
 description: "Local, non-blocking read at PR-open of how your change moves coverage, cyclomatic complexity, module size, and dependency cycles — reported as a dual delta (vs. the per-merge baseline and vs. your local main). Numbers come from your stack's tooling at ≈0 tokens; a low-cost model is invoked only when a metric crosses a threshold."
 ---
 
-`quality-metrics` tells you what your change did to the numbers — coverage,
+`code-metrics` tells you what your change did to the numbers — coverage,
 cyclomatic complexity, module size, dependency-graph cycles — at the one moment
 you can still act on it cheaply: before you open the PR.
 
@@ -38,7 +38,7 @@ It reports a **dual delta** per metric:
   impact).
 
 The baseline is read (`git fetch`) from a dedicated, non-protected ref
-(`octopus/quality-metrics`) that a push-to-`main` Action keeps fresh; the read
+(`octopus/code-metrics`) that a push-to-`main` Action keeps fresh; the read
 path never writes it.
 
 Thresholds are **ratchet by default** — a metric may not regress against the
@@ -53,7 +53,7 @@ worth running on every PR.
 ## Usage & parameters
 
 ```
-octopus quality-metrics [--stack <id>] [--against <ref>]
+octopus code-metrics [--stack <id>] [--against <ref>]
 ```
 
 | Flag | What it does | Default |

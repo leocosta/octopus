@@ -206,11 +206,10 @@ OCTOPUS_RULES=()
 parse_octopus_yml "$WORKDIR/.octopus.yml"
 expand_bundles
 
-# starter (9 skills after RM-143) + quality (10 unique = quality-audits ∪
-# quality-signals: audit-all + its domain-audit deps audit-security/money/tenant,
-# audit-contracts, refactor-deepen, audit-config, audit-grounding,
-# audit-verification, audit-style) = 19 distinct. (knowledge-* and fleet-* moved
-# out of the quality composer → knowledge-ops / tech-lead.)
+# starter (9 skills after RM-143) + quality (10 unique: audit-all + its domain-audit
+# deps audit-security/money/tenant, audit-contracts, refactor-deepen, audit-config,
+# audit-grounding, audit-verification, audit-style) = 19 distinct. (knowledge-* and
+# fleet-* moved out of the quality composer → knowledge-ops / tech-lead.)
 [[ ${#OCTOPUS_SKILLS[@]} -eq 19 ]] \
   || { echo "FAIL: expected 19 skills after bundle expansion, got ${#OCTOPUS_SKILLS[@]}"; exit 1; }
 

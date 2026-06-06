@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# cli/lib/adapter-csharp.sh — C# quality-metrics adapter (RM-147).
+# cli/lib/adapter-csharp.sh — C# code-metrics adapter (RM-147).
 #
 # Implements the stack-agnostic metric contract for C#/.NET repos.
-# Called by cli/lib/quality-metrics-cmd.sh when stack=csharp.
+# Called by cli/lib/code-metrics.sh when stack=csharp.
 #
 # Output contract: one line per metric, format:
 #   <metric_name>:<numeric_value>
@@ -11,39 +11,39 @@
 #   coverage       — dotnet-coverage (binary instrumentation) → Cobertura XML,
 #                    root line-rate; falls back to coverlet XPlat collector when
 #                    dotnet-coverage is not installed. Honours optional config
-#                    quality_metrics.coverage.{test_filter,settings}.
+#                    code_metrics.coverage.{test_filter,settings}.
 #   complexity     — lizard (cross-language; per-function cyclomatic avg)
 #   module_size    — lizard (average NLOC per function/file)
 #   dependency_cycles — dotnet list reference + Python DFS cycle detector
 #                       (project-to-project cycles only; no NuGet-graph cycles
 #                        in v1 — no free madge equivalent for C# assembly graphs)
 
-QM_ADAPTER_DIR="${QM_ADAPTER_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
+CM_ADAPTER_DIR="${CM_ADAPTER_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 
 # Directories that must never count toward repo metrics: build output, vendored
 # deps, and Claude Code agent worktrees (.claude/worktrees holds full repo copies
 # that would otherwise double-count files and let `find ... | head -1` pick a
 # stale copy). Used by every find/lizard call below.
-QM_CS_PRUNE_FIND=(-not -path '*/obj/*' -not -path '*/bin/*' -not -path '*/.claude/*' -not -path '*/node_modules/*')
-QM_CS_PRUNE_LIZARD=(--exclude '*/obj/*' --exclude '*/bin/*' --exclude '*/.claude/*' --exclude '*/node_modules/*')
+CM_CS_PRUNE_FIND=(-not -path '*/obj/*' -not -path '*/bin/*' -not -path '*/.claude/*' -not -path '*/node_modules/*')
+CM_CS_PRUNE_LIZARD=(--exclude '*/obj/*' --exclude '*/bin/*' --exclude '*/.claude/*' --exclude '*/node_modules/*')
 
 # Run coverage measurement → Cobertura XML.
 # Prefers dotnet-coverage (binary instrumentation; much faster than coverlet's
 # XPlat collector on large/async-heavy codebases). Falls back to the coverlet
 # XPlat collector when dotnet-coverage is absent. Reads optional config
-# quality_metrics.coverage.test_filter (dotnet test --filter) and .settings
+# code_metrics.coverage.test_filter (dotnet test --filter) and .settings
 # (dotnet-coverage settings file). Outputs: coverage:<percent>
-qm_adapter_csharp_coverage() {
+cm_adapter_csharp_coverage() {
   local repo_root="${1:-$PWD}"
 
   # Find a test project. Prefer a *.Tests.csproj / *Test.csproj — running
   # `dotnet test` on a non-test project yields no coverage, so picking the
   # first csproj on disk (alphabetical/traversal order) was unreliable.
   local test_proj
-  test_proj="$(find "$repo_root" -name '*.csproj' "${QM_CS_PRUNE_FIND[@]}" \
+  test_proj="$(find "$repo_root" -name '*.csproj' "${CM_CS_PRUNE_FIND[@]}" \
     | grep -iE '[._-]tests?\.csproj$' | head -1)"
   if [[ -z "$test_proj" ]]; then
-    test_proj="$(find "$repo_root" -name '*.csproj' "${QM_CS_PRUNE_FIND[@]}" | head -1)"
+    test_proj="$(find "$repo_root" -name '*.csproj' "${CM_CS_PRUNE_FIND[@]}" | head -1)"
   fi
   if [[ -z "$test_proj" ]]; then
     echo "coverage:0"
@@ -51,18 +51,18 @@ qm_adapter_csharp_coverage() {
   fi
 
   # Optional string config (e.g. monorepos / fast unit-only coverage):
-  #   quality_metrics.coverage.test_filter — appended as `dotnet test --filter`
-  #   quality_metrics.coverage.settings    — dotnet-coverage settings file (path
+  #   code_metrics.coverage.test_filter — appended as `dotnet test --filter`
+  #   code_metrics.coverage.settings    — dotnet-coverage settings file (path
   #                                           absolute, or relative to repo root)
   local test_filter settings_path
-  test_filter="$(qm_field_str coverage test_filter 2>/dev/null || true)"
-  settings_path="$(qm_field_str coverage settings 2>/dev/null || true)"
+  test_filter="$(cm_field_str coverage test_filter 2>/dev/null || true)"
+  settings_path="$(cm_field_str coverage settings 2>/dev/null || true)"
 
   # Security gate: test_filter is attacker-influenceable config that ends up in
   # the command string parsed by dotnet-coverage. Fail closed on anything outside
   # the filter grammar so a poisoned value cannot inject extra dotnet arguments.
-  if [[ -n "$test_filter" ]] && ! qm_is_safe_filter "$test_filter"; then
-    echo "qm_adapter_csharp_coverage: rejecting unsafe coverage.test_filter: $test_filter" >&2
+  if [[ -n "$test_filter" ]] && ! cm_is_safe_filter "$test_filter"; then
+    echo "cm_adapter_csharp_coverage: rejecting unsafe coverage.test_filter: $test_filter" >&2
     echo "coverage:0"
     return 0
   fi
@@ -75,7 +75,7 @@ qm_adapter_csharp_coverage() {
     # collector can be pathologically slow on large/async-heavy codebases
     # (observed: a full suite that never finished in 10min vs ~40s here).
     # dotnet-coverage tokenises this command string itself (no shell); the
-    # filter value is wrapped in quotes and was allowlisted by qm_is_safe_filter
+    # filter value is wrapped in quotes and was allowlisted by cm_is_safe_filter
     # above, so it stays a single --filter argument (no shell/arg injection).
     local inner="dotnet test \"$test_proj\" --no-build"
     [[ -n "$test_filter" ]] && inner="$inner --filter \"$test_filter\""
@@ -116,7 +116,7 @@ qm_adapter_csharp_coverage() {
 
 # Run lizard to compute average cyclomatic complexity across all C# files.
 # Outputs: complexity:<avg_cyclomatic>
-qm_adapter_csharp_complexity() {
+cm_adapter_csharp_complexity() {
   local repo_root="${1:-$PWD}"
 
   if ! command -v lizard &>/dev/null; then
@@ -130,14 +130,14 @@ qm_adapter_csharp_complexity() {
   # The totals row is the only line with >=8 all-numeric fields; AvgCCN is $3.
   local complexity
   complexity="$(lizard "$repo_root" --languages csharp \
-    "${QM_CS_PRUNE_LIZARD[@]}" 2>/dev/null \
+    "${CM_CS_PRUNE_LIZARD[@]}" 2>/dev/null \
     | awk 'NF>=8 && $1 ~ /^[0-9]+$/ && $NF ~ /^[0-9.]+$/ {v=$3} END{print (v==""?0:v)}')"
   echo "complexity:${complexity:-0}"
 }
 
 # Compute average module size (NLOC) using lizard.
 # Outputs: module_size:<avg_nloc>
-qm_adapter_csharp_module_size() {
+cm_adapter_csharp_module_size() {
   local repo_root="${1:-$PWD}"
 
   if ! command -v lizard &>/dev/null; then
@@ -145,11 +145,11 @@ qm_adapter_csharp_module_size() {
     return 0
   fi
 
-  # See qm_adapter_csharp_complexity: "csharp" language id + tabular footer.
+  # See cm_adapter_csharp_complexity: "csharp" language id + tabular footer.
   # Avg.NLOC (average lines per function) is column $2 of the totals row.
   local nloc
   nloc="$(lizard "$repo_root" --languages csharp \
-    "${QM_CS_PRUNE_LIZARD[@]}" 2>/dev/null \
+    "${CM_CS_PRUNE_LIZARD[@]}" 2>/dev/null \
     | awk 'NF>=8 && $1 ~ /^[0-9]+$/ && $NF ~ /^[0-9.]+$/ {v=$2} END{print (v==""?0:v)}')"
   echo "module_size:${nloc:-0}"
 }
@@ -161,7 +161,7 @@ qm_adapter_csharp_module_size() {
 # Note: this covers project-level cycles only. NuGet package cycles are not
 # detected in v1 — no free C# equivalent of madge for package graphs.
 # Outputs: dependency_cycles:<count>
-qm_adapter_csharp_deps() {
+cm_adapter_csharp_deps() {
   local repo_root="${1:-$PWD}"
 
   if ! command -v dotnet &>/dev/null || ! command -v python3 &>/dev/null; then
@@ -171,7 +171,7 @@ qm_adapter_csharp_deps() {
 
   # Gather all .csproj paths
   local projs_file; projs_file="$(mktemp)"
-  find "$repo_root" -name '*.csproj' "${QM_CS_PRUNE_FIND[@]}" \
+  find "$repo_root" -name '*.csproj' "${CM_CS_PRUNE_FIND[@]}" \
     > "$projs_file" 2>/dev/null || true
 
   # Build reference map and detect cycles
@@ -241,10 +241,10 @@ PYEOF
 }
 
 # Run all four C# metrics and print one line per metric.
-qm_adapter_csharp_run() {
+cm_adapter_csharp_run() {
   local repo_root="${1:-$PWD}"
-  qm_adapter_csharp_coverage   "$repo_root"
-  qm_adapter_csharp_complexity "$repo_root"
-  qm_adapter_csharp_module_size "$repo_root"
-  qm_adapter_csharp_deps       "$repo_root"
+  cm_adapter_csharp_coverage   "$repo_root"
+  cm_adapter_csharp_complexity "$repo_root"
+  cm_adapter_csharp_module_size "$repo_root"
+  cm_adapter_csharp_deps       "$repo_root"
 }

@@ -15,7 +15,7 @@ has() { grep -qx "$2" <<<"$1"; }
 # --- member union the picker would offer for the chosen bundles -------------
 _PICKER_RELEASE_ROOT="$SCRIPT_DIR"
 eval "$(sed -n '/^_picker_member_union()/,/^}/p' "$SCRIPT_DIR/cli/lib/setup-picker.sh")"
-union="$(_picker_member_union quality-audits backend)"
+union="$(_picker_member_union quality backend)"
 check "union includes a bundle skill (audit-all)"      has "$union" "audit-all"
 check "union includes a bundle role (dba)"             has "$union" "dba"
 check "union includes backend-patterns"                has "$union" "backend-patterns"

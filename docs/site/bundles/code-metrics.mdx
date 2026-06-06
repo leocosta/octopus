@@ -1,17 +1,16 @@
 ---
-title: quality-metrics
+title: code-metrics
 description: The measurement axis of Octopus quality — a local, non-blocking read at PR-open of how your change moves coverage, cyclomatic complexity, module size, and dependency cycles, with a dual delta against a per-merge baseline.
 sidebar:
   order: 13
 ---
 
-`quality-metrics` is the **measurement** sibling of
-[`quality-audits`](/octopus/bundles/quality-audits/) (the blocking gate) and
-[`quality-signals`](/octopus/bundles/quality-signals/) (the advisory review).
-Where those two reason about a diff *semantically*, this one reports **numbers**:
-how your branch moves test coverage, cyclomatic complexity, module size, and
+`code-metrics` is the **measurement** bundle: it reports **numbers** on how
+your branch moves test coverage, cyclomatic complexity, module size, and
 dependency-graph cycles — measured the same way for every change, by every
-author.
+author. Where [`quality`](/octopus/bundles/quality/) reasons about a diff
+semantically (audits, advisory signals), this bundle answers the quantitative
+question.
 
 ## Why this exists
 
@@ -21,7 +20,7 @@ coverage that slips two points, a new import cycle — none of these announce
 themselves in review. By the time a dashboard surfaces the trend, the change is
 weeks old and the context is gone.
 
-`quality-metrics` moves that read **left**, to the moment the author can still
+`code-metrics` moves that read **left**, to the moment the author can still
 act on it: you get the delta locally, *before* you open the PR. And it has to be
 near-free, or it won't get run — so the numbers are always computed by your
 stack's own tooling (no model, ≈0 tokens), and a low-cost model is invoked
@@ -32,7 +31,7 @@ and point at the cause.
 
 ```yaml
 skills:
-  - quality-metrics   # the /octopus:quality-metrics read + the writer-Action template
+  - code-metrics   # the /octopus:code-metrics read + the writer-Action template
 ```
 
 The bundle carries the orchestration skill and a GitHub Action template you
@@ -41,7 +40,7 @@ tooling — ship inside the stack profiles, not here: pick
 [`stack-csharp`](/octopus/bundles/) or `stack-typescript` and the matching
 adapter comes with it.
 
-[Source: `bundles/quality-metrics.yml`](https://github.com/leocosta/octopus/blob/main/bundles/quality-metrics.yml)
+[Source: `bundles/code-metrics.yml`](https://github.com/leocosta/octopus/blob/main/bundles/code-metrics.yml)
 
 ## The dual delta
 
@@ -67,7 +66,7 @@ When a team wants to pull a repo upward, it layers absolute targets on top, in
 `.octopus.yml`:
 
 ```yaml
-quality_metrics:
+code_metrics:
   coverage:
     min: 80
   complexity:
@@ -86,8 +85,8 @@ should not be silently relaxed by one developer's machine).
 ## The baseline store
 
 The trend has to come from somewhere that is always fresh and never conflicts
-with a PR branch. `quality-metrics` keeps it on a dedicated, non-protected git
-ref (`octopus/quality-metrics`), written by a single Action that reacts to a push
+with a PR branch. `code-metrics` keeps it on a dedicated, non-protected git
+ref (`octopus/code-metrics`), written by a single Action that reacts to a push
 to `main`. Because main is serialized by squash-merge, there is exactly one
 writer — conflict-free by construction — and the Action only ever *writes the
 ref*, never pushes back to `main` or a release branch. Your local read just
@@ -95,7 +94,7 @@ fetches it.
 
 ## Workflow this enables
 
-1. You finish a change and, before opening the PR, run `/octopus:quality-metrics`.
+1. You finish a change and, before opening the PR, run `/octopus:code-metrics`.
 2. The adapter for your stack computes the four metrics on your branch; the read
    fetches the baseline ref and prints the dual delta. No model is involved.
 3. If nothing crossed a threshold, that's the whole interaction — near-zero cost.
@@ -107,7 +106,7 @@ fetches it.
 ## What it deliberately isn't
 
 - **Not a blocking gate.** It is a signal to the author, never a CI wall. The
-  blocking layer is [`quality-audits`](/octopus/bundles/quality-audits/).
+  blocking layer is [`quality`](/octopus/bundles/quality/).
 - **Not author attribution.** Every PR is measured identically — there is no
   "human vs. assistant" scoring.
 - **Not mutation testing or architecture-layering judgment** — the dependency
@@ -117,8 +116,7 @@ fetches it.
 
 - **[starter](/octopus/bundles/starter/)** — the foundation that produces the
   code being measured.
-- **[quality-audits](/octopus/bundles/quality-audits/)** /
-  **[quality-signals](/octopus/bundles/quality-signals/)** — the gate and signal
-  axes; `quality-metrics` is the third, quantitative axis alongside them.
+- **[quality](/octopus/bundles/quality/)** — the gate and signal axes; `code-metrics`
+  is the separate, quantitative measurement axis alongside them.
 - **a stack profile** (`stack-csharp`, `stack-typescript`) — required, since the
   numeric adapter for your language ships there.

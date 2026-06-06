@@ -1,38 +1,38 @@
 #!/usr/bin/env bash
-# cli/lib/quality-metrics.sh — quality-metrics deterministic core (RM-147).
+# cli/lib/code-metrics-lib.sh — code-metrics deterministic core (RM-147).
 #
 # Provides:
-#   qm_override  — read one field from a nested quality_metrics: block in a YAML file
-#   qm_field     — resolve a metric field across layers (default < workspace < personal < project)
-#   qm_compute_delta   — compute dual delta (vs_baseline + vs_main)
-#   qm_check_threshold / qm_check_threshold_max — ratchet + absolute threshold rule
-#   qm_parse_baseline  — extract a metric value from a baseline.json string
-#   qm_format_report   — format one metric line; emit curation:needed on breach
+#   cm_override  — read one field from a nested code_metrics: block in a YAML file
+#   cm_field     — resolve a metric field across layers (default < workspace < personal < project)
+#   cm_compute_delta   — compute dual delta (vs_baseline + vs_main)
+#   cm_check_threshold / cm_check_threshold_max — ratchet + absolute threshold rule
+#   cm_parse_baseline  — extract a metric value from a baseline.json string
+#   cm_format_report   — format one metric line; emit curation:needed on breach
 #
-# Sourced by cli/lib/quality-metrics-cmd.sh (the octopus quality-metrics subcommand)
-# and by tests/test_quality_metrics.sh.
+# Sourced by cli/lib/code-metrics.sh (the octopus code-metrics subcommand)
+# and by tests/test_code_metrics.sh.
 #
 # Config-file environment overrides (for testing):
-#   QM_PROJECT_YML   — project manifest   (default: $PWD/.octopus.yml)
-#   QM_PERSONAL_YML  — personal manifest  (default: ${XDG_CONFIG_HOME:-$HOME/.config}/octopus/.octopus.yml)
-#   QM_WORKSPACE_YML — workspace manifest (default: resolved from project manifest's workspace: key)
+#   CM_PROJECT_YML   — project manifest   (default: $PWD/.octopus.yml)
+#   CM_PERSONAL_YML  — personal manifest  (default: ${XDG_CONFIG_HOME:-$HOME/.config}/octopus/.octopus.yml)
+#   CM_WORKSPACE_YML — workspace manifest (default: resolved from project manifest's workspace: key)
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
 # Reject any value that is not a plain number (integer or decimal, optional
-# sign). Security boundary: config values (qm_field) and baseline values
-# (qm_parse_baseline) are attacker-influenceable — a malicious .octopus.yml
+# sign). Security boundary: config values (cm_field) and baseline values
+# (cm_parse_baseline) are attacker-influenceable — a malicious .octopus.yml
 # layer or a tampered orphan ref must never reach awk as program text. Every
 # numeric value is validated here AND passed to awk via -v bindings (data, not
 # code) before any arithmetic. Returns 0 if numeric.
-qm_is_numeric() {
+cm_is_numeric() {
   [[ "$1" =~ ^-?[0-9]+(\.[0-9]+)?$ ]]
 }
 
 # Reject any value that is not a well-formed `dotnet test --filter` expression.
-# Security boundary (mirrors qm_is_numeric): coverage.test_filter comes from a
+# Security boundary (mirrors cm_is_numeric): coverage.test_filter comes from a
 # config layer (attacker-influenceable .octopus.yml) and is embedded in the
 # command string handed to `dotnet-coverage collect`. dotnet-coverage tokenises
 # that string itself (no shell), so the residual risk is argument injection via a
@@ -40,7 +40,7 @@ qm_is_numeric() {
 # full filter grammar — identifiers, comparison (= != ~), boolean (& |),
 # grouping ( ), and value chars — while excluding quotes, $, ;, backticks and
 # slashes that could break tokenisation. Returns 0 if safe.
-qm_is_safe_filter() {
+cm_is_safe_filter() {
   local re='^[A-Za-z0-9_.,=!~&|()+ -]+$'
   [[ "$1" =~ $re ]]
 }
@@ -49,18 +49,18 @@ qm_is_safe_filter() {
 # Config resolver
 # ---------------------------------------------------------------------------
 
-# Read a single field from the quality_metrics: block of a .octopus.yml file.
+# Read a single field from the code_metrics: block of a .octopus.yml file.
 #   $1 — file path
 #   $2 — metric name  (e.g. "coverage")
 #   $3 — field name   (e.g. "min")
 # Echoes the value, or nothing if absent. Pure awk, 2-space nested YAML.
 # Scalar contract: values are plain scalars (integers or decimals), never
 # inline-map flow style.
-qm_override() {
+cm_override() {
   local file="$1" metric="$2" field="$3"
   [[ -f "$file" ]] || return 0
   awk -v metric="$metric" -v field="$field" '
-    /^[^ \t#]/ { in_qm = ($0 ~ /^quality_metrics:[[:space:]]*$/); in_metric = 0; next }
+    /^[^ \t#]/ { in_qm = ($0 ~ /^code_metrics:[[:space:]]*$/); in_metric = 0; next }
     in_qm && /^  [^ \t]/ {
       cur = $0; sub(/^  /, "", cur); sub(/:.*$/, "", cur)
       in_metric = (cur == metric); next
@@ -75,7 +75,7 @@ qm_override() {
   ' "$file"
 }
 
-# Resolve a quality_metrics field with precedence:
+# Resolve a code_metrics field with precedence:
 #   default (empty) < workspace < personal < project   (project wins)
 #
 # This is the OPPOSITE of kr_field's order, where personal wins over project.
@@ -83,23 +83,23 @@ qm_override() {
 # not be silently overridden by an individual developer's personal config.
 #
 # Layer files are resolved from environment variables (injectable for tests):
-#   QM_PROJECT_YML, QM_PERSONAL_YML, QM_WORKSPACE_YML
+#   CM_PROJECT_YML, CM_PERSONAL_YML, CM_WORKSPACE_YML
 #
 # The workspace layer is new work not present in kr_field: it reads
 # $OCTOPUS_WORKSPACE_PATH/.octopus.yml when that variable is set, consistent
-# with RM-069. QM_WORKSPACE_YML takes precedence over the auto-resolved path.
+# with RM-069. CM_WORKSPACE_YML takes precedence over the auto-resolved path.
 # Internal: resolve a field across layers (workspace < personal < project; project
-# wins), returning the raw string value with no validation. Shared by qm_field
-# (numeric) and qm_field_str (string).
-_qm_resolve() {
+# wins), returning the raw string value with no validation. Shared by cm_field
+# (numeric) and cm_field_str (string).
+_cm_resolve() {
   local metric="$1" field="$2"
 
   # Resolve file paths (injectable via env for tests)
-  local project_yml="${QM_PROJECT_YML:-${KR_PROJECT_YML:-$PWD/.octopus.yml}}"
-  local personal_yml="${QM_PERSONAL_YML:-${XDG_CONFIG_HOME:-$HOME/.config}/octopus/.octopus.yml}"
+  local project_yml="${CM_PROJECT_YML:-${KR_PROJECT_YML:-$PWD/.octopus.yml}}"
+  local personal_yml="${CM_PERSONAL_YML:-${XDG_CONFIG_HOME:-$HOME/.config}/octopus/.octopus.yml}"
 
-  # Workspace: honour QM_WORKSPACE_YML if set, else auto-resolve from workspace: key
-  local workspace_yml="${QM_WORKSPACE_YML:-}"
+  # Workspace: honour CM_WORKSPACE_YML if set, else auto-resolve from workspace: key
+  local workspace_yml="${CM_WORKSPACE_YML:-}"
   if [[ -z "$workspace_yml" && -n "${OCTOPUS_WORKSPACE_PATH:-}" ]]; then
     workspace_yml="$OCTOPUS_WORKSPACE_PATH/.octopus.yml"
   fi
@@ -113,25 +113,25 @@ _qm_resolve() {
   local val="" ov
   # Layer 1: workspace
   if [[ -n "$workspace_yml" ]]; then
-    ov="$(qm_override "$workspace_yml" "$metric" "$field")"; [[ -n "$ov" ]] && val="$ov"
+    ov="$(cm_override "$workspace_yml" "$metric" "$field")"; [[ -n "$ov" ]] && val="$ov"
   fi
   # Layer 2: personal
-  ov="$(qm_override "$personal_yml" "$metric" "$field")"; [[ -n "$ov" ]] && val="$ov"
+  ov="$(cm_override "$personal_yml" "$metric" "$field")"; [[ -n "$ov" ]] && val="$ov"
   # Layer 3: project (wins)
-  ov="$(qm_override "$project_yml" "$metric" "$field")"; [[ -n "$ov" ]] && val="$ov"
+  ov="$(cm_override "$project_yml" "$metric" "$field")"; [[ -n "$ov" ]] && val="$ov"
 
   printf '%s\n' "$val"
 }
 
-qm_field() {
+cm_field() {
   local metric="$1" field="$2" val
-  val="$(_qm_resolve "$metric" "$field")"
+  val="$(_cm_resolve "$metric" "$field")"
 
   # Security boundary: a resolved config value flows into arithmetic. Reject
   # anything non-numeric so attacker-controlled config (any layer) can never be
   # interpreted as awk program text downstream.
-  if [[ -n "$val" ]] && ! qm_is_numeric "$val"; then
-    echo "qm_field: non-numeric value for ${metric}.${field}: $val" >&2
+  if [[ -n "$val" ]] && ! cm_is_numeric "$val"; then
+    echo "cm_field: non-numeric value for ${metric}.${field}: $val" >&2
     return 1
   fi
 
@@ -139,12 +139,12 @@ qm_field() {
 }
 
 # Resolve a string-valued config field (e.g. coverage.test_filter,
-# coverage.settings) across the same layers as qm_field, WITHOUT numeric
+# coverage.settings) across the same layers as cm_field, WITHOUT numeric
 # validation. Security: the returned value is attacker-influenceable (any config
 # layer), so callers MUST pass it to subprocesses as a single quoted argv element
 # — never interpolate it into shell or awk program text.
-qm_field_str() {
-  local v; v="$(_qm_resolve "$1" "$2")"
+cm_field_str() {
+  local v; v="$(_cm_resolve "$1" "$2")"
   # Strip one layer of surrounding quotes (YAML quoted scalars like "a!=b").
   v="${v%\"}"; v="${v#\"}"
   v="${v%\'}"; v="${v#\'}"
@@ -165,7 +165,7 @@ qm_field_str() {
 #   vs_main:<delta>        (branch - main)
 #
 # Positive delta = improvement; negative = regression.
-qm_compute_delta() {
+cm_compute_delta() {
   local main_val="$1" branch_val="$2" baseline_val="$3"
 
   local vs_main vs_baseline
@@ -191,7 +191,7 @@ qm_compute_delta() {
 #   $4 — absolute_min threshold (may be empty → ratchet only)
 #
 # Returns 0 (OK) or 1 (breach).  Prints a reason to stdout on breach.
-qm_check_threshold() {
+cm_check_threshold() {
   local metric="$1" current="$2" baseline="$3" absolute_min="$4"
 
   # Absolute check: current must be >= absolute_min if set
@@ -234,7 +234,7 @@ qm_check_threshold() {
 # top of it.  Ratchet applies only when no absolute threshold is configured.
 #
 # Returns 0 (OK) or 1 (breach).
-qm_check_threshold_max() {
+cm_check_threshold_max() {
   local metric="$1" current="$2" baseline="$3" absolute_max="$4"
 
   # Absolute check: current must be <= absolute_max if set
@@ -272,7 +272,7 @@ qm_check_threshold_max() {
 #
 # Echoes the numeric value, or empty if absent.
 # Pure awk — no jq dependency.
-qm_parse_baseline() {
+cm_parse_baseline() {
   local json="$1" field="$2"
   [[ -z "$json" || -z "$field" ]] && return 0
   # Match "field":value where value is a number (int or float)
@@ -300,18 +300,18 @@ qm_parse_baseline() {
 #   $2 — current value (branch)
 #   $3 — baseline value (may be empty)
 #   $4 — absolute threshold (may be empty)
-#   $5 — threshold function: "qm_check_threshold" or "qm_check_threshold_max"
+#   $5 — threshold function: "cm_check_threshold" or "cm_check_threshold_max"
 #
 # Output lines:
 #   metric:<name> current:<val> vs_baseline:<d> vs_main:<d>
 #   [curation:needed reason:<...>]    — only on breach
-qm_format_report() {
-  local metric="$1" current="$2" baseline="$3" absolute="$4" threshold_fn="${5:-qm_check_threshold}"
+cm_format_report() {
+  local metric="$1" current="$2" baseline="$3" absolute="$4" threshold_fn="${5:-cm_check_threshold}"
 
   # For this function, vs_main is the same as vs_baseline when we only have one
   # reference point (the caller passes baseline as the single comparator).
   local delta_line
-  delta_line="$(qm_compute_delta "${baseline:-$current}" "$current" "$baseline")"
+  delta_line="$(cm_compute_delta "${baseline:-$current}" "$current" "$baseline")"
   local vs_baseline vs_main
   vs_baseline="$(grep "^vs_baseline:" <<<"$delta_line" | cut -d: -f2)"
   vs_main="$(grep "^vs_main:" <<<"$delta_line" | cut -d: -f2)"

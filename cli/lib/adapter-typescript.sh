@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# cli/lib/adapter-typescript.sh — TypeScript quality-metrics adapter (RM-147).
+# cli/lib/adapter-typescript.sh — TypeScript code-metrics adapter (RM-147).
 #
 # Implements the stack-agnostic metric contract for TypeScript/JavaScript repos.
-# Called by cli/lib/quality-metrics-cmd.sh when stack=typescript.
+# Called by cli/lib/code-metrics.sh when stack=typescript.
 #
 # Output contract: one line per metric, format:
 #   <metric_name>:<numeric_value>
@@ -16,12 +16,12 @@
 #                        static import graph that madge can traverse without
 #                        running the toolchain)
 
-QM_TS_ADAPTER_DIR="${QM_TS_ADAPTER_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
+CM_TS_ADAPTER_DIR="${CM_TS_ADAPTER_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 
 # Run coverage using vitest → LCOV.
 # Falls back to 0 if vitest is not present or tests fail.
 # Outputs: coverage:<percent>
-qm_adapter_typescript_coverage() {
+cm_adapter_typescript_coverage() {
   local repo_root="${1:-$PWD}"
 
   if ! command -v node &>/dev/null; then
@@ -55,7 +55,7 @@ qm_adapter_typescript_coverage() {
 
 # Compute average cyclomatic complexity using lizard over .ts/.js files.
 # Outputs: complexity:<avg_cyclomatic>
-qm_adapter_typescript_complexity() {
+cm_adapter_typescript_complexity() {
   local repo_root="${1:-$PWD}"
 
   if ! command -v lizard &>/dev/null; then
@@ -73,7 +73,7 @@ qm_adapter_typescript_complexity() {
 
 # Compute average module size (NLOC) using lizard.
 # Outputs: module_size:<avg_nloc>
-qm_adapter_typescript_module_size() {
+cm_adapter_typescript_module_size() {
   local repo_root="${1:-$PWD}"
 
   if ! command -v lizard &>/dev/null; then
@@ -93,7 +93,7 @@ qm_adapter_typescript_module_size() {
 # madge traverses the full static import graph (including transitive deps
 # across package boundaries if --include-npm is set; v1 uses in-repo only).
 # Outputs: dependency_cycles:<count>
-qm_adapter_typescript_deps() {
+cm_adapter_typescript_deps() {
   local repo_root="${1:-$PWD}"
 
   if ! command -v node &>/dev/null; then
@@ -124,10 +124,10 @@ qm_adapter_typescript_deps() {
 }
 
 # Run all four TypeScript metrics and print one line per metric.
-qm_adapter_typescript_run() {
+cm_adapter_typescript_run() {
   local repo_root="${1:-$PWD}"
-  qm_adapter_typescript_coverage   "$repo_root"
-  qm_adapter_typescript_complexity "$repo_root"
-  qm_adapter_typescript_module_size "$repo_root"
-  qm_adapter_typescript_deps       "$repo_root"
+  cm_adapter_typescript_coverage   "$repo_root"
+  cm_adapter_typescript_complexity "$repo_root"
+  cm_adapter_typescript_module_size "$repo_root"
+  cm_adapter_typescript_deps       "$repo_root"
 }

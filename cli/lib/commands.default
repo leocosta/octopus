@@ -28,4 +28,4 @@ hygiene|Audit a knowledge root (staleness/orphans/links/archive)
 synthesize|Surface cross-node connections in a knowledge root
 briefing|Proactive cadence summary over a knowledge root
 lens|Surface consigliere lens-context (playbook + political risk)
-quality-metrics|Local PR-time dual-delta read of coverage/complexity/module-size/deps vs. orphan-ref baseline; LLM curation only on breach
+code-metrics|Local PR-time dual-delta read of coverage/complexity/module-size/deps vs. orphan-ref baseline; LLM curation only on breach

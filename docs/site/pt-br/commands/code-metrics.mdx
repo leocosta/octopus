@@ -1,9 +1,9 @@
 ---
-title: quality-metrics
+title: code-metrics
 description: "Leitura local e não-bloqueante com delta duplo de cobertura, complexidade, tamanho de módulo e ciclos de dependência no PR-open; números de graça, modelo só na quebra de threshold."
 ---
 
-`/octopus:quality-metrics` roda uma leitura local de como seu branch move quatro
+`/octopus:code-metrics` roda uma leitura local de como seu branch move quatro
 métricas determinísticas de qualidade de código, antes de você abrir o PR — e
 continua quase de graça a menos que algo de fato regrida.
 
@@ -21,7 +21,7 @@ seu próprio stack em vez de um modelo.
 Um adapter por-stack — escolhido a partir do stack detectado — roda o tooling
 real (cobertura, complexidade ciclomática, tamanho de módulo, ciclos de
 dependência) e normaliza a saída para um contrato compartilhado. O comando faz
-fetch do baseline por-merge no ref `octopus/quality-metrics` e imprime um **delta
+fetch do baseline por-merge no ref `octopus/code-metrics` e imprime um **delta
 duplo**: seu branch vs. esse baseline (a tendência) e vs. seu `main` local (o
 impacto deste PR).
 
@@ -33,7 +33,7 @@ regressão e sugerir um fix.
 ## Uso & parâmetros
 
 ```
-octopus quality-metrics [--stack <id>] [--against <ref>]
+octopus code-metrics [--stack <id>] [--against <ref>]
 ```
 
 - `--stack <id>` — força um adapter de stack (`csharp`, `typescript`) em vez de
@@ -41,4 +41,4 @@ octopus quality-metrics [--stack <id>] [--against <ref>]
 - `--against <ref>` — o ref local usado como comparador "vs. main"; padrão
   `main`.
 
-[Source: `commands/quality-metrics.md`](https://github.com/leocosta/octopus/blob/main/commands/quality-metrics.md)
+[Source: `commands/code-metrics.md`](https://github.com/leocosta/octopus/blob/main/commands/code-metrics.md)
