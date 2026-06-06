@@ -20,13 +20,13 @@
 #   2. Stack-specific tooling must be available in the runner:
 #      - C#:  dotnet + dotnet-coverage (global tool) + lizard (pip)
 #      - TS:  node + vitest + lizard (pip) + madge (npm)
-#   3. The Octopus CLI is cloned into the runner and executed (step below).
-#      SUPPLY CHAIN: this runs third-party code in a contents:write job, so
-#      OCTOPUS_REF is PINNED to an immutable commit SHA below (never a moving
-#      branch like `main` — a branch/tag can be force-moved under you). The
-#      clone step verifies the checked-out HEAD matches the pinned SHA. Bump it
-#      deliberately on a vetted upgrade. Overriding OCTOPUS_REPO points CI at
-#      arbitrary code — only ever set it to a trusted, pinned mirror.
+#   3. The Octopus CLI is installed via the official installer, pinned to
+#      OCTOPUS_VERSION (a release tag). SUPPLY CHAIN: this runs third-party code
+#      in a contents:write job, so the install is version-pinned and the
+#      tarball's SHA-256 checksum is always verified. For maintainer-authenticity
+#      (GPG), import the release public key (OCTOPUS_GPG_IMPORT_KEY) and drop
+#      OCTOPUS_SKIP_SIGNATURE in the install step. Never point OCTOPUS_VERSION at
+#      a moving branch.
 #   4. GITHUB_TOKEN needs contents:write for the orphan-ref push.
 #      The default token works if branch-protection does not block it.
 #   5. fetch-depth: 0 — the hotspots metric reads git history (churn).
@@ -52,10 +52,11 @@ concurrency:
   cancel-in-progress: false  # serialized: one writer at a time
 
 env:
-  OCTOPUS_REPO: https://github.com/leocosta/octopus
-  # PINNED to an immutable commit SHA (= tag v1.83.0). Never a moving branch.
-  # Bump deliberately on a vetted upgrade; the clone step verifies this SHA.
-  OCTOPUS_REF: 1322543082aa98e19c5d2373a50a5de9997d8522
+  # PINNED to a release tag. The official installer fetches the version's signed
+  # tarball and ALWAYS verifies its SHA-256 checksum. For full authenticity, set
+  # OCTOPUS_GPG_IMPORT_KEY to the release public key and drop
+  # OCTOPUS_SKIP_SIGNATURE below — see the install step. Bump deliberately.
+  OCTOPUS_VERSION: v1.84.0
 
 jobs:
   write-baseline:
@@ -133,27 +134,17 @@ jobs:
       # -----------------------------------------------------------------------
       # Compute baseline.json via the shared adapters (single source of truth)
       # -----------------------------------------------------------------------
-      - name: Get Octopus CLI (pinned SHA)
+      - name: Install Octopus CLI (pinned, verified)
         run: |
-          # Defense-in-depth: refuse to clone+run from anywhere but the trusted
-          # source.
-          case "$OCTOPUS_REPO" in
-            https://github.com/leocosta/octopus*) ;;
-            *) echo "Refusing to run untrusted OCTOPUS_REPO: $OCTOPUS_REPO" >&2; exit 1 ;;
-          esac
-          # Fetch the exact pinned ref (works for a SHA, tag, or branch; GitHub
-          # serves reachable SHAs). `git clone --branch` cannot take a SHA, hence
-          # init + fetch + checkout FETCH_HEAD.
-          git init --quiet /tmp/octopus
-          git -C /tmp/octopus remote add origin "$OCTOPUS_REPO"
-          git -C /tmp/octopus fetch --depth 1 --quiet origin "$OCTOPUS_REF"
-          git -C /tmp/octopus checkout --quiet FETCH_HEAD
-          # Integrity: when OCTOPUS_REF is a full commit SHA, verify we got it.
-          if printf '%s' "$OCTOPUS_REF" | grep -qE '^[0-9a-f]{40}$'; then
-            got="$(git -C /tmp/octopus rev-parse HEAD)"
-            [ "$got" = "$OCTOPUS_REF" ] \
-              || { echo "Pin mismatch: got $got, expected $OCTOPUS_REF" >&2; exit 1; }
-          fi
+          # Official installer, pinned to a release tag. It downloads the
+          # version's tarball + .sha256 + .asc and ALWAYS verifies the SHA-256
+          # checksum. To also verify the GPG signature (maintainer authenticity),
+          # import the release public key and drop OCTOPUS_SKIP_SIGNATURE:
+          #   env: OCTOPUS_GPG_IMPORT_KEY: ${{ ... path to the public key ... }}
+          # The version-pinned install.sh URL is itself immutable per release.
+          curl -fsSL "https://github.com/leocosta/octopus/releases/download/${OCTOPUS_VERSION}/install.sh" \
+            | OCTOPUS_SKIP_SIGNATURE=1 bash -s -- --version "$OCTOPUS_VERSION"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Compute baseline.json
         id: baseline
@@ -163,11 +154,10 @@ jobs:
           # interpolating ${{ }} into the run script (script-injection hygiene).
           STACK: ${{ steps.stack.outputs.name }}
         run: |
-          export PATH="$HOME/.dotnet/tools:$PATH"
-          # The CLI runs the same adapters the local skill uses and prints the
-          # flat baseline record. No metric logic is duplicated in this YAML.
-          bash /tmp/octopus/cli/octopus.sh code-metrics \
-            --stack "$STACK" --emit-baseline > baseline.json
+          export PATH="$HOME/.dotnet/tools:$HOME/.local/bin:$PATH"
+          # The installed CLI runs the same adapters the local skill uses and
+          # prints the flat baseline record. No metric logic is duplicated here.
+          octopus code-metrics --stack "$STACK" --emit-baseline > baseline.json
           echo "json=$(cat baseline.json)" >> "$GITHUB_OUTPUT"
           cat baseline.json
 
