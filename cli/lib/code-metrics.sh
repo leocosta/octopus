@@ -114,6 +114,9 @@ BREACH_FOUND=0
 
 while IFS=: read -r metric current; do
   [[ -z "$metric" ]] && continue
+  # Skip malformed adapter output: a metric name is lower_snake_case. This
+  # guards against stray non-metric lines a tool may leak into the stream.
+  [[ "$metric" =~ ^[a-z_]+$ ]] || continue
 
   # Resolve dispatch from the registry (single source of truth, RM-148):
   #   direction|config_block|config_field
