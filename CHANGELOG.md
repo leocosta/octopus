@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.84.0] - 2026-06-06
+
+✨ The `code-metrics` skill grows from four structural metrics into a full quality catalog. Eleven new deterministic metrics land across both C# and TypeScript: debt markers (TODO/FIXME, deprecations, marked dead code, linter/compiler suppressions), readability counters (nesting depth, average parameter count, magic numbers, lint density), documentation coverage, churn×complexity **hotspots** (a new git-history capability that pinpoints where decay concentrates), and an info-only static **perf-risk** proxy (queries/allocations inside loops, nested loops). ♻️ Under the hood the hardcoded per-metric dispatch was replaced by a data-driven registry (`cm_metric_spec`), so adding a metric is now one registry line plus one adapter function; the writer-Action stopped re-implementing metric logic in YAML and now produces `baseline.json` via `octopus code-metrics --emit-baseline`, eliminating drift. 🔒 That writer-Action is now pinned to an immutable Octopus CLI commit SHA — with a checkout integrity check — instead of a moving branch, closing a supply-chain vector in the `contents:write` CI job. All new metrics are ratchet-only by default and `perf_risk` never gates. (#191)
+
+🐛 `octopus setup` now prunes stale skill symlinks when a manifest drops all of its skills, so a re-run no longer leaves orphaned links behind. (#190)
+
 ## [1.83.0] - 2026-06-06
 
 ♻️ **Bundle list slimmed (breaking).** `code-metrics` is no longer a standalone bundle — it's a member skill of `quality` (uncheck it in the picker if you don't want it); the code-metrics skill, command, adapters, and writer-Action template are unchanged. The `knowledge-ops` bundle is renamed to **`knowledge`** (the skills keep their names). 🐛 `octopus setup` now prunes stale Octopus-owned command files on every run — a renamed or removed command (like the recent `quality-metrics` → `code-metrics`) no longer leaves an orphan `octopus:*.md` in your repo; user-authored, non-prefixed commands are untouched.
