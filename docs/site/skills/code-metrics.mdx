@@ -52,6 +52,39 @@ Every metric is a deterministic shell heuristic (grep / awk / lizard / git) and
 **ratchet-only by default**, so a legacy repo is never born red: only a *new*
 regression on your branch is flagged.
 
+### Full metric reference
+
+`↑` higher is better · `↓` lower is better · `info` reported, never gated.
+"Default" is the behaviour with no `.octopus.yml` config; the parenthesised key
+is the optional absolute threshold you can set under `code_metrics:`.
+
+| Metric | Layer | Dir | What it measures | Default |
+|---|---|---|---|---|
+| `coverage` | structure | ↑ | Line coverage % (TS: vitest→LCOV · C#: dotnet-coverage/coverlet→Cobertura) | ratchet (`coverage.min`) |
+| `complexity` | structure | ↓ | Average cyclomatic complexity per function (lizard) | ratchet (`complexity.max`) |
+| `module_size` | structure | ↓ | Average NLOC per function/file (lizard) | ratchet (`module_size.max`) |
+| `dependency_cycles` | structure | ↓ | Import cycles (TS: madge) / project-reference cycles (C#: `dotnet list reference` + Tarjan) | ratchet (`dependencies.cycles_allowed`) |
+| `todo_markers` | debt | ↓ | Count of `TODO`/`FIXME`/`HACK`/`XXX` | ratchet |
+| `deprecations` | debt | ↓ | `@deprecated` (TS) / `[Obsolete]` (C#) | ratchet |
+| `dead_code` | debt | ↓ | *Marked* dead code (`#if false`, `// dead`, unused-disable) — not reachability | ratchet |
+| `suppressions` | debt | ↓ | `eslint-disable`/`@ts-ignore`/`@ts-nocheck` (TS) · `#pragma warning disable`/`[SuppressMessage]` (C#) | ratchet (`suppressions.max`) |
+| `nesting_depth` | readability | ↓ | Deepest brace nesting level | ratchet (`nesting_depth.max`) |
+| `param_count` | readability | ↓ | Average parameters per function (lizard) | ratchet (`param_count.max`) |
+| `magic_numbers` | readability | ↓ | Numeric literals, excluding `0`/`1`/`-1`, named constants and strings | ratchet |
+| `lint_density` | readability | ↓ | Linter findings per 1000 NLOC (TS: eslint · C#: build warnings); `0` if no linter | ratchet |
+| `doc_coverage` | docs | ↑ | Documented public/exported symbols ÷ total | ratchet (`doc_coverage.min`) |
+| `hotspots` | decay | ↓ | Count of files that are **both** high-churn and high-complexity — `git log` churn × lizard CCN. Tune via `hotspots.{window_days,churn_min,ccn_min}` | ratchet (`hotspots.max`) |
+| `perf_risk` | load risk | info | Queries/allocations inside loops + nested loops (O(n²) candidates) | **info-only** (never gated) |
+
+**Heuristic caveats** (all metrics are shell-grade, approximate by design):
+
+- `perf_risk` keys on a loop opener with its `{` on the same line; **Allman-brace
+  codebases (idiomatic C#, where `{` sits on its own line) under-detect** and
+  often read `0`. It is info-only precisely because of this.
+- `magic_numbers`, `nesting_depth` and `doc_coverage` scan the source tree and do
+  not exclude generated code (e.g. EF migrations), so they can read high — they
+  are ratchet anchors, not absolute quality scores.
+
 It reports a **dual delta** per metric:
 
 - **vs. baseline** — your branch against the last-merged-to-main baseline (the
