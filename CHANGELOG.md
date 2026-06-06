@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.83.0] - 2026-06-06
+
+♻️ **Bundle list slimmed (breaking).** `code-metrics` is no longer a standalone bundle — it's a member skill of `quality` (uncheck it in the picker if you don't want it); the code-metrics skill, command, adapters, and writer-Action template are unchanged. The `knowledge-ops` bundle is renamed to **`knowledge`** (the skills keep their names). 🐛 `octopus setup` now prunes stale Octopus-owned command files on every run — a renamed or removed command (like the recent `quality-metrics` → `code-metrics`) no longer leaves an orphan `octopus:*.md` in your repo; user-authored, non-prefixed commands are untouched.
+
+**Migration:** repos listing the `code-metrics` bundle → use `quality`; repos listing `knowledge-ops` → `knowledge`.
+
 ## [1.82.0] - 2026-06-06
 
 ♻️ **Quality bundle family cleaned up (breaking).** The `quality` bundle is now scoped to the code-quality axis — exactly the union of audits + signals (security/money/tenant/contract gates + grounding/verification/style/config/refactor signals, with the `architect` and `security` roles). Knowledge-base operations moved to `knowledge-ops` and cross-repo audit/bootstrap to `tech-lead`. The `quality-audits` and `quality-signals` preset bundles are **removed** — `quality` is their union, and the two-screen setup picker fine-tunes members down (uncheck → `exclude:`). The measurement bundle `quality-metrics` is **renamed to `code-metrics`** (a different axis — numbers, not gates): the bundle, the `/octopus:code-metrics` command, the `code_metrics:` config key, and the `octopus/code-metrics` baseline ref all move together. 🐛 The C# `code-metrics` adapter no longer leaks the coverage runner's stdout into the metric output.
