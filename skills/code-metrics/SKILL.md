@@ -168,11 +168,11 @@ the orphan ref. It **never pushes to `main` or `release/*`**.
 See `templates/github-actions/code-metrics-writer.yml` for the full
 template and installation notes.
 
-## Relationship to quality and knowledge-ops
+## Relationship to quality and knowledge
 
 - **quality** — blocking pre-merge audits and advisory signals (security, money,
-  tenant, contracts, grounding, verification, style). Fine-tune members down via
-  the interactive picker (uncheck → `exclude:`).
-- **knowledge-ops** — knowledge-base operations (`knowledge-hygiene`/`synthesize`/`briefing`).
+  tenant, contracts, grounding, verification, style) plus this skill (code-metrics).
+  Fine-tune members down via the interactive picker (uncheck → `exclude:`).
+- **knowledge** — knowledge-base operations (`knowledge-hygiene`/`synthesize`/`briefing`).
 - **code-metrics** — deterministic measurement over time + per-PR delta.
-  *Measurement axis (this bundle).*
+  *Part of the quality bundle (measurement axis).*

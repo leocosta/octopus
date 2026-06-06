@@ -1,5 +1,5 @@
-name: knowledge-ops
-description: Knowledge-root operations over any registered markdown tree — hygiene (staleness/orphans/links/archive), synthesis (cross-node connections, forgotten-but-relevant), and proactive briefing (what-changed/what-needs-you).
+name: knowledge
+description: Knowledge-base maintenance over any registered markdown tree — hygiene (staleness/orphans/links/archive), synthesis (cross-node connections, forgotten-but-relevant), and proactive briefing (what-changed/what-needs-you).
 category: intent
 persona_question: "Do you maintain a knowledge root (docs/, knowledge base) needing hygiene/synthesis/briefing?"
 persona_default: false

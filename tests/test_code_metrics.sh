@@ -337,19 +337,18 @@ t6_skill_exists()        { [[ -f "$SKILL" ]]; }
 t6_skill_frontmatter()   { head -5 "$SKILL" | grep -q "^name: code-metrics$"; }
 t6_command_exists()      { [[ -f "$CMD" ]]; }
 t6_registered_in_bundle() {
+  # code-metrics is now a member of the quality bundle (no standalone bundle file)
   grep -rqx " *- code-metrics" "$OCTOPUS_DIR/bundles"
 }
-t6_bundle_file_exists()  { [[ -f "$OCTOPUS_DIR/bundles/code-metrics.yml" ]]; }
-t6_bundle_category()     {
-  grep -q "^category: intent$" "$OCTOPUS_DIR/bundles/code-metrics.yml"
+t6_registered_in_quality() {
+  grep -qx "  - code-metrics" "$OCTOPUS_DIR/bundles/quality.yml"
 }
 
 check "skill SKILL.md exists"              t6_skill_exists
 check "skill: valid frontmatter name"      t6_skill_frontmatter
 check "command file exists"                t6_command_exists
 check "skill registered in a bundle"       t6_registered_in_bundle
-check "code-metrics bundle file exists" t6_bundle_file_exists
-check "bundle category is intent"          t6_bundle_category
+check "code-metrics is a member of quality bundle" t6_registered_in_quality
 
 t6_skill_documents_dual_delta() {
   grep -q "dual.delta\|dual delta\|vs_baseline\|vs_main" "$SKILL"

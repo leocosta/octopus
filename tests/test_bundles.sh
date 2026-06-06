@@ -151,7 +151,7 @@ OCTOPUS_BUNDLES=("starter" "quality")
 
 expand_bundles
 
-expected_skills=(doc-adr doc-lifecycle context-budget implement debug respond-to-review test-tdd prototype context-handoff audit-all audit-security audit-money audit-tenant audit-contracts refactor-deepen audit-config audit-grounding audit-verification audit-style)
+expected_skills=(doc-adr doc-lifecycle context-budget implement debug respond-to-review test-tdd prototype context-handoff audit-all audit-security audit-money audit-tenant audit-contracts refactor-deepen audit-config audit-grounding audit-verification audit-style code-metrics)
 printf '%s\n' "${OCTOPUS_SKILLS[@]}" | sort -u > /tmp/got.$$
 printf '%s\n' "${expected_skills[@]}" | sort -u > /tmp/exp.$$
 diff -q /tmp/got.$$ /tmp/exp.$$ >/dev/null \
@@ -206,12 +206,12 @@ OCTOPUS_RULES=()
 parse_octopus_yml "$WORKDIR/.octopus.yml"
 expand_bundles
 
-# starter (9 skills after RM-143) + quality (10 unique: audit-all + its domain-audit
+# starter (9 skills after RM-143) + quality (11 unique: audit-all + its domain-audit
 # deps audit-security/money/tenant, audit-contracts, refactor-deepen, audit-config,
-# audit-grounding, audit-verification, audit-style) = 19 distinct. (knowledge-* and
-# fleet-* moved out of the quality composer → knowledge-ops / tech-lead.)
-[[ ${#OCTOPUS_SKILLS[@]} -eq 19 ]] \
-  || { echo "FAIL: expected 19 skills after bundle expansion, got ${#OCTOPUS_SKILLS[@]}"; exit 1; }
+# audit-grounding, audit-verification, audit-style, code-metrics) = 20 distinct.
+# (knowledge-* moved out of quality → knowledge bundle; fleet-* → tech-lead.)
+[[ ${#OCTOPUS_SKILLS[@]} -eq 20 ]] \
+  || { echo "FAIL: expected 20 skills after bundle expansion, got ${#OCTOPUS_SKILLS[@]}"; exit 1; }
 
 printf '%s\n' "${OCTOPUS_ROLES[@]}" | grep -q "^architect$" \
   || { echo "FAIL: architect role missing after expansion"; exit 1; }

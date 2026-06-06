@@ -1,5 +1,5 @@
 name: quality
-description: Pre-merge code-quality bundle — security, money-logic, multi-tenant scope, and cross-stack contract audits (blocking gates), plus architecture-depth refactoring, configuration freshness, source-of-truth grounding, completion-verification, and design-rules/over-engineering style (signal-only). Fine-tune members down in the interactive picker (exclude:). Knowledge-base ops live in knowledge-ops; cross-repo audit/bootstrap in tech-lead.
+description: Pre-merge code-quality bundle — security, money-logic, multi-tenant scope, and cross-stack contract audits (blocking gates), plus architecture-depth refactoring, configuration freshness, source-of-truth grounding, completion-verification, and design-rules/over-engineering style (signal-only), plus the code-metrics measurement read (PR-time dual-delta of coverage/complexity/size/dep-cycles). Fine-tune members down in the interactive picker (exclude:). Knowledge-base ops live in knowledge; cross-repo audit/bootstrap in tech-lead.
 category: intent
 persona_question: "Does your team run security, money, multi-tenant scope audits, architecture-depth refactors, configuration audits, or source-of-truth grounding checks?"
 persona_default: false
@@ -11,6 +11,7 @@ skills:
   - audit-grounding
   - audit-verification
   - audit-style
+  - code-metrics
 roles:
   - architect
   - security
