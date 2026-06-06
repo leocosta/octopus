@@ -25,16 +25,21 @@ check "hooks pre-selected (default 1)"   test "$(rowdef f:hooks)" = "1"
 check "reviewers off by default (0)"     test "$(rowdef f:reviewers)" = "0"
 check "current bundle pre-selected"      test "$(rowdef b:starter)" = "1"
 check "non-current bundle off"           test "$(rowdef b:quality-metrics)" = "0"
+# Stack/DB are atomic profiles: shown under their category with a BARE label
+# (no db-/stack- prefix), since they aren't multi-item bundles.
+check "stack profile labeled bare"       grep -q $'^b:stack-csharp\t csharp\t' <<<"$rows"
+check "db profile labeled bare"          grep -q $'^b:db-mssql\t mssql\t' <<<"$rows"
 
-# --- Screen 2: members of the chosen bundles, grouped, kept by default -----
+# --- Screen 2: members of the chosen INTENT bundles; stack/db are skipped ---
 _CURRENT_BUNDLES=(starter); _CURRENT_EXCLUDES=()
-m="$(_picker_member_rows starter stack-typescript)"
-mdef() { grep -F "$1"$'\t' <<<"$m" | head -1 | cut -f3; }
-check "screen 2 groups by bundle header"   grep -q $'^h:starter\t' <<<"$m"
-check "screen 2 has the stack header"      grep -q $'^h:stack-typescript\t' <<<"$m"
+m="$(_picker_member_rows starter stack-typescript db-mssql)"
+check "screen 2 groups intent bundle by header" grep -q $'^h:starter\t' <<<"$m"
 check "screen 2 lists a skill member"      grep -q $'^m:implement\t      implement (skill)\t1\t' <<<"$m"
-check "screen 2 lists a stack rule member" grep -q $'^m:typescript\t.*(rule)\t1\t' <<<"$m"
-check "member kept by default (1)"         test "$(mdef m:implement)" = "1"
+check "member kept by default (1)"         test "$(grep -F 'm:implement'$'\t' <<<"$m" | head -1 | cut -f3)" = "1"
+# atomic profiles never get a screen-2 group (no redundant 1-member fine-tune)
+check "screen 2 skips stack profile"       bash -c '! grep -q "stack-typescript\|m:typescript" <<<"$1"' _ "$m"
+check "screen 2 skips db profile"          bash -c '! grep -q "db-mssql\|dba-mssql" <<<"$1"' _ "$m"
+check "only stack/db chosen → screen 2 empty" test -z "$(_picker_member_rows stack-csharp db-mssql)"
 check "member of an unchosen bundle absent" bash -c '! grep -q "audit-all" <<<"$1"' _ "$m"
 check "no members → empty output"          test -z "$(_picker_member_rows __nonexistent__)"
 
