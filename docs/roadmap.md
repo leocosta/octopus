@@ -306,6 +306,83 @@ _**Cluster 25 complete.** RM-147 landed via #175; suite green (`test_quality_met
 
 ---
 
+### Cluster 26 — code-metrics catalog expansion
+
+_Proposed (added 2026-06-06). Seeds from [research](research/2026-06-06-code-metrics-expansion.md): the v1 (RM-147) shipped four deterministic metrics; an interview scoped the next wave against three pains — code decay (B1), unaddressed readability/best-practices (B2), and unassessed load risk in high-traffic apps (B3). The governing decision was **deterministic over non-deterministic on every branch**: an LLM-scored readability grade and a real load test were both discarded as breaking the "deterministic, ≈0-cost-in-the-common-case, signal-never-gate, dual-delta" contract. Split by effort/risk (leverage-by-effort): the cheap-and-reliable pack ships as v2; the two capabilities needing new infra or risky heuristics are v3. New metric fields land as extra keys in the `octopus/code-metrics` orphan-ref `baseline.json`, enabling cross-repo aggregation at the storage level — exercising it (a manager dashboard) stays out of scope. Build order: RM-148 (v2) → RM-149 / RM-150 (v3, independent)._
+
+| RM | Item | Theme |
+|----|------|-------|
+| RM-148 | v2 metric pack — debt markers + readability counters + doc coverage | v2 / leverage |
+| RM-149 | v3 hotspots — churn × complexity (new git-history capability) | v3 / decay |
+| RM-150 | v3 perf-proxy — static performance-risk heuristic for high-traffic paths | v3 / load risk |
+
+### RM-148 — v2 metric pack: debt markers + readability counters + doc coverage
+
+- **Priority:** 🔴 High
+- **Effort:** medium
+- **Status:** proposed
+- **Added:** 2026-06-06
+- **Research:** [code-metrics-expansion](research/2026-06-06-code-metrics-expansion.md)
+
+Add the cheap, low-false-positive deterministic pack to `code-metrics`, covering
+B2 (readability) in full and B1 (decay) in part:
+
+- **Debt markers** — counts of `TODO`/`FIXME`, `@deprecated`, *marked* dead code,
+  and `eslint-disable`/`#pragma warning disable`.
+- **Readability counters** — nesting depth, parameter count, magic numbers, lint
+  finding density (`lizard` already covers part; define per-stack adapters for
+  the rest).
+- **Doc coverage.**
+
+All plug into the existing dual-delta, `.octopus.yml` per-layer config, orphan-ref
+baseline, and LLM-on-breach curation. Stacks: C#+TS.
+
+**Open questions for the spec:** ratchet-only vs. optional-absolute per metric
+(a legacy repo with 5,000 TODOs must not be born "red"); dead-code counts
+*marked* only in v2 (reachability deferred); tooling beyond `lizard` for
+magic-numbers and doc-coverage.
+
+**Rationale:** Highest leverage per unit of effort — covers B2 entirely and part
+of B1 with near-zero false positives and no new infrastructure. Objective
+counters the team cannot contest, which is the point of the B2 pain.
+
+---
+
+### RM-149 — v3 hotspots: churn × complexity
+
+- **Priority:** 🟡 Medium
+- **Effort:** medium
+- **Status:** proposed
+- **Added:** 2026-06-06
+- **Research:** [code-metrics-expansion](research/2026-06-06-code-metrics-expansion.md)
+
+Surface the files that change often *and* are complex (churn × complexity) to
+pinpoint where decay risk concentrates — the remainder of B1. Requires a **new
+capability**: reading git history (today's metrics are snapshot/diff only).
+
+**Rationale:** High reading value and low false-positive, but gated behind new
+git-history infrastructure, so it is split out of the v2 pack rather than blocking it.
+
+---
+
+### RM-150 — v3 perf-proxy: static risk heuristic for high-traffic paths
+
+- **Priority:** 🟡 Medium
+- **Effort:** high
+- **Status:** proposed
+- **Added:** 2026-06-06
+- **Research:** [code-metrics-expansion](research/2026-06-06-code-metrics-expansion.md)
+
+Address B3 (load risk) *within the contract* — a static PR-time proxy of
+performance risk (hot path touched, query-in-loop, new O(n²), allocation on a hot
+path), **not** a real load test. Per-language AST heuristic.
+
+**Rationale:** The only B3 survivor (real load testing was discarded as
+out-of-contract). Highest effort and **high false-positive risk** of the three,
+so deliberately sequenced last.
+
+---
+
 ## In Progress
 
 _RM-088 (`audit-grounding`) shipped in v1.69.0. **Cluster 16** (manager-multiplier) is **complete on `feat/standards-lookup`** — all implemented & committed, pending merge/release: RM-089 (`mentor`), RM-090 (`onboarding`), RM-091 (`definition-of-done`), RM-092 (`standards`), RM-093 (team `continuous-learning`), RM-094 (`audit-fleet`), RM-095 (`fleet-bootstrap`), RM-096 (`tech-lead` bundle), RM-098 (`map-system` complete-mode deck). ADRs 002–006 recorded. See [research](research/2026-05-30-manager-multiplier.md)._
