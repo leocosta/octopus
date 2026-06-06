@@ -54,6 +54,40 @@ Toda métrica é uma heurística determinística de shell (grep / awk / lizard /
 e **ratchet-only por padrão**, então um repo legado nunca nasce vermelho: só uma
 regressão *nova* no seu branch é sinalizada.
 
+### Referência completa das métricas
+
+`↑` maior é melhor · `↓` menor é melhor · `info` reportado, nunca vira gate.
+"Padrão" é o comportamento sem config no `.octopus.yml`; a chave entre
+parênteses é o threshold absoluto opcional que você pode definir sob
+`code_metrics:`.
+
+| Métrica | Camada | Dir | O que mede | Padrão |
+|---|---|---|---|---|
+| `coverage` | estrutura | ↑ | % de cobertura de linha (TS: vitest→LCOV · C#: dotnet-coverage/coverlet→Cobertura) | ratchet (`coverage.min`) |
+| `complexity` | estrutura | ↓ | Complexidade ciclomática média por função (lizard) | ratchet (`complexity.max`) |
+| `module_size` | estrutura | ↓ | NLOC médio por função/arquivo (lizard) | ratchet (`module_size.max`) |
+| `dependency_cycles` | estrutura | ↓ | Ciclos de import (TS: madge) / ciclos de project-reference (C#: `dotnet list reference` + Tarjan) | ratchet (`dependencies.cycles_allowed`) |
+| `todo_markers` | dívida | ↓ | Contagem de `TODO`/`FIXME`/`HACK`/`XXX` | ratchet |
+| `deprecations` | dívida | ↓ | `@deprecated` (TS) / `[Obsolete]` (C#) | ratchet |
+| `dead_code` | dívida | ↓ | Código morto *marcado* (`#if false`, `// dead`, unused-disable) — não por alcance | ratchet |
+| `suppressions` | dívida | ↓ | `eslint-disable`/`@ts-ignore`/`@ts-nocheck` (TS) · `#pragma warning disable`/`[SuppressMessage]` (C#) | ratchet (`suppressions.max`) |
+| `nesting_depth` | legibilidade | ↓ | Nível máximo de aninhamento de chaves | ratchet (`nesting_depth.max`) |
+| `param_count` | legibilidade | ↓ | Média de parâmetros por função (lizard) | ratchet (`param_count.max`) |
+| `magic_numbers` | legibilidade | ↓ | Literais numéricos, excluindo `0`/`1`/`-1`, constantes nomeadas e strings | ratchet |
+| `lint_density` | legibilidade | ↓ | Findings do linter por 1000 NLOC (TS: eslint · C#: warnings de build); `0` se não houver linter | ratchet |
+| `doc_coverage` | docs | ↑ | Símbolos públicos/exportados documentados ÷ total | ratchet (`doc_coverage.min`) |
+| `hotspots` | decay | ↓ | Nº de arquivos que são **ao mesmo tempo** alto-churn e alta-complexidade — churn do `git log` × CCN do lizard. Ajuste via `hotspots.{window_days,churn_min,ccn_min}` | ratchet (`hotspots.max`) |
+| `perf_risk` | risco de carga | info | Queries/alocações dentro de loops + loops aninhados (candidatos a O(n²)) | **só-info** (nunca vira gate) |
+
+**Caveats heurísticos** (todas as métricas são shell-grade, aproximadas por design):
+
+- `perf_risk` se baseia num opener de loop com a `{` na mesma linha; **bases com
+  chaves Allman (C# idiomático, onde a `{` fica na própria linha) sub-detectam** e
+  frequentemente leem `0`. É só-info justamente por isso.
+- `magic_numbers`, `nesting_depth` e `doc_coverage` varrem a árvore de fontes e não
+  excluem código gerado (ex.: migrations do EF), então podem ler alto — são
+  âncoras de ratchet, não notas absolutas de qualidade.
+
 Ele reporta um **delta duplo** por métrica:
 
 - **vs. baseline** — seu branch contra o baseline do último merge na main (a
