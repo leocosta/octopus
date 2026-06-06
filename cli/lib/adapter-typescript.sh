@@ -239,6 +239,16 @@ cm_adapter_typescript_hotspots() {
   rm -f "$churn_f" "$ccn_f"
 }
 
+# ---------------------------------------------------------------------------
+# RM-150 — perf_risk (info-only). See the C# adapter for the rationale.
+# ---------------------------------------------------------------------------
+cm_adapter_typescript_perf_risk() {
+  # POSIX ERE, backslash-free (cm_perf_scan reads via ENVIRON; gawk mangles \b/\s/\.).
+  local loopre='(^|[^A-Za-z])(for|while)([^A-Za-z]|$)|[.](forEach|map|filter|reduce)[[:space:]]*[(]'
+  local riskre='await|fetch[(]|[.](find|findOne|aggregate|query)[(]|new [A-Z]'
+  echo "perf_risk:$(cm_ts_source_cat "${1:-$PWD}" | cm_perf_scan "$loopre" "$riskre")"
+}
+
 # Run all TypeScript metrics and print one line per metric.
 cm_adapter_typescript_run() {
   local repo_root="${1:-$PWD}"
@@ -259,4 +269,6 @@ cm_adapter_typescript_run() {
   cm_adapter_typescript_doc_coverage  "$repo_root"
   # v3 (RM-149)
   cm_adapter_typescript_hotspots      "$repo_root"
+  # v3 (RM-150) — info-only
+  cm_adapter_typescript_perf_risk     "$repo_root"
 }

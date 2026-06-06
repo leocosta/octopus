@@ -352,6 +352,17 @@ cm_adapter_csharp_hotspots() {
   rm -f "$churn_f" "$ccn_f"
 }
 
+# ---------------------------------------------------------------------------
+# RM-150 — perf_risk (info-only). Static load-risk proxy: queries/allocations
+# inside loops, nested loops. High false-positive → reported, never gated.
+# ---------------------------------------------------------------------------
+cm_adapter_csharp_perf_risk() {
+  # POSIX ERE, backslash-free (cm_perf_scan reads via ENVIRON; gawk mangles \b/\s/\.).
+  local loopre='(^|[^A-Za-z])(for|foreach|while)([^A-Za-z]|$)|[.](ForEach|Select|Where)[(]'
+  local riskre='await|[.]ToList[(][)]|[.]First|[.]Single|[.]Where[(]|_context|DbContext|new [A-Z]'
+  echo "perf_risk:$(cm_cs_source_cat "${1:-$PWD}" | cm_perf_scan "$loopre" "$riskre")"
+}
+
 # Run all C# metrics and print one line per metric.
 cm_adapter_csharp_run() {
   local repo_root="${1:-$PWD}"
@@ -372,4 +383,6 @@ cm_adapter_csharp_run() {
   cm_adapter_csharp_doc_coverage  "$repo_root"
   # v3 (RM-149)
   cm_adapter_csharp_hotspots      "$repo_root"
+  # v3 (RM-150) — info-only
+  cm_adapter_csharp_perf_risk     "$repo_root"
 }

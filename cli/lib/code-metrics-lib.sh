@@ -365,6 +365,47 @@ cm_hotspot_count() {
 }
 
 # ---------------------------------------------------------------------------
+# RM-150 perf_risk — static load-risk proxy (info-only)
+# ---------------------------------------------------------------------------
+
+# Scan stdin for performance-risk signals and echo the total count:
+#   - a risky call (query/await/allocation) inside a loop body
+#   - a nested loop (O(n²) candidate)
+#   $1 — loop-opener ERE
+#   $2 — risky-call ERE
+# Heuristic, brace-depth based: a loop is "active" from the `{` on its opener
+# line until the matching `}`. Counting for a line uses the loop nesting
+# established by PRIOR lines (so the opener line itself is not "inside" itself).
+# High false-positive by design — the caller reports it as info, never gates.
+cm_perf_scan() {
+  # Patterns are passed via the environment, not awk -v: -v applies backslash
+  # escape processing that would corrupt regex metacharacters. ENVIRON is raw.
+  CM_PS_LOOP="$1" CM_PS_RISK="$2" awk '
+    BEGIN { loopre = ENVIRON["CM_PS_LOOP"]; riskre = ENVIRON["CM_PS_RISK"] }
+    {
+      is_loop = ($0 ~ loopre)
+      is_risk = ($0 ~ riskre)
+      if (is_risk && top > 0) count++       # risky call inside a loop
+      if (is_loop && top > 0) count++       # nested loop (O(n^2) candidate)
+
+      pushed = 0
+      n = length($0)
+      for (i = 1; i <= n; i++) {
+        c = substr($0, i, 1)
+        if (c == "{") {
+          depth++
+          if (is_loop && !pushed) { loopdepth[++top] = depth; pushed = 1 }
+        } else if (c == "}") {
+          if (top > 0 && depth == loopdepth[top]) top--
+          if (depth > 0) depth--
+        }
+      }
+    }
+    END { print count + 0 }
+  '
+}
+
+# ---------------------------------------------------------------------------
 # Metric registry — single source of truth for dispatch  (RM-148)
 # ---------------------------------------------------------------------------
 

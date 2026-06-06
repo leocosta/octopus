@@ -723,6 +723,46 @@ t13_adapter_emits_hotspots() {
 check "hotspots: cm_adapter_csharp_hotspots emits hotspots:<n>" t13_adapter_emits_hotspots
 
 # ---------------------------------------------------------------------------
+# SECTION 14 — RM-150 perf_risk scanner (info-only)
+# ---------------------------------------------------------------------------
+# Purpose: a static, heuristic proxy for load risk — risky calls inside loops,
+# nested loops (O(n²)), allocations inside loops. High false-positive by nature,
+# so it is reported as `info` and never gates. The brace-depth scanner core is
+# fixture-tested; the adapter supplies per-language patterns.
+echo "=== Section 14: RM-150 perf_risk scanner ==="
+
+t14_perf_scan_counts() {
+  # await/.find inside a loop (1) + nested loop (1) + new X inside a loop (1) = 3.
+  local n
+  n="$(printf '%s\n' \
+    'for (const u of users) {' \
+    '  await db.find(u.id);' \
+    '  for (const t of u.tags) {' \
+    '    new Thing();' \
+    '  }' \
+    '}' \
+    | cm_perf_scan '(^|[^A-Za-z])(for|foreach|while)([^A-Za-z]|$)|[.](forEach|map)[(]' 'await|[.]find[(]|new [A-Z]')"
+  [[ "$n" == "3" ]]
+}
+check "perf: cm_perf_scan counts risk-in-loop + nested-loop + alloc-in-loop" t14_perf_scan_counts
+
+t14_perf_scan_outside_loop_zero() {
+  # risky calls with no enclosing loop must not count.
+  local n
+  n="$(printf '%s\n' 'await db.find(1);' 'new Thing();' \
+    | cm_perf_scan '(^|[^A-Za-z])(for|while)([^A-Za-z]|$)' 'await|new [A-Z]')"
+  [[ "$n" == "0" ]]
+}
+check "perf: cm_perf_scan ignores risky calls outside any loop" t14_perf_scan_outside_loop_zero
+
+t14_perf_adapter_info_only() {
+  # Adapter emits perf_risk:<n>; registry marks it info (never gated).
+  grep -qE '^perf_risk:[0-9]+$' <<<"$(cm_adapter_typescript_perf_risk "$TS_FIX" 2>/dev/null)" &&
+  [[ "$(cm_metric_spec perf_risk)" == "info|perf_risk|" ]]
+}
+check "perf: adapter emits perf_risk:<n>, registry is info-only" t14_perf_adapter_info_only
+
+# ---------------------------------------------------------------------------
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]
