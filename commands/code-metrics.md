@@ -19,8 +19,11 @@ invoked **only** on a threshold breach.
 ## Usage
 
 ```
-/octopus:code-metrics [--stack <csharp|typescript>] [--metric <name>] [--verbose]
+/octopus:code-metrics [--stack <csharp|typescript>] [--metric <name>] [--verbose] [--emit-baseline]
 ```
+
+`--emit-baseline` prints the flat `baseline.json` from this run (used by the
+writer-Action; not needed interactively).
 
 Invoke the `code-metrics` skill, which runs `octopus code-metrics`. See
 `skills/code-metrics/SKILL.md` for the full metric set, threshold config,

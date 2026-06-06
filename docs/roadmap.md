@@ -316,11 +316,13 @@ _Proposed (added 2026-06-06). Seeds from [research](research/2026-06-06-code-met
 | RM-149 | v3 hotspots — churn × complexity (new git-history capability) | v3 / decay |
 | RM-150 | v3 perf-proxy — static performance-risk heuristic for high-traffic paths | v3 / load risk |
 
+_**Cluster 26 implemented** on `feat/code-metrics-expansion` (pending PR/merge). All three RMs landed as 11 new metrics (9 v2 + hotspots + perf_risk) on both stacks. Key decisions resolved in build: the hardcoded dispatch `case` became a data-driven registry (`cm_metric_spec`: direction|block|field); all new metrics are deterministic shell heuristics (grep/awk/lizard/git), ratchet-only by default; `perf_risk` is `info`-only (never gated); dead-code counts only *marked* dead code; the writer-Action now produces `baseline.json` via `octopus code-metrics --emit-baseline` (shared adapters, zero YAML re-implementation) and runs with `fetch-depth: 0` for the hotspots churn window. Suite: `test_code_metrics` 95/0 (Sections 10–15 added)._
+
 ### RM-148 — v2 metric pack: debt markers + readability counters + doc coverage
 
 - **Priority:** 🔴 High
 - **Effort:** medium
-- **Status:** proposed
+- **Status:** implemented
 - **Added:** 2026-06-06
 - **Research:** [code-metrics-expansion](research/2026-06-06-code-metrics-expansion.md)
 
@@ -352,7 +354,7 @@ counters the team cannot contest, which is the point of the B2 pain.
 
 - **Priority:** 🟡 Medium
 - **Effort:** medium
-- **Status:** proposed
+- **Status:** implemented
 - **Added:** 2026-06-06
 - **Research:** [code-metrics-expansion](research/2026-06-06-code-metrics-expansion.md)
 
@@ -369,7 +371,7 @@ git-history infrastructure, so it is split out of the v2 pack rather than blocki
 
 - **Priority:** 🟡 Medium
 - **Effort:** high
-- **Status:** proposed
+- **Status:** implemented
 - **Added:** 2026-06-06
 - **Research:** [code-metrics-expansion](research/2026-06-06-code-metrics-expansion.md)
 

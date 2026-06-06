@@ -1,11 +1,11 @@
 ---
 title: code-metrics
-description: "Leitura local e não-bloqueante no PR-open de como sua mudança move cobertura, complexidade ciclomática, tamanho de módulo e ciclos de dependência — reportada como um delta duplo (vs. o baseline por-merge e vs. seu main local). Os números vêm do tooling do seu stack a ≈0 tokens; um modelo de baixo custo só é acionado quando uma métrica cruza um threshold."
+description: "Leitura local e não-bloqueante no PR-open de como sua mudança move um catálogo de métricas determinísticas — estrutura (cobertura, complexidade, tamanho de módulo, ciclos), dívida e legibilidade (contagens de TODO/supressões, aninhamento, params, magic numbers, doc coverage), decay (hotspots churn × complexidade) e um proxy estático de risco de carga — reportada como delta duplo. Os números vêm do tooling do seu stack a ≈0 tokens; um modelo de baixo custo só é acionado quando uma métrica cruza um threshold."
 ---
 
-`code-metrics` te diz o que sua mudança fez com os números — cobertura,
-complexidade ciclomática, tamanho de módulo, ciclos no grafo de dependências — no
-único momento em que você ainda pode agir barato: antes de abrir o PR.
+`code-metrics` te diz o que sua mudança fez com os números — estrutura, dívida,
+legibilidade, decay, risco de carga — no único momento em que você ainda pode
+agir barato: antes de abrir o PR.
 
 ## O que resolve
 
@@ -28,7 +28,31 @@ quebra.
 Os números são produzidos por um **adapter** por-stack que roda o tooling real da
 sua linguagem e normaliza a saída para um contrato comum. O adapter é
 selecionado automaticamente a partir do stack detectado no repo, então o mesmo
-comando e as mesmas quatro métricas funcionam entre linguagens.
+comando e o mesmo conjunto de métricas funcionam entre linguagens. Cada métrica é
+declarada num registry único (direção + onde fica seu threshold), então o
+catálogo cresce por uma linha mais uma função de adapter — nunca um novo ramo no
+orquestrador.
+
+## O que mede
+
+O catálogo é em camadas, pela pergunta que responde e pelo custo de respondê-la:
+
+- **Estrutura** — `coverage`, `complexity`, `module_size`, `dependency_cycles`.
+- **Dívida & legibilidade** — contagens de `TODO`/`FIXME`,
+  `@deprecated`/`[Obsolete]`, código morto marcado e **supressões** de
+  linter/compilador; mais `nesting_depth`, `param_count` médio, `magic_numbers`,
+  `lint_density` e `doc_coverage`. São os sinais baratos e objetivos que o time
+  não tem como contestar — o ponto de medir legibilidade com contadores em vez de
+  uma nota subjetiva.
+- **Decay** — `hotspots`: os arquivos que mudam muito *e* são complexos (churn ×
+  complexidade ciclomática), onde o risco de fato se concentra ao longo do tempo.
+- **Risco de carga** — `perf_risk`: um proxy estático de queries/alocações dentro
+  de loops e loops aninhados. É heurístico e de alto falso-positivo por natureza,
+  então é reportado como **info** — exposto, nunca como gate.
+
+Toda métrica é uma heurística determinística de shell (grep / awk / lizard / git)
+e **ratchet-only por padrão**, então um repo legado nunca nasce vermelho: só uma
+regressão *nova* no seu branch é sinalizada.
 
 Ele reporta um **delta duplo** por métrica:
 
@@ -43,23 +67,25 @@ caminho de leitura nunca o escreve.
 
 Os thresholds são **ratchet por padrão** — uma métrica não pode regredir contra
 o baseline — com alvos **absolutos** opcionais somados no `.octopus.yml`
-(`coverage.min`, `complexity.max`, `module_size.max`,
-`dependencies.cycles_allowed`). Um campo sem alvo configurado continua no
-ratchet. Só quando uma métrica cruza seu threshold é que a skill aciona um modelo
-de baixo custo para ler a mudança ofensora, explicar por que o número se moveu e
-sugerir um fix. Sem quebra, sem chamada de modelo — o contrato de custo que faz
-valer a pena rodar em todo PR.
+(`coverage.min`, `complexity.max`, `suppressions.max`, `nesting_depth.max`,
+`hotspots.max`, etc.; `perf_risk` não tem). Um campo sem alvo configurado
+continua no ratchet. Só quando uma métrica *com gate* cruza seu threshold é que a
+skill aciona um modelo de baixo custo para ler a mudança ofensora, explicar por
+que o número se moveu e sugerir um fix. Sem quebra, sem chamada de modelo — o
+contrato de custo que faz valer a pena rodar em todo PR.
 
 ## Uso & parâmetros
 
 ```
-octopus code-metrics [--stack <id>] [--against <ref>]
+octopus code-metrics [--stack <id>] [--metric <name>] [--verbose] [--emit-baseline]
 ```
 
 | Flag | O que faz | Padrão |
 |---|---|---|
 | `--stack <id>` | Força um adapter de stack (`csharp`, `typescript`) em vez de auto-detectar. | auto-detectado |
-| `--against <ref>` | O ref local usado como comparador "vs. main". | `main` |
+| `--metric <name>` | Reporta uma única métrica em vez do catálogo todo. | todas |
+| `--verbose` | Mostra a saída crua do tooling junto do resumo. | off |
+| `--emit-baseline` | Imprime o `baseline.json` plano desta rodada (usado pela writer-Action). | off |
 
 A rodada numérica é sempre sem modelo; o passo de curadoria dispara apenas numa
 quebra de threshold, no modelo de baixo custo do harness.
