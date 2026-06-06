@@ -272,6 +272,69 @@ cm_check_noop() {
 }
 
 # ---------------------------------------------------------------------------
+# RM-148 counter helpers — deterministic, fixture-testable
+# ---------------------------------------------------------------------------
+# These are the pure cores of the v2 pack metrics. Adapters feed them language
+# specifics (file extensions, grep patterns); the heuristic lives here once.
+
+# Common build/vendor dirs that must never count toward source metrics.
+CM_PRUNE_DIRS=(--exclude-dir=node_modules --exclude-dir=obj --exclude-dir=bin
+  --exclude-dir=.git --exclude-dir=dist --exclude-dir=.next --exclude-dir=.claude)
+
+# Count source lines matching an ERE under a path (file or dir), pruning
+# build/vendor dirs. A line with multiple matches counts once (line-granular).
+#   $1   — extended regex
+#   $2   — path (file or directory)
+#   $3.. — optional extra grep args (e.g. --include='*.cs' to scope a language)
+# Echoes the count (0 for an absent path).
+cm_count_matches() {
+  local ere="$1" path="$2"; shift 2
+  [[ -e "$path" ]] || { echo 0; return 0; }
+  grep -rIE "${CM_PRUNE_DIRS[@]}" "$@" "$ere" "$path" 2>/dev/null | wc -l | tr -d ' '
+}
+
+# Count "magic numbers" on stdin: numeric literals that are not 0/1/-1, not part
+# of an identifier, not inside a string, and not on a named-constant declaration
+# line (const/readonly/enum/final/#define). Heuristic — strings and comments are
+# stripped line-wise before token extraction.
+# Reads stdin, echoes the count.
+cm_magic_numbers() {
+  sed -E -e 's#//.*$##' -e 's/"[^"]*"//g' -e "s/'[^']*'//g" \
+    | grep -vE '(^|[^A-Za-z_])(const|readonly|enum|final)([^A-Za-z_]|$)|#define' \
+    | grep -oE '(^|[^A-Za-z0-9_.])-?[0-9]+(\.[0-9]+)?' \
+    | grep -oE '\-?[0-9]+(\.[0-9]+)?' \
+    | grep -vxE '\-?[01]' \
+    | wc -l | tr -d ' '
+}
+
+# Maximum brace-nesting depth on stdin (char-by-char running max of '{' minus
+# '}'). Heuristic — braces inside strings/comments are not discounted.
+# Reads stdin, echoes the deepest level (0 if none).
+cm_max_nesting() {
+  awk '
+    {
+      n = length($0)
+      for (i = 1; i <= n; i++) {
+        ch = substr($0, i, 1)
+        if (ch == "{") { depth++; if (depth > max) max = depth }
+        else if (ch == "}") { if (depth > 0) depth-- }
+      }
+    }
+    END { print max + 0 }
+  '
+}
+
+# Documentation-coverage percentage from two counts (pure arithmetic).
+#   $1 — documented public symbols
+#   $2 — total public symbols
+# total <= 0 → 100.0 (no public surface ⇒ nothing undocumented).
+cm_doc_ratio() {
+  awk -v d="$1" -v t="$2" 'BEGIN {
+    if (t + 0 <= 0) { print "100.0" } else { printf "%.1f", (d / t) * 100 }
+  }'
+}
+
+# ---------------------------------------------------------------------------
 # Metric registry — single source of truth for dispatch  (RM-148)
 # ---------------------------------------------------------------------------
 

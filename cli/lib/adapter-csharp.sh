@@ -246,11 +246,97 @@ PYEOF
   echo "dependency_cycles:${cycles:-0}"
 }
 
-# Run all four C# metrics and print one line per metric.
+# ---------------------------------------------------------------------------
+# RM-148 v2 pack — debt markers + readability counters + doc coverage
+# ---------------------------------------------------------------------------
+# All deterministic grep/awk/lizard heuristics scoped to *.cs. Counters reuse
+# the pure helpers in code-metrics-lib.sh; the adapter supplies C# patterns.
+
+# Concatenate all C# source files to stdin (pruned), for the stdin-based helpers.
+cm_cs_source_cat() {
+  local repo_root="${1:-$PWD}"
+  find "$repo_root" -name '*.cs' "${CM_CS_PRUNE_FIND[@]}" -print0 2>/dev/null \
+    | xargs -0 cat 2>/dev/null
+}
+
+# Debt markers — counts of pending-work / obsolete / dead / suppression lines.
+cm_adapter_csharp_todo_markers() {
+  echo "todo_markers:$(cm_count_matches '(^|[^A-Za-z])(TODO|FIXME|HACK|XXX)([^A-Za-z]|:|$)' "${1:-$PWD}" --include='*.cs')"
+}
+cm_adapter_csharp_deprecations() {
+  echo "deprecations:$(cm_count_matches '\[Obsolete' "${1:-$PWD}" --include='*.cs')"
+}
+cm_adapter_csharp_dead_code() {
+  echo "dead_code:$(cm_count_matches '#if[[:space:]]+false|//[[:space:]]*dead([[:space:]]|$)' "${1:-$PWD}" --include='*.cs')"
+}
+cm_adapter_csharp_suppressions() {
+  echo "suppressions:$(cm_count_matches '#pragma[[:space:]]+warning[[:space:]]+disable|\[SuppressMessage' "${1:-$PWD}" --include='*.cs')"
+}
+
+# Readability — deepest brace nesting and average parameter count.
+cm_adapter_csharp_nesting_depth() {
+  echo "nesting_depth:$(cm_cs_source_cat "${1:-$PWD}" | cm_max_nesting)"
+}
+cm_adapter_csharp_param_count() {
+  local repo_root="${1:-$PWD}"
+  if ! command -v lizard &>/dev/null; then echo "param_count:0"; return 0; fi
+  # lizard per-function rows carry a `name@<start>-<end>@<file>` location; PARAM
+  # is $4. The @start-end@ signature distinguishes function rows from the
+  # file-summary / totals rows (which have no @range@).
+  local avg
+  avg="$(lizard "$repo_root" --languages csharp "${CM_CS_PRUNE_LIZARD[@]}" 2>/dev/null \
+    | awk '/@[0-9]+-[0-9]+@/ { sum += $4; n++ } END { if (n>0) printf "%.1f", sum/n; else print 0 }')"
+  echo "param_count:${avg:-0}"
+}
+cm_adapter_csharp_magic_numbers() {
+  echo "magic_numbers:$(cm_cs_source_cat "${1:-$PWD}" | cm_magic_numbers)"
+}
+
+# lint_density — Roslyn build warnings per 1000 NLOC (best-effort; 0 if dotnet
+# or lizard absent, or the build does not run).
+cm_adapter_csharp_lint_density() {
+  local repo_root="${1:-$PWD}"
+  if ! command -v dotnet &>/dev/null || ! command -v lizard &>/dev/null; then
+    echo "lint_density:0"; return 0
+  fi
+  local warnings nloc
+  warnings="$( (cd "$repo_root" && dotnet build --no-restore 2>/dev/null) \
+    | grep -cE ': warning ' || echo 0)"
+  nloc="$(lizard "$repo_root" --languages csharp "${CM_CS_PRUNE_LIZARD[@]}" 2>/dev/null \
+    | awk 'NF>=8 && $1 ~ /^[0-9]+$/ && $NF ~ /^[0-9.]+$/ {v=$1} END{print (v==""?0:v)}')"
+  echo "lint_density:$(awk -v w="$warnings" -v n="$nloc" 'BEGIN{ if(n+0>0) printf "%.1f", w/n*1000; else print 0 }')"
+}
+
+# doc_coverage — public declarations carrying a /// doc comment on the line
+# above (blank lines tolerated between). Heuristic over the concatenated source.
+cm_adapter_csharp_doc_coverage() {
+  local counts
+  counts="$(cm_cs_source_cat "${1:-$PWD}" | awk '
+    /^[[:space:]]*\/\/\//             { doced=1; next }
+    /^[[:space:]]*public[[:space:]]/  { total++; if (doced) doc++; doced=0; next }
+    /^[[:space:]]*$/                  { next }
+    { doced=0 }
+    END { print (doc+0) "|" (total+0) }
+  ')"
+  echo "doc_coverage:$(cm_doc_ratio "${counts%|*}" "${counts#*|}")"
+}
+
+# Run all C# metrics and print one line per metric.
 cm_adapter_csharp_run() {
   local repo_root="${1:-$PWD}"
-  cm_adapter_csharp_coverage   "$repo_root"
-  cm_adapter_csharp_complexity "$repo_root"
+  # v1
+  cm_adapter_csharp_coverage    "$repo_root"
+  cm_adapter_csharp_complexity  "$repo_root"
   cm_adapter_csharp_module_size "$repo_root"
-  cm_adapter_csharp_deps       "$repo_root"
+  cm_adapter_csharp_deps        "$repo_root"
+  # v2 pack (RM-148)
+  cm_adapter_csharp_todo_markers  "$repo_root"
+  cm_adapter_csharp_deprecations  "$repo_root"
+  cm_adapter_csharp_dead_code     "$repo_root"
+  cm_adapter_csharp_suppressions  "$repo_root"
+  cm_adapter_csharp_nesting_depth "$repo_root"
+  cm_adapter_csharp_param_count   "$repo_root"
+  cm_adapter_csharp_magic_numbers "$repo_root"
+  cm_adapter_csharp_lint_density  "$repo_root"
+  cm_adapter_csharp_doc_coverage  "$repo_root"
 }

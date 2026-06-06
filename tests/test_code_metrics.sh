@@ -548,6 +548,140 @@ t10_info_never_gates() {
 check "registry: cm_check_noop reports info metric without ever gating" t10_info_never_gates
 
 # ---------------------------------------------------------------------------
+# SECTION 11 — RM-148 counter helpers (pure, fixture-tested)
+# ---------------------------------------------------------------------------
+# Purpose: the v2 pack metrics are deterministic shell heuristics. Their cores
+# are pure helpers tested here against inline fixtures; the adapters only feed
+# them language-specific file lists / grep patterns.
+echo "=== Section 11: RM-148 counter helpers ==="
+
+CM_SRC=$(mktemp -d); FIXTURES+=("$CM_SRC")
+mkdir -p "$CM_SRC/node_modules" "$CM_SRC/src"
+printf '// TODO: fix\nint x=2; // FIXME later\nok\n' > "$CM_SRC/src/a.ts"
+printf 'TODO everywhere\n' > "$CM_SRC/node_modules/vendor.ts"   # must be pruned
+
+t11_count_matches() {
+  # 2 matching lines under src/, node_modules pruned.
+  [[ "$(cm_count_matches 'TODO|FIXME' "$CM_SRC")" == "2" ]]
+}
+check "counter: cm_count_matches counts matches, prunes vendor dirs" t11_count_matches
+
+t11_count_matches_absent_path() {
+  [[ "$(cm_count_matches 'TODO' /nonexistent/path)" == "0" ]]
+}
+check "counter: cm_count_matches → 0 for absent path" t11_count_matches_absent_path
+
+t11_magic_numbers() {
+  # magic: 7 (line2), 2 and 3 (line5) = 3. 42 is a named const; 0/1 excluded;
+  # 8080 lives inside a string; identifiers like x2 are not literals.
+  local n
+  n="$(printf 'const MAX = 42;\nif (x == 7) {}\nfor (i=0;i<1;i++){}\nlet s = "port 8080";\narr[2] = 3;\n' | cm_magic_numbers)"
+  [[ "$n" == "3" ]]
+}
+check "counter: cm_magic_numbers excludes const/0/1/strings/identifiers" t11_magic_numbers
+
+t11_max_nesting() {
+  local d
+  d="$(printf 'fn(){\n if(a){\n  for(){\n   x;\n  }\n }\n}\n' | cm_max_nesting)"
+  [[ "$d" == "3" ]]
+}
+check "counter: cm_max_nesting returns deepest brace level" t11_max_nesting
+
+t11_max_nesting_flat() {
+  [[ "$(printf 'a;\nb;\n' | cm_max_nesting)" == "0" ]]
+}
+check "counter: cm_max_nesting → 0 with no braces" t11_max_nesting_flat
+
+t11_doc_ratio() {
+  [[ "$(cm_doc_ratio 3 4)" == "75.0" ]] && [[ "$(cm_doc_ratio 0 0)" == "100.0" ]]
+}
+check "counter: cm_doc_ratio percentage; empty surface → 100.0" t11_doc_ratio
+
+# ---------------------------------------------------------------------------
+# SECTION 12 — RM-148 adapters (C# + TS) over real fixtures
+# ---------------------------------------------------------------------------
+# Purpose: the grep/awk/lizard metrics run end-to-end against a fixture repo.
+# Values are asserted where the tool is deterministic and present (grep always;
+# lizard is installed → param_count is real). The output contract is one
+# `metric:value` line per function.
+echo "=== Section 12: RM-148 adapters (fixtures) ==="
+
+# shellcheck source=../cli/lib/adapter-csharp.sh
+source "$OCTOPUS_DIR/cli/lib/adapter-csharp.sh"
+# shellcheck source=../cli/lib/adapter-typescript.sh
+source "$OCTOPUS_DIR/cli/lib/adapter-typescript.sh"
+
+CS_FIX=$(mktemp -d); FIXTURES+=("$CS_FIX")
+cat > "$CS_FIX/Sample.cs" <<'EOF'
+public class Foo {
+    // TODO: refactor
+    [Obsolete]
+    public int Bar(int a, int b) {
+        if (a == 42) { return 0; }
+        #pragma warning disable CS1591
+        return b;
+    }
+}
+EOF
+
+t12_cs_todo()         { [[ "$(cm_adapter_csharp_todo_markers "$CS_FIX")"  == "todo_markers:1" ]]; }
+t12_cs_deprecations() { [[ "$(cm_adapter_csharp_deprecations "$CS_FIX")"  == "deprecations:1" ]]; }
+t12_cs_suppressions() { [[ "$(cm_adapter_csharp_suppressions "$CS_FIX")"  == "suppressions:1" ]]; }
+t12_cs_magic()        { [[ "$(cm_adapter_csharp_magic_numbers "$CS_FIX")" == "magic_numbers:1" ]]; }
+t12_cs_nesting()      { [[ "$(cm_adapter_csharp_nesting_depth "$CS_FIX")" == "nesting_depth:3" ]]; }
+t12_cs_param()        { [[ "$(cm_adapter_csharp_param_count "$CS_FIX")"   == "param_count:2.0" ]]; }
+t12_cs_doc()          { [[ "$(cm_adapter_csharp_doc_coverage "$CS_FIX")"  == "doc_coverage:0.0" ]]; }
+check "adapter(C#): todo_markers counts TODO"          t12_cs_todo
+check "adapter(C#): deprecations counts [Obsolete]"    t12_cs_deprecations
+check "adapter(C#): suppressions counts #pragma disable" t12_cs_suppressions
+check "adapter(C#): magic_numbers excludes 0, counts 42" t12_cs_magic
+check "adapter(C#): nesting_depth = 3"                 t12_cs_nesting
+check "adapter(C#): param_count = 2.0 (lizard)"        t12_cs_param
+check "adapter(C#): doc_coverage = 0.0 (no ///)"       t12_cs_doc
+
+t12_cs_run_emits_all() {
+  local out; out="$(cm_adapter_csharp_run "$CS_FIX" 2>/dev/null)"
+  for m in coverage complexity module_size dependency_cycles \
+           todo_markers deprecations dead_code suppressions \
+           nesting_depth param_count magic_numbers lint_density doc_coverage; do
+    grep -qE "^${m}:" <<<"$out" || return 1
+  done
+}
+check "adapter(C#): _run emits all 13 metric lines" t12_cs_run_emits_all
+
+TS_FIX=$(mktemp -d); FIXTURES+=("$TS_FIX")
+cat > "$TS_FIX/sample.ts" <<'EOF'
+/** documented */
+export function foo(x: number, y: number) {
+  // TODO later
+  if (x === 7) { return 0; }
+  return y;
+}
+export const bar = 1;
+EOF
+
+t12_ts_todo()    { [[ "$(cm_adapter_typescript_todo_markers "$TS_FIX")"  == "todo_markers:1" ]]; }
+t12_ts_magic()   { [[ "$(cm_adapter_typescript_magic_numbers "$TS_FIX")" == "magic_numbers:1" ]]; }
+t12_ts_nesting() { [[ "$(cm_adapter_typescript_nesting_depth "$TS_FIX")" == "nesting_depth:2" ]]; }
+t12_ts_param()   { [[ "$(cm_adapter_typescript_param_count "$TS_FIX")"   == "param_count:2.0" ]]; }
+t12_ts_doc()     { [[ "$(cm_adapter_typescript_doc_coverage "$TS_FIX")"  == "doc_coverage:50.0" ]]; }
+check "adapter(TS): todo_markers counts TODO"        t12_ts_todo
+check "adapter(TS): magic_numbers = 1 (7 only)"      t12_ts_magic
+check "adapter(TS): nesting_depth = 2"               t12_ts_nesting
+check "adapter(TS): param_count = 2.0 (lizard)"      t12_ts_param
+check "adapter(TS): doc_coverage = 50.0 (1 of 2 exports)" t12_ts_doc
+
+t12_ts_run_emits_all() {
+  local out; out="$(cm_adapter_typescript_run "$TS_FIX" 2>/dev/null)"
+  for m in coverage complexity module_size dependency_cycles \
+           todo_markers deprecations dead_code suppressions \
+           nesting_depth param_count magic_numbers lint_density doc_coverage; do
+    grep -qE "^${m}:" <<<"$out" || return 1
+  done
+}
+check "adapter(TS): _run emits all 13 metric lines" t12_ts_run_emits_all
+
+# ---------------------------------------------------------------------------
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]

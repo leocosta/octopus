@@ -123,11 +123,107 @@ cm_adapter_typescript_deps() {
   echo "dependency_cycles:${cycles:-0}"
 }
 
-# Run all four TypeScript metrics and print one line per metric.
+# ---------------------------------------------------------------------------
+# RM-148 v2 pack — debt markers + readability counters + doc coverage
+# ---------------------------------------------------------------------------
+# Deterministic grep/awk/lizard heuristics scoped to .ts/.tsx/.js/.jsx. Counters
+# reuse the pure helpers in code-metrics-lib.sh; the adapter supplies TS patterns.
+
+CM_TS_INCLUDE=(--include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx')
+
+# Concatenate all TS/JS source to stdin (pruned), for the stdin-based helpers.
+cm_ts_source_cat() {
+  local repo_root="${1:-$PWD}"
+  find "$repo_root" \( -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.jsx' \) \
+    -not -path '*/node_modules/*' -not -path '*/.next/*' \
+    -not -path '*/dist/*' -not -path '*/build/*' -print0 2>/dev/null \
+    | xargs -0 cat 2>/dev/null
+}
+
+# Debt markers.
+cm_adapter_typescript_todo_markers() {
+  echo "todo_markers:$(cm_count_matches '(^|[^A-Za-z])(TODO|FIXME|HACK|XXX)([^A-Za-z]|:|$)' "${1:-$PWD}" "${CM_TS_INCLUDE[@]}")"
+}
+cm_adapter_typescript_deprecations() {
+  echo "deprecations:$(cm_count_matches '@deprecated' "${1:-$PWD}" "${CM_TS_INCLUDE[@]}")"
+}
+cm_adapter_typescript_dead_code() {
+  echo "dead_code:$(cm_count_matches '//[[:space:]]*dead([[:space:]]|$)|eslint-disable.*no-unused' "${1:-$PWD}" "${CM_TS_INCLUDE[@]}")"
+}
+cm_adapter_typescript_suppressions() {
+  echo "suppressions:$(cm_count_matches 'eslint-disable|@ts-ignore|@ts-nocheck' "${1:-$PWD}" "${CM_TS_INCLUDE[@]}")"
+}
+
+# Readability.
+cm_adapter_typescript_nesting_depth() {
+  echo "nesting_depth:$(cm_ts_source_cat "${1:-$PWD}" | cm_max_nesting)"
+}
+cm_adapter_typescript_param_count() {
+  local repo_root="${1:-$PWD}"
+  if ! command -v lizard &>/dev/null; then echo "param_count:0"; return 0; fi
+  # lizard per-function rows carry a `name@<start>-<end>@<file>` location; PARAM
+  # is $4. The @start-end@ signature distinguishes function rows from the
+  # file-summary / totals rows.
+  # Cover both .js and .ts: lizard treats TypeScript as a distinct language, so
+  # `--languages javascript` alone analyses 0 files in a .ts-only repo.
+  local avg
+  avg="$(lizard "$repo_root" --languages javascript --languages typescript \
+    --exclude "*/node_modules/*" --exclude "*/.next/*" \
+    --exclude "*/dist/*" --exclude "*/build/*" 2>/dev/null \
+    | awk '/@[0-9]+-[0-9]+@/ { sum += $4; n++ } END { if (n>0) printf "%.1f", sum/n; else print 0 }')"
+  echo "param_count:${avg:-0}"
+}
+cm_adapter_typescript_magic_numbers() {
+  echo "magic_numbers:$(cm_ts_source_cat "${1:-$PWD}" | cm_magic_numbers)"
+}
+
+# lint_density — eslint findings per 1000 NLOC (best-effort; 0 if node/eslint
+# or lizard absent, or eslint is not configured).
+cm_adapter_typescript_lint_density() {
+  local repo_root="${1:-$PWD}"
+  if ! command -v node &>/dev/null || ! command -v lizard &>/dev/null; then
+    echo "lint_density:0"; return 0
+  fi
+  local findings nloc
+  findings="$( (cd "$repo_root" && npx --no-install eslint . --format unix 2>/dev/null) \
+    | grep -cE ': (warning|error)' || echo 0)"
+  nloc="$(lizard "$repo_root" --languages javascript --languages typescript \
+    --exclude "*/node_modules/*" --exclude "*/.next/*" \
+    --exclude "*/dist/*" --exclude "*/build/*" 2>/dev/null \
+    | awk '/@[0-9]+-[0-9]+@/ { sum += $1 } END { print sum + 0 }')"
+  echo "lint_density:$(awk -v w="$findings" -v n="$nloc" 'BEGIN{ if(n+0>0) printf "%.1f", w/n*1000; else print 0 }')"
+}
+
+# doc_coverage — exported declarations carrying a /** … */ JSDoc above (blank
+# lines tolerated). Heuristic over the concatenated source.
+cm_adapter_typescript_doc_coverage() {
+  local counts
+  counts="$(cm_ts_source_cat "${1:-$PWD}" | awk '
+    /\*\//                              { doced=1; next }
+    /^[[:space:]]*export[[:space:]]/    { total++; if (doced) doc++; doced=0; next }
+    /^[[:space:]]*$/                    { next }
+    { doced=0 }
+    END { print (doc+0) "|" (total+0) }
+  ')"
+  echo "doc_coverage:$(cm_doc_ratio "${counts%|*}" "${counts#*|}")"
+}
+
+# Run all TypeScript metrics and print one line per metric.
 cm_adapter_typescript_run() {
   local repo_root="${1:-$PWD}"
-  cm_adapter_typescript_coverage   "$repo_root"
-  cm_adapter_typescript_complexity "$repo_root"
+  # v1
+  cm_adapter_typescript_coverage    "$repo_root"
+  cm_adapter_typescript_complexity  "$repo_root"
   cm_adapter_typescript_module_size "$repo_root"
-  cm_adapter_typescript_deps       "$repo_root"
+  cm_adapter_typescript_deps        "$repo_root"
+  # v2 pack (RM-148)
+  cm_adapter_typescript_todo_markers  "$repo_root"
+  cm_adapter_typescript_deprecations  "$repo_root"
+  cm_adapter_typescript_dead_code     "$repo_root"
+  cm_adapter_typescript_suppressions  "$repo_root"
+  cm_adapter_typescript_nesting_depth "$repo_root"
+  cm_adapter_typescript_param_count   "$repo_root"
+  cm_adapter_typescript_magic_numbers "$repo_root"
+  cm_adapter_typescript_lint_density  "$repo_root"
+  cm_adapter_typescript_doc_coverage  "$repo_root"
 }
