@@ -71,6 +71,8 @@ absolute floor or ceiling.
 quality_metrics:
   coverage:
     min: 80          # absolute floor; ratchet applies if below this
+    test_filter: "Category!=Integration"   # (C#) dotnet test --filter; e.g. unit-only
+    settings: api/coverage.settings.xml     # (C#) dotnet-coverage settings (scope/excludes)
   complexity:
     max: 10          # absolute ceiling per function
   module_size:
@@ -78,6 +80,12 @@ quality_metrics:
   dependencies:
     cycles_allowed: 0
 ```
+
+`coverage.test_filter` and `coverage.settings` are **string** fields (not numeric
+thresholds). They let a repo run coverage over a subset — e.g. unit tests only,
+leaving slow e2e/integration tests as a separate CI gate — and scope the
+dotnet-coverage report to production assemblies (excluding generated code such as
+EF migrations). They are honoured by the C# adapter; absent fields are no-ops.
 
 Precedence order: workspace → personal → **project (wins)**. This mirrors the
 rules-layer precedence (RM-067/069): the committed repo state is authoritative
@@ -138,7 +146,9 @@ A single overwritten snapshot was chosen over append-only history because:
 
 The stack-agnostic metric contract is implemented per stack. v1 ships:
 
-- **C#** (`stack-csharp` bundle): coverage via `coverlet` → Cobertura XML;
+- **C#** (`stack-csharp` bundle): coverage via `dotnet-coverage` → Cobertura XML
+  (falls back to the `coverlet` XPlat collector when absent — dotnet-coverage's
+  binary instrumentation is far faster on large/async-heavy suites);
   complexity + module_size via `lizard`; dependency cycles via `dotnet list
   reference` + cycle detection (thinner than TS — no free `madge` equivalent
   for C# assembly graphs; project-reference cycles only in v1).

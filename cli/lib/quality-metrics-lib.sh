@@ -74,7 +74,10 @@ qm_override() {
 # The workspace layer is new work not present in kr_field: it reads
 # $OCTOPUS_WORKSPACE_PATH/.octopus.yml when that variable is set, consistent
 # with RM-069. QM_WORKSPACE_YML takes precedence over the auto-resolved path.
-qm_field() {
+# Internal: resolve a field across layers (workspace < personal < project; project
+# wins), returning the raw string value with no validation. Shared by qm_field
+# (numeric) and qm_field_str (string).
+_qm_resolve() {
   local metric="$1" field="$2"
 
   # Resolve file paths (injectable via env for tests)
@@ -103,6 +106,13 @@ qm_field() {
   # Layer 3: project (wins)
   ov="$(qm_override "$project_yml" "$metric" "$field")"; [[ -n "$ov" ]] && val="$ov"
 
+  printf '%s\n' "$val"
+}
+
+qm_field() {
+  local metric="$1" field="$2" val
+  val="$(_qm_resolve "$metric" "$field")"
+
   # Security boundary: a resolved config value flows into arithmetic. Reject
   # anything non-numeric so attacker-controlled config (any layer) can never be
   # interpreted as awk program text downstream.
@@ -112,6 +122,19 @@ qm_field() {
   fi
 
   printf '%s\n' "$val"
+}
+
+# Resolve a string-valued config field (e.g. coverage.test_filter,
+# coverage.settings) across the same layers as qm_field, WITHOUT numeric
+# validation. Security: the returned value is attacker-influenceable (any config
+# layer), so callers MUST pass it to subprocesses as a single quoted argv element
+# — never interpolate it into shell or awk program text.
+qm_field_str() {
+  local v; v="$(_qm_resolve "$1" "$2")"
+  # Strip one layer of surrounding quotes (YAML quoted scalars like "a!=b").
+  v="${v%\"}"; v="${v#\"}"
+  v="${v%\'}"; v="${v#\'}"
+  printf '%s\n' "$v"
 }
 
 # ---------------------------------------------------------------------------
