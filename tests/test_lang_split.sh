@@ -36,6 +36,29 @@ check "backend bundle includes backend-patterns" grep -q 'backend-patterns' <<<"
 check "backend bundle excludes frontend-patterns" bash -c "! grep -q 'frontend-patterns' <<<\"$backend_skills\""
 check "backend bundle excludes test-component"    bash -c "! grep -q 'test-component' <<<\"$backend_skills\""
 
+# --- empty-prune: a manifest that dropped all skills/rules must not leave -----
+# stale symlinks behind. deliver_skills/deliver_rules wipe-and-rebuild the
+# target even when the set is empty (no early-return). Regression: 60 stale
+# symlinks lingered in repos because deliver_skills used to early-return on
+# an empty OCTOPUS_SKILLS.
+TMP=$(mktemp -d); PROJECT_ROOT="$TMP"; OCTOPUS_DIR="$SCRIPT_DIR"
+OCTOPUS_AGENTS=(claude); declare -A OCTOPUS_AGENT_OUTPUT=()
+load_manifest claude
+# seed a stale symlink in each target as if a previous setup left it
+mkdir -p "$TMP/.claude/skills" "$TMP/.claude/rules"
+ln -s /tmp/gone "$TMP/.claude/skills/ghost-skill"
+ln -s /tmp/gone "$TMP/.claude/rules/ghost-rule"
+
+OCTOPUS_SKILLS=(); OCTOPUS_RULES=()
+deliver_skills claude >/dev/null 2>&1
+deliver_rules  claude >/dev/null 2>&1
+
+check "empty skills prunes stale symlink" test ! -e "$TMP/.claude/skills/ghost-skill"
+check "empty skills prunes broken symlink" bash -c "! find '$TMP/.claude/skills' -name ghost-skill | grep -q ."
+check "empty rules prunes stale symlink"  test ! -e "$TMP/.claude/rules/ghost-rule"
+check "empty rules prunes broken symlink"  bash -c "! find '$TMP/.claude/rules' -name ghost-rule | grep -q ."
+rm -rf "$TMP"
+
 echo "-----------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]

@@ -36,3 +36,4 @@ tests/__pycache__/
 .opencode/package-lock.json
 .worktrees/
 bin/fzf/
+.claude/core/
