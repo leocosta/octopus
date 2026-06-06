@@ -62,7 +62,7 @@ check "command file exists" test -f "$CMD"
 check "command declares fleet-bootstrap" grep -qi "fleet-bootstrap" "$CMD"
 
 # --- bundle registration ------------------------------------------------
-check "registered in quality bundle (interim)" grep -q "fleet-bootstrap" "$OCTOPUS_DIR/bundles/quality.yml"
+check "registered in tech-lead bundle" grep -q "fleet-bootstrap" "$OCTOPUS_DIR/bundles/tech-lead.yml"
 
 echo "PASS=$PASS FAIL=$FAIL"
 test "$FAIL" -eq 0

@@ -130,8 +130,8 @@ A typical PR ready to merge:
 
 ## Taking quality granularly
 
-`quality` is also available as three focused sub-bundles for teams
-that want only part of the surface:
+`quality` is also available as two focused sub-bundles for teams
+that want only part of the code-quality surface:
 
 - **`quality-audits`** — the blocking gate layer: `audit-all` and
   its domain audit dependencies, plus the `architect` and `security`
@@ -139,11 +139,13 @@ that want only part of the surface:
 - **`quality-signals`** — signal-only (non-blocking) tools:
   `audit-grounding`, `audit-verification`, `audit-style`,
   `audit-config`, and `refactor-deepen`.
-- **`knowledge-ops`** — the knowledge-loop skills:
-  `knowledge-hygiene`, `knowledge-synthesize`, `knowledge-briefing`.
 
-`quality` itself remains the full composer of all three and is the
-right default for most production repos.
+`quality` itself is exactly those two combined — the code-quality
+axis — and is the right default for most production repos. Two
+neighbouring axes are deliberately **not** folded in: knowledge-base
+operations (`knowledge-hygiene`/`synthesize`/`briefing`) live in the
+separate **`knowledge-ops`** bundle, and cross-repo audit + fleet
+bootstrap in **`tech-lead`**.
 
 ## Composes with
 

@@ -127,8 +127,8 @@ Um PR típico pronto para merge:
 
 ## Usando o quality de forma granular
 
-`quality` também está disponível como três sub-bundles focados para times
-que querem apenas parte da superfície:
+`quality` também está disponível como dois sub-bundles focados para times
+que querem apenas parte da superfície de qualidade de código:
 
 - **`quality-audits`** — a camada de gate bloqueante: `audit-all` e
   suas dependências de auditoria de domínio, mais as roles `architect` e
@@ -136,11 +136,13 @@ que querem apenas parte da superfície:
 - **`quality-signals`** — ferramentas signal-only (não bloqueantes):
   `audit-grounding`, `audit-verification`, `audit-style`,
   `audit-config` e `refactor-deepen`.
-- **`knowledge-ops`** — as skills do knowledge loop:
-  `knowledge-hygiene`, `knowledge-synthesize`, `knowledge-briefing`.
 
-O `quality` em si permanece o composer completo dos três e é o padrão
-certo para a maioria dos repos em produção.
+O `quality` em si é exatamente esses dois combinados — o eixo de
+qualidade de código — e é o padrão certo para a maioria dos repos em
+produção. Dois eixos vizinhos ficam de fora de propósito: operações de
+knowledge base (`knowledge-hygiene`/`synthesize`/`briefing`) ficam no
+bundle separado **`knowledge-ops`**, e auditoria cross-repo + fleet
+bootstrap no **`tech-lead`**.
 
 ## Compõe com
 
