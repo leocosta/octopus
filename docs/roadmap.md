@@ -481,6 +481,33 @@ by hand-editing a fleet of workflow files.
 
 ---
 
+### RM-154 — release signing key rotated (old key retired, unrevocable)
+
+- **Priority:** 🟢 Low
+- **Effort:** trivial (record)
+- **Status:** done
+- **Added:** 2026-06-07
+
+The original release signing key (`A146CD8A4E3B132E7653DBF65BD2508E6319D976`,
+created 2026-04-19) had its passphrase lost — it existed only in the
+`OCTOPUS_RELEASE_GPG_PASSPHRASE` secret (write-only, unrecoverable) and not in a
+password manager. CI signing kept working (the secret unlocks it), but the
+maintainer can no longer operate it by hand — and crucially **cannot revoke
+it** (revocation needs the private key + passphrase).
+
+Rotated 2026-06-07 to a fresh key **`63C35E66917CE4540CD27592C8BA059A0322F3CD`**
+(RSA-4096, expires 2028-06-06, clean UID): new keypair generated, both release
+secrets updated, public key published to keys.openpgp.org (email-verified), and
+the writer-Action pin (`OCTOPUS_FPR`) bumped — shipped in **v1.84.2**, the first
+release signed by the new key.
+
+The old key is **retired, not revoked** (passphrase lost). Residual risk is low:
+the private key never leaked (it became *inaccessible*, not public), so no one
+can sign with it either. Lesson: store the signing passphrase in the password
+manager at generation time, not only in the CI secret.
+
+---
+
 ## In Progress
 
 _RM-088 (`audit-grounding`) shipped in v1.69.0. **Cluster 16** (manager-multiplier) is **complete on `feat/standards-lookup`** — all implemented & committed, pending merge/release: RM-089 (`mentor`), RM-090 (`onboarding`), RM-091 (`definition-of-done`), RM-092 (`standards`), RM-093 (team `continuous-learning`), RM-094 (`audit-fleet`), RM-095 (`fleet-bootstrap`), RM-096 (`tech-lead` bundle), RM-098 (`map-system` complete-mode deck). ADRs 002–006 recorded. See [research](research/2026-05-30-manager-multiplier.md)._

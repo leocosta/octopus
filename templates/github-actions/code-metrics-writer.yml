@@ -55,13 +55,14 @@ env:
   # Pinned release whose SIGNED tarball is fetched + GPG-verified below. Bump
   # deliberately on a vetted upgrade (must be >= v1.84.0 — the first release with
   # `--emit-baseline` — and a release the signing pipeline produced an .asc for).
-  OCTOPUS_VERSION: v1.84.1
+  OCTOPUS_VERSION: v1.84.2
   # Release signing key fingerprint — the OUT-OF-BAND trust anchor. Fetching a
   # key by its full fingerprint is the pin: a keyserver cannot serve a different
   # key for the same fingerprint. Verify this value independently before trusting
   # it (e.g. against the maintainer's published fingerprint), since it lives in
   # the consumer repo a compromise of Octopus cannot reach.
-  OCTOPUS_FPR: A146CD8A4E3B132E7653DBF65BD2508E6319D976
+  # (Rotated 2026-06-07; previous key A146CD8A…6319D976 retired — see RM-154.)
+  OCTOPUS_FPR: 63C35E66917CE4540CD27592C8BA059A0322F3CD
 
 jobs:
   write-baseline:
