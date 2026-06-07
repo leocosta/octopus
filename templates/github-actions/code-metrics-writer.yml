@@ -20,14 +20,13 @@
 #   2. Stack-specific tooling must be available in the runner:
 #      - C#:  dotnet + dotnet-coverage (global tool) + lizard (pip)
 #      - TS:  node + vitest + lizard (pip) + madge (npm)
-#   3. The Octopus CLI is fetched at a pinned commit SHA and run in-place.
-#      SUPPLY CHAIN: this runs third-party code in a contents:write job, so
-#      OCTOPUS_REF is PINNED to an immutable commit SHA (content-addressed — the
-#      strongest integrity anchor here) and the step verifies the checkout
-#      equals it. The official installer would be cleaner but, until the release
-#      public key is published for GPG verification (octopus RM-152), it would
-#      rely on mutable release assets — weaker than this SHA pin. Bump the SHA
-#      deliberately on a vetted upgrade; OCTOPUS_REPO must stay the trusted repo.
+#   3. The Octopus CLI is fetched as a GPG-SIGNED release tarball, verified, and
+#      run in-place. SUPPLY CHAIN: this runs third-party code in a contents:write
+#      job, so the signing key is fetched by full fingerprint (OCTOPUS_FPR — the
+#      out-of-band anchor) and `gpg --verify` must pass before the tarball is
+#      extracted (fail-closed). gpg is required on the runner. Bump OCTOPUS_VERSION
+#      deliberately to another signed release; verify OCTOPUS_FPR against the
+#      maintainer's published fingerprint.
 #   4. GITHUB_TOKEN needs contents:write for the orphan-ref push.
 #      The default token works if branch-protection does not block it.
 #   5. fetch-depth: 0 — the hotspots metric reads git history (churn).
@@ -53,14 +52,16 @@ concurrency:
   cancel-in-progress: false  # serialized: one writer at a time
 
 env:
-  OCTOPUS_REPO: https://github.com/leocosta/octopus
-  # PINNED to an immutable commit SHA (= tag v1.84.0). A git SHA is
-  # content-addressed — you cannot serve different bytes for the same SHA — so
-  # this is a STRONGER integrity anchor than the installer's version-tag +
-  # mutable release assets. Migrating to the official installer is gated on
-  # publishing the release public key for real GPG verification (octopus RM-152);
-  # until then the SHA pin is authoritative. Bump deliberately on a vetted upgrade.
-  OCTOPUS_REF: 98caae3f6a8e6fe541de7014870501d270b0fa44
+  # Pinned release whose SIGNED tarball is fetched + GPG-verified below. Bump
+  # deliberately on a vetted upgrade (must be >= v1.84.0 — the first release with
+  # `--emit-baseline` — and a release the signing pipeline produced an .asc for).
+  OCTOPUS_VERSION: v1.84.1
+  # Release signing key fingerprint — the OUT-OF-BAND trust anchor. Fetching a
+  # key by its full fingerprint is the pin: a keyserver cannot serve a different
+  # key for the same fingerprint. Verify this value independently before trusting
+  # it (e.g. against the maintainer's published fingerprint), since it lives in
+  # the consumer repo a compromise of Octopus cannot reach.
+  OCTOPUS_FPR: A146CD8A4E3B132E7653DBF65BD2508E6319D976
 
 jobs:
   write-baseline:
@@ -138,28 +139,23 @@ jobs:
       # -----------------------------------------------------------------------
       # Compute baseline.json via the shared adapters (single source of truth)
       # -----------------------------------------------------------------------
-      - name: Get Octopus CLI (pinned SHA)
+      - name: Fetch + verify Octopus CLI (signed release)
         run: |
-          # Defense-in-depth: refuse to fetch from anywhere but the trusted source.
-          case "$OCTOPUS_REPO" in
-            https://github.com/leocosta/octopus*) ;;
-            *) echo "Refusing to run untrusted OCTOPUS_REPO: $OCTOPUS_REPO" >&2; exit 1 ;;
-          esac
-          # Fetch the pinned commit and VERIFY the checkout equals the SHA. A git
-          # SHA is immutable (content-addressed), so this needs no trust in
-          # mutable release assets. `git clone --branch` cannot take a SHA, hence
-          # init + fetch + checkout FETCH_HEAD.
-          git init --quiet /tmp/octopus
-          git -C /tmp/octopus remote add origin "$OCTOPUS_REPO"
-          git -C /tmp/octopus fetch --depth 1 --quiet origin "$OCTOPUS_REF"
-          git -C /tmp/octopus checkout --quiet FETCH_HEAD
-          if printf '%s' "$OCTOPUS_REF" | grep -qE '^[0-9a-f]{40}$'; then
-            got="$(git -C /tmp/octopus rev-parse HEAD)"
-            [ "$got" = "$OCTOPUS_REF" ] \
-              || { echo "Pin mismatch: got $got, expected $OCTOPUS_REF" >&2; exit 1; }
-          else
-            echo "OCTOPUS_REF must be a 40-char commit SHA (got: $OCTOPUS_REF)" >&2; exit 1
-          fi
+          # 1. Fetch the signing key by its FULL fingerprint — the fingerprint is
+          #    the pin (a keyserver cannot return a different key for it).
+          gpg --keyserver hkps://keys.openpgp.org --recv-keys "$OCTOPUS_FPR"
+          gpg --list-keys "$OCTOPUS_FPR" >/dev/null \
+            || { echo "Octopus release key not retrievable: $OCTOPUS_FPR" >&2; exit 1; }
+          # 2. Download the SIGNED tarball + detached signature (public assets).
+          base="https://github.com/leocosta/octopus/releases/download/${OCTOPUS_VERSION}"
+          curl -fsSL -o /tmp/octopus.tar.gz     "$base/octopus-${OCTOPUS_VERSION}.tar.gz"
+          curl -fsSL -o /tmp/octopus.tar.gz.asc "$base/octopus-${OCTOPUS_VERSION}.tar.gz.asc"
+          # 3. Verify the signature — FAIL CLOSED on a bad/missing signature. No
+          #    unverified script is ever executed (we run cli/octopus.sh from the
+          #    verified tarball, not `curl install.sh | bash`).
+          gpg --verify /tmp/octopus.tar.gz.asc /tmp/octopus.tar.gz
+          mkdir -p /tmp/octopus
+          tar -xzf /tmp/octopus.tar.gz -C /tmp/octopus --strip-components=1
 
       - name: Compute baseline.json
         id: baseline
