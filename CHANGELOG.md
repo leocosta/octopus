@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.84.2] - 2026-06-07
+
+🔒 **Release signing key rotated.** The previous signing key's passphrase was lost — it lived only in the CI secret (write-only, unrecoverable), leaving the key **unrevocable** by hand; automated signing kept working, but the maintainer could no longer operate it. Rotated to a fresh RSA-4096 key (`63C35E66917CE4540CD27592C8BA059A0322F3CD`, expires 2028, clean UID): new keypair, updated release secrets, public key published to keys.openpgp.org (email-verified). The `code-metrics` writer-Action pin (`OCTOPUS_VERSION` → v1.84.2, `OCTOPUS_FPR` → the new fingerprint) is bumped together so consumers verify the v1.84.2 tarball — the first release signed by the new key. The old key is **retired, not revoked** (its private half never leaked — it became inaccessible, not public). See RM-154.
+
 ## [1.84.1] - 2026-06-06
 
 🐛 The `code-metrics` writer-Action shipped in v1.84.0 pinned the Octopus CLI to **v1.83.0's** commit — which has no `--emit-baseline` — so the generated baseline would have failed; the pin is corrected to v1.84.0. 🔒 A brief switch to the official installer was **reverted** after a security review: a version tag + mutable release assets is a weaker integrity anchor than a content-addressed commit SHA, so the writer keeps the SHA-pinned clone (now fail-closed on a non-SHA ref) until the release public key is published for real GPG verification. 📝 The public docs site gains a **full per-metric reference table** (EN + pt-br) — all 15 metrics with layer, direction, what each measures, per-stack tooling, and the optional `.octopus.yml` threshold key, plus heuristic caveats. Follow-ups recorded: RM-151 (`perf_risk` Allman-brace), RM-152 (publish release public key), RM-153 (setup stamps the writer pin at delivery).
