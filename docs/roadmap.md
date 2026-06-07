@@ -316,6 +316,8 @@ _Proposed (added 2026-06-06). Seeds from [research](research/2026-06-06-code-met
 | RM-149 | v3 hotspots — churn × complexity (new git-history capability) | v3 / decay |
 | RM-150 | v3 perf-proxy — static performance-risk heuristic for high-traffic paths | v3 / load risk |
 | RM-151 | `perf_risk` — detect loops with the brace on the next line (Allman) | follow-up / fix |
+| RM-152 | Publish the release public signing key for turnkey GPG verify in CI | follow-up / security |
+| RM-153 | Setup stamps the writer-Action's `OCTOPUS_REF` at delivery (kill the hardcoded version) | follow-up / delivery |
 
 _**Cluster 26 implemented** on `feat/code-metrics-expansion` (#191, pending merge). All three RMs landed as 11 new metrics (9 v2 + hotspots + perf_risk) on both stacks. Key decisions resolved in build: the hardcoded dispatch `case` became a data-driven registry (`cm_metric_spec`: direction|block|field); all new metrics are deterministic shell heuristics (grep/awk/lizard/git), ratchet-only by default; `perf_risk` is `info`-only (never gated); dead-code counts only *marked* dead code; the writer-Action now produces `baseline.json` via `octopus code-metrics --emit-baseline` (shared adapters, zero YAML re-implementation) and runs with `fetch-depth: 0` for the hotspots churn window. Suite: `test_code_metrics` 95/0 (Sections 10–15 added)._
 
@@ -406,6 +408,66 @@ Add a C# Allman fixture to `test_code_metrics.sh`.
 
 **Rationale:** Without this, `perf_risk` is dead weight for the entire .NET
 fleet — the stack the metric most needs to serve (high-traffic APIs).
+
+---
+
+### RM-152 — publish the release public signing key (turnkey CI GPG verify)
+
+- **Priority:** 🟡 Medium
+- **Effort:** low
+- **Status:** proposed
+- **Added:** 2026-06-06
+
+The `code-metrics-writer` template installs the CLI via the official installer
+pinned to a release tag; the installer always verifies the tarball SHA-256, but
+**GPG signature verification (maintainer authenticity) needs the public key in
+the runner's keyring** — and the project does not publish that key anywhere
+convenient today (the private key is a GH Actions secret; only the signing
+*pipeline* exists, RM-009/RM-020). So CI currently runs with
+`OCTOPUS_SKIP_SIGNATURE=1` (checksum-only), which defends against a corrupted
+download but not a repo/release compromise.
+
+Fix: publish the release **public** key (commit `octopus-release.pub` to the
+repo *and* attach it as a release asset), document
+`OCTOPUS_GPG_IMPORT_KEY`/`OCTOPUS_GPG_KEYRING`, and flip the writer template to
+import it + drop the skip. Surfaced configuring `tatame`'s writer: the
+pinned-installer switch is checksum-safe, but signature verification is the
+piece that closes the supply-chain gap the security review flagged.
+
+**Rationale:** Turns the installer's advertised signing into a guarantee
+consumers can actually use — the difference between "the download wasn't
+corrupted" and "the maintainer signed this".
+
+---
+
+### RM-153 — setup stamps the writer-Action's pin at delivery
+
+- **Priority:** 🟡 Medium
+- **Effort:** medium
+- **Status:** proposed
+- **Added:** 2026-06-06
+
+`code-metrics-writer.yml` hardcodes `OCTOPUS_REF` to a specific commit SHA. Two
+problems with hardcoding a version in a **distributed** template:
+
+- **Self-reference**: the template lives inside the repo it pins, so it can't
+  point at its own release (committing the SHA changes the SHA). It shipped in
+  v1.84.0 pinned to v1.83.0's SHA — and v1.83.0 had no `--emit-baseline`, so the
+  shipped writer was broken until manually bumped.
+- **Staleness**: every consumer repo is frozen at whatever SHA the template
+  carried, bumped only by hand, repo by repo.
+
+Fix: the **source** template carries a placeholder (e.g. `{{OCTOPUS_SHA}}`);
+`setup.sh`/`deliver_*` substitutes the SHA of the Octopus version *that repo is
+installed at* when it writes the file into the consumer repo, and `octopus
+update` re-stamps it. Each repo's writer then matches its own installed Octopus,
+with no self-reference and no manual drift. Pairs with RM-152 — once the public
+key is published, the stamped value can become a release tag with GPG verify
+instead of a bare SHA.
+
+**Rationale:** Removes the hardcoded-version smell at the root: a pinned
+integrity anchor that is *correct per repo* and maintained by the tooling, not
+by hand-editing a fleet of workflow files.
 
 ---
 

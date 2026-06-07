@@ -20,13 +20,14 @@
 #   2. Stack-specific tooling must be available in the runner:
 #      - C#:  dotnet + dotnet-coverage (global tool) + lizard (pip)
 #      - TS:  node + vitest + lizard (pip) + madge (npm)
-#   3. The Octopus CLI is cloned into the runner and executed (step below).
+#   3. The Octopus CLI is fetched at a pinned commit SHA and run in-place.
 #      SUPPLY CHAIN: this runs third-party code in a contents:write job, so
-#      OCTOPUS_REF is PINNED to an immutable commit SHA below (never a moving
-#      branch like `main` — a branch/tag can be force-moved under you). The
-#      clone step verifies the checked-out HEAD matches the pinned SHA. Bump it
-#      deliberately on a vetted upgrade. Overriding OCTOPUS_REPO points CI at
-#      arbitrary code — only ever set it to a trusted, pinned mirror.
+#      OCTOPUS_REF is PINNED to an immutable commit SHA (content-addressed — the
+#      strongest integrity anchor here) and the step verifies the checkout
+#      equals it. The official installer would be cleaner but, until the release
+#      public key is published for GPG verification (octopus RM-152), it would
+#      rely on mutable release assets — weaker than this SHA pin. Bump the SHA
+#      deliberately on a vetted upgrade; OCTOPUS_REPO must stay the trusted repo.
 #   4. GITHUB_TOKEN needs contents:write for the orphan-ref push.
 #      The default token works if branch-protection does not block it.
 #   5. fetch-depth: 0 — the hotspots metric reads git history (churn).
@@ -53,9 +54,13 @@ concurrency:
 
 env:
   OCTOPUS_REPO: https://github.com/leocosta/octopus
-  # PINNED to an immutable commit SHA (= tag v1.83.0). Never a moving branch.
-  # Bump deliberately on a vetted upgrade; the clone step verifies this SHA.
-  OCTOPUS_REF: 1322543082aa98e19c5d2373a50a5de9997d8522
+  # PINNED to an immutable commit SHA (= tag v1.84.0). A git SHA is
+  # content-addressed — you cannot serve different bytes for the same SHA — so
+  # this is a STRONGER integrity anchor than the installer's version-tag +
+  # mutable release assets. Migrating to the official installer is gated on
+  # publishing the release public key for real GPG verification (octopus RM-152);
+  # until then the SHA pin is authoritative. Bump deliberately on a vetted upgrade.
+  OCTOPUS_REF: 98caae3f6a8e6fe541de7014870501d270b0fa44
 
 jobs:
   write-baseline:
@@ -135,24 +140,25 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Get Octopus CLI (pinned SHA)
         run: |
-          # Defense-in-depth: refuse to clone+run from anywhere but the trusted
-          # source.
+          # Defense-in-depth: refuse to fetch from anywhere but the trusted source.
           case "$OCTOPUS_REPO" in
             https://github.com/leocosta/octopus*) ;;
             *) echo "Refusing to run untrusted OCTOPUS_REPO: $OCTOPUS_REPO" >&2; exit 1 ;;
           esac
-          # Fetch the exact pinned ref (works for a SHA, tag, or branch; GitHub
-          # serves reachable SHAs). `git clone --branch` cannot take a SHA, hence
+          # Fetch the pinned commit and VERIFY the checkout equals the SHA. A git
+          # SHA is immutable (content-addressed), so this needs no trust in
+          # mutable release assets. `git clone --branch` cannot take a SHA, hence
           # init + fetch + checkout FETCH_HEAD.
           git init --quiet /tmp/octopus
           git -C /tmp/octopus remote add origin "$OCTOPUS_REPO"
           git -C /tmp/octopus fetch --depth 1 --quiet origin "$OCTOPUS_REF"
           git -C /tmp/octopus checkout --quiet FETCH_HEAD
-          # Integrity: when OCTOPUS_REF is a full commit SHA, verify we got it.
           if printf '%s' "$OCTOPUS_REF" | grep -qE '^[0-9a-f]{40}$'; then
             got="$(git -C /tmp/octopus rev-parse HEAD)"
             [ "$got" = "$OCTOPUS_REF" ] \
               || { echo "Pin mismatch: got $got, expected $OCTOPUS_REF" >&2; exit 1; }
+          else
+            echo "OCTOPUS_REF must be a 40-char commit SHA (got: $OCTOPUS_REF)" >&2; exit 1
           fi
 
       - name: Compute baseline.json
