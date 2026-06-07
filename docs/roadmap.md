@@ -318,6 +318,8 @@ _Proposed (added 2026-06-06). Seeds from [research](research/2026-06-06-code-met
 | RM-151 | `perf_risk` — detect loops with the brace on the next line (Allman) | follow-up / fix |
 | RM-152 | Publish the release public signing key for turnkey GPG verify in CI | follow-up / security |
 | RM-153 | Setup stamps the writer-Action's `OCTOPUS_REF` at delivery (kill the hardcoded version) | follow-up / delivery |
+| RM-154 | Release signing key rotated (old key retired, unrevocable — passphrase lost) | follow-up / security |
+| RM-155 | `install.sh` verifies checksum + signature on the default GitHub path | follow-up / security |
 
 _**Cluster 26 implemented** on `feat/code-metrics-expansion` (#191, pending merge). All three RMs landed as 11 new metrics (9 v2 + hotspots + perf_risk) on both stacks. Key decisions resolved in build: the hardcoded dispatch `case` became a data-driven registry (`cm_metric_spec`: direction|block|field); all new metrics are deterministic shell heuristics (grep/awk/lizard/git), ratchet-only by default; `perf_risk` is `info`-only (never gated); dead-code counts only *marked* dead code; the writer-Action now produces `baseline.json` via `octopus code-metrics --emit-baseline` (shared adapters, zero YAML re-implementation) and runs with `fetch-depth: 0` for the hotspots churn window. Suite: `test_code_metrics` 95/0 (Sections 10–15 added)._
 
@@ -505,6 +507,30 @@ The old key is **retired, not revoked** (passphrase lost). Residual risk is low:
 the private key never leaked (it became *inaccessible*, not public), so no one
 can sign with it either. Lesson: store the signing passphrase in the password
 manager at generation time, not only in the CI secret.
+
+---
+
+### RM-155 — install.sh verifies checksum + signature on the default GitHub path
+
+- **Priority:** 🔴 High
+- **Effort:** low
+- **Status:** done
+- **Added:** 2026-06-07
+
+`resolve_checksum_url`/`resolve_signature_url` in `install.sh` only returned a
+URL when `OCTOPUS_INSTALL_ENDPOINT` was set. On the **default** path
+(`install.sh --version vX` straight from GitHub) they returned empty, so the
+whole verify block was skipped — **SHA-256 and GPG verification were silently
+inert, and `OCTOPUS_REQUIRE_SIGNATURE` was a no-op** (it lived inside the
+URL-gated block). A consumer running `install.sh --version vX
+OCTOPUS_REQUIRE_SIGNATURE=1` got a false sense of safety. Surfaced configuring
+`tatame`'s writer, which uses exactly that flow.
+
+Fix: both resolvers fall back to the GitHub release asset URL (mirroring
+`resolve_tarball_url`); `OCTOPUS_REQUIRE_SIGNATURE` also fails closed when no
+signature URL resolves at all. Verified live against v1.84.2: with the key →
+"Signature valid" + install; without the key → fail-closed, no install.
+Regression-locked by `tests/test_install_signature.sh`. Ships in v1.84.3.
 
 ---
 

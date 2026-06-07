@@ -158,6 +158,10 @@ resolve_checksum_url() {
   local version="$1"
   if [[ -n "${OCTOPUS_INSTALL_ENDPOINT:-}" ]]; then
     echo "${OCTOPUS_INSTALL_ENDPOINT%/}/$version/octopus-$version.sha256"
+  else
+    # GitHub release asset (uploaded by the signing pipeline). Without this the
+    # default path skipped checksum verification entirely.
+    echo "https://github.com/$GITHUB_REPO/releases/download/$version/octopus-$version.sha256"
   fi
 }
 
@@ -165,6 +169,11 @@ resolve_signature_url() {
   local version="$1"
   if [[ -n "${OCTOPUS_INSTALL_ENDPOINT:-}" ]]; then
     echo "${OCTOPUS_INSTALL_ENDPOINT%/}/$version/octopus-$version.tar.gz.asc"
+  else
+    # GitHub release asset. Without this the default `install.sh --version vX`
+    # path resolved no signature URL, so GPG verification (and
+    # OCTOPUS_REQUIRE_SIGNATURE) were silently inert on GitHub installs.
+    echo "https://github.com/$GITHUB_REPO/releases/download/$version/octopus-$version.tar.gz.asc"
   fi
 }
 
@@ -270,7 +279,8 @@ download_release() {
     exit 1
   fi
 
-  # Verify SHA256 when the endpoint publishes a companion checksum file.
+  # Verify SHA256 against the published checksum (GitHub release asset on the
+  # default path, or the configured endpoint).
   local checksum_url
   checksum_url="$(resolve_checksum_url "$version")"
   if [[ -n "$checksum_url" ]]; then
@@ -290,23 +300,25 @@ download_release() {
     DOWNLOADED_CHECKSUM="$(sha256sum "$tmpdir/octopus.tar.gz" | awk '{print $1}')"
   fi
 
-  # Verify GPG signature when the endpoint publishes a detached .asc file.
-  # SHA256 protects against transport corruption; the signature protects
-  # against a compromised mirror serving a tampered tarball with a matching
-  # checksum file. Both are required when present.
+  # Verify the tarball's detached GPG signature. SHA256 protects against
+  # transport corruption; the signature protects against a compromised mirror
+  # serving a tampered tarball with a matching checksum file.
   local signature_url
   signature_url="$(resolve_signature_url "$version")"
-  if [[ -n "$signature_url" ]]; then
-    # Probe for availability — some mirrors may not publish signatures yet.
-    # 'curl --fail' turns 404 into a non-zero exit.
-    if curl -fsSL "$signature_url" -o "$tmpdir/octopus.tar.gz.asc" 2>/dev/null; then
-      info "Verifying GPG signature..."
-      verify_signature "$tmpdir/octopus.tar.gz" "$tmpdir/octopus.tar.gz.asc" || exit 1
-      success "Signature valid."
-    elif [[ "${OCTOPUS_REQUIRE_SIGNATURE:-0}" == "1" ]]; then
-      error "No signature published at $signature_url (OCTOPUS_REQUIRE_SIGNATURE=1)."
+  if [[ -z "$signature_url" ]]; then
+    # No signature URL could be resolved (e.g. a custom endpoint that omits it).
+    if [[ "${OCTOPUS_REQUIRE_SIGNATURE:-0}" == "1" ]]; then
+      error "OCTOPUS_REQUIRE_SIGNATURE=1 but no signature URL could be resolved."
       exit 1
     fi
+  elif curl -fsSL "$signature_url" -o "$tmpdir/octopus.tar.gz.asc" 2>/dev/null; then
+    info "Verifying GPG signature..."
+    verify_signature "$tmpdir/octopus.tar.gz" "$tmpdir/octopus.tar.gz.asc" || exit 1
+    success "Signature valid."
+  elif [[ "${OCTOPUS_REQUIRE_SIGNATURE:-0}" == "1" ]]; then
+    # 'curl --fail' turned a 404 into a non-zero exit and the signature is required.
+    error "No signature published at $signature_url (OCTOPUS_REQUIRE_SIGNATURE=1)."
+    exit 1
   fi
 
   # Extract
