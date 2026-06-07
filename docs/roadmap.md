@@ -415,8 +415,18 @@ fleet — the stack the metric most needs to serve (high-traffic APIs).
 
 - **Priority:** 🟡 Medium
 - **Effort:** low
-- **Status:** proposed
+- **Status:** implemented
 - **Added:** 2026-06-06
+
+_**Implemented.** The signing key was published to **keys.openpgp.org**
+(out-of-band, per the spec — not committed to the repo) with the email verified
+so the UID is served. Fingerprint `A146CD8A4E3B132E7653DBF65BD2508E6319D976`. The
+writer-Action now fetches the key by full fingerprint (`gpg --recv-keys`),
+downloads the signed release tarball, runs `gpg --verify` **fail-closed**, and
+runs `cli/octopus.sh` from the verified tree — no `curl install.sh | bash` of an
+unverified script. Verified end-to-end against v1.84.1 ("Good signature"). The
+fingerprint is pinned in the consumer's workflow (the anchor a compromise of
+Octopus can't reach)._
 
 The `code-metrics-writer` template installs the CLI via the official installer
 pinned to a release tag; the installer always verifies the tarball SHA-256, but
