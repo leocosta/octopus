@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.84.3] - 2026-06-07
+
+🔒 **`install.sh` now verifies on the default GitHub path.** SHA-256 + GPG verification (and `OCTOPUS_REQUIRE_SIGNATURE`) only ran when `OCTOPUS_INSTALL_ENDPOINT` was set — a plain `install.sh --version vX` from GitHub resolved no checksum/signature URL and skipped both **silently**, making `OCTOPUS_REQUIRE_SIGNATURE=1` a no-op on the most common install path. Both URLs now fall back to the GitHub release asset (the `.sha256`/`.tar.gz.asc` the signing pipeline already publishes), and `OCTOPUS_REQUIRE_SIGNATURE` fails closed when no signature URL resolves. Verified against v1.84.2 (key present → valid; absent → fail-closed). See RM-155.
+
 ## [1.84.2] - 2026-06-07
 
 🔒 **Release signing key rotated.** The previous signing key's passphrase was lost — it lived only in the CI secret (write-only, unrecoverable), leaving the key **unrevocable** by hand; automated signing kept working, but the maintainer could no longer operate it. Rotated to a fresh RSA-4096 key (`63C35E66917CE4540CD27592C8BA059A0322F3CD`, expires 2028, clean UID): new keypair, updated release secrets, public key published to keys.openpgp.org (email-verified). The `code-metrics` writer-Action pin (`OCTOPUS_VERSION` → v1.84.2, `OCTOPUS_FPR` → the new fingerprint) is bumped together so consumers verify the v1.84.2 tarball — the first release signed by the new key. The old key is **retired, not revoked** (its private half never leaked — it became inaccessible, not public). See RM-154.
