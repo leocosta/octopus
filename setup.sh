@@ -96,13 +96,35 @@ OCTOPUS_WORKSPACE_PATH=""      # RM-069: path to shared workspace repo with rule
 # OCTOPUS_* arrays. Does NOT de-duplicate — that is expand_bundles()'s
 # responsibility (a bundle is a logical grouping; two bundles can legally
 # reference the same skill).
+# Map a legacy/renamed bundle name to its current equivalent. Kept in sync with
+# the CHANGELOG "Migration" notes; returns empty for names with no known alias.
+# Resilience over fidelity: a chained/merged rename points at the closest current
+# bundle (e.g. the removed quality-* presets all fold into `quality`).
+_bundle_alias() {
+  case "$1" in
+    knowledge-ops)                                              echo "knowledge" ;;
+    code-metrics|quality-audits|quality-signals|quality-metrics) echo "quality" ;;
+    *)                                                          echo "" ;;
+  esac
+}
+
 _load_bundle() {
   local name="$1"
   local file="$OCTOPUS_DIR/bundles/${name}.yml"
 
   if [[ ! -f "$file" ]]; then
-    echo "Error: unknown bundle '$name' (expected $file)" >&2
-    return 1
+    # A stale .octopus.yml must never abort setup. First try the rename alias
+    # map; if that resolves to a real bundle, use it and tell the user. Otherwise
+    # warn and skip — a removed/renamed/typo'd bundle is non-fatal.
+    local aliased; aliased="$(_bundle_alias "$name")"
+    if [[ -n "$aliased" && -f "$OCTOPUS_DIR/bundles/${aliased}.yml" ]]; then
+      echo "Note: bundle '$name' was renamed to '$aliased' — using '$aliased'. Update .octopus.yml to silence this." >&2
+      name="$aliased"
+      file="$OCTOPUS_DIR/bundles/${name}.yml"
+    else
+      echo "Warning: skipping unknown bundle '$name' (no bundles/${name}.yml) — update .octopus.yml." >&2
+      return 0
+    fi
   fi
 
   local parsed
