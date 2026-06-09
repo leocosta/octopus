@@ -64,7 +64,7 @@ hardcoded per-metric branching in the orchestrator.
 | `suppressions` | lower | `eslint-disable`/`@ts-ignore` · `#pragma warning disable`/`[SuppressMessage]` |
 | `nesting_depth` | lower | deepest brace level |
 | `param_count` | lower | avg parameters per function (lizard) |
-| `magic_numbers` | lower | numeric literals (excl 0/1/-1, named consts, strings) |
+| `magic_numbers` | lower | numeric literals (excl 0/1/-1, consts, enum bodies, attribute args, property inits, strings/comments, generated files) |
 | `lint_density` | lower | linter findings per 1000 NLOC (best-effort; 0 if absent) |
 | `doc_coverage` | higher | documented public/exported symbols ÷ total |
 
