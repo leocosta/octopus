@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.85.1] - 2026-06-09
+
+🐛 **`octopus setup`/`update` no longer aborts on a renamed or removed bundle.** A `.octopus.yml` written by an older Octopus — e.g. listing `knowledge-ops`, renamed to `knowledge` back in v1.83.0 — made the upgrade die with `error: knowledge-ops`, because `_load_bundle` returned non-zero on a missing bundle file and `setup.sh` runs under `set -e`. Config from an earlier version could brick the very upgrade meant to fix it (and, as a knock-on, the aborted setup never regenerated agent configs — so newly-shipped surfaces like the Copilot prompt files silently failed to appear). Loading is now resilient: a shared rename alias map (`knowledge-ops` → `knowledge`; `code-metrics`/`quality-audits`/`quality-signals`/`quality-metrics` → `quality`) resolves known renames in **both** the delivery path and the interactive picker, and any other unknown bundle is warned-and-skipped rather than fatal. 🧪 New `test_bundle_resilience` plus an updated `test_bundles` lock the non-fatal contract, alias resolution, and picker parity.
+
 ## [1.85.0] - 2026-06-09
 
 ✨ **GitHub Copilot now gets the Octopus workflow commands.** Copilot was configured with rules + MCP but never received `/octopus:*` — its manifest is `native_commands: false`, so the command files were skipped. A new capability-gated delivery path renders each `commands/*.md` as a Copilot **prompt file** under `.github/prompts/octopus-<name>.prompt.md` (frontmatter `mode: agent`, `$ARGUMENTS`→`${input}`), so an IDE (VS Code, Visual Studio, JetBrains) exposes `/octopus-pr-open`, `/octopus-release`, etc. The Copilot CLI keeps the existing `octopus <name>` text fallback (it has no prompt-file support yet — github/copilot-cli#618). Generated prompt files are git-ignored, like the other per-agent surfaces. Recorded as **ADR-011** (delivery is gated on a manifest capability, never on the agent name). (#199, RM-156)
