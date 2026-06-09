@@ -176,7 +176,7 @@ cm_adapter_typescript_param_count() {
   echo "param_count:${avg:-0}"
 }
 cm_adapter_typescript_magic_numbers() {
-  echo "magic_numbers:$(cm_ts_source_cat "${1:-$PWD}" | cm_magic_numbers)"
+  echo "magic_numbers:$(cm_ts_source_cat "${1:-$PWD}" | cm_magic_numbers typescript)"
 }
 
 # lint_density — eslint findings per 1000 NLOC (best-effort; 0 if node/eslint

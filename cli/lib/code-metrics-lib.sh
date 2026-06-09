@@ -302,13 +302,102 @@ cm_count_matches() {
 }
 
 # Count "magic numbers" on stdin: numeric literals that are not 0/1/-1, not part
-# of an identifier, not inside a string, and not on a named-constant declaration
-# line (const/readonly/enum/final/#define). Heuristic — strings and comments are
-# stripped line-wise before token extraction.
+# of an identifier, not inside a string or comment, and not in named-constant
+# context (const/readonly/enum/final/#define declarations + enum bodies for all
+# stacks; attribute args and auto-property initializers for C# only). Heuristic.
+#
+#   $1 — optional language: csharp | typescript | "" (generic, C-family)
+#
+# A stateful awk preprocessor blanks comments and string literals — crucially
+# across line boundaries, so multiline block comments (/* */), C# verbatim (@"…")
+# and raw ("""…""") strings, and TS template literals (`…`) no longer leak their
+# digits — then drops declaration/enum/attribute/property-initializer lines. The
+# cleaned stream feeds the same numeric-token extraction as before.
+#
+# Documented limitations: digits inside interpolation holes ($"{ x * 100 }") are
+# blanked with the string (minor undercount); hex/scientific/digit-separated
+# literals (0xFF, 1e10, 1_000_000) are not fully tokenised.
 # Reads stdin, echoes the count.
 cm_magic_numbers() {
-  sed -E -e 's#//.*$##' -e 's/"[^"]*"//g' -e "s/'[^']*'//g" \
-    | grep -vE '(^|[^A-Za-z_])(const|readonly|enum|final)([^A-Za-z_]|$)|#define' \
+  local lang="${1:-}"
+  awk -v lang="$lang" -v sq="'" '
+    # First pass per line: blank comments/strings, keeping cross-line state in
+    # `state` (block | str | verb | raw). Cleaned lines are buffered for the
+    # END pass so brace-tracking (enum bodies) sees string-free text.
+    {
+      line = $0; n = length(line); out = ""; i = 1
+      while (i <= n) {
+        c = substr(line, i, 1); c2 = substr(line, i + 1, 1)
+        if (state == "block") {                       # inside /* ... */
+          if (c == "*" && c2 == "/") { state = ""; out = out "  "; i += 2; continue }
+          out = out " "; i++; continue
+        }
+        if (state == "str") {                         # " ... " | '"'"' ... '"'"' | ` ... `
+          if (c == "\\") { out = out "  "; i += 2; continue }
+          if (c == delim) { state = ""; out = out " "; i++; continue }
+          out = out " "; i++; continue
+        }
+        if (state == "verb") {                        # C# @" ... " (""=literal quote)
+          if (c == "\"" && c2 == "\"") { out = out "  "; i += 2; continue }
+          if (c == "\"") { state = ""; out = out " "; i++; continue }
+          out = out " "; i++; continue
+        }
+        if (state == "raw") {                         # C# """ ... """ (run length rawlen)
+          if (c == "\"") {
+            j = i; cnt = 0
+            while (substr(line, j, 1) == "\"") { cnt++; j++ }
+            for (k = 0; k < cnt; k++) out = out " "
+            if (cnt >= rawlen) state = ""
+            i += cnt; continue
+          }
+          out = out " "; i++; continue
+        }
+        # state == "" (code)
+        if (c == "/" && c2 == "/") { while (i <= n) { out = out " "; i++ }; break }
+        if (c == "/" && c2 == "*") { state = "block"; out = out "  "; i += 2; continue }
+        if (lang == "csharp") {
+          if (c == "\"") {                            # raw string opens with >=3 quotes
+            j = i; cnt = 0
+            while (substr(line, j, 1) == "\"") { cnt++; j++ }
+            if (cnt >= 3) { state = "raw"; rawlen = cnt; for (k = 0; k < cnt; k++) out = out " "; i += cnt; continue }
+          }
+          if (c == "@" && c2 == "\"") { state = "verb"; out = out "  "; i += 2; continue }
+          if (substr(line, i + 2, 1) == "\"" &&
+              ((c == "$" && c2 == "@") || (c == "@" && c2 == "$"))) {
+            state = "verb"; out = out "   "; i += 3; continue
+          }
+        }
+        if (lang == "typescript" && c == "`") { state = "str"; delim = "`"; out = out " "; i++; continue }
+        if (c == "\"") { state = "str"; delim = "\""; out = out " "; i++; continue }
+        if (c == sq)   { state = "str"; delim = sq;  out = out " "; i++; continue }
+        out = out c; i++
+      }
+      buf[++cnt] = out
+    }
+    END {
+      depth = 0; inEnum = 0; pendingEnum = 0; enumLevel = 0
+      for (li = 1; li <= cnt; li++) {
+        L = buf[li]
+        drop = 0
+        # Language-agnostic named-constant context (both C# and TS have const/enum).
+        if (L ~ /(^|[^A-Za-z_])(const|readonly|final)([^A-Za-z_]|$)/ || L ~ /#define/) drop = 1
+        if (L ~ /(^|[^A-Za-z_])enum([^A-Za-z_]|$)/) { drop = 1; pendingEnum = 1 }
+        # C#-only context: a leading "[" is an attribute, not an array literal (TS),
+        # and `{ get; set; } =` is an auto-property default.
+        if (lang == "csharp") {
+          if (L ~ /^[ \t]*\[/) drop = 1                            # attribute line
+          if (L ~ /\{[ \t]*get;.*\}[ \t]*=/) drop = 1             # auto-property initializer
+        }
+        if (inEnum) drop = 1
+        if (!drop) print L
+        m = length(L)                                              # track braces for enum scope
+        for (p = 1; p <= m; p++) {
+          ch = substr(L, p, 1)
+          if (ch == "{") { depth++; if (pendingEnum) { inEnum = 1; enumLevel = depth; pendingEnum = 0 } }
+          else if (ch == "}") { if (inEnum && depth == enumLevel) inEnum = 0; if (depth > 0) depth-- }
+        }
+      }
+    }' \
     | grep -oE '(^|[^A-Za-z0-9_.])-?[0-9]+(\.[0-9]+)?' \
     | grep -oE '\-?[0-9]+(\.[0-9]+)?' \
     | grep -vxE '\-?[01]' \

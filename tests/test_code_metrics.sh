@@ -580,6 +580,62 @@ t11_magic_numbers() {
 }
 check "counter: cm_magic_numbers excludes const/0/1/strings/identifiers" t11_magic_numbers
 
+# Multiline-aware stripping + context exclusion (lang-parameterised). Each case
+# below would leak digits under the old line-wise sed; all must report 0.
+t11_magic_block_comment() {
+  # block comment spanning lines: license header digits must not count
+  [[ "$(printf '/*\n Copyright 2024 Acme\n build 1729 rev 42\n*/\n' | cm_magic_numbers csharp)" == "0" ]]
+}
+check "counter: cm_magic_numbers ignores /* */ block comments" t11_magic_block_comment
+
+t11_magic_verbatim_string() {
+  # C# verbatim string spanning lines (embedded SQL)
+  [[ "$(printf 'var sql = @"\n  SELECT * FROM t WHERE id = 42\n  LIMIT 100";\n' | cm_magic_numbers csharp)" == "0" ]]
+}
+check "counter: cm_magic_numbers ignores multiline verbatim @\"\"" t11_magic_verbatim_string
+
+t11_magic_raw_string() {
+  # C# 11 raw string literal spanning lines
+  [[ "$(printf 'var j = """\n { "port": 8080 }\n """;\n' | cm_magic_numbers csharp)" == "0" ]]
+}
+check "counter: cm_magic_numbers ignores raw \"\"\"...\"\"\" strings" t11_magic_raw_string
+
+t11_magic_enum_body() {
+  # enum members are named constants — the whole body is excluded
+  [[ "$(printf 'enum E\n{\n    A = 100,\n    B = 200,\n}\n' | cm_magic_numbers csharp)" == "0" ]]
+}
+check "counter: cm_magic_numbers ignores enum body members" t11_magic_enum_body
+
+t11_magic_attribute() {
+  # attribute args are not magic; a line starting with [ is excluded
+  [[ "$(printf '[Range(1, 100)]\n[MaxLength(255)]\n' | cm_magic_numbers csharp)" == "0" ]]
+}
+check "counter: cm_magic_numbers ignores attribute args" t11_magic_attribute
+
+t11_magic_property_init() {
+  [[ "$(printf 'public int Port { get; set; } = 8080;\n' | cm_magic_numbers csharp)" == "0" ]]
+}
+check "counter: cm_magic_numbers ignores auto-property initializers" t11_magic_property_init
+
+t11_magic_indexer_kept() {
+  # an indexer is NOT an attribute — arr[2] = 3 still yields two literals (2, 3)
+  [[ "$(printf 'arr[2] = 3;\n' | cm_magic_numbers csharp)" == "2" ]]
+}
+check "counter: cm_magic_numbers keeps indexer literals (not attributes)" t11_magic_indexer_kept
+
+t11_magic_ts_template() {
+  # TS template literal spanning lines
+  [[ "$(printf 'const s = `\n  port 8080\n  max 9999`;\n' | cm_magic_numbers typescript)" == "0" ]]
+}
+check "counter: cm_magic_numbers ignores TS template literals" t11_magic_ts_template
+
+t11_magic_ts_array_literal() {
+  # a leading [ is a C# attribute, but in TS/generic it's an array literal — its
+  # numbers must still count (the attribute exclusion is C#-only)
+  [[ "$(printf '  [12, 34],\n' | cm_magic_numbers typescript)" == "2" ]]
+}
+check "counter: cm_magic_numbers keeps TS array-literal numbers" t11_magic_ts_array_literal
+
 t11_max_nesting() {
   local d
   d="$(printf 'fn(){\n if(a){\n  for(){\n   x;\n  }\n }\n}\n' | cm_max_nesting)"
@@ -636,6 +692,26 @@ check "adapter(C#): deprecations counts [Obsolete]"    t12_cs_deprecations
 check "adapter(C#): suppressions counts #pragma disable" t12_cs_suppressions
 check "adapter(C#): magic_numbers excludes 0, counts 42" t12_cs_magic
 check "adapter(C#): nesting_depth = 3"                 t12_cs_nesting
+
+# Generated code lives in the source tree but must never count toward metrics.
+CS_GEN=$(mktemp -d); FIXTURES+=("$CS_GEN")
+cat > "$CS_GEN/Hand.cs" <<'EOF'
+public class Hand { public int F() { return 42; } }
+EOF
+mkdir -p "$CS_GEN/Migrations"
+cat > "$CS_GEN/Migrations/0001_Init.cs" <<'EOF'
+b.Property<string>("Name").HasMaxLength(255);
+b.Property<decimal>("Total").HasColumnType("decimal(18,2)");
+b.Property<int>("Code").HasDefaultValue(9999);
+EOF
+cat > "$CS_GEN/Model.Designer.cs" <<'EOF'
+modelBuilder.Entity("X").Property<int>("Y").HasMaxLength(512).HasPrecision(38);
+EOF
+t12_cs_magic_prunes_generated() {
+  # only Hand.cs's 42 is a real magic number; Migrations/ + *.Designer.cs ignored
+  [[ "$(cm_adapter_csharp_magic_numbers "$CS_GEN")" == "magic_numbers:1" ]]
+}
+check "adapter(C#): magic_numbers prunes Migrations/ + *.Designer.cs" t12_cs_magic_prunes_generated
 check "adapter(C#): param_count = 2.0 (lizard)"        t12_cs_param
 check "adapter(C#): doc_coverage = 0.0 (no ///)"       t12_cs_doc
 

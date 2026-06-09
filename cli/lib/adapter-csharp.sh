@@ -20,12 +20,21 @@
 
 CM_ADAPTER_DIR="${CM_ADAPTER_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 
-# Directories that must never count toward repo metrics: build output, vendored
-# deps, and Claude Code agent worktrees (.claude/worktrees holds full repo copies
-# that would otherwise double-count files and let `find ... | head -1` pick a
-# stale copy). Used by every find/lizard call below.
-CM_CS_PRUNE_FIND=(-not -path '*/obj/*' -not -path '*/bin/*' -not -path '*/.claude/*' -not -path '*/node_modules/*')
-CM_CS_PRUNE_LIZARD=(--exclude '*/obj/*' --exclude '*/bin/*' --exclude '*/.claude/*' --exclude '*/node_modules/*')
+# Paths that must never count toward repo metrics: build output, vendored deps,
+# Claude Code agent worktrees (.claude/worktrees holds full repo copies that would
+# otherwise double-count files and let `find ... | head -1` pick a stale copy), and
+# machine-generated C# that lives in the source tree — EF `Migrations/`,
+# `*.Designer.cs`, `*.g.cs`, `*.generated.cs`, `AssemblyInfo.cs`. Generated files are
+# dense with literals (column sizes, precision, defaults) and would dominate metrics
+# like magic_numbers. Used by every find/lizard call below.
+CM_CS_PRUNE_FIND=(-not -path '*/obj/*' -not -path '*/bin/*' -not -path '*/.claude/*' \
+  -not -path '*/node_modules/*' -not -path '*/Migrations/*' \
+  -not -name '*.Designer.cs' -not -name '*.g.cs' -not -name '*.generated.cs' \
+  -not -name 'AssemblyInfo.cs')
+CM_CS_PRUNE_LIZARD=(--exclude '*/obj/*' --exclude '*/bin/*' --exclude '*/.claude/*' \
+  --exclude '*/node_modules/*' --exclude '*/Migrations/*' \
+  --exclude '*.Designer.cs' --exclude '*.g.cs' --exclude '*.generated.cs' \
+  --exclude 'AssemblyInfo.cs')
 
 # Run coverage measurement → Cobertura XML.
 # Prefers dotnet-coverage (binary instrumentation; much faster than coverlet's
@@ -289,7 +298,7 @@ cm_adapter_csharp_param_count() {
   echo "param_count:${avg:-0}"
 }
 cm_adapter_csharp_magic_numbers() {
-  echo "magic_numbers:$(cm_cs_source_cat "${1:-$PWD}" | cm_magic_numbers)"
+  echo "magic_numbers:$(cm_cs_source_cat "${1:-$PWD}" | cm_magic_numbers csharp)"
 }
 
 # lint_density — Roslyn build warnings per 1000 NLOC (best-effort; 0 if dotnet
