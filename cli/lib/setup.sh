@@ -17,6 +17,7 @@ fi
 # Parse flags
 # ---------------------------------------------------------------------------
 SETUP_BUNDLE=""
+SETUP_AGENTS=""
 SETUP_SCOPE=""
 SETUP_STACK=""
 SETUP_REVIEWERS=""
@@ -30,6 +31,7 @@ _setup_prev_arg=""
 for _setup_arg in "$@"; do
   case "$_setup_arg" in
     --bundle=*)    SETUP_BUNDLE="${_setup_arg#--bundle=}" ;;
+    --agents=*)    SETUP_AGENTS="${_setup_arg#--agents=}" ;;
     --scope=*)     SETUP_SCOPE="${_setup_arg#--scope=}" ;;
     --stack=*)     SETUP_STACK="${_setup_arg#--stack=}" ;;
     --reviewers=*) SETUP_REVIEWERS="${_setup_arg#--reviewers=}" ;;
@@ -38,12 +40,13 @@ for _setup_arg in "$@"; do
     --no-detect)   SETUP_NO_DETECT="true" ;;
     --dry-run)     SETUP_DRY_RUN="true"; export OCTOPUS_DRY_RUN="true" ;;
     --reconfigure) _setup_remaining_args+=("$_setup_arg") ;;
-    --bundle|--scope|--stack|--reviewers) ;;  # value comes next iteration
+    --bundle|--agents|--scope|--stack|--reviewers) ;;  # value comes next iteration
     *)             _setup_remaining_args+=("$_setup_arg") ;;
   esac
   # Handle space-separated: --bundle starter
   case "$_setup_prev_arg" in
     --bundle)    SETUP_BUNDLE="$_setup_arg" ;;
+    --agents)    SETUP_AGENTS="$_setup_arg" ;;
     --scope)     SETUP_SCOPE="$_setup_arg" ;;
     --stack)     SETUP_STACK="$_setup_arg" ;;
     --reviewers) SETUP_REVIEWERS="$_setup_arg" ;;
@@ -52,8 +55,9 @@ for _setup_arg in "$@"; do
 done
 unset _setup_arg _setup_prev_arg
 
-# Normalise --bundle: accept comma or space-separated list → space-separated
+# Normalise --bundle / --agents: accept comma or space-separated → space-separated
 SETUP_BUNDLE=$(printf '%s' "$SETUP_BUNDLE" | tr ',' ' ' | tr -s ' ')
+SETUP_AGENTS=$(printf '%s' "$SETUP_AGENTS" | tr ',' ' ' | tr -s ' ')
 
 # ---------------------------------------------------------------------------
 # Resolve scope
@@ -126,13 +130,24 @@ _detect_stack() {
 # Manifest generation
 # ---------------------------------------------------------------------------
 _setup_generate_manifest() {
-  local bundles_str="$1" hooks="$2" workflow="$3" reviewers="$4" profiles="$5" excludes="${6:-}"
+  local bundles_str="$1" hooks="$2" workflow="$3" reviewers="$4" profiles="$5" excludes="${6:-}" agents_str="${7:-}"
 
   mkdir -p "$(dirname "$MANIFEST_PATH")"
 
+  # Default to claude when no agent was chosen (flag-less / non-interactive).
+  [[ "$agents_str" == *[![:space:]]* ]] || agents_str="claude"
+
   {
     printf '# Edit and re-run '"'"'octopus setup'"'"' to apply changes.\n'
-    printf 'agents:\n  - claude\n'
+    printf 'agents:\n'
+    # IFS-immune tokenizer (same as bundles below), order-stable + de-duplicated.
+    local _arest="$agents_str" _a _aseen=" "
+    while [[ "$_arest" == *[![:space:]]* ]]; do
+      _arest="${_arest#"${_arest%%[![:space:]]*}"}"
+      _a="${_arest%%[[:space:]]*}"
+      _arest="${_arest#"$_a"}"
+      case "$_aseen" in *" $_a "*) ;; *) _aseen+="$_a "; printf '  - %s\n' "$_a" ;; esac
+    done
     printf 'bundles:\n'
     # Merge intent bundles + resolved stack/db profiles (RM-139), order-stable
     # and de-duplicated. Tokenize with parameter expansion only — no word
@@ -219,10 +234,10 @@ export SETUP_PROFILES
 # Main flow
 # ---------------------------------------------------------------------------
 if [[ ! -f "$MANIFEST_PATH" ]]; then
-  if [[ -n "$SETUP_BUNDLE" ]]; then
+  if [[ -n "$SETUP_BUNDLE" || -n "$SETUP_AGENTS" ]]; then
     # Flag-driven: no interaction — detected/affirmed profiles join the bundles.
     _setup_generate_manifest \
-      "$SETUP_BUNDLE" "$SETUP_HOOKS" "$SETUP_WORKFLOW" "$SETUP_REVIEWERS" "$SETUP_PROFILES"
+      "${SETUP_BUNDLE:-starter}" "$SETUP_HOOKS" "$SETUP_WORKFLOW" "$SETUP_REVIEWERS" "$SETUP_PROFILES" "" "$SETUP_AGENTS"
   elif [[ -t 0 && -t 1 ]]; then
     # Interactive: picker pre-selects the profiles; its result is authoritative.
     source "$CLI_DIR/lib/setup-picker.sh"
@@ -234,7 +249,8 @@ if [[ ! -f "$MANIFEST_PATH" ]]; then
       "${PICKER_WORKFLOW:-true}" \
       "${SETUP_REVIEWERS:-}" \
       "" \
-      "${PICKER_EXCLUDE[*]:-}"
+      "${PICKER_EXCLUDE[*]:-}" \
+      "${PICKER_AGENTS[*]:-claude}"
   else
     # Non-interactive (CI/pipe): starter + detected profiles, silently.
     _setup_generate_manifest "starter" "true" "true" "" "$SETUP_PROFILES"
@@ -251,7 +267,8 @@ elif [[ " ${_setup_remaining_args[*]:-} " == *" --reconfigure "* ]]; then
       "${PICKER_WORKFLOW:-true}" \
       "${SETUP_REVIEWERS:-}" \
       "" \
-      "${PICKER_EXCLUDE[*]:-}"
+      "${PICKER_EXCLUDE[*]:-}" \
+      "${PICKER_AGENTS[*]:-claude}"
   fi
 fi
 

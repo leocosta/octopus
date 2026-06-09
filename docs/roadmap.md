@@ -589,7 +589,7 @@ multi-agent architecture; cheap for IDE Copilot, honest about the CLI limitation
 
 - **Priority:** 🟡 Medium
 - **Effort:** medium
-- **Status:** proposed
+- **Status:** implemented (this PR — `--agents` flag + picker agent screen)
 - **Added:** 2026-06-09
 
 The interactive `octopus setup` picker (`cli/lib/setup-picker.sh`) lets the user

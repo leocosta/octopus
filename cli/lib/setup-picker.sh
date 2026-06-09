@@ -11,6 +11,7 @@ _PICKER_RELEASE_ROOT="$(cd "$_PICKER_DIR/../.." && pwd)"
 source "$_PICKER_DIR/ui.sh"
 
 # Defaults (overwritten by run_picker)
+PICKER_AGENTS=("claude")
 PICKER_BUNDLES=("starter")
 PICKER_HOOKS="true"
 PICKER_WORKFLOW="true"
@@ -18,6 +19,10 @@ PICKER_REVIEWERS=""
 PICKER_MCP_ENABLED="false"
 PICKER_CUSTOMIZE="false"
 PICKER_EXCLUDE=()
+
+# Current-state mirror for agents (populated by _picker_load_current_state);
+# declared here so `${#_CURRENT_AGENTS[@]}` is safe under `set -u`.
+_CURRENT_AGENTS=()
 
 # ---------------------------------------------------------------------------
 # fzf resolution: system fzf → bundled fzf → empty (bash fallback)
@@ -101,6 +106,7 @@ _CURRENT_EXCLUDES=()
 
 _picker_load_current_state() {
   _CURRENT_BUNDLES=()
+  _CURRENT_AGENTS=()
   _CURRENT_HOOKS=""
   _CURRENT_WORKFLOW=""
   _CURRENT_MCP=""
@@ -109,12 +115,21 @@ _picker_load_current_state() {
   local manifest="${MANIFEST_PATH:-${PROJECT_ROOT:-$PWD}/.octopus.yml}"
   [[ -f "$manifest" ]] || return 0
 
-  local in_bundles=0 in_mcp=0
+  local in_bundles=0 in_mcp=0 in_agents=0
   while IFS= read -r line || [[ -n "$line" ]]; do
     # New top-level key resets list-tracking
     if [[ "$line" =~ ^[a-zA-Z] ]]; then
       in_bundles=0
       in_mcp=0
+      in_agents=0
+    fi
+    if [[ "$line" =~ ^agents:[[:space:]]*$ ]]; then
+      in_agents=1
+      continue
+    fi
+    if [[ $in_agents -eq 1 && "$line" =~ ^[[:space:]]+-[[:space:]]*([a-zA-Z][a-zA-Z0-9_-]*) ]]; then
+      _CURRENT_AGENTS+=("${BASH_REMATCH[1]}")
+      continue
     fi
     if [[ "$line" =~ ^bundles:[[:space:]]*$ ]]; then
       in_bundles=1
@@ -224,6 +239,43 @@ _picker_current_excludes() {
 #   id <TAB> visible <TAB> default(0|1) <TAB> desc
 # id ∈ h:<cat> | f:<name> | b:<name>. default=1 = pre-selected (features on,
 # current bundles). Pure / testable — no fzf, no temp files.
+# Available agents = agents/*/manifest.yml basenames, claude first then the rest
+# alphabetically. Resolves the release root from OCTOPUS_DIR (set by setup.sh) or
+# relative to this lib. Pure / testable.
+_picker_agents_root() {
+  printf '%s' "${OCTOPUS_DIR:-$(cd "$_PICKER_DIR/../.." && pwd)}"
+}
+_picker_available_agents() {
+  local root m a
+  root="$(_picker_agents_root)"
+  for a in claude; do
+    [[ -f "$root/agents/$a/manifest.yml" ]] && echo "$a"
+  done
+  for m in "$root"/agents/*/manifest.yml; do
+    [[ -f "$m" ]] || continue
+    a="$(basename "$(dirname "$m")")"
+    [[ "$a" == "claude" ]] || echo "$a"
+  done
+}
+
+# Screen-0 rows — one per available agent (`a:<id>\t label \t def \t desc`, def
+# 1=on/0=off), same 4-column contract as bundle rows. An agent in the current
+# manifest defaults on; on a fresh repo only claude is preselected. Pure / testable.
+_picker_agent_rows() {
+  local root a def out
+  root="$(_picker_agents_root)"
+  for a in $(_picker_available_agents); do
+    def=0
+    if [[ ${#_CURRENT_AGENTS[@]} -gt 0 ]]; then
+      _picker_array_contains "$a" "${_CURRENT_AGENTS[@]}" && def=1
+    else
+      [[ "$a" == "claude" ]] && def=1
+    fi
+    out="$(grep -m1 '^output:' "$root/agents/$a/manifest.yml" 2>/dev/null | sed 's/^output:[[:space:]]*//')"
+    printf 'a:%s\t  %s\t%s\t→ %s\n' "$a" "$a" "$def" "$out"
+  done
+}
+
 _picker_bundle_rows() {
   local i fname d
   printf 'h:Features\t  ── Features ──\t0\t\n'
@@ -361,6 +413,19 @@ _picker_run_fzf() {
   _picker_load_current_state
 
   local id rc kept memrows
+
+  # --- Screen 0: agents (which assistants to configure) -------------------
+  local sel0
+  sel0="$(_picker_agent_rows | _picker_fzf_screen "$fzf_bin" \
+    "  Octopus Setup › agents  " \
+    "  SPACE select · ENTER → next · Ctrl-C cancel")" \
+    || { ui_warn "Setup cancelled."; exit 0; }
+  PICKER_AGENTS=()
+  while IFS= read -r id; do
+    case "$id" in a:*) PICKER_AGENTS+=("${id#a:}") ;; esac
+  done <<< "$sel0"
+  [[ ${#PICKER_AGENTS[@]} -eq 0 ]] && PICKER_AGENTS=("claude")
+
   while :; do
     # --- Screen 1: bundles + features -------------------------------------
     # Pre-selection reflects _CURRENT_* — updated below so ESC-back re-opens
@@ -488,6 +553,41 @@ _picker_member_deselect_bash() {
 # ---------------------------------------------------------------------------
 _picker_run_bash() {
   _picker_load_current_state
+
+  # --- Agents (which assistants to configure) ----------------------------
+  local agents_list=() _a i marker
+  while IFS= read -r _a; do agents_list+=("$_a"); done < <(_picker_available_agents)
+  echo ""
+  echo "  Available agents (✓ = currently configured):"
+  local agent_defaults=()
+  for (( i=0; i<${#agents_list[@]}; i++ )); do
+    if { [[ ${#_CURRENT_AGENTS[@]} -gt 0 ]] && _picker_array_contains "${agents_list[$i]}" "${_CURRENT_AGENTS[@]}"; } \
+       || { [[ ${#_CURRENT_AGENTS[@]} -eq 0 ]] && [[ "${agents_list[$i]}" == "claude" ]]; }; then
+      marker="✓"; agent_defaults+=("$((i+1))")
+    else
+      marker=" "
+    fi
+    printf "    %d. [%s] %s\n" "$((i+1))" "$marker" "${agents_list[$i]}"
+  done
+  local agent_default_input="${agent_defaults[*]:-1}"
+  PICKER_AGENTS=()
+  while true; do
+    printf "  Agent(s) — space or comma-separated [%s]: " "$agent_default_input"
+    local raw_a; read -r raw_a </dev/tty; raw_a="${raw_a:-$agent_default_input}"
+    local norm_a invalid_a=() picks_a=() tok
+    norm_a=$(printf '%s' "$raw_a" | tr ',\t' '  ' | tr -s ' ')
+    for tok in $norm_a; do
+      if [[ "$tok" =~ ^[1-9][0-9]*$ ]] && (( tok >= 1 && tok <= ${#agents_list[@]} )); then
+        picks_a+=("${agents_list[$((tok-1))]}")
+      else
+        invalid_a+=("$tok")
+      fi
+    done
+    [[ ${#invalid_a[@]} -gt 0 ]] && { printf "  Invalid: %s — enter numbers 1–%d\n" "${invalid_a[*]}" "${#agents_list[@]}"; continue; }
+    [[ ${#picks_a[@]} -eq 0 ]] && { printf "  Enter at least one number.\n"; continue; }
+    PICKER_AGENTS=("${picks_a[@]}")
+    break
+  done
 
   echo ""
   echo "  Available bundles (✓ = currently in .octopus.yml):"
