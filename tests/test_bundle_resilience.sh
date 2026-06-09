@@ -46,6 +46,27 @@ fi
   && ok "expand_bundles survives a stale bundle under set -e" \
   || bad "expand_bundles survives a stale bundle under set -e"
 
+# --- D: picker migrates a renamed bundle in current-state (not drop it) ----
+# A reconfigure must remap knowledge-ops → knowledge so the skills are preserved,
+# instead of silently dropping the stale name.
+(
+  WORK=$(mktemp -d)
+  cat > "$WORK/.octopus.yml" <<'YAML'
+agents:
+  - claude
+bundles:
+  - starter
+  - knowledge-ops
+YAML
+  export MANIFEST_PATH="$WORK/.octopus.yml" OCTOPUS_DIR="$SCRIPT_DIR"
+  source "$SCRIPT_DIR/cli/lib/setup-picker.sh" 2>/dev/null
+  _picker_load_current_state
+  printf '%s\n' "${_CURRENT_BUNDLES[@]}" | grep -qx "knowledge" || { rm -rf "$WORK"; exit 21; }
+  printf '%s\n' "${_CURRENT_BUNDLES[@]}" | grep -qx "knowledge-ops" && { rm -rf "$WORK"; exit 22; }
+  rm -rf "$WORK"
+) && ok "picker remaps knowledge-ops → knowledge in current-state" \
+  || bad "picker remaps knowledge-ops → knowledge in current-state"
+
 echo "--------------------------------------------------"
 echo "PASS=$PASS FAIL=$FAIL"
 [[ $FAIL -eq 0 ]]

@@ -7,6 +7,8 @@ OCTOPUS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # OCTOPUS_VERBOSE=1 surfaces per-file detail; default is grouped per-agent output.
 # shellcheck source=cli/lib/ui.sh
 source "$OCTOPUS_DIR/cli/lib/ui.sh"
+# shellcheck source=cli/lib/bundle-aliases.sh
+source "$OCTOPUS_DIR/cli/lib/bundle-aliases.sh"
 
 if [[ -z "${PROJECT_ROOT:-}" ]]; then
   # Self-setup path: running setup.sh inside the octopus repo itself.
@@ -96,18 +98,6 @@ OCTOPUS_WORKSPACE_PATH=""      # RM-069: path to shared workspace repo with rule
 # OCTOPUS_* arrays. Does NOT de-duplicate — that is expand_bundles()'s
 # responsibility (a bundle is a logical grouping; two bundles can legally
 # reference the same skill).
-# Map a legacy/renamed bundle name to its current equivalent. Kept in sync with
-# the CHANGELOG "Migration" notes; returns empty for names with no known alias.
-# Resilience over fidelity: a chained/merged rename points at the closest current
-# bundle (e.g. the removed quality-* presets all fold into `quality`).
-_bundle_alias() {
-  case "$1" in
-    knowledge-ops)                                              echo "knowledge" ;;
-    code-metrics|quality-audits|quality-signals|quality-metrics) echo "quality" ;;
-    *)                                                          echo "" ;;
-  esac
-}
-
 _load_bundle() {
   local name="$1"
   local file="$OCTOPUS_DIR/bundles/${name}.yml"
