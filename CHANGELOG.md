@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.84.4] - 2026-06-09
+
+🐛 **`code-metrics` no longer inflates `magic_numbers` on C#/.NET repos** — a real .NET checkout reported ~39 000, almost all false positives. Two root causes, both fixed. First, pruning was shallow: machine-generated C# that lives in the source tree (EF `Migrations/`, `*.Designer.cs`, `*.g.cs`, `*.generated.cs`, `AssemblyInfo.cs`) was counted; it's now excluded from **every** C# metric, not just this one. Second, the counter stripped comments and strings line-by-line, so any multiline construct leaked its digits — the heuristic is rewritten as a stateful, language-aware `awk` preprocessor that blanks block comments (`/* */`), C# verbatim (`@"…"`) and raw (`"""…"""`) strings, and TS template literals across line boundaries, then drops named-constant context: `const`/`readonly`/`enum`/`#define` and enum bodies for all stacks, plus attribute args and auto-property initializers for C# only (a leading `[` stays an array literal in TypeScript). 🧪 Each false-positive scenario is locked by a regression test (suite at PASS=106), with guards keeping genuine literals — indexers and array elements — counted. (#197)
+
 ## [1.84.3] - 2026-06-07
 
 🔒 **`install.sh` now verifies on the default GitHub path.** SHA-256 + GPG verification (and `OCTOPUS_REQUIRE_SIGNATURE`) only ran when `OCTOPUS_INSTALL_ENDPOINT` was set — a plain `install.sh --version vX` from GitHub resolved no checksum/signature URL and skipped both **silently**, making `OCTOPUS_REQUIRE_SIGNATURE=1` a no-op on the most common install path. Both URLs now fall back to the GitHub release asset (the `.sha256`/`.tar.gz.asc` the signing pipeline already publishes), and `OCTOPUS_REQUIRE_SIGNATURE` fails closed when no signature URL resolves. Verified against v1.84.2 (key present → valid; absent → fail-closed). See RM-155.
