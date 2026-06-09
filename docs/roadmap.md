@@ -624,6 +624,51 @@ without reading the YAML).
 
 ---
 
+### RM-159 — Deliver core workflow commands to the Copilot CLI as custom agents
+
+- **Priority:** 🟡 Medium
+- **Effort:** low
+- **Status:** implemented (this PR)
+- **Added:** 2026-06-09
+
+RM-156 delivers Octopus commands to Copilot as prompt-files
+(`.github/prompts/*.prompt.md`), but those are **IDE-only** — the Copilot **CLI**
+does not read them (upstream feature requests: github/copilot-cli #618, #1113,
+#2829). So an Octopus workflow like `pr-open` was unreachable from the terminal
+under Copilot.
+
+The CLI *does* have a native, no-code extension point: **custom agents**
+(`.github/agents/*.agent.md`, markdown + YAML frontmatter), invocable via
+`copilot --agent=<name>`, `/agent`, or implicit selection. This delivers a
+**selected** subset of workflow commands as `.github/agents/octopus-*.agent.md`.
+
+Design decisions:
+
+- **Selective (option B), not 1:1.** Only terminal-driven workflows ship as
+  agents — `dev-flow, implement, debug, commit, branch-create, codereview,
+  pr-open, pr-review, pr-comments, pr-merge, release`. The doc-/audit-/knowledge-
+  families stay IDE-only; converting all ~46 commands would clutter the `/agent`
+  picker and bend the "agent = role" semantics.
+- **Selection lives in the copilot manifest**, not the command source
+  (`delivery.commands.cli_agents_select`). The canonical `commands/*.md` are read
+  read-only, so **other agents' delivery (Claude) is provably unaffected** — a
+  test asserts no `.github/agents/` is produced for Claude.
+- **Additive, not a replacement.** A selected command gets both an IDE prompt-file
+  and a CLI agent.
+- **Minimal, version-robust frontmatter** (`name` + `description` only). Copilot
+  CLI flags `model`/`argument-hint`/`target` as unsupported across releases
+  (github/copilot-cli #1195, #2133); the body is the agent's system prompt, and
+  `$ARGUMENTS` is translated to prose (no `${input}` token exists in CLI agents).
+- **Anti-collision:** the `octopus-` prefix and prune-by-prefix are scoped to
+  `*.agent.md`. Copilot does not deliver role agents today; if it ever does, the
+  command set and role set must stay name-disjoint (they are now).
+
+**Rationale:** Closes the last leg of Copilot parity — the terminal-driven
+workflows (PR loop, dev-flow, release) now run under the Copilot CLI, not just
+the IDE, reusing the same single command source.
+
+---
+
 ## In Progress
 
 _RM-088 (`audit-grounding`) shipped in v1.69.0. **Cluster 16** (manager-multiplier) is **complete on `feat/standards-lookup`** — all implemented & committed, pending merge/release: RM-089 (`mentor`), RM-090 (`onboarding`), RM-091 (`definition-of-done`), RM-092 (`standards`), RM-093 (team `continuous-learning`), RM-094 (`audit-fleet`), RM-095 (`fleet-bootstrap`), RM-096 (`tech-lead` bundle), RM-098 (`map-system` complete-mode deck). ADRs 002–006 recorded. See [research](research/2026-05-30-manager-multiplier.md)._

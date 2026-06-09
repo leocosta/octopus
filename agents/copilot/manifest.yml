@@ -21,6 +21,14 @@ delivery:
     method: prompt_files
     target: .github/prompts/
     prefix: octopus-
+    # RM-159: a SELECTED subset of workflow commands is also delivered as Copilot
+    # CLI custom agents (.github/agents/<prefix><name>.agent.md), invocable from
+    # the terminal via `copilot --agent=octopus-<name>`. Prompt files (above) stay
+    # IDE-only; this closes the CLI gap for terminal-driven workflows. Keep the
+    # list tight — only commands worth running from a shell — and the names must
+    # match commands/<name>.md without colliding with role agents.
+    cli_agents_target: .github/agents/
+    cli_agents_select: dev-flow,implement,debug,commit,branch-create,codereview,pr-open,pr-review,pr-comments,pr-merge,release
   mcp:
     method: vscode_json
     target: .vscode/mcp.json
@@ -31,3 +39,4 @@ mcp_extra:
 
 gitignore_extra:
   - .github/prompts/
+  - .github/agents/
