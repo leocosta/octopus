@@ -31,7 +31,7 @@ Write a plan when:
 ## Limitations
 
 - Do not reference files in `.claude/` (settings, commands, agents, rules, skills) — they are exclusive to Claude Code
-- Slash commands (`/octopus:*`) do not exist in Copilot — use the Makefile commands directly
+- Octopus workflow commands are delivered as **prompt files** under `.github/prompts/` (`octopus-<name>.prompt.md`). In an IDE (VS Code, Visual Studio, JetBrains) invoke them as `/octopus-<name>` in Copilot Chat. In the **Copilot CLI** prompt files do not work yet — run the equivalent `octopus <name>` listed in the commands section below
 - MCP servers (Notion, Slack, PostgreSQL) must be configured separately in `.vscode/mcp.json`
 
 ---
