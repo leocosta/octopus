@@ -6,7 +6,7 @@
 
 ---
 
-![Version](https://img.shields.io/badge/version-v1.84.4-blue)
+![Version](https://img.shields.io/badge/version-v1.84.5-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Shell](https://img.shields.io/badge/shell-bash%204%2B-lightgrey)
 
