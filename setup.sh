@@ -7,6 +7,8 @@ OCTOPUS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # OCTOPUS_VERBOSE=1 surfaces per-file detail; default is grouped per-agent output.
 # shellcheck source=cli/lib/ui.sh
 source "$OCTOPUS_DIR/cli/lib/ui.sh"
+# shellcheck source=cli/lib/bundle-aliases.sh
+source "$OCTOPUS_DIR/cli/lib/bundle-aliases.sh"
 
 if [[ -z "${PROJECT_ROOT:-}" ]]; then
   # Self-setup path: running setup.sh inside the octopus repo itself.
@@ -101,8 +103,18 @@ _load_bundle() {
   local file="$OCTOPUS_DIR/bundles/${name}.yml"
 
   if [[ ! -f "$file" ]]; then
-    echo "Error: unknown bundle '$name' (expected $file)" >&2
-    return 1
+    # A stale .octopus.yml must never abort setup. First try the rename alias
+    # map; if that resolves to a real bundle, use it and tell the user. Otherwise
+    # warn and skip — a removed/renamed/typo'd bundle is non-fatal.
+    local aliased; aliased="$(_bundle_alias "$name")"
+    if [[ -n "$aliased" && -f "$OCTOPUS_DIR/bundles/${aliased}.yml" ]]; then
+      echo "Note: bundle '$name' was renamed to '$aliased' — using '$aliased'. Update .octopus.yml to silence this." >&2
+      name="$aliased"
+      file="$OCTOPUS_DIR/bundles/${name}.yml"
+    else
+      echo "Warning: skipping unknown bundle '$name' (no bundles/${name}.yml) — update .octopus.yml." >&2
+      return 0
+    fi
   fi
 
   local parsed

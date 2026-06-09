@@ -130,16 +130,29 @@ done
 
 echo "PASS: _load_bundle strips inline comments from list items"
 
-echo "Test 6: _load_bundle on an unknown name aborts with message"
+echo "Test 6: _load_bundle skips an unknown name without aborting (resilience)"
 
-if ( _load_bundle "does-not-exist" ) 2>/tmp/err.$$ ; then
-  echo "FAIL: _load_bundle should have errored on missing bundle"
-  exit 1
+# A stale .octopus.yml (renamed/removed bundle) must never abort setup. Unknown
+# names are warned-and-skipped (rc 0); known renames resolve via the alias map.
+if ! ( _load_bundle "does-not-exist" ) 2>/tmp/err.$$ ; then
+  echo "FAIL: _load_bundle should skip (rc 0), not error, on a missing bundle"
+  rm -f /tmp/err.$$; exit 1
 fi
-grep -q "unknown bundle" /tmp/err.$$ \
-  || { echo "FAIL: error message should mention 'unknown bundle'"; rm -f /tmp/err.$$; exit 1; }
+grep -qi "skipping unknown bundle" /tmp/err.$$ \
+  || { echo "FAIL: skip warning should mention 'skipping unknown bundle'"; rm -f /tmp/err.$$; exit 1; }
 rm -f /tmp/err.$$
-echo "PASS: _load_bundle fails loudly on missing bundle"
+echo "PASS: _load_bundle skips a missing bundle (non-fatal)"
+
+echo "Test 6b: _load_bundle resolves a renamed bundle via the alias map"
+OCTOPUS_SKILLS=(); OCTOPUS_ROLES=(); OCTOPUS_RULES=(); OCTOPUS_MCP=()
+_load_bundle "knowledge-ops" 2>/tmp/err.$$ \
+  || { echo "FAIL: _load_bundle knowledge-ops should resolve, not fail"; rm -f /tmp/err.$$; exit 1; }
+grep -qi "renamed to 'knowledge'" /tmp/err.$$ \
+  || { echo "FAIL: alias resolution should announce the rename"; rm -f /tmp/err.$$; exit 1; }
+printf '%s\n' "${OCTOPUS_SKILLS[@]}" | grep -qx "knowledge-hygiene" \
+  || { echo "FAIL: alias should load the target bundle's skills"; rm -f /tmp/err.$$; exit 1; }
+rm -f /tmp/err.$$
+echo "PASS: _load_bundle resolves knowledge-ops → knowledge"
 
 echo "Test 7: expand_bundles unions multiple bundles and de-duplicates"
 

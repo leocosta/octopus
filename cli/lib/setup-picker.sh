@@ -9,6 +9,8 @@ _PICKER_RELEASE_ROOT="$(cd "$_PICKER_DIR/../.." && pwd)"
 
 # shellcheck source=./ui.sh
 source "$_PICKER_DIR/ui.sh"
+# shellcheck source=./bundle-aliases.sh
+source "$_PICKER_DIR/bundle-aliases.sh"
 
 # Defaults (overwritten by run_picker)
 PICKER_AGENTS=("claude")
@@ -140,7 +142,12 @@ _picker_load_current_state() {
       continue
     fi
     if [[ $in_bundles -eq 1 && "$line" =~ ^[[:space:]]+-[[:space:]]*([a-zA-Z][a-zA-Z0-9_-]*) ]]; then
-      _CURRENT_BUNDLES+=("${BASH_REMATCH[1]}")
+      # Resolve a renamed bundle to its current name so reconfigure preserves it
+      # (e.g. knowledge-ops → knowledge) instead of dropping the stale entry.
+      local _bn="${BASH_REMATCH[1]}" _alias
+      _alias="$(_bundle_alias "$_bn")"
+      [[ -n "$_alias" && -f "$_PICKER_RELEASE_ROOT/bundles/${_alias}.yml" ]] && _bn="$_alias"
+      _CURRENT_BUNDLES+=("$_bn")
       continue
     fi
     if [[ $in_mcp -eq 1 && "$line" =~ ^[[:space:]]+-[[:space:]]*([a-zA-Z][a-zA-Z0-9_-]*) ]]; then
