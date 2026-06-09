@@ -541,6 +541,7 @@ _Proposed (added 2026-06-09). Surfaced in use: `/octopus:*` workflow commands (p
 | RM | Item | Theme |
 |----|------|-------|
 | RM-156 | Render Octopus workflow commands as Copilot IDE prompt-files (`.github/prompts/`), with a CLI text fallback | parity / multi-agent |
+| RM-157 | `octopus setup` picker offers agent selection (no hand-editing `.octopus.yml`) | setup UX / discoverability |
 
 ### RM-156 — Deliver workflow commands to Copilot as prompt-files
 
@@ -583,6 +584,43 @@ files.
 assistants) — the same standards-bearing workflows should be one keystroke away
 regardless of which assistant a teammate uses. Extends the manifest-driven
 multi-agent architecture; cheap for IDE Copilot, honest about the CLI limitation.
+
+### RM-157 — `octopus setup` picker offers agent selection
+
+- **Priority:** 🟡 Medium
+- **Effort:** medium
+- **Status:** proposed
+- **Added:** 2026-06-09
+
+The interactive `octopus setup` picker (`cli/lib/setup-picker.sh`) lets the user
+choose bundles, individual skills/roles/rules, hooks, workflow commands, reviewers,
+and MCP servers — but **not** which AI assistants to configure. The agent list lives
+only in the `.octopus.yml` `agents:` key, so enabling a new assistant (e.g. adding
+`copilot`) means hand-editing YAML. The available agents are discoverable as
+`agents/*/manifest.yml` (today: `claude`, `codex`, `copilot`, `gemini`, `opencode`),
+so the picker has everything it needs to offer them.
+
+Surfaced right after RM-156 made Copilot a first-class command target: the feature
+exists, but a user would never discover it from `octopus setup` alone.
+
+Proposal:
+
+- Add an **agent multi-select screen** to the picker (fzf path + bash fallback,
+  matching the existing two-path structure), enumerating `agents/*/manifest.yml`
+  with a one-line description, defaulting to the current `.octopus.yml` `agents:`
+  set, and writing the selection back to `.octopus.yml`.
+- Show each agent's headline capabilities (e.g. native commands vs. prompt-files vs.
+  instructions-only) so the choice is informed.
+
+**Open questions for the spec:** where the screen sits in the flow (before bundles,
+since rules/skills/commands are delivered per agent); how it round-trips the
+`agents:` block while preserving long-form `output:` overrides; whether to warn when
+deselecting an agent that already has generated files on disk.
+
+**Rationale:** Discoverability — the manifest-driven multi-agent architecture is a
+headline feature, but it is invisible in the one place a user configures the repo.
+Pairs directly with RM-156 (Copilot parity is moot if nobody can turn Copilot on
+without reading the YAML).
 
 ---
 
