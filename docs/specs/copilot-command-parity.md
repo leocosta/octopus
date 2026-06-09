@@ -141,14 +141,20 @@ generated agent surface already works (running `setup` is the contract).
 1. **Manifest schema + parser** — `setup.sh`: add `native_prompt_files` to the
    capability parse/reset block (`MANIFEST_CAP_*`) and ensure `commands` delivery is
    read even when `native_commands: false`.
-2. **Renderer** — `setup.sh`: `render_prompt_file_commands()` (frontmatter strip +
-   Copilot frontmatter + `$ARGUMENTS`→`${input}` + prefixed output + stale-file
-   pruning). Wire it into the delivery dispatch on `method == prompt_files`.
-3. **CLI fallback** — extend `append_commands_section` (or add a sibling) to list
-   workflow commands as `octopus <name>` in the instructions file.
+2. **Renderer** — `setup.sh`: `_deliver_prompt_file()` (drop source frontmatter +
+   emit `description:` + `mode: agent` + `$ARGUMENTS`→`${input}`) plus a rendering
+   loop in `deliver_commands`' non-native branch, gated on
+   `MANIFEST_CAP_PROMPT_FILES`, with prefixed output and stale-file pruning.
+3. **CLI fallback** — *already exists.* `deliver_commands`' non-native branch already
+   appends a `# Octopus Commands` section to `.github/copilot-instructions.md`
+   listing each workflow command as `Run: octopus <name>`. The prompt-file rendering
+   is added *alongside* it (before that branch's instructions-file guard), so
+   terminal Copilot keeps the text fallback and IDE Copilot gains slash commands. No
+   change needed here.
 4. **Copilot manifest** — `agents/copilot/manifest.yml`: add `native_prompt_files:
-   true` and the `delivery.commands` block; add `.github/prompts/` to both the
-   cleanup list and `gitignore_extra`.
+   true` and the `delivery.commands` block; add `.github/prompts/` to
+   `gitignore_extra`. (No separate cleanup list exists — `deliver_commands` prunes
+   stale `octopus-*.prompt.md` on each run, matching the native-command prune.)
 5. **ADR** — record `docs/adr/011-capability-gated-delivery.md`: delivery extensions
    are gated on a manifest capability, never on the agent name. (Authored alongside
    this spec.)
