@@ -95,4 +95,67 @@ if OCTOPUS_REQUIRE_SIGNATURE=1 bash "$INSTALL_SCRIPT" --version "$VERSION" --bin
 fi
 echo "PASS: missing signature rejected when required"
 
+# ---------------------------------------------------------------------------
+# Default (auto-fetch) path: no OCTOPUS_GPG_KEYRING override. The installer
+# pins a fingerprint, fetches the key from a keyserver if absent, and requires
+# a good signature from that fingerprint. OCTOPUS_GPG_FINGERPRINT repoints the
+# pin at the ephemeral key so these tests need no network.
+# ---------------------------------------------------------------------------
+
+# Rebuild a clean, valid tarball + sha256 + signature (Test 4 removed the .asc).
+rm -f "$TMP_RELEASES/$VERSION/octopus-$VERSION.tar.gz" \
+      "$TMP_RELEASES/$VERSION/octopus-$VERSION.sha256" \
+      "$TMP_RELEASES/$VERSION/octopus-$VERSION.tar.gz.asc"
+tar -czf "$TMP_RELEASES/$VERSION/octopus-$VERSION.tar.gz" -C "$TMP_BUILD" "octopus-$VERSION"
+(cd "$TMP_RELEASES/$VERSION" && sha256sum "octopus-$VERSION.tar.gz" > "octopus-$VERSION.sha256")
+gpg --batch --quiet --detach-sign --armor \
+    --output "$TMP_RELEASES/$VERSION/octopus-$VERSION.tar.gz.asc" \
+    "$TMP_RELEASES/$VERSION/octopus-$VERSION.tar.gz"
+
+# Fingerprint of the ephemeral signing key — used to repoint the default pin.
+EPHEMERAL_FPR="$(gpg --list-keys --with-colons | awk -F: '/^fpr:/{print $10; exit}')"
+# Drop the keyring override so the default (pinned-fingerprint) path runs.
+unset OCTOPUS_GPG_KEYRING
+
+echo "Test 5: default path accepts a valid signature from the pinned key"
+rm -rf "$TMP_HOME/.octopus-cli"
+OCTOPUS_GPG_FINGERPRINT="$EPHEMERAL_FPR" \
+  bash "$INSTALL_SCRIPT" --version "$VERSION" --bin-dir "$TMP_BIN" --cache-root "$TMP_HOME/.octopus-cli" >/dev/null
+[[ -f "$TMP_HOME/.octopus-cli/metadata.json" ]] || { echo "FAIL: metadata missing (default path, key present)"; exit 1; }
+echo "PASS: default path accepts a valid pinned signature"
+
+echo "Test 6: key unavailable → warns and continues on checksum-only"
+# Fresh keyring (key absent) + unreachable keyserver = key cannot be obtained.
+CLEAN_GNUPG="$TMP_HOME/gnupg-clean"
+mkdir -p "$CLEAN_GNUPG"; chmod 700 "$CLEAN_GNUPG"
+rm -rf "$TMP_HOME/.octopus-cli"
+if ! out="$(GNUPGHOME="$CLEAN_GNUPG" OCTOPUS_GPG_FINGERPRINT="$EPHEMERAL_FPR" \
+      OCTOPUS_GPG_KEYSERVER="hkp://127.0.0.1:1" \
+      bash "$INSTALL_SCRIPT" --version "$VERSION" --bin-dir "$TMP_BIN" --cache-root "$TMP_HOME/.octopus-cli" 2>&1)"; then
+  echo "FAIL: installer aborted when the key was unavailable (should warn+continue)"; echo "$out"; exit 1
+fi
+[[ -f "$TMP_HOME/.octopus-cli/metadata.json" ]] || { echo "FAIL: metadata missing (key-unavailable fallback)"; exit 1; }
+grep -q "checksum-only verification" <<<"$out" || { echo "FAIL: expected checksum-only warning not printed"; echo "$out"; exit 1; }
+echo "PASS: key-unavailable falls back to checksum-only with a warning"
+
+echo "Test 6b: OCTOPUS_REQUIRE_SIGNATURE=1 turns the unavailable-key case into a hard failure"
+rm -rf "$TMP_HOME/.octopus-cli"
+if GNUPGHOME="$CLEAN_GNUPG" OCTOPUS_GPG_FINGERPRINT="$EPHEMERAL_FPR" \
+     OCTOPUS_GPG_KEYSERVER="hkp://127.0.0.1:1" OCTOPUS_REQUIRE_SIGNATURE=1 \
+     bash "$INSTALL_SCRIPT" --version "$VERSION" --bin-dir "$TMP_BIN" --cache-root "$TMP_HOME/.octopus-cli" >/dev/null 2>&1; then
+  echo "FAIL: REQUIRE_SIGNATURE did not fail closed when the key was unavailable"; exit 1
+fi
+echo "PASS: REQUIRE_SIGNATURE fails closed when the key cannot be obtained"
+
+echo "Test 7: default path rejects a tampered tarball (fail closed)"
+# Key present in the default keyring, but the tarball no longer matches the sig.
+printf 'tampered' >> "$TMP_RELEASES/$VERSION/octopus-$VERSION.tar.gz"
+(cd "$TMP_RELEASES/$VERSION" && sha256sum "octopus-$VERSION.tar.gz" > "octopus-$VERSION.sha256")
+rm -rf "$TMP_HOME/.octopus-cli"
+if OCTOPUS_GPG_FINGERPRINT="$EPHEMERAL_FPR" \
+     bash "$INSTALL_SCRIPT" --version "$VERSION" --bin-dir "$TMP_BIN" --cache-root "$TMP_HOME/.octopus-cli" >/dev/null 2>&1; then
+  echo "FAIL: default path accepted a tampered tarball"; exit 1
+fi
+echo "PASS: default path rejects a tampered tarball (fail closed)"
+
 echo "PASS: signature verification end-to-end"
