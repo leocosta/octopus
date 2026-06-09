@@ -534,6 +534,96 @@ Regression-locked by `tests/test_install_signature.sh`. Ships in v1.84.3.
 
 ---
 
+### Cluster 27 — Cross-assistant command parity
+
+_Proposed (added 2026-06-09). Surfaced in use: `/octopus:*` workflow commands (pr-open, pr-review, release, …) show up in Claude Code and OpenCode but not in GitHub Copilot. Root cause is by design — `agents/copilot/manifest.yml` sets `native_commands: false`, so `setup.sh` never materialises `commands/*.md` for Copilot; the only command surface it gets is the text list of user-defined `.octopus.yml` commands appended to `.github/copilot-instructions.md` by `append_commands_section`. Copilot **does** support repo-scoped slash commands as **prompt files** (`.github/prompts/*.prompt.md`) — but only in the IDE clients (VS Code, Visual Studio, JetBrains); the Copilot **CLI** does not ([github/copilot-cli#618](https://github.com/github/copilot-cli/issues/618), closed unimplemented). So parity is achievable for IDE Copilot now, with a text/CLI fallback for the terminal._
+
+| RM | Item | Theme |
+|----|------|-------|
+| RM-156 | Render Octopus workflow commands as Copilot IDE prompt-files (`.github/prompts/`), with a CLI text fallback | parity / multi-agent |
+| RM-157 | `octopus setup` picker offers agent selection (no hand-editing `.octopus.yml`) | setup UX / discoverability |
+
+### RM-156 — Deliver workflow commands to Copilot as prompt-files
+
+- **Priority:** 🟡 Medium
+- **Effort:** medium
+- **Status:** in progress — [Spec](specs/copilot-command-parity.md), [ADR-011](adr/011-capability-gated-delivery.md)
+- **Added:** 2026-06-09
+
+`/octopus:pr-open`, `/octopus:pr-review`, `/octopus:release`, etc. are defined once
+in `commands/*.md` and delivered natively only to agents whose manifest declares
+`native_commands: true` (Claude → `.claude/commands/`, OpenCode →
+`.opencode/commands/`). Copilot's manifest is `native_commands: false`, so those
+commands never reach it — the user sees no `/pr-open` in Copilot.
+
+GitHub Copilot **does** support repo-scoped slash commands as *prompt files*
+(`.github/prompts/<name>.prompt.md`, invoked as `/<name>` in chat) — but only in the
+IDE clients (VS Code, Visual Studio, JetBrains). The Copilot **CLI** has no
+equivalent yet (feature request github/copilot-cli#618, closed without
+implementation), so a prompt-file does nothing in the terminal.
+
+Proposal:
+
+- Add a `delivery.commands` rendering path for Copilot (new method, e.g.
+  `prompt_files`) that emits each `commands/*.md` to
+  `.github/prompts/octopus-<name>.prompt.md`: strip the Octopus `name:`/`cli:`
+  frontmatter, add the Copilot prompt frontmatter, and translate the argument
+  placeholder (`$ARGUMENTS` → `${input}`). Gate it on a capability
+  (e.g. `native_prompt_files`), not on the agent name — keep the manifest-driven
+  altitude so JetBrains/Visual Studio reuse the same method.
+- Keep a **CLI fallback** for terminal Copilot: extend `append_commands_section`
+  (or a sibling) so the workflow commands are listed in
+  `.github/copilot-instructions.md` as their `octopus <name>` CLI equivalents.
+
+**Open questions for the spec:** exact prompt-file frontmatter mapping (mode/tools);
+argument-placeholder translation across agents; whether the same method also serves
+JetBrains/Visual Studio; the `octopus-` prefix to avoid collisions with user prompt
+files.
+
+**Rationale:** Closes a visible parity gap for the fleet (6+ repos, mixed
+assistants) — the same standards-bearing workflows should be one keystroke away
+regardless of which assistant a teammate uses. Extends the manifest-driven
+multi-agent architecture; cheap for IDE Copilot, honest about the CLI limitation.
+
+### RM-157 — `octopus setup` picker offers agent selection
+
+- **Priority:** 🟡 Medium
+- **Effort:** medium
+- **Status:** implemented (this PR — `--agents` flag + picker agent screen)
+- **Added:** 2026-06-09
+
+The interactive `octopus setup` picker (`cli/lib/setup-picker.sh`) lets the user
+choose bundles, individual skills/roles/rules, hooks, workflow commands, reviewers,
+and MCP servers — but **not** which AI assistants to configure. The agent list lives
+only in the `.octopus.yml` `agents:` key, so enabling a new assistant (e.g. adding
+`copilot`) means hand-editing YAML. The available agents are discoverable as
+`agents/*/manifest.yml` (today: `claude`, `codex`, `copilot`, `gemini`, `opencode`),
+so the picker has everything it needs to offer them.
+
+Surfaced right after RM-156 made Copilot a first-class command target: the feature
+exists, but a user would never discover it from `octopus setup` alone.
+
+Proposal:
+
+- Add an **agent multi-select screen** to the picker (fzf path + bash fallback,
+  matching the existing two-path structure), enumerating `agents/*/manifest.yml`
+  with a one-line description, defaulting to the current `.octopus.yml` `agents:`
+  set, and writing the selection back to `.octopus.yml`.
+- Show each agent's headline capabilities (e.g. native commands vs. prompt-files vs.
+  instructions-only) so the choice is informed.
+
+**Open questions for the spec:** where the screen sits in the flow (before bundles,
+since rules/skills/commands are delivered per agent); how it round-trips the
+`agents:` block while preserving long-form `output:` overrides; whether to warn when
+deselecting an agent that already has generated files on disk.
+
+**Rationale:** Discoverability — the manifest-driven multi-agent architecture is a
+headline feature, but it is invisible in the one place a user configures the repo.
+Pairs directly with RM-156 (Copilot parity is moot if nobody can turn Copilot on
+without reading the YAML).
+
+---
+
 ## In Progress
 
 _RM-088 (`audit-grounding`) shipped in v1.69.0. **Cluster 16** (manager-multiplier) is **complete on `feat/standards-lookup`** — all implemented & committed, pending merge/release: RM-089 (`mentor`), RM-090 (`onboarding`), RM-091 (`definition-of-done`), RM-092 (`standards`), RM-093 (team `continuous-learning`), RM-094 (`audit-fleet`), RM-095 (`fleet-bootstrap`), RM-096 (`tech-lead` bundle), RM-098 (`map-system` complete-mode deck). ADRs 002–006 recorded. See [research](research/2026-05-30-manager-multiplier.md)._

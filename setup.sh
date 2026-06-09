@@ -537,6 +537,7 @@ MANIFEST_CAP_RULES="false"
 MANIFEST_CAP_SKILLS="false"
 MANIFEST_CAP_HOOKS="false"
 MANIFEST_CAP_COMMANDS="false"
+MANIFEST_CAP_PROMPT_FILES="false"
 MANIFEST_CAP_AGENTS="false"
 MANIFEST_CAP_MCP="false"
 MANIFEST_DELIVERY_RULES_METHOD=""
@@ -576,6 +577,7 @@ load_manifest() {
   MANIFEST_CAP_SKILLS="false"
   MANIFEST_CAP_HOOKS="false"
   MANIFEST_CAP_COMMANDS="false"
+  MANIFEST_CAP_PROMPT_FILES="false"
   MANIFEST_CAP_AGENTS="false"
   MANIFEST_CAP_MCP="false"
   MANIFEST_DELIVERY_RULES_METHOD=""
@@ -656,6 +658,7 @@ load_manifest() {
         native_skills)     MANIFEST_CAP_SKILLS="$cap_val" ;;
         native_hooks)      MANIFEST_CAP_HOOKS="$cap_val" ;;
         native_commands)   MANIFEST_CAP_COMMANDS="$cap_val" ;;
+        native_prompt_files) MANIFEST_CAP_PROMPT_FILES="$cap_val" ;;
         native_agents)     MANIFEST_CAP_AGENTS="$cap_val" ;;
         native_mcp)        MANIFEST_CAP_MCP="$cap_val" ;;
         native_knowledge)  MANIFEST_CAP_KNOWLEDGE="$cap_val" ;;
@@ -2171,6 +2174,21 @@ _deliver_cmd_file() {
   ' "$1"
 }
 
+# Render a command file as a GitHub Copilot prompt file (RM-156). Copilot prompt
+# files (.github/prompts/*.prompt.md) want their own frontmatter, so we drop the
+# Octopus source frontmatter entirely and emit description: + mode: agent (workflow
+# commands take actions, so `agent` — not `ask` — is correct). The Claude argument
+# placeholder `$ARGUMENTS` becomes Copilot's `${input}`.
+_deliver_prompt_file() {
+  local src="$1" desc
+  desc=$(grep -m1 '^description:' "$src" | sed 's/^description:[[:space:]]*//')
+  printf -- '---\ndescription: %s\nmode: agent\n---\n' "$desc"
+  awk '
+    /^---[[:space:]]*$/ { d++; if (d <= 2) next }
+    d >= 2 { gsub(/\$ARGUMENTS/, "${input}"); print }
+  ' "$src"
+}
+
 deliver_commands() {
   local agent="$1"
   local output_path="${OCTOPUS_AGENT_OUTPUT[$agent]:-$MANIFEST_OUTPUT}"
@@ -2243,6 +2261,27 @@ EOF
       done
     fi
   else
+    # IDE prompt-file delivery (capability-gated — ADR-011): when the agent declares
+    # native_prompt_files, render each workflow command as a Copilot prompt file
+    # (.github/prompts/<prefix><name>.prompt.md). Independent of the concatenated
+    # output file below — and additive to the CLI text fallback that follows — so it
+    # runs first and does not share that file's existence guard.
+    if [[ "$MANIFEST_CAP_PROMPT_FILES" == "true" && "$OCTOPUS_WORKFLOW" == "true" ]]; then
+      local prompts_dir="$(_install_root)/$MANIFEST_DELIVERY_COMMANDS_TARGET"
+      local pf_prefix="${MANIFEST_DELIVERY_COMMANDS_PREFIX:-octopus-}"
+      mkdir -p "$prompts_dir"
+      # Prune previously-generated prompt files (prefix-owned) before regenerating,
+      # mirroring the native-command prune; user-authored prompt files are untouched.
+      [[ -n "$pf_prefix" ]] && rm -f "$prompts_dir/${pf_prefix}"*.prompt.md 2>/dev/null || true
+      for cmd_file in "$OCTOPUS_DIR/commands/"*.md; do
+        [[ -f "$cmd_file" ]] || continue
+        local cmd_name
+        cmd_name=$(basename "$cmd_file" .md)
+        _deliver_prompt_file "$cmd_file" > "$prompts_dir/${pf_prefix}${cmd_name}.prompt.md"
+        echo "  → ${MANIFEST_DELIVERY_COMMANDS_TARGET}${pf_prefix}${cmd_name}.prompt.md"
+      done
+    fi
+
     # Inline delivery: workflow commands appended to output
     local full_output="$(_install_root)/$output_path"
     [[ -f "$full_output" ]] || return
