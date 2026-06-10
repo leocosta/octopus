@@ -550,6 +550,7 @@ MANIFEST_CAP_SKILLS="false"
 MANIFEST_CAP_HOOKS="false"
 MANIFEST_CAP_COMMANDS="false"
 MANIFEST_CAP_PROMPT_FILES="false"
+MANIFEST_CAP_CLI_AGENTS="false"
 MANIFEST_CAP_AGENTS="false"
 MANIFEST_CAP_MCP="false"
 MANIFEST_DELIVERY_RULES_METHOD=""
@@ -564,6 +565,8 @@ MANIFEST_DELIVERY_HOOKS_TARGET=""
 MANIFEST_DELIVERY_COMMANDS_METHOD=""
 MANIFEST_DELIVERY_COMMANDS_TARGET=""
 MANIFEST_DELIVERY_COMMANDS_PREFIX=""
+MANIFEST_DELIVERY_CLI_AGENTS_TARGET=""
+MANIFEST_DELIVERY_CLI_AGENTS_SELECT=""
 MANIFEST_DELIVERY_AGENTS_METHOD=""
 MANIFEST_DELIVERY_AGENTS_TARGET=""
 MANIFEST_DELIVERY_MCP_METHOD=""
@@ -590,6 +593,7 @@ load_manifest() {
   MANIFEST_CAP_HOOKS="false"
   MANIFEST_CAP_COMMANDS="false"
   MANIFEST_CAP_PROMPT_FILES="false"
+  MANIFEST_CAP_CLI_AGENTS="false"
   MANIFEST_CAP_AGENTS="false"
   MANIFEST_CAP_MCP="false"
   MANIFEST_DELIVERY_RULES_METHOD=""
@@ -604,6 +608,8 @@ load_manifest() {
   MANIFEST_DELIVERY_COMMANDS_METHOD=""
   MANIFEST_DELIVERY_COMMANDS_TARGET=""
   MANIFEST_DELIVERY_COMMANDS_PREFIX=""
+  MANIFEST_DELIVERY_CLI_AGENTS_TARGET=""
+  MANIFEST_DELIVERY_CLI_AGENTS_SELECT=""
   MANIFEST_DELIVERY_AGENTS_METHOD=""
   MANIFEST_DELIVERY_AGENTS_TARGET=""
   MANIFEST_DELIVERY_MCP_METHOD=""
@@ -671,6 +677,7 @@ load_manifest() {
         native_hooks)      MANIFEST_CAP_HOOKS="$cap_val" ;;
         native_commands)   MANIFEST_CAP_COMMANDS="$cap_val" ;;
         native_prompt_files) MANIFEST_CAP_PROMPT_FILES="$cap_val" ;;
+        native_cli_agents) MANIFEST_CAP_CLI_AGENTS="$cap_val" ;;
         native_agents)     MANIFEST_CAP_AGENTS="$cap_val" ;;
         native_mcp)        MANIFEST_CAP_MCP="$cap_val" ;;
         native_knowledge)  MANIFEST_CAP_KNOWLEDGE="$cap_val" ;;
@@ -698,6 +705,8 @@ load_manifest() {
         commands_method) MANIFEST_DELIVERY_COMMANDS_METHOD="$dval" ;;
         commands_target) MANIFEST_DELIVERY_COMMANDS_TARGET="$dval" ;;
         commands_prefix) MANIFEST_DELIVERY_COMMANDS_PREFIX="$dval" ;;
+        commands_cli_agents_target) MANIFEST_DELIVERY_CLI_AGENTS_TARGET="$dval" ;;
+        commands_cli_agents_select) MANIFEST_DELIVERY_CLI_AGENTS_SELECT="$dval" ;;
         agents_method)   MANIFEST_DELIVERY_AGENTS_METHOD="$dval" ;;
         agents_target)   MANIFEST_DELIVERY_AGENTS_TARGET="$dval" ;;
         mcp_method)        MANIFEST_DELIVERY_MCP_METHOD="$dval" ;;
@@ -2191,14 +2200,33 @@ _deliver_cmd_file() {
 # Octopus source frontmatter entirely and emit description: + mode: agent (workflow
 # commands take actions, so `agent` — not `ask` — is correct). The Claude argument
 # placeholder `$ARGUMENTS` becomes Copilot's `${input}`.
+# Strip a command file's YAML frontmatter (the first two `---` fences) and emit
+# the body, replacing the $ARGUMENTS placeholder with the given replacement text.
+_strip_frontmatter_body() {
+  awk -v repl="$2" '
+    /^---[[:space:]]*$/ { d++; if (d <= 2) next }
+    d >= 2 { gsub(/\$ARGUMENTS/, repl); print }
+  ' "$1"
+}
+
 _deliver_prompt_file() {
   local src="$1" desc
   desc=$(grep -m1 '^description:' "$src" | sed 's/^description:[[:space:]]*//')
   printf -- '---\ndescription: %s\nmode: agent\n---\n' "$desc"
-  awk '
-    /^---[[:space:]]*$/ { d++; if (d <= 2) next }
-    d >= 2 { gsub(/\$ARGUMENTS/, "${input}"); print }
-  ' "$src"
+  _strip_frontmatter_body "$src" '${input}'
+}
+
+# Render a command file as a GitHub Copilot CLI custom agent (RM-159). CLI agents
+# (.github/agents/*.agent.md) want minimal, version-robust frontmatter — name +
+# description only; model/argument-hint/target vary across CLI releases — and the
+# body IS the agent's system prompt. We drop the Octopus source frontmatter, emit
+# name: + description:, and translate the slash-command argument placeholder
+# `$ARGUMENTS` into prose, since CLI agents have no `${input}` token.
+_deliver_cli_agent() {
+  local src="$1" name="$2" desc
+  desc=$(grep -m1 '^description:' "$src" | sed 's/^description:[[:space:]]*//')
+  printf -- '---\nname: %s\ndescription: %s\n---\n' "$name" "$desc"
+  _strip_frontmatter_body "$src" 'the request provided by the user'
 }
 
 deliver_commands() {
@@ -2291,6 +2319,34 @@ EOF
         cmd_name=$(basename "$cmd_file" .md)
         _deliver_prompt_file "$cmd_file" > "$prompts_dir/${pf_prefix}${cmd_name}.prompt.md"
         echo "  → ${MANIFEST_DELIVERY_COMMANDS_TARGET}${pf_prefix}${cmd_name}.prompt.md"
+      done
+    fi
+
+    # GitHub Copilot CLI custom agents (RM-159): when the agent declares
+    # native_cli_agents (capability-gated — ADR-011), a manifest-side allowlist
+    # (delivery.commands.cli_agents_select) renders only the SELECTED workflow
+    # commands as .github/agents/<prefix><name>.agent.md, invocable from the
+    # terminal (copilot --agent=<prefix><name>). Additive to the IDE prompt-files
+    # above and selective by design (terminal-driven workflows only). The
+    # selection lives in this agent's manifest, not the command source, so other
+    # agents' delivery (e.g. Claude) is untouched.
+    if [[ "$MANIFEST_CAP_CLI_AGENTS" == "true" && "$OCTOPUS_WORKFLOW" == "true" ]]; then
+      local agents_dir="$(_install_root)/$MANIFEST_DELIVERY_CLI_AGENTS_TARGET"
+      local ag_prefix="${MANIFEST_DELIVERY_COMMANDS_PREFIX:-octopus-}"
+      mkdir -p "$agents_dir"
+      # Prune previously-generated agents (prefix-owned) before regenerating;
+      # user-authored agent files are untouched.
+      [[ -n "$ag_prefix" ]] && rm -f "$agents_dir/${ag_prefix}"*.agent.md 2>/dev/null || true
+      # Split the allowlist on commas via read (no pathname expansion, unlike a
+      # bare word-split — keeps the loop safe if a name ever contained a glob char).
+      local sel; local -a sels
+      IFS=',' read -ra sels <<< "$MANIFEST_DELIVERY_CLI_AGENTS_SELECT"
+      for sel in "${sels[@]}"; do
+        local cmd_file="$OCTOPUS_DIR/commands/${sel}.md"
+        [[ -f "$cmd_file" ]] || continue
+        _deliver_cli_agent "$cmd_file" "${ag_prefix}${sel}" \
+          > "$agents_dir/${ag_prefix}${sel}.agent.md"
+        echo "  → ${MANIFEST_DELIVERY_CLI_AGENTS_TARGET}${ag_prefix}${sel}.agent.md"
       done
     fi
 
