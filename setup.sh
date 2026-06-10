@@ -550,6 +550,7 @@ MANIFEST_CAP_SKILLS="false"
 MANIFEST_CAP_HOOKS="false"
 MANIFEST_CAP_COMMANDS="false"
 MANIFEST_CAP_PROMPT_FILES="false"
+MANIFEST_CAP_CLI_AGENTS="false"
 MANIFEST_CAP_AGENTS="false"
 MANIFEST_CAP_MCP="false"
 MANIFEST_DELIVERY_RULES_METHOD=""
@@ -592,6 +593,7 @@ load_manifest() {
   MANIFEST_CAP_HOOKS="false"
   MANIFEST_CAP_COMMANDS="false"
   MANIFEST_CAP_PROMPT_FILES="false"
+  MANIFEST_CAP_CLI_AGENTS="false"
   MANIFEST_CAP_AGENTS="false"
   MANIFEST_CAP_MCP="false"
   MANIFEST_DELIVERY_RULES_METHOD=""
@@ -675,6 +677,7 @@ load_manifest() {
         native_hooks)      MANIFEST_CAP_HOOKS="$cap_val" ;;
         native_commands)   MANIFEST_CAP_COMMANDS="$cap_val" ;;
         native_prompt_files) MANIFEST_CAP_PROMPT_FILES="$cap_val" ;;
+        native_cli_agents) MANIFEST_CAP_CLI_AGENTS="$cap_val" ;;
         native_agents)     MANIFEST_CAP_AGENTS="$cap_val" ;;
         native_mcp)        MANIFEST_CAP_MCP="$cap_val" ;;
         native_knowledge)  MANIFEST_CAP_KNOWLEDGE="$cap_val" ;;
@@ -2319,22 +2322,26 @@ EOF
       done
     fi
 
-    # GitHub Copilot CLI custom agents (RM-159): a manifest-side allowlist
+    # GitHub Copilot CLI custom agents (RM-159): when the agent declares
+    # native_cli_agents (capability-gated — ADR-011), a manifest-side allowlist
     # (delivery.commands.cli_agents_select) renders only the SELECTED workflow
     # commands as .github/agents/<prefix><name>.agent.md, invocable from the
     # terminal (copilot --agent=<prefix><name>). Additive to the IDE prompt-files
     # above and selective by design (terminal-driven workflows only). The
     # selection lives in this agent's manifest, not the command source, so other
     # agents' delivery (e.g. Claude) is untouched.
-    if [[ -n "${MANIFEST_DELIVERY_CLI_AGENTS_TARGET:-}" && "$OCTOPUS_WORKFLOW" == "true" ]]; then
+    if [[ "$MANIFEST_CAP_CLI_AGENTS" == "true" && "$OCTOPUS_WORKFLOW" == "true" ]]; then
       local agents_dir="$(_install_root)/$MANIFEST_DELIVERY_CLI_AGENTS_TARGET"
       local ag_prefix="${MANIFEST_DELIVERY_COMMANDS_PREFIX:-octopus-}"
       mkdir -p "$agents_dir"
       # Prune previously-generated agents (prefix-owned) before regenerating;
       # user-authored agent files are untouched.
       [[ -n "$ag_prefix" ]] && rm -f "$agents_dir/${ag_prefix}"*.agent.md 2>/dev/null || true
-      local sel
-      for sel in ${MANIFEST_DELIVERY_CLI_AGENTS_SELECT//,/ }; do
+      # Split the allowlist on commas via read (no pathname expansion, unlike a
+      # bare word-split — keeps the loop safe if a name ever contained a glob char).
+      local sel; local -a sels
+      IFS=',' read -ra sels <<< "$MANIFEST_DELIVERY_CLI_AGENTS_SELECT"
+      for sel in "${sels[@]}"; do
         local cmd_file="$OCTOPUS_DIR/commands/${sel}.md"
         [[ -f "$cmd_file" ]] || continue
         _deliver_cli_agent "$cmd_file" "${ag_prefix}${sel}" \

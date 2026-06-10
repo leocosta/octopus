@@ -649,6 +649,10 @@ Design decisions:
   pr-open, pr-review, pr-comments, pr-merge, release`. The doc-/audit-/knowledge-
   families stay IDE-only; converting all ~46 commands would clutter the `/agent`
   picker and bend the "agent = role" semantics.
+- **Capability-gated (ADR-011), not field-gated.** Emission is driven by a
+  `native_cli_agents` capability flag (symmetric to `native_prompt_files`), so any
+  future agent reuses the renderer with one manifest line and `setup.sh` stays
+  agent-agnostic.
 - **Selection lives in the copilot manifest**, not the command source
   (`delivery.commands.cli_agents_select`). The canonical `commands/*.md` are read
   read-only, so **other agents' delivery (Claude) is provably unaffected** — a
