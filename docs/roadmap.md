@@ -624,6 +624,44 @@ without reading the YAML).
 
 ---
 
+### RM-158 — `install.sh` self-bootstraps the release key by fingerprint
+
+- **Priority:** 🔴 High
+- **Effort:** low
+- **Status:** implemented (this PR)
+- **Added:** 2026-06-09
+
+`octopus update` on a fresh machine failed with `GPG signature verification
+failed for octopus.tar.gz`. Root cause: `verify_signature()` ran `gpg --verify
+--no-auto-key-locate` and only passed if the release public key was **already**
+in the user's keyring. On a clean box the key is absent, gpg reports "No public
+key", and the install/update aborts. RM-155 wired the default GitHub path through
+verification — which is exactly why the missing key now surfaced as a hard error
+instead of being silently skipped.
+
+The writer-Action (RM-152) already solved this in CI by fetching the key by its
+**full fingerprint** (`gpg --recv-keys`) — the out-of-band pin, since a keyserver
+cannot serve a different key for a given fingerprint. The fix gives the installer
+the same self-bootstrap:
+
+- Pin `OCTOPUS_RELEASE_FPR` (`63C3…F3CD`, the rotated v1.84.2+ key, RM-154) and
+  fetch it from `OCTOPUS_GPG_KEYSERVER` (default `keys.openpgp.org`) when absent.
+- Verify via `--status-fd` and require `VALIDSIG` from the **pinned** primary
+  fingerprint — a foreign key already in the user's keyring can no longer satisfy
+  verification on the default path.
+- **Graceful degradation:** if the key can't be obtained (offline / unreachable
+  keyserver), warn and continue on SHA-256 only; `OCTOPUS_REQUIRE_SIGNATURE=1`
+  turns that case into a hard failure for strict consumers (CI).
+- Override paths (`OCTOPUS_GPG_KEYRING` / `OCTOPUS_GPG_IMPORT_KEY`) keep their
+  bring-your-own-trust-root semantics untouched.
+
+**Rationale:** Closes the last gap between "the installer advertises GPG signing"
+and "a clean machine actually verifies it" — without asking users to seed a
+keyring by hand. The fingerprint stays the trust anchor; the keyserver is just
+transport.
+
+---
+
 ### RM-159 — Deliver core workflow commands to the Copilot CLI as custom agents
 
 - **Priority:** 🟡 Medium

@@ -15,6 +15,13 @@ METADATA_FILE="$OCTOPUS_CACHE_DIR/metadata.json"
 GITHUB_REPO="leocosta/octopus"
 GITHUB_API="https://api.github.com/repos/$GITHUB_REPO"
 
+# Release signing trust anchor. The FULL fingerprint is the out-of-band pin: a
+# keyserver cannot serve a different key for the same fingerprint, so fetching
+# by fingerprint on a clean machine self-bootstraps the trust root safely. Must
+# match OCTOPUS_FPR in templates/github-actions/code-metrics-writer.yml.
+OCTOPUS_RELEASE_FPR="${OCTOPUS_GPG_FINGERPRINT:-63C35E66917CE4540CD27592C8BA059A0322F3CD}"
+OCTOPUS_GPG_KEYSERVER="${OCTOPUS_GPG_KEYSERVER:-hkps://keys.openpgp.org}"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -177,11 +184,34 @@ resolve_signature_url() {
   fi
 }
 
-# Verify the tarball's detached GPG signature against a trusted public key.
+# Standard "verification failed" report: the error line, an optional detail
+# line, and the remediation hint. Keeps the four failure sites in
+# verify_signature consistent.
+_signature_failed() {
+  local tarball="$1" detail="${2:-}"
+  error "GPG signature verification failed for $(basename "$tarball")."
+  [[ -n "$detail" ]] && echo "  $detail" >&2
+  echo "  Set OCTOPUS_GPG_KEYRING/OCTOPUS_GPG_IMPORT_KEY to a trusted key," >&2
+  echo "  or OCTOPUS_SKIP_SIGNATURE=1 to bypass (not recommended)." >&2
+}
+
+# Verify the tarball's detached GPG signature.
+#
+# Default path (no override env): fetch the pinned release key by fingerprint
+# from a keyserver if it isn't already present, then require a good signature
+# *from that fingerprint*. If the key cannot be obtained (offline / unreachable
+# keyserver) the installer warns and continues on SHA-256 only — unless
+# OCTOPUS_REQUIRE_SIGNATURE=1, which makes that case fail closed. A signature
+# that is present but invalid (tampered tarball, or a good signature from a
+# different key) always fails closed.
+#
 # Honored env vars:
-#   OCTOPUS_GPG_KEYRING     — use this keyring instead of the default user one
-#   OCTOPUS_GPG_IMPORT_KEY  — path to an ASCII-armored public key to import first
-#   OCTOPUS_SKIP_SIGNATURE  — set to 1 to disable signature verification (not recommended)
+#   OCTOPUS_GPG_FINGERPRINT   — expected signer fingerprint (default: Octopus release key)
+#   OCTOPUS_GPG_KEYSERVER     — keyserver to fetch the key from (default: keys.openpgp.org)
+#   OCTOPUS_GPG_KEYRING       — verify against this keyring instead of the default user one
+#   OCTOPUS_GPG_IMPORT_KEY    — path to an ASCII-armored public key to import first
+#   OCTOPUS_REQUIRE_SIGNATURE — set to 1 to fail closed when the key is unobtainable
+#   OCTOPUS_SKIP_SIGNATURE    — set to 1 to disable signature verification (not recommended)
 verify_signature() {
   local tarball="$1"
   local signature="$2"
@@ -196,26 +226,89 @@ verify_signature() {
     return 1
   fi
 
-  local gpg_args=(--verify --batch --no-auto-key-locate)
-
-  # Optional custom keyring overrides the user's default.
+  # --- Override paths: the caller supplies the trust root explicitly, so any
+  # good signature within it passes (unchanged behavior). ---
   if [[ -n "${OCTOPUS_GPG_KEYRING:-}" ]]; then
     if [[ ! -f "$OCTOPUS_GPG_KEYRING" ]]; then
       error "OCTOPUS_GPG_KEYRING=$OCTOPUS_GPG_KEYRING: file not found."
       return 1
     fi
-    gpg_args=(--verify --batch --no-default-keyring --keyring "$OCTOPUS_GPG_KEYRING")
-  elif [[ -n "${OCTOPUS_GPG_IMPORT_KEY:-}" && -f "${OCTOPUS_GPG_IMPORT_KEY}" ]]; then
-    # Import the supplied key into the default keyring once; idempotent.
-    gpg --batch --quiet --import "${OCTOPUS_GPG_IMPORT_KEY}" >/dev/null 2>&1 || true
+    if ! gpg --verify --batch --no-default-keyring --keyring "$OCTOPUS_GPG_KEYRING" \
+         "$signature" "$tarball" >/dev/null 2>&1; then
+      _signature_failed "$tarball"
+      return 1
+    fi
+    success "Signature valid."
+    return 0
   fi
 
-  if ! gpg "${gpg_args[@]}" "$signature" "$tarball" >/dev/null 2>&1; then
-    error "GPG signature verification failed for $(basename "$tarball")."
-    echo "  Set OCTOPUS_GPG_KEYRING or OCTOPUS_GPG_IMPORT_KEY to a trusted key," >&2
-    echo "  or OCTOPUS_SKIP_SIGNATURE=1 to bypass (not recommended)." >&2
+  if [[ -n "${OCTOPUS_GPG_IMPORT_KEY:-}" && -f "${OCTOPUS_GPG_IMPORT_KEY}" ]]; then
+    # Import the supplied key into the default keyring once; idempotent.
+    gpg --batch --quiet --import "${OCTOPUS_GPG_IMPORT_KEY}" >/dev/null 2>&1 || true
+    if ! gpg --verify --batch --no-auto-key-locate \
+         "$signature" "$tarball" >/dev/null 2>&1; then
+      _signature_failed "$tarball"
+      return 1
+    fi
+    success "Signature valid."
+    return 0
+  fi
+
+  # --- Default path: pinned-fingerprint trust anchor. ---
+  local fpr="$OCTOPUS_RELEASE_FPR"
+
+  # Self-bootstrap: fetch the release key by its full fingerprint if absent.
+  # The fingerprint is the pin — a keyserver cannot return a different key for
+  # it — so this is safe to do automatically.
+  if ! gpg --list-keys "$fpr" >/dev/null 2>&1; then
+    info "Fetching Octopus release key $fpr from $OCTOPUS_GPG_KEYSERVER..."
+    gpg --batch --quiet --keyserver "$OCTOPUS_GPG_KEYSERVER" \
+        --recv-keys "$fpr" >/dev/null 2>&1 || true
+  fi
+
+  # Verify, then classify the outcome from the machine-readable status output in
+  # a single pass: the primary-key fingerprint of any good signature (last
+  # VALIDSIG field), plus whether gpg reported a bad signature or a missing key.
+  local status line validsig_primary="" badsig="" no_pubkey=""
+  status="$(gpg --verify --batch --no-auto-key-locate --status-fd 1 \
+            "$signature" "$tarball" 2>/dev/null)" || true
+  while IFS= read -r line; do
+    case "$line" in
+      '[GNUPG:] VALIDSIG'*) validsig_primary="${line##* }" ;;
+      '[GNUPG:] BADSIG'*)   badsig=1 ;;
+      '[GNUPG:] NO_PUBKEY'*) no_pubkey=1 ;;
+    esac
+  done <<<"$status"
+
+  # A good signature from the pinned primary key — accept. This rejects a
+  # foreign key that merely happens to live in the user's keyring.
+  if [[ "$validsig_primary" == "$fpr" ]]; then
+    success "Signature valid."
+    return 0
+  fi
+
+  # A signature that is present and verifiably wrong (tampered, or a good
+  # signature from a different key) always fails closed.
+  if [[ -n "$badsig" || -n "$validsig_primary" ]]; then
+    _signature_failed "$tarball" "The signature is not a valid Octopus release signature ($fpr)."
     return 1
   fi
+
+  # The key could not be obtained (offline / unreachable keyserver). Warn and
+  # fall back to checksum-only — unless a signature is explicitly required.
+  if [[ -n "$no_pubkey" ]]; then
+    if [[ "${OCTOPUS_REQUIRE_SIGNATURE:-0}" == "1" ]]; then
+      error "Could not obtain the Octopus release key ($fpr) from $OCTOPUS_GPG_KEYSERVER (OCTOPUS_REQUIRE_SIGNATURE=1)."
+      return 1
+    fi
+    warn "Could not obtain the Octopus release key ($fpr) from $OCTOPUS_GPG_KEYSERVER;"
+    warn "continuing with checksum-only verification."
+    return 0
+  fi
+
+  # Anything else (malformed signature, unexpected gpg error) fails closed.
+  _signature_failed "$tarball"
+  return 1
 }
 
 # Exported so write_metadata can embed the verified checksum.
@@ -313,8 +406,8 @@ download_release() {
     fi
   elif curl -fsSL "$signature_url" -o "$tmpdir/octopus.tar.gz.asc" 2>/dev/null; then
     info "Verifying GPG signature..."
+    # verify_signature reports its own outcome (valid / checksum-only fallback).
     verify_signature "$tmpdir/octopus.tar.gz" "$tmpdir/octopus.tar.gz.asc" || exit 1
-    success "Signature valid."
   elif [[ "${OCTOPUS_REQUIRE_SIGNATURE:-0}" == "1" ]]; then
     # 'curl --fail' turned a 404 into a non-zero exit and the signature is required.
     error "No signature published at $signature_url (OCTOPUS_REQUIRE_SIGNATURE=1)."
