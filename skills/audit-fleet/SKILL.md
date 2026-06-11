@@ -1,5 +1,6 @@
 ---
 name: audit-fleet
+model: haiku
 description: >
   Cross-repo adoption + drift audit. Given a fleet (from the workspace
   fleet.yml), reports each repo's Octopus surface against its declared target

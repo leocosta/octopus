@@ -1,5 +1,6 @@
 ---
 name: audit-all
+model: sonnet
 description: >
   Run the four quality-audit skills in parallel against one ref —
   audit-security, audit-money, audit-tenant, audit-contracts.

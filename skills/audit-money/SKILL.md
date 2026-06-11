@@ -1,5 +1,6 @@
 ---
 name: audit-money
+model: sonnet
 description: >
   Pre-merge audit of money-touching code (branch/PR): numeric types, rounding,
   tests for non-round cents, env-var consistency, payment idempotency, webhook

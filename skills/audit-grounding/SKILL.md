@@ -1,5 +1,6 @@
 ---
 name: audit-grounding
+model: haiku
 description: >
   Signal-only review confronting the working diff against the repo's source of
   truth — CONTEXT.md (domain glossary), docs/adr/, and the knowledge base — to

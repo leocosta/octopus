@@ -1,5 +1,6 @@
 ---
 name: audit-verification
+model: haiku
 description: >
   Signal-only audit confronting a finished task against its run evidence: a
   completion claimed without build/test/typecheck running (unverified-

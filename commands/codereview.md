@@ -65,12 +65,14 @@ subset** from Phase 1 (e.g. `audit-tenant` sees the tenant-scoped
 files, not the frontend diff) — this is the dominant token cost, so
 scoping it down is the point.
 
-Dispatch the **`audit-*` skills on the cheapest model tier** (they are
-mechanical checklist passes — see each skill's *Model tier* note); run
-the **roles (`architect`, `dba`, `security`) on their declared model**
-(Opus — they adjudicate, see `roles/*.md`) (RM-130). Roles emit findings
-in the format defined by their own role files; skills emit per their
-`audit-*` Output Format.
+Dispatch each **`audit-*` skill on the tier declared in its SKILL.md
+`model:` frontmatter** — spawn it as a sub-agent (Agent tool) with `model`
+set to that value (`sonnet` for the domain audits, `haiku` for the
+signal/config passes; never Opus — they are mechanical checklist passes).
+Run the **roles (`architect`, `dba`, `security`) on their declared model**
+(`roles/*.md` — Opus; they adjudicate). (RM-130) Roles emit findings in the
+format defined by their own role files; skills emit per their `audit-*`
+Output Format.
 
 ## Phase 3 — Fallback Checklist
 

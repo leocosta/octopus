@@ -113,7 +113,7 @@ The resulting task is written to `.octopus/queue/<ts>-<role>.json`:
 ```
 
 `model` is always stored as the resolved full model ID (e.g.
-`claude-opus-4-7`) so the queue entry is self-contained and reproducible
+`claude-opus-4-8`) so the queue entry is self-contained and reproducible
 regardless of later default changes.
 
 #### Process Manager

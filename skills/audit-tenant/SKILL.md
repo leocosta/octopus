@@ -1,5 +1,6 @@
 ---
 name: audit-tenant
+model: sonnet
 description: >
   Pre-merge audit of multi-tenant data-scope enforcement (branch/PR): queries
   bypassing tenant filters, DbContexts missing HasQueryFilter on new entities,

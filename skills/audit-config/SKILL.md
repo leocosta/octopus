@@ -1,5 +1,6 @@
 ---
 name: audit-config
+model: haiku
 description: >
   Pre-merge audit of the Octopus configuration surface (rules/, skills/,
   hooks/, commands/, bundles/): model-specific assumptions, stale dates,

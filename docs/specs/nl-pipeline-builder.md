@@ -143,7 +143,7 @@ New role file: `roles/staff-engineer.md`
 - Architecture is coherent with existing patterns and ADRs
 - No god objects, premature abstractions, or copy-paste code in changed files
 
-**Default model:** `claude-opus-4-7` — architectural review justifies the most capable model.
+**Default model:** `claude-opus-4-8` — architectural review justifies the most capable model.
 
 **Distinction from other roles:**
 - `backend-specialist` / `frontend-specialist` — implement; `staff-engineer` — reviews and questions
