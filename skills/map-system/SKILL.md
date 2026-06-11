@@ -1,5 +1,6 @@
 ---
 name: map-system
+model: sonnet
 description: >
   Map a repository at a higher level in its domain vocabulary. Two modes:
   simplified is a one-shot ~30-line textual orientation; complete (default)

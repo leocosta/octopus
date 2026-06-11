@@ -1,5 +1,6 @@
 ---
 name: knowledge-briefing
+model: haiku
 description: >
   Proactive cadence summary over a knowledge root — 'what changed / what needs
   you today' without being asked. Deterministic core (octopus briefing, over

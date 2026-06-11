@@ -1,5 +1,6 @@
 ---
 name: continuous-learning
+model: sonnet
 description: >
   Capture insights, test hypotheses, and promote confirmed patterns to rules
   (adapted for multi-agent environments). Default mode is single-
