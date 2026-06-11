@@ -48,7 +48,17 @@ t_roles_opus() {
 }
 check "adjudicating roles (architect/dba/security) stay opus" t_roles_opus
 
-# 5. The codereview dispatch actually routes audits by their declared tier (wording guard).
+# 5. The enumerated roster covers every audit on disk — so a NEW audit-* skill
+#    added later without a tier can't silently escape the assertions above.
+t_roster_complete() {
+  local on_disk expected
+  on_disk="$(cd "$DIR/skills" && ls -d audit-*/ | sed 's#/##; s/^audit-//' | sort | tr '\n' ' ')"
+  expected="$(printf '%s\n' $DOMAIN_AUDITS $SIGNAL_AUDITS | sort | tr '\n' ' ')"
+  [[ "$on_disk" == "$expected" ]] || { echo "    on-disk: $on_disk" >&2; echo "    listed : $expected" >&2; return 1; }
+}
+check "the enumerated audit roster covers every skills/audit-*/ on disk" t_roster_complete
+
+# 6. The codereview dispatch actually routes audits by their declared tier (wording guard).
 t_codereview_wording() {
   grep -q 'model:` frontmatter' "$DIR/commands/codereview.md" && grep -q 'RM-130' "$DIR/commands/codereview.md"
 }
