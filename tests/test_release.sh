@@ -52,6 +52,41 @@ output=$("$SCRIPT_DIR/cli/octopus.sh" release suggest-version 2>&1)
 echo "$output" | grep -q "suggested=2.0.0" || { echo "FAIL: breaking should bump to 2.0.0"; echo "Got: $output"; exit 1; }
 echo "PASS: suggest-version breaking change"
 
+# --- Test 4a: emoji-prefixed feat (squash-merge style) → minor ---
+# Squash-merges land on main as "✨ Title (#NN)" with no `feat:` prefix; the
+# bump heuristic must read the emoji, not only the Conventional-Commits keyword.
+echo "Test 4a: suggest-version emoji feat → minor"
+
+git -C "$TMPDIR" tag v1.2.0
+git -C "$TMPDIR" commit --allow-empty -m "✨ add an emoji-prefixed feature (#42)" -q
+cd "$TMPDIR"
+output=$("$SCRIPT_DIR/cli/octopus.sh" release suggest-version 2>&1)
+echo "$output" | grep -q "suggested=1.3.0" || { echo "FAIL: emoji feat should bump minor to 1.3.0"; echo "Got: $output"; exit 1; }
+echo "PASS: suggest-version emoji feat → minor"
+
+# --- Test 4b: 'BREAKING CHANGE' in prose body must NOT trigger major ---
+# Only a real footer line counts as breaking — not the phrase mentioned in prose.
+echo "Test 4b: suggest-version ignores prose 'BREAKING CHANGE'"
+
+git -C "$TMPDIR" tag v1.3.0
+git -C "$TMPDIR" commit --allow-empty -m "refactor(core): trim doc" \
+  -m "Keep the BREAKING CHANGE: footer mentioned here as prose, not a real footer." -q
+cd "$TMPDIR"
+output=$("$SCRIPT_DIR/cli/octopus.sh" release suggest-version 2>&1)
+echo "$output" | grep -q "suggested=1.3.1" || { echo "FAIL: prose 'BREAKING CHANGE' must stay patch (1.3.1)"; echo "Got: $output"; exit 1; }
+echo "PASS: suggest-version ignores prose 'BREAKING CHANGE'"
+
+# --- Test 4c: a real 'BREAKING CHANGE:' footer line still → major ---
+echo "Test 4c: suggest-version real breaking footer → major"
+
+git -C "$TMPDIR" tag v1.3.1
+git -C "$TMPDIR" commit --allow-empty -m "feat: new capability" \
+  -m "BREAKING CHANGE: removed the old endpoint" -q
+cd "$TMPDIR"
+output=$("$SCRIPT_DIR/cli/octopus.sh" release suggest-version 2>&1)
+echo "$output" | grep -q "suggested=2.0.0" || { echo "FAIL: real BREAKING CHANGE footer should bump major (2.0.0)"; echo "Got: $output"; exit 1; }
+echo "PASS: suggest-version real breaking footer → major"
+
 # --- Test 5: suggest-version no commits since tag ---
 echo "Test 5: suggest-version no commits"
 
