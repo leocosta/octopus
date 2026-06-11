@@ -2,7 +2,7 @@
 
 ## PR Creation
 
-- Create a branch from the current base branch (`main` by default, or the target `release/*` branch if your team uses release branches) following the [branch naming convention](commit-conventions.md)
+- Create a branch from the current base branch (`main` by default, or the target `release/*` branch if your team uses release branches) following the `<type>/<short-description>` convention — lowercase, hyphens
 - Keep PRs focused — one feature, fix, or refactor per PR
 - Small PRs are easier to review and less risky to merge; aim for under 400 lines changed
 - If a change is large, break it into stacked PRs with clear dependency order

@@ -16,3 +16,14 @@ cli: octopus.sh branch-create
    - Validate the branch name format (lowercase, hyphens only)
    - Create the branch locally with `git checkout -b`
 4. Confirm branch creation to the user
+
+## Naming convention
+
+`<type>/<short-description>` — lowercase and hyphens (no underscores or camelCase),
+short but descriptive. Include a ticket reference when applicable:
+
+```
+feat/student-enrollment
+fix/token-refresh-loop
+feat/PROJ-123-student-enrollment
+```
