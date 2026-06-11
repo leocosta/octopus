@@ -5,7 +5,7 @@ from pathlib import Path
 
 MOCK_SKILLS = {
     "audit-security": {"keywords": ["auth", "jwt", "secret"], "model": None},
-    "audit-money":  {"keywords": ["payment", "stripe"],     "model": "claude-opus-4-7"},
+    "audit-money":  {"keywords": ["payment", "stripe"],     "model": "claude-opus-4-8"},
 }
 
 
@@ -23,7 +23,7 @@ def test_slash_command(tmp_path):
 def test_slash_with_model_flag(tmp_path):
     m = make_matcher(tmp_path)
     r = m.resolve("/audit-security --model opus", role_model="claude-sonnet-4-6")
-    assert r.model == "claude-opus-4-7"
+    assert r.model == "claude-opus-4-8"
 
 
 def test_nl_single_match(tmp_path):
@@ -41,7 +41,7 @@ def test_nl_no_match(tmp_path):
 def test_skill_model_wins_over_role(tmp_path):
     m = make_matcher(tmp_path)
     r = m.resolve("/audit-money", role_model="claude-sonnet-4-6")
-    assert r.model == "claude-opus-4-7"
+    assert r.model == "claude-opus-4-8"
 
 
 def test_nl_ambiguous(tmp_path):
