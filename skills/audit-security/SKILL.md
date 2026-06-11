@@ -1,5 +1,6 @@
 ---
 name: audit-security
+model: sonnet
 description: Security audit checklist for AI agent configurations, environment variables, and project dependencies
 triggers:
   paths: []

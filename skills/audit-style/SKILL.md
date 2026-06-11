@@ -1,5 +1,6 @@
 ---
 name: audit-style
+model: haiku
 description: >
   Signal-only review flagging code that violates the team's design rules
   (exceptions gate, patterns, coding-style, active stack rules) and over-

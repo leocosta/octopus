@@ -1,5 +1,6 @@
 ---
 name: audit-contracts
+model: sonnet
 description: >
   Detect API-vs-frontend contract drift in multi-stack monorepos (.NET/Node
   API + React/Vue/Astro). Given a branch/PR, flags endpoint additions without
