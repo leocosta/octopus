@@ -132,18 +132,21 @@ case "$SUBCMD" in
     # Parse commits for bump level
     BUMP="patch"
     while IFS= read -r line; do
-      # Check for BREAKING CHANGE or ! after type
-      if echo "$line" | grep -qE '(BREAKING CHANGE|^[a-f0-9]+ [a-z]+(\([^)]*\))?!)'; then
+      # Breaking change in the subject: the `!` marker (e.g. feat!: / fix(x)!:).
+      if echo "$line" | grep -qE '^[a-f0-9]+ [a-z]+(\([^)]*\))?!'; then
         BUMP="major"
         break
       fi
-      if echo "$line" | grep -qE '^[a-f0-9]+ feat'; then
+      # Feature: the `feat` prefix OR the ✨ emoji (squash-merges land as
+      # "✨ Title (#NN)" with no `feat:` prefix — read the emoji too).
+      if echo "$line" | grep -qE '^[a-f0-9]+ (feat|✨)'; then
         BUMP="minor"
       fi
     done < <(git log "$RANGE" --oneline --format="%H %s" 2>/dev/null)
 
-    # Check commit bodies for BREAKING CHANGE
-    if git log "$RANGE" --format="%b" 2>/dev/null | grep -q "BREAKING CHANGE"; then
+    # Breaking change in a body: only a real footer LINE (`BREAKING CHANGE:` /
+    # `BREAKING-CHANGE:`), never the phrase mentioned anywhere in prose.
+    if git log "$RANGE" --format="%b" 2>/dev/null | grep -qE '^BREAKING[ -]CHANGE:'; then
       BUMP="major"
     fi
 
