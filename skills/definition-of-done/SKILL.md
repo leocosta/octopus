@@ -1,5 +1,6 @@
 ---
 name: definition-of-done
+model: sonnet
 description: >
   Create, update, and validate the team's Definition of Done (docs/definition-
   of-done.md). create/update scaffolds from a template and grills the manager

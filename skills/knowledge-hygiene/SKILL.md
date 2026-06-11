@@ -1,5 +1,6 @@
 ---
 name: knowledge-hygiene
+model: haiku
 description: >
   Audit a registered knowledge root (docs/, standards, auto-memory,
   consigliere workspace) for decay — stale nodes, broken links, orphans,

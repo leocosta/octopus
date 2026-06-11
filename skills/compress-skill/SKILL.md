@@ -1,5 +1,6 @@
 ---
 name: compress-skill
+model: sonnet
 description: >
   Shrink a SKILL.md without changing meaning — deterministic cleanup first,
   LLM rewrite only if the target isn't met. Test-file anchors preserved;

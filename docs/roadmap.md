@@ -711,6 +711,42 @@ the IDE, reusing the same single command source.
 
 ---
 
+### RM-160 — Tier the cheap-class non-audit skills off Opus (RM-130 phase 2)
+
+- **Priority:** 🟡 Medium
+- **Effort:** low
+- **Status:** implemented (this PR)
+- **Added:** 2026-06-11
+
+RM-130 tiered the `audit-*` family; the same gap remained across other skills
+whose body already says the LLM step is mechanical/narration but that declared no
+`model:`, so they ran on the session model (Opus). A catalogue pass classified
+each by the work its LLM step actually does:
+
+- **`model: haiku`** — `knowledge-briefing`, `knowledge-synthesize` (both
+  explicitly "run on the cheapest tier / `--model haiku`" in their bodies),
+  `knowledge-hygiene`, and `code-metrics` ("low-cost Haiku-class model invoked
+  only when a metric crosses a threshold"). Deterministic core + thin narration.
+- **`model: sonnet`** — `compress-skill`, `map-system`, `launch-release`,
+  `scaffold-skill`, `continuous-learning`, `definition-of-done`. Real reasoning
+  over content (semantic rewrite, architecture synthesis, re-voicing, the
+  manager grill) but not architecture/code-gen — off Opus, conservatively Sonnet.
+- **Kept Opus** — `debug`, `implement` (hands-on reasoning + code generation);
+  `consigliere-lens` is already `opus` by design (political "thinks like you"
+  judgement). **Skipped** the zero-LLM skills (`enforce-precommit`,
+  `consigliere-bootstrap`, `context-budget`) — pure bash, no model call to tier.
+
+The tier is honoured by `cli/control/skill_matcher.py` (the daemon / `octopus`
+CLI path, where cadence jobs like `knowledge-briefing --daily` actually run) and
+documents the intended tier for any orchestrator that dispatches the skill — the
+same mechanism RM-130 used. Locked by `tests/test_skill_tiering.sh`.
+
+**Rationale:** The audit fan-out was the burst cost; this is the steady-state
+one — the cadence/knowledge/metrics skills no longer pay frontier-model price for
+narration and pattern-matching, with Sonnet reserved where light reasoning helps.
+
+---
+
 ## In Progress
 
 _RM-088 (`audit-grounding`) shipped in v1.69.0. **Cluster 16** (manager-multiplier) is **complete on `feat/standards-lookup`** — all implemented & committed, pending merge/release: RM-089 (`mentor`), RM-090 (`onboarding`), RM-091 (`definition-of-done`), RM-092 (`standards`), RM-093 (team `continuous-learning`), RM-094 (`audit-fleet`), RM-095 (`fleet-bootstrap`), RM-096 (`tech-lead` bundle), RM-098 (`map-system` complete-mode deck). ADRs 002–006 recorded. See [research](research/2026-05-30-manager-multiplier.md)._

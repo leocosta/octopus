@@ -1,5 +1,6 @@
 ---
 name: scaffold-skill
+model: sonnet
 description: >
   Create new Octopus skills with the correct structure — frontmatter (name +
   description), SKILL.md <= 250 lines, optional

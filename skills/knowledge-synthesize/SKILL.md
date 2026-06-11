@@ -1,5 +1,6 @@
 ---
 name: knowledge-synthesize
+model: haiku
 description: >
   Surface cross-node connections in a knowledge root. The deterministic core
   (octopus synthesize, over the octopus kr registry) ranks candidates —

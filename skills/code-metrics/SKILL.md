@@ -1,5 +1,6 @@
 ---
 name: code-metrics
+model: haiku
 description: PR-time dual-delta read of coverage/complexity/module-size/dependency-cycles vs. orphan-ref baseline; ratchet+absolute thresholds; LLM curation only on breach.
 triggers:
   paths: ["**/*.cs", "**/*.ts", "**/*.tsx", "**/*.js"]

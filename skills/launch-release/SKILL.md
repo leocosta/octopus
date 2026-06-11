@@ -1,5 +1,6 @@
 ---
 name: launch-release
+model: sonnet
 description: >
   Generate a themed release announcement for existing users from one or more
   refs (tags, ranges, RM IDs). Produces canonical artifacts (landing HTML,
