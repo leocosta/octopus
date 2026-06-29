@@ -1,0 +1,53 @@
+---
+title: council
+description: "Run one high-stakes decision through a council of five ephemeral advisor lenses that answer in parallel, peer-review each other anonymously, and get synthesised into a single verdict — agreements, clashes, blind spots, a recommendation, and the one thing to do first. Adapted from Karpathy's LLM Council. Read-only."
+---
+
+You ask one model a question and you get one answer with one blind spot — and no
+way to tell what it missed. The `council` skill runs the same decision through
+**five independent thinking lenses**, has them **peer-review each other
+anonymously**, then a **chairman** synthesises a single verdict. Adapted from
+Andrej Karpathy's LLM Council.
+
+## What it solves
+
+A single perspective is a single blind spot, and on a high-stakes call the cost of
+that blind spot is real. Asking the same model again does not help — it tends to
+agree with itself. The council manufactures genuine disagreement: five lenses
+chosen for built-in tension (downside vs upside, rethink-everything vs just-ship,
+plus an outsider keeping everyone honest), so the decision gets attacked from
+angles a single pass never reaches. The anonymous peer-review round is what makes
+it more than "ask five times" — reviewers judge the arguments on merit, not on
+which lens produced them.
+
+## How it works
+
+Four phases, each read-only over the workspace:
+
+1. **Frame** — scan the workspace for context (CLAUDE.md, a `memory/` directory,
+   referenced files, and `CONTEXT.md` / `docs/adr/` when present), then reframe the
+   raw question into one neutral prompt every advisor receives. No opinion is
+   injected; if the question is too vague, the skill asks exactly one clarifying
+   question first.
+2. **Convene** — the five advisors (Contrarian, First Principles, Expansionist,
+   Outsider, Executor) answer **in parallel**, each leaning fully into its lens.
+3. **Anonymous peer-review** — the responses are anonymised as A–E with a
+   randomised mapping, then each advisor reviews the set: strongest response,
+   biggest blind spot, what everyone missed.
+4. **Chairman synthesis** — one agent produces a fixed-structure verdict: where the
+   council agrees, where it clashes, the blind spots peer-review caught, the
+   recommendation (a real answer, not "it depends"), and the one thing to do first.
+
+The advisors are **ephemeral prompt-injected lenses, not roles** — the council
+creates no role file and reuses none (unlike `delegate`, which dispatches persisted
+roles). The verdict is presented in chat as markdown; the council writes **no files
+by default** — a transcript is opt-in.
+
+## When to use
+
+Convene the council for a genuine decision with stakes and a tradeoff — "launch X
+or Y first", "is this pivot sane", "what's weak in this plan". Do **not** convene
+for a factual lookup, a creation task ("write me a tweet"), or a trivial yes/no
+with no real tradeoff — just answer those directly. Run `interview` first when the
+decision is still fuzzy and needs scoping; reach for `delegate` when you need
+persisted specialist roles to do work rather than five lenses to weigh one call.

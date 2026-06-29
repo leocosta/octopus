@@ -7,21 +7,24 @@ source_hash: ""
 needs_retranslation: false
 ---
 
-`workflow-extras` reúne duas skills genuinamente úteis mas não necessárias em
-toda tarefa: `map-system` para construir um deck de orientação do codebase e
-`delegate` para despachar pipelines multi-role. Elas vivem aqui, e não no
-[`starter`](/octopus/bundles/starter/), para que repos que não precisam delas
-não paguem nenhum custo de carregamento. Adicione este bundle quando quiser usá-las.
+`workflow-extras` reúne três skills genuinamente úteis mas não necessárias em
+toda tarefa: `map-system` para construir um deck de orientação do codebase,
+`delegate` para despachar pipelines multi-role, e `council` para pressionar uma
+decisão de alto risco a partir de cinco lentes independentes. Elas vivem aqui, e
+não no [`starter`](/octopus/bundles/starter/), para que repos que não precisam
+delas não paguem nenhum custo de carregamento. Adicione este bundle quando quiser
+usá-las.
 
 ## Por que isso existe
 
-O [`starter`](/octopus/bundles/starter/) é mantido enxuto de propósito. Ambas as
+O [`starter`](/octopus/bundles/starter/) é mantido enxuto de propósito. As três
 skills são situacionais: você roda `map-system` quando um novo colega entra no
 time ou depois de uma mudança arquitetural grande — não em cada PR. Você usa
 `delegate` quando uma tarefa precisa explicitamente de múltiplos papéis
-especialistas em sequência — não no fluxo de implementação de rotina. Tornando-as
-opt-in, o footprint padrão do agent permanece pequeno sem esconder as skills de
-times que precisam delas.
+especialistas em sequência — não no fluxo de implementação de rotina. Você convoca
+o `council` quando uma decisão é de alto risco e genuinamente incerta — não para
+decisões de rotina. Tornando-as opt-in, o footprint padrão do agent permanece
+pequeno sem esconder as skills de times que precisam delas.
 
 ## O que inclui
 
@@ -29,6 +32,7 @@ times que precisam delas.
 skills:
   - map-system   # constrói um deck de orientação do codebase (trigger manual apenas)
   - delegate     # despacha pipelines @role: @architect, @security, @dba, etc.
+  - council      # pressure-test de uma decisão por 5 lentes (read-only, sem arquivos por padrão)
 roles: []
 ```
 
@@ -48,6 +52,12 @@ roles: []
   antes de retornar um resultado consolidado. Usado quando uma tarefa realmente
   cruza boundaries de papel — não como substituto de tarefas de papel único onde
   uma role é suficiente.
+- **`council`** — roda uma decisão de alto risco por cinco lentes de advisor
+  efêmeras (Contrarian, First Principles, Expansionist, Outsider, Executor), faz
+  com que revisem umas às outras anonimamente e sintetiza um veredito de chairman.
+  Read-only — não escreve arquivo algum a menos que um transcript seja
+  explicitamente pedido. Usado para decisões com tradeoff real, não para lookups
+  factuais ou tarefas de criação.
 
 ### Por que não estão no starter
 

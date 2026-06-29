@@ -1,0 +1,54 @@
+---
+title: council
+description: "Roda uma decisão de alto risco por um conselho de cinco lentes de advisor efêmeras que respondem em paralelo, revisam umas às outras anonimamente e são sintetizadas num único veredito — concordâncias, divergências, pontos cegos, uma recomendação e a primeira coisa a fazer. Adaptado do LLM Council do Karpathy. Read-only."
+---
+
+Você faz uma pergunta a um modelo e recebe uma resposta com um ponto cego — sem
+jeito de saber o que ela perdeu. A skill `council` roda a mesma decisão por
+**cinco lentes de pensamento independentes**, faz com que **revisem umas às outras
+anonimamente** e então um **chairman** sintetiza um único veredito. Adaptado do
+LLM Council de Andrej Karpathy.
+
+## O que resolve
+
+Uma única perspectiva é um único ponto cego, e numa decisão de alto risco o custo
+desse ponto cego é real. Perguntar de novo ao mesmo modelo não ajuda — ele tende a
+concordar consigo mesmo. O conselho fabrica discordância genuína: cinco lentes
+escolhidas por tensão embutida (downside vs upside, repensar-tudo vs só-entregar,
+mais um outsider mantendo todos honestos), de modo que a decisão é atacada por
+ângulos que um único pass nunca alcança. A rodada de peer-review anônima é o que a
+torna mais que "perguntar cinco vezes" — os revisores julgam os argumentos pelo
+mérito, não por qual lente os produziu.
+
+## Como resolve
+
+Quatro fases, todas read-only sobre o workspace:
+
+1. **Frame** — escaneia o workspace por contexto (CLAUDE.md, um diretório
+   `memory/`, arquivos referenciados, e `CONTEXT.md` / `docs/adr/` quando
+   presentes), depois reformula a pergunta crua num único prompt neutro que todo
+   advisor recebe. Nenhuma opinião é injetada; se a pergunta estiver vaga demais, a
+   skill faz exatamente uma pergunta de clarificação antes.
+2. **Convene** — as cinco lentes (Contrarian, First Principles, Expansionist,
+   Outsider, Executor) respondem **em paralelo**, cada uma inteira no seu ângulo.
+3. **Peer-review anônimo** — as respostas são anonimizadas como A–E com mapeamento
+   randomizado, e cada advisor revisa o conjunto: resposta mais forte, maior ponto
+   cego, o que todos perderam.
+4. **Síntese do chairman** — um agente produz um veredito de estrutura fixa: onde o
+   conselho concorda, onde ele diverge, os pontos cegos que o peer-review pegou, a
+   recomendação (uma resposta real, não "depende") e a primeira coisa a fazer.
+
+Os advisors são **lentes efêmeras injetadas no prompt, não roles** — o conselho não
+cria nenhum arquivo de role e não reusa nenhum (diferente do `delegate`, que
+despacha roles persistidas). O veredito é apresentado no chat como markdown; o
+conselho **não escreve arquivo por padrão** — um transcript é opt-in.
+
+## Quando usar
+
+Convoque o conselho para uma decisão genuína com risco e tradeoff — "lançar X ou Y
+primeiro", "esse pivot faz sentido", "o que está fraco neste plano". **Não**
+convoque para um lookup factual, uma tarefa de criação ("escreva um tweet") ou um
+sim/não trivial sem tradeoff real — apenas responda direto. Rode `interview` antes
+quando a decisão ainda está difusa e precisa de escopo; use `delegate` quando você
+precisa de roles especialistas persistidas para fazer o trabalho, em vez de cinco
+lentes para pesar uma decisão.

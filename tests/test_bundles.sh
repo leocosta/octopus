@@ -485,7 +485,7 @@ done
 printf '%s\n' "${OCTOPUS_RULES[@]}" | grep -qx "csharp" \
   || { echo "FAIL: focused C# repo missing csharp rule"; exit 1; }
 # Absent: foreign DBs/stacks + situational defaults moved to workflow-extras.
-for s in dba-postgres dba-mongodb dba-redis frontend-patterns test-component map-system delegate; do
+for s in dba-postgres dba-mongodb dba-redis frontend-patterns test-component map-system delegate council; do
   printf '%s\n' "${OCTOPUS_SKILLS[@]}" | grep -qx "$s" \
     && { echo "FAIL: $s should not load in a focused C# backend repo"; exit 1; } || true
 done
