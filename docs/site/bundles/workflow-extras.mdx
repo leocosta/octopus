@@ -5,19 +5,21 @@ sidebar:
   order: 12
 ---
 
-`workflow-extras` holds two skills that are genuinely useful but not needed on
-every task: `map-system` for building a codebase-orientation deck and `delegate`
-for dispatching multi-role pipelines. They live here rather than in
+`workflow-extras` holds three skills that are genuinely useful but not needed on
+every task: `map-system` for building a codebase-orientation deck, `delegate`
+for dispatching multi-role pipelines, and `council` for pressure-testing one
+high-stakes decision through five independent lenses. They live here rather than in
 [`starter`](/octopus/bundles/starter/) so that repos that don't need them pay
 no loading cost. Add this bundle when you want them.
 
 ## Why this exists
 
-[`starter`](/octopus/bundles/starter/) is kept lean on purpose. Both
-`map-system` and `delegate` are situational: you run `map-system` when a new
-teammate joins or after a major architectural change — not on every PR.
-You use `delegate` when a task explicitly needs multiple specialist roles in
-sequence — not on routine implementation. Making them opt-in keeps the default
+[`starter`](/octopus/bundles/starter/) is kept lean on purpose. All three
+skills are situational: you run `map-system` when a new teammate joins or after a
+major architectural change — not on every PR. You use `delegate` when a task
+explicitly needs multiple specialist roles in sequence — not on routine
+implementation. You convene `council` when a decision is high-stakes and
+genuinely uncertain — not for routine calls. Making them opt-in keeps the default
 agent footprint small without hiding them from teams that need them.
 
 ## What it includes
@@ -26,6 +28,7 @@ agent footprint small without hiding them from teams that need them.
 skills:
   - map-system   # builds a codebase-orientation deck (manual-trigger only)
   - delegate     # dispatches @role pipelines: @architect, @security, @dba, etc.
+  - council      # 5-lens pressure-test of one decision (read-only, no files by default)
 roles: []
 ```
 
@@ -43,6 +46,11 @@ roles: []
   routes the work through each one, collecting their outputs before returning
   a consolidated result. Used when a task genuinely crosses role boundaries —
   not as a substitute for single-role tasks where one role suffices.
+- **`council`** — runs one high-stakes decision through five ephemeral advisor
+  lenses (Contrarian, First Principles, Expansionist, Outsider, Executor), has
+  them peer-review each other anonymously, and synthesises a chairman verdict.
+  Read-only — it writes no files unless a transcript is explicitly requested.
+  Used for decisions with a real tradeoff, not factual lookups or creation tasks.
 
 ### Why not in starter
 

@@ -1,0 +1,46 @@
+---
+title: council
+description: "Roda uma decisão de alto risco por um conselho de 5 lentes — advisors em paralelo, peer-review anônimo e um veredito do chairman (concordâncias, divergências, pontos cegos, recomendação, primeiro passo). Read-only."
+---
+
+`/octopus:council` pressiona uma decisão a partir de cinco lentes de pensamento
+independentes, faz com que revisem umas às outras anonimamente e devolve um único
+veredito sintetizado — sem sair da sessão atual.
+
+## O que resolve
+
+A resposta de um único modelo carrega um único ponto cego, e numa decisão cara de
+errar isso é um problema. O conselho roda a mesma pergunta por cinco lentes
+escolhidas por tensão embutida, e então uma rodada de peer-review anônima força os
+argumentos a serem julgados pelo mérito, não por qual lente os produziu. O
+resultado é a clareza que uma só perspectiva não dá.
+
+## Como resolve
+
+O comando invoca a skill `council`, que detém o protocolo completo de quatro fases:
+
+1. **Frame** — escaneia o workspace por contexto e reformula a pergunta num único
+   prompt neutro que todos os advisors recebem.
+2. **Convene** — cinco advisors respondem em paralelo, cada um inteiro na sua
+   lente.
+3. **Peer-review anônimo** — as respostas são anonimizadas A–E e revisadas
+   cruzadamente.
+4. **Síntese do chairman** — um veredito de estrutura fixa: concordâncias,
+   divergências, pontos cegos, a recomendação e a primeira coisa a fazer.
+
+O veredito é apresentado no chat como markdown. O conselho é **read-only** e não
+escreve arquivo algum a menos que `--transcript` seja passado.
+
+## Uso & parâmetros
+
+```
+/octopus:council <a decisão ou pergunta>
+/octopus:council --transcript <a decisão ou pergunta>
+```
+
+- `<a decisão ou pergunta>` — a decisão de alto risco a pressionar. Use para
+  decisões genuínas com tradeoff, não para lookups factuais ou tarefas de criação.
+- `--transcript` — também salva um `council-transcript-<slug>.md` no diretório de
+  trabalho (caso contrário o conselho não escreve nada).
+
+[Source: `commands/council.md`](https://github.com/leocosta/octopus/blob/main/commands/council.md)

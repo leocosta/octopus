@@ -1,0 +1,45 @@
+---
+title: council
+description: "Run one high-stakes decision through a 5-lens council — parallel advisors, anonymous peer review, and a chairman verdict (agreements, clashes, blind spots, recommendation, first step). Read-only."
+---
+
+`/octopus:council` pressure-tests one decision from five independent thinking
+lenses, has them peer-review each other anonymously, and returns a single
+synthesised verdict — without leaving the current session.
+
+## What it solves
+
+A single model answer carries a single blind spot, and on a decision that is
+expensive to get wrong, that is a problem. The council runs the same question
+through five lenses chosen for built-in tension, then an anonymous peer-review
+round forces the arguments to be judged on merit rather than on which lens
+produced them. The result is the clarity one perspective cannot give.
+
+## How it works
+
+The command invokes the `council` skill, which owns the full four-phase protocol:
+
+1. **Frame** — scan the workspace for context and reframe the question into one
+   neutral prompt all advisors receive.
+2. **Convene** — five advisors answer in parallel, each leaning fully into its
+   lens.
+3. **Anonymous peer-review** — responses are anonymised A–E and cross-reviewed.
+4. **Chairman synthesis** — a fixed-structure verdict: agreements, clashes, blind
+   spots, the recommendation, and the one thing to do first.
+
+The verdict is presented in chat as markdown. The council is **read-only** and
+writes no files unless `--transcript` is passed.
+
+## Usage & parameters
+
+```
+/octopus:council <the decision or question>
+/octopus:council --transcript <the decision or question>
+```
+
+- `<the decision or question>` — the high-stakes call to pressure-test. Use it for
+  genuine decisions with a tradeoff, not factual lookups or creation tasks.
+- `--transcript` — also save a `council-transcript-<slug>.md` in the working
+  directory (otherwise the council writes nothing).
+
+[Source: `commands/council.md`](https://github.com/leocosta/octopus/blob/main/commands/council.md)
