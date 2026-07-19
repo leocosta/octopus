@@ -108,16 +108,43 @@ family, and are scoped per detected API version.
 
 ## Outputs
 
-<!-- filled by Task 5 -->
+Paths are autodetected first, defaulted second, and confirmed before any write
+(legacy layouts exist).
+
+| Artifact | Autodetect order | Default |
+|---|---|---|
+| Validation report | (report convention) | `docs/reviews/YYYY-MM-DD-api-<slug>.md` |
+| OpenAPI spec | `openapi.yaml`, `openapi.json`, `swagger.json`, `docs/openapi.yml`, generator config | `openapi.yaml` (repo root) |
+| Integrator reference | `docs/api-reference.md`, `docs/api/reference.md` | `docs/api/reference.md` |
+
+The integrator reference contains: endpoint reference, error catalog (code →
+condition → message → business rationale sourced from ADR/spec), and response
+envelopes, grouped by API version. All written artifacts are in **English**.
 
 ## Write Gate
 
-<!-- filled by Task 5 -->
+- `--write` never touches application **code** — only the spec and the
+  integrator doc.
+- Before writing, print the resolved output paths (autodetected or defaulted)
+  and ask the user to **confirm** or override each; detected legacy paths are
+  offered as the default so existing layouts are preserved.
+- Show a plan/diff of the changes, then write only on confirmation.
 
 ## Composition
 
-<!-- filled by Task 5 -->
+Reuses `skills/_shared/audit-pre-pass.md` (discovery),
+`skills/_shared/audit-output-format.md` (severity headings, confidence labels,
+report frontmatter), and the `audit-grounding` source-of-truth protocol for the
+`grounding` check. Registered in the `docs` bundle. **Not** referenced by
+`audit-all` — on-demand, reasoning-tier, and can write.
 
 ## Errors
 
-<!-- filled by Task 5 -->
+Shared errors (not a git repo, unrecognized `--only`) behave per the shared
+convention. Skill-specific:
+
+- **No API stack detected** → abort; advise declaring `stacks:` in `.octopus.yml`
+  or running from a supported layout.
+- **No OpenAPI spec, validate mode** → `openapi`/`breaking` report
+  `no spec — skipped`; `errors`/`grounding` still run against the code.
+- **No OpenAPI spec, `--write`** → offer to generate one at the confirmed path.

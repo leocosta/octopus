@@ -68,3 +68,26 @@ for sev in "🚫 Block" "⚠ Warn"; do
   grep -q -- "$sev" "$SKILL_FILE" || { echo "FAIL: severity '$sev' missing"; exit 1; }
 done
 echo "PASS: checks documented"
+
+echo "Test 7: outputs, write gate, composition, errors documented"
+for section in "## Outputs" "## Write Gate" "## Composition" "## Errors"; do
+  grep -q "^$section$" "$SKILL_FILE" || { echo "FAIL: '$section' missing"; exit 1; }
+done
+# default + legacy autodetect paths
+for path in "openapi.yaml" "docs/api/reference.md" "docs/openapi.yml" "docs/api-reference.md"; do
+  grep -q "$path" "$SKILL_FILE" || { echo "FAIL: path '$path' missing"; exit 1; }
+done
+grep -q "docs/reviews/" "$SKILL_FILE" || { echo "FAIL: report path missing"; exit 1; }
+# write gate confirms before writing and never touches code
+grep -qi "confirm" "$SKILL_FILE" || { echo "FAIL: write-gate confirmation missing"; exit 1; }
+grep -qi "never.*code\|only.*spec" "$SKILL_FILE" || { echo "FAIL: code-safety guarantee missing"; exit 1; }
+# reuse of shared protocols
+grep -q "_shared/audit-output-format.md" "$SKILL_FILE" || { echo "FAIL: shared output-format reuse missing"; exit 1; }
+# English artifacts note
+grep -qi "English" "$SKILL_FILE" || { echo "FAIL: English-artifact note missing"; exit 1; }
+echo "PASS: outputs/gate/composition/errors documented"
+
+echo "Test 8: SKILL.md within length budget"
+LINES=$(wc -l < "$SKILL_FILE")
+[[ "$LINES" -le 250 ]] || { echo "FAIL: SKILL.md is $LINES lines (> 250 cap)"; exit 1; }
+echo "PASS: SKILL.md is $LINES lines"
