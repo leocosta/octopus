@@ -55,3 +55,16 @@ for stack in ".NET" "Node"; do
   grep -q "$stack" "$TEMPLATE" || { echo "FAIL: pattern stack '$stack' missing"; exit 1; }
 done
 echo "PASS: version detection + patterns documented"
+
+echo "Test 6: four checks documented with severities + per-version breaking"
+grep -q "^## Checks$" "$SKILL_FILE" || { echo "FAIL: '## Checks' missing"; exit 1; }
+for check in "openapi" "errors" "breaking" "grounding"; do
+  grep -q "\`$check\`" "$SKILL_FILE" || { echo "FAIL: check '$check' missing"; exit 1; }
+done
+grep -q "audit-grounding" "$SKILL_FILE" \
+  || { echo "FAIL: grounding must reuse audit-grounding protocol"; exit 1; }
+grep -q "per version" "$SKILL_FILE" || { echo "FAIL: per-version breaking rule missing"; exit 1; }
+for sev in "🚫 Block" "⚠ Warn"; do
+  grep -q -- "$sev" "$SKILL_FILE" || { echo "FAIL: severity '$sev' missing"; exit 1; }
+done
+echo "PASS: checks documented"

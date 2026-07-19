@@ -86,7 +86,25 @@ governs before scoping the checks.
 
 ## Checks
 
-<!-- filled by Task 4 -->
+Findings carry a confidence label (`high`/`medium`/`low`) as in the audit
+family, and are scoped per detected API version.
+
+- **`openapi`** — code ↔ spec conformance: endpoints present in code but
+  missing/stale in the spec (and vice-versa), DTO/type mismatches, envelope
+  shape mismatch, status-code mismatch. ⚠ Warn on drift, ℹ Info for spec-only or
+  code-only.
+- **`errors`** — error catalog: inconsistent codes for the same condition,
+  undocumented codes, messages that leak internals, unstable/renamed codes.
+  ⚠ Warn.
+- **`breaking`** — external breaking change, diffed **per version** against the
+  baseline spec (committed `openapi.yaml`, or `--base` ref): removed/renamed
+  endpoints, removed fields, retyped fields, tightened auth. Adding a new version
+  (e.g. `/v2`) is not breaking; changing an existing one is. 🚫 Block. If no
+  committed spec and no `--base`, report `no baseline — skipped`.
+- **`grounding`** — doc↔code business fidelity: confront the error catalog and
+  endpoint semantics against ADRs/specs/`CONTEXT.md`/system maps by **reusing the
+  `audit-grounding` source-of-truth protocol** (surfaces `unsupported-domain-fact`
+  and undocumented business rules). ⚠ Warn. Do not reimplement it here.
 
 ## Outputs
 
