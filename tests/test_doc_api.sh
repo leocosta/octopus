@@ -29,3 +29,15 @@ echo "Test 3: registered in the docs bundle"
 grep -q "^  - doc-api$" "$BUNDLE_FILE" \
   || { echo "FAIL: doc-api not registered in bundles/docs.yml"; exit 1; }
 echo "PASS: bundle registration present"
+
+echo "Test 4: invocation, modes, and pipeline documented"
+grep -q "^## Invocation$" "$SKILL_FILE" || { echo "FAIL: '## Invocation' missing"; exit 1; }
+grep -q "octopus:doc-api" "$SKILL_FILE" || { echo "FAIL: invocation syntax missing"; exit 1; }
+for flag in "--write" "--only" "--stacks" "--spec" "--out" "--base"; do
+  grep -q -- "$flag" "$SKILL_FILE" || { echo "FAIL: flag $flag missing"; exit 1; }
+done
+grep -q "^## Pipeline$" "$SKILL_FILE" || { echo "FAIL: '## Pipeline' missing"; exit 1; }
+for stage in "Discover" "Extract" "Validate" "Document"; do
+  grep -q "$stage" "$SKILL_FILE" || { echo "FAIL: pipeline stage '$stage' missing"; exit 1; }
+done
+echo "PASS: invocation + pipeline documented"
