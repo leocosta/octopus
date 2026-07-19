@@ -51,7 +51,7 @@ Do **not** engage for internal API↔frontend drift over a diff (that is
 
 ## Pipeline
 
-Follow the Pre-Pass in `skills/_shared/audit-pre-pass.md` first, then:
+Discover over the **full working tree** — validate mode is full-surface, not diff-scoped, and this skill declares no `pre_pass` frontmatter — then:
 
 1. **Discover** — resolve API stack roots per stack; locate the existing OpenAPI
    spec; locate knowledge sources the repo already produces: `docs/adr/`,
@@ -132,11 +132,11 @@ envelopes, grouped by API version. All written artifacts are in **English**.
 
 ## Composition
 
-Reuses `skills/_shared/audit-pre-pass.md` (discovery),
-`skills/_shared/audit-output-format.md` (severity headings, confidence labels,
-report frontmatter), and the `audit-grounding` source-of-truth protocol for the
-`grounding` check. Registered in the `docs` bundle. **Not** referenced by
-`audit-all` — on-demand, reasoning-tier, and can write.
+Reuses `skills/_shared/audit-output-format.md` (severity headings, confidence
+labels, report frontmatter) and the `audit-grounding` source-of-truth protocol
+for the `grounding` check; file discovery is full-tree (not the diff-scoped
+`_shared/audit-pre-pass.md`). Registered in the `docs` bundle. **Not** referenced
+by `audit-all` — on-demand, reasoning-tier, and can write.
 
 ## Errors
 

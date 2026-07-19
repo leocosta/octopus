@@ -9,6 +9,7 @@ SHARED_FMT="$SCRIPT_DIR/skills/_shared/audit-output-format.md"
 
 echo "Test 1: SKILL.md exists with valid frontmatter"
 [[ -f "$SKILL_FILE" ]] || { echo "FAIL: $SKILL_FILE not found"; exit 1; }
+[[ -f "$SHARED_FMT" ]] || { echo "FAIL: shared audit-output-format.md missing"; exit 1; }
 head -n 6 "$SKILL_FILE" | grep -q "^name: doc-api$" \
   || { echo "FAIL: frontmatter 'name: doc-api' missing"; exit 1; }
 head -n 8 "$SKILL_FILE" | grep -q "^model: sonnet$" \
