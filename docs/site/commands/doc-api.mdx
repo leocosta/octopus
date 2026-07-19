@@ -1,0 +1,67 @@
+---
+title: doc-api
+description: "On-demand integrator-facing API contract-fidelity validator and doc generator — code ↔ OpenAPI ↔ business knowledge."
+---
+
+`/octopus:doc-api` confronts the whole published API surface against
+its OpenAPI spec and the repo's own knowledge sources — on demand,
+not as part of a diff review.
+
+## What it solves
+
+Contract drift shows up on two axes: internal (does the frontend
+agree with the backend on this diff) and external (does the published
+API still match what an integrator's spec and reference doc promise,
+across the whole surface). `audit-contracts` covers the first.
+`doc-api` covers the second — catching a field renamed in code but
+not in `openapi.yaml`, an error code whose message changed without
+updating the catalog, or an endpoint that quietly stopped honoring a
+business rule an ADR documents.
+
+## How it works
+
+The skill runs in one of two modes:
+
+- **Validate** (default) — read-only, full-surface. Reports drift
+  without touching anything.
+- **Document** (`--write`) — regenerates the canonical `openapi.yaml`
+  and an integrator reference behind a confirmation gate.
+
+Both modes run against four checks, each scoped **per detected API
+version** (route-explicit, header, query, or unversioned):
+
+- **`openapi`** — code ↔ spec conformance: endpoints, DTOs, envelopes,
+  and status codes present in code but stale or missing in the spec,
+  and vice versa (`⚠ Warn` / `ℹ Info`).
+- **`errors`** — error-catalog consistency: inconsistent codes for the
+  same condition, undocumented codes, messages that leak internals
+  (`⚠ Warn`).
+- **`breaking`** — external breaking changes diffed against the
+  committed spec: removed or renamed endpoints, removed fields,
+  retyped fields, tightened auth (`🚫 Block`).
+- **`grounding`** — doc↔code business fidelity against ADRs, specs,
+  and system maps, reusing the `audit-grounding` source-of-truth
+  protocol (`⚠ Warn`).
+
+## Usage & parameters
+
+```
+/octopus:doc-api [--write] [--only=<checks>] [--stacks=<list>] [--spec=<path>] [--out=<path>] [--base=<ref>]
+```
+
+- `--write` — switch from validate to document mode: update the spec
+  and integrator reference behind the confirmation gate. Default:
+  validate only, read-only.
+- `--only=<checks>` — comma-separated subset of
+  `openapi,errors,breaking,grounding`. Default: all four.
+- `--stacks=<list>` — subset of detected API stack roots to check.
+  Default: all detected.
+- `--spec=<path>` — override the OpenAPI spec location. Default:
+  autodetected (`openapi.yaml`, `openapi.json`, `swagger.json`,
+  `docs/openapi.yml`, or generator config).
+- `--out=<path>` — override the integrator-doc output path. Default:
+  autodetected or confirmed at write time.
+- `--base=<ref>` — git ref to diff the spec against for `breaking`.
+  Default: the committed `openapi.yaml` at `HEAD`.
+
+[Source: `commands/doc-api.md`](https://github.com/leocosta/octopus/blob/main/commands/doc-api.md)

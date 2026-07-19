@@ -3,7 +3,7 @@ title: docs
 description: O bundle do ciclo de vida de documentação — RFCs, specs, plans, PRDs, ADRs, a disciplina de interview / grilling, triage, autoria de CLAUDE.md por módulo e autoria de skills.
 sidebar:
   order: 3
-source_hash: "sha256:1b8e107bf8c4f95437afe88c1e1d7677a10e291e8fd6004a7bac0365ee5228af"
+source_hash: "sha256:bea675be89b15b2b9daa59e38c7e8fc91e1b95bbb2267d2e6fd0273c7cd174fa"
 needs_retranslation: false
 ---
 
@@ -58,6 +58,7 @@ skills:
   - doc-align         # grill a plan against CONTEXT.md + ADRs
   - doc-prd           # synthesise conversation into a PRD
   - doc-subcontext    # per-module CLAUDE.md authoring
+  - doc-api           # validate/generate integrator API docs
   - triage-issues     # state-machine issue triage
   - scaffold-skill    # create new Octopus skills + register in bundle
 roles:
@@ -100,6 +101,9 @@ As skills se agrupam em quatro sub-fluxos:
 - **`doc-subcontext`** — escreve `CLAUDE.md` por módulo em
   monorepos (o artigo da Anthropic sobre grandes codebases destaca
   isso como a principal prática de escala)
+- **`doc-api`** — valida a superfície de API publicada contra sua
+  spec OpenAPI e o próprio knowledge do repo, ou regenera a spec e
+  uma referência para integradores sob demanda
 
 **Ciclo de vida de issues**:
 

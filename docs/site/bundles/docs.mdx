@@ -55,6 +55,7 @@ skills:
   - doc-align         # grill a plan against CONTEXT.md + ADRs
   - doc-prd           # synthesise conversation into a PRD
   - doc-subcontext    # per-module CLAUDE.md authoring
+  - doc-api           # validate/generate integrator API docs
   - triage-issues     # state-machine issue triage
   - scaffold-skill    # create new Octopus skills + register in bundle
 roles:
@@ -97,6 +98,9 @@ The skills cluster into four sub-flows:
 - **`doc-subcontext`** — authors per-module `CLAUDE.md` in
   monorepos (the Anthropic large-codebases article calls this out
   as the top scaling practice)
+- **`doc-api`** — validates the published API surface against its
+  OpenAPI spec and the repo's own knowledge, or regenerates the spec
+  and an integrator reference on demand
 
 **Issue lifecycle**:
 
