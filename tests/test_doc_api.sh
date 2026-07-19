@@ -41,3 +41,17 @@ for stage in "Discover" "Extract" "Validate" "Document"; do
   grep -q "$stage" "$SKILL_FILE" || { echo "FAIL: pipeline stage '$stage' missing"; exit 1; }
 done
 echo "PASS: invocation + pipeline documented"
+
+echo "Test 5: API version detection documented + patterns template present"
+grep -q "^## API Version Detection$" "$SKILL_FILE" \
+  || { echo "FAIL: '## API Version Detection' missing"; exit 1; }
+for scheme in "Route-explicit" "Header" "Query" "Unversioned"; do
+  grep -q "$scheme" "$SKILL_FILE" || { echo "FAIL: version scheme '$scheme' missing"; exit 1; }
+done
+grep -q "per version" "$SKILL_FILE" || { echo "FAIL: per-version scoping rule missing"; exit 1; }
+TEMPLATE="$SCRIPT_DIR/skills/doc-api/templates/patterns.md"
+[[ -f "$TEMPLATE" ]] || { echo "FAIL: templates/patterns.md missing"; exit 1; }
+for stack in ".NET" "Node"; do
+  grep -q "$stack" "$TEMPLATE" || { echo "FAIL: pattern stack '$stack' missing"; exit 1; }
+done
+echo "PASS: version detection + patterns documented"

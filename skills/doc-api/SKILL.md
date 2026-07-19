@@ -66,7 +66,23 @@ Follow the Pre-Pass in `skills/_shared/audit-pre-pass.md` first, then:
 
 ## API Version Detection
 
-<!-- filled by Task 3 -->
+Do not assume a single unversioned surface. During Discover, resolve the API's
+versioning scheme in this order:
+
+1. **Route-explicit** (most common) — a version segment in the path
+   (`/v1/orders`, `/api/v2/...`). Detected from route templates and the segment
+   pattern `^/?(api/)?v\d+`.
+2. **Header** — an `api-version`/`Accept` header or `[FromHeader]`/middleware
+   convention.
+3. **Query** — a `?api-version=`/`?version=` query param.
+4. **Unversioned** — none detected; treat the surface as a single version.
+
+Each endpoint is tagged with its resolved version. When versions coexist the
+checks run **per version** — a `/v1` and `/v2` endpoint are distinct contracts;
+findings and the integrator doc are grouped by version, and `breaking` diffs
+each version against its own baseline. If the scheme is ambiguous (mixed
+conventions), report the detected schemes and ask the user to confirm which one
+governs before scoping the checks.
 
 ## Checks
 
