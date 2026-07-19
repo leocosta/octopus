@@ -1,0 +1,85 @@
+---
+title: doc-api
+description: Validador on-demand de fidelidade de contrato de API e gerador de docs, voltado ao integrador — código, spec OpenAPI e knowledge de negócio, mantidos em sincronia.
+sidebar:
+  order: 16
+source_hash: "sha256:878256f5e54d7413fe3d5a93e74ed362a941ad640d76e6af7f712545850269a4"
+needs_retranslation: false
+---
+
+`doc-api` mira um modo de falha diferente do `audit-contracts`: não
+"o frontend concorda com o backend" e sim "a API publicada ainda bate
+com o que a spec OpenAPI — e o doc de referência que um integrador
+externo lê — promete." Um check de contract drift interno pode passar
+limpo enquanto a superfície voltada ao integrador apodrece em
+silêncio: um campo renomeado no código mas não na spec, um error code
+que mudou de mensagem sem atualizar o catálogo, uma regra de negócio
+que um ADR documenta e que o endpoint não honra mais.
+
+## Dois modos
+
+- **Validate** (default) — read-only, full-surface. Confronta toda a
+  API contra a spec OpenAPI existente e o próprio knowledge do repo —
+  ADRs, specs, CONTEXT.md, system maps — e reporta o drift.
+- **Document** (`--write`) — regenera o `openapi.yaml` canônico e uma
+  referência para integradores. Só roda quando explicitamente pedido,
+  e nunca escreve sem confirmação.
+
+## Os quatro checks
+
+- `openapi` — conformidade código ↔ spec: endpoints, DTOs, envelopes
+  e status codes presentes no código mas obsoletos ou ausentes na
+  spec (e vice-versa). Warn em drift, Info para superfície só-na-spec
+  ou só-no-código.
+- `errors` — consistência do catálogo de erros: códigos inconsistentes
+  para a mesma condição, códigos não documentados, mensagens que
+  vazam detalhes internos. Warn.
+- `breaking` — mudanças breaking externas, diffadas contra a spec
+  commitada: endpoints removidos ou renomeados, campos removidos,
+  campos com type alterado, auth apertada. Block. Adicionar uma nova
+  versão de API não é breaking; mudar uma existente é.
+- `grounding` — fidelidade de negócio doc↔código, reusando o protocolo
+  de fonte de verdade do `audit-grounding` em vez de reimplementá-lo:
+  confronta o catálogo de erros e a semântica dos endpoints contra
+  ADRs, specs e system maps. Warn.
+
+## Escopado por versão de API
+
+APIs reais raramente têm uma superfície única e plana — a maioria
+carrega um esquema de versionamento, seja um segmento de rota `/v1/`,
+um header, um query param, ou nenhum. `doc-api` detecta qual esquema
+está em jogo e marca cada endpoint com sua versão resolvida. Quando
+versões coexistem, todo check — incluindo `breaking` — roda por
+versão: um endpoint `/v1` e um `/v2` são contratos distintos com
+baselines distintas, e os findings e a referência gerada são
+agrupados de acordo. Uma superfície não versionada é só o caso de
+versão única.
+
+## O write gate
+
+`--write` nunca toca código de aplicação — só a spec OpenAPI e a
+referência para integradores. Antes de escrever qualquer coisa, ele
+resolve os paths de saída (autodetectados primeiro, com default em
+seguida) e pede confirmação em cada um, oferecendo qualquer layout
+legado detectado como default para preservar convenções existentes.
+Ele mostra o plano antes de escrever, não depois.
+
+## Contraste com audit-contracts
+
+`audit-contracts` e `doc-api` parecem adjacentes mas respondem
+perguntas diferentes em eixos diferentes. `audit-contracts` é
+interno: a mudança de backend deste diff bate com o consumer de
+frontend, escopado ao que mudou. `doc-api` é externo: a superfície
+publicada inteira ainda bate com o que a spec OpenAPI e o doc de
+referência de um integrador prometem, escopado a tudo — o que também
+explica por que `doc-api` roda on-demand em vez de fazer parte do
+`audit-all`: um check full-surface, reasoning-tier, que ocasionalmente
+escreve, não pertence ao mesmo lote paralelo dos audits escopados a
+diff.
+
+## Suporte a stacks
+
+Hoje a skill entende stacks de API em .NET e Node.js — a extração de
+endpoints, DTOs e convenções de rota é stack-aware nas duas.
+
+[Fonte: `skills/doc-api/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/doc-api/SKILL.md)

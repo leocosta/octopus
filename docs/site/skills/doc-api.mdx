@@ -1,0 +1,82 @@
+---
+title: doc-api
+description: On-demand integrator-facing API contract-fidelity validator and doc generator — code, OpenAPI spec, and business knowledge, kept in sync.
+sidebar:
+  order: 16
+---
+
+`doc-api` targets a different failure mode than `audit-contracts`: not
+"does the frontend agree with the backend" but "does the published API
+still match what the OpenAPI spec — and the reference doc an external
+integrator reads — promises." An internal contract-drift check can
+pass clean while the integrator-facing surface silently rots: a field
+renamed in code but not in the spec, an error code that changed
+message without updating the catalog, a business rule an ADR
+documents that the endpoint no longer honors.
+
+## Two modes
+
+- **Validate** (default) — read-only, full-surface. Confronts the
+  whole API against the existing OpenAPI spec and the repo's own
+  knowledge — ADRs, specs, CONTEXT.md, system maps — and reports
+  drift.
+- **Document** (`--write`) — regenerates the canonical `openapi.yaml`
+  and an integrator reference. Never runs unless explicitly requested,
+  and never writes without confirmation.
+
+## The four checks
+
+- `openapi` — code ↔ spec conformance: endpoints, DTOs, envelopes,
+  and status codes present in code but stale or missing in the spec
+  (and vice versa). Warn on drift, Info on spec-only or code-only
+  surface.
+- `errors` — error-catalog consistency: inconsistent codes for the
+  same condition, undocumented codes, messages that leak internals.
+  Warn.
+- `breaking` — external breaking changes diffed against the committed
+  spec: removed or renamed endpoints, removed fields, retyped fields,
+  tightened auth. Block. Adding a new API version is not breaking;
+  changing an existing one is.
+- `grounding` — doc↔code business fidelity, reusing the
+  `audit-grounding` source-of-truth protocol rather than reimplementing
+  it: confronts the error catalog and endpoint semantics against ADRs,
+  specs, and system maps. Warn.
+
+## Scoped per API version
+
+Real APIs rarely have one flat surface — most carry a versioning
+scheme, whether that's a `/v1/` route segment, a header, a query
+param, or none at all. `doc-api` detects which scheme is in play and
+tags every endpoint with its resolved version. When versions coexist,
+every check — including `breaking` — runs per version: a `/v1` and a
+`/v2` endpoint are distinct contracts with distinct baselines, and
+findings and the generated reference are grouped accordingly. An
+unversioned surface is just the single-version case.
+
+## The write gate
+
+`--write` never touches application code — only the OpenAPI spec and
+the integrator reference. Before writing anything it resolves the
+output paths (autodetected first, defaulted second) and asks for
+confirmation on each, offering any detected legacy layout as the
+default so existing conventions survive. It shows the plan before it
+writes, not after.
+
+## Contrast with audit-contracts
+
+`audit-contracts` and `doc-api` look adjacent but answer different
+questions on different axes. `audit-contracts` is internal: does this
+diff's backend change match its frontend consumer, scoped to what
+changed. `doc-api` is external: does the whole published surface
+still match what an integrator's OpenAPI spec and reference doc
+promise, scoped to everything — which is also why `doc-api` runs on
+demand rather than as part of `audit-all`: a full-surface,
+reasoning-tier, occasionally-writing check doesn't belong in the same
+parallel batch as the diff-scoped audits.
+
+## Stack support
+
+Today the skill understands .NET and Node.js API stacks — extraction
+of endpoints, DTOs, and route conventions is stack-aware on both.
+
+[Source: `skills/doc-api/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/doc-api/SKILL.md)
