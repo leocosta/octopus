@@ -59,10 +59,14 @@ Discover over the **full working tree** — validate mode is full-surface, not d
 2. **Extract** — build the real contract from code: endpoints, request/response
    DTOs and data types, enums, response envelopes, status codes, error responses
    and messages, auth rules. Tag each endpoint with its API version.
-3. **Validate** — run the four checks (see `## Checks`) per API version and
-   render a severity-tiered report in the shared output format.
-4. **Document** (`--write` only) — regenerate the OpenAPI spec and the integrator
-   reference behind the write gate.
+3. **Assess** — run the four checks (see `## Checks`) per API version and derive
+   each artifact's state (see `## Assess & Plan`). Runs in **both** modes.
+4. **Validate** (no `--write`) — render the assessment as a severity-tiered
+   report in the shared output format, followed by a read-only Improvement Plan
+   preview.
+5. **Plan + Document** (`--write` only) — render the interactive per-artifact
+   plan, then patch or regenerate only the chosen artifacts behind the write
+   gate.
 
 ## API Version Detection
 
@@ -106,6 +110,46 @@ family, and are scoped per detected API version.
   `audit-grounding` source-of-truth protocol** (surfaces `unsupported-domain-fact`
   and undocumented business rules). ⚠ Warn. Do not reimplement it here.
 
+## Assess & Plan
+
+The two canonical artifacts (the OpenAPI spec and the integrator reference,
+`## Outputs`) are assessed **per API version** from the four checks — no new
+signal:
+
+| State | Detected by | Actions offered |
+|---|---|---|
+| `absent` | file does not exist at the resolved path | `create` |
+| `stale` | drift in `openapi` / `errors` / `grounding` | `correct` / `recreate` / `skip` |
+| `ok` | no drift | `skip` (default) / `recreate` |
+
+`openapi` drift sets the spec state and the integrator reference's
+endpoint/envelope sections; `errors` + `grounding` set the integrator
+reference's error catalog. An artifact is `stale` if any check feeding it
+reports drift. `breaking` is not a state — it annotates the chosen action.
+
+### Actions
+
+- **`correct`** — minimal surgical patch that closes the drift the Assess found,
+  **preserving hand-authored prose, ordering, and examples** that are not drift.
+  For curated docs that only went stale in spots.
+- **`recreate`** — rebuild the artifact wholesale from the code contract,
+  **discarding** the existing structure. For docs so divergent or legacy-shaped
+  that patching is noise.
+- **`create`** — no artifact exists; generate a fresh one at the confirmed path.
+  A first-class action, not an error branch.
+- **`skip`** — leave the artifact untouched.
+
+### Breaking-change annotation
+
+The `breaking` check annotates any action that would make the spec reflect a
+divergence already present in the code: the plan item is marked 🚫 with the
+specific change (e.g. *recreate `openapi.yaml` (v1) drops field `order.total`*)
+**before** the user commits to it. Nothing breaking is written silently.
+
+Without `--write`, the same assessment renders as a read-only **Improvement
+Plan** section on the fidelity report — what each action *would* do, no prompts,
+no writes.
+
 ## Outputs
 
 Paths are autodetected first, defaulted second, and confirmed before any write
@@ -125,10 +169,14 @@ envelopes, grouped by API version. All written artifacts are in **English**.
 
 - `--write` never touches application **code** — only the spec and the
   integrator doc.
-- Before writing, print the resolved output paths (autodetected or defaulted)
-  and ask the user to **confirm** or override each; detected legacy paths are
-  offered as the default so existing layouts are preserved.
-- Show a plan/diff of the changes, then write only on confirmation.
+- The write gate **is** the per-artifact plan: for each artifact × version it
+  prints the assessed state and offers `correct` / `recreate` / `create` /
+  `skip`. Resolved paths (autodetected or defaulted) are shown and the user may
+  **confirm** or override each; detected legacy paths are offered as the default
+  so existing layouts are preserved.
+- Show the diff of the chosen action per item (minimal patch for `correct`; full
+  file for `recreate` / `create`), then write **only the chosen items** on
+  confirmation.
 
 ## Composition
 
@@ -147,4 +195,5 @@ convention. Skill-specific:
   or running from a supported layout.
 - **No OpenAPI spec, validate mode** → `openapi`/`breaking` report
   `no spec — skipped`; `errors`/`grounding` still run against the code.
-- **No OpenAPI spec, `--write`** → offer to generate one at the confirmed path.
+- **No OpenAPI spec, `--write`** → the spec artifact is assessed `absent` and
+  appears in the plan with the first-class `create` action (confirm the path).
