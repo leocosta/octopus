@@ -92,3 +92,23 @@ echo "Test 8: SKILL.md within length budget"
 LINES=$(wc -l < "$SKILL_FILE")
 [[ "$LINES" -le 250 ]] || { echo "FAIL: SKILL.md is $LINES lines (> 250 cap)"; exit 1; }
 echo "PASS: SKILL.md is $LINES lines"
+
+echo "Test 9: Assess & Plan flow documented (correct / recreate / create per artifact)"
+grep -q "^## Assess & Plan$" "$SKILL_FILE" || { echo "FAIL: '## Assess & Plan' section missing"; exit 1; }
+grep -q "\*\*Assess\*\*" "$SKILL_FILE" || { echo "FAIL: Assess pipeline stage missing"; exit 1; }
+for action in "correct" "recreate" "create" "skip"; do
+  grep -q "\`$action\`" "$SKILL_FILE" || { echo "FAIL: action '$action' missing"; exit 1; }
+done
+for state in "absent" "stale" "ok"; do
+  grep -q "\`$state\`" "$SKILL_FILE" || { echo "FAIL: artifact state '$state' missing"; exit 1; }
+done
+grep -qi "surgical patch" "$SKILL_FILE" || { echo "FAIL: correct=surgical-patch semantics missing"; exit 1; }
+grep -qi "wholesale" "$SKILL_FILE" || { echo "FAIL: recreate=wholesale semantics missing"; exit 1; }
+grep -q "first-class" "$SKILL_FILE" || { echo "FAIL: create first-class note missing"; exit 1; }
+grep -q "Improvement Plan" "$SKILL_FILE" || { echo "FAIL: validate-mode plan preview missing"; exit 1; }
+# breaking annotates the chosen action rather than being a state
+grep -qi "annotates the chosen action\|annotates any action" "$SKILL_FILE" \
+  || { echo "FAIL: breaking-change annotation missing"; exit 1; }
+# write-only-chosen-items semantics in the gate
+grep -qi "only the chosen items" "$SKILL_FILE" || { echo "FAIL: per-item write semantics missing"; exit 1; }
+echo "PASS: Assess & Plan documented"
