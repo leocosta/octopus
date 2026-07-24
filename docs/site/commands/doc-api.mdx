@@ -22,10 +22,11 @@ business rule an ADR documents.
 
 The skill runs in one of two modes:
 
-- **Validate** (default) — read-only, full-surface. Reports drift
-  without touching anything.
-- **Document** (`--write`) — regenerates the canonical `openapi.yaml`
-  and an integrator reference behind a confirmation gate.
+- **Validate** (default) — read-only, full-surface. Reports drift and
+  previews the per-artifact plan without touching anything.
+- **Document** (`--write`) — turns the assessment into an interactive
+  per-artifact plan (`correct` / `recreate` / `create` / `skip`) and
+  writes only the chosen items, behind a confirmation gate.
 
 Both modes run against four checks, each scoped **per detected API
 version** (route-explicit, header, query, or unversioned):
@@ -49,9 +50,10 @@ version** (route-explicit, header, query, or unversioned):
 /octopus:doc-api [--write] [--only=<checks>] [--stacks=<list>] [--spec=<path>] [--out=<path>] [--base=<ref>]
 ```
 
-- `--write` — switch from validate to document mode: update the spec
-  and integrator reference behind the confirmation gate. Default:
-  validate only, read-only.
+- `--write` — switch from validate to document mode: assess each
+  artifact and pick `correct` / `recreate` / `create` / `skip` per
+  item, writing only the chosen ones behind the confirmation gate.
+  Default: validate only, read-only.
 - `--only=<checks>` — comma-separated subset of
   `openapi,errors,breaking,grounding`. Default: all four.
 - `--stacks=<list>` — subset of detected API stack roots to check.

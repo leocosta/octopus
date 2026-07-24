@@ -18,11 +18,14 @@ documents that the endpoint no longer honors.
 
 - **Validate** (default) — read-only, full-surface. Confronts the
   whole API against the existing OpenAPI spec and the repo's own
-  knowledge — ADRs, specs, CONTEXT.md, system maps — and reports
-  drift.
-- **Document** (`--write`) — regenerates the canonical `openapi.yaml`
-  and an integrator reference. Never runs unless explicitly requested,
-  and never writes without confirmation.
+  knowledge — ADRs, specs, CONTEXT.md, system maps — reports drift,
+  and previews the same per-artifact plan without writing anything.
+- **Document** (`--write`) — turns that assessment into an
+  interactive, per-artifact plan: for each artifact you choose to
+  correct it in place, recreate it from scratch, create it if it's
+  missing, or skip it — and only the chosen items are written. Never
+  runs unless explicitly requested, and never writes without
+  confirmation.
 
 ## The four checks
 
@@ -53,14 +56,32 @@ every check — including `breaking` — runs per version: a `/v1` and a
 findings and the generated reference are grouped accordingly. An
 unversioned surface is just the single-version case.
 
-## The write gate
+## The write gate is a per-artifact plan
 
 `--write` never touches application code — only the OpenAPI spec and
-the integrator reference. Before writing anything it resolves the
-output paths (autodetected first, defaulted second) and asks for
-confirmation on each, offering any detected legacy layout as the
-default so existing conventions survive. It shows the plan before it
-writes, not after.
+the integrator reference. Rather than regenerate everything behind one
+all-or-nothing gate, it presents a per-artifact, per-version plan built
+from the same assessment the validate report shows. Each artifact
+carries a state — `absent`, `stale`, or `ok` — derived from the four
+checks, and the actions that make sense for it:
+
+- **`correct`** — a minimal surgical patch that closes the drift the
+  checks found while preserving hand-authored prose, ordering, and
+  examples. For a curated reference that only went stale in spots.
+- **`recreate`** — a wholesale rebuild from the code contract,
+  discarding the existing structure. For a doc so divergent that
+  patching is noise.
+- **`create`** — a first-class path for an artifact that doesn't exist
+  yet, so bootstrapping docs for an undocumented API is a plan item,
+  not an error branch.
+- **`skip`** — leave it untouched.
+
+Output paths are autodetected first, defaulted second, with any
+detected legacy layout offered as the default so existing conventions
+survive. The `breaking` check annotates the action you pick — marking
+it `🚫` with the specific change before it's applied — so nothing
+breaking is ever written silently. The gate shows the diff per chosen
+item, then writes only those items on confirmation.
 
 ## Contrast with audit-contracts
 

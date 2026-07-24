@@ -3,7 +3,7 @@ title: doc-api
 description: Validador on-demand de fidelidade de contrato de API e gerador de docs, voltado ao integrador — código, spec OpenAPI e knowledge de negócio, mantidos em sincronia.
 sidebar:
   order: 16
-source_hash: "sha256:878256f5e54d7413fe3d5a93e74ed362a941ad640d76e6af7f712545850269a4"
+source_hash: "sha256:af9f4a2e600129b8405d8546c652bc6986957b6ff1b35d263fe6d9ca6efbfcae"
 needs_retranslation: false
 ---
 
@@ -20,10 +20,13 @@ que um ADR documenta e que o endpoint não honra mais.
 
 - **Validate** (default) — read-only, full-surface. Confronta toda a
   API contra a spec OpenAPI existente e o próprio knowledge do repo —
-  ADRs, specs, CONTEXT.md, system maps — e reporta o drift.
-- **Document** (`--write`) — regenera o `openapi.yaml` canônico e uma
-  referência para integradores. Só roda quando explicitamente pedido,
-  e nunca escreve sem confirmação.
+  ADRs, specs, CONTEXT.md, system maps — reporta o drift e mostra um
+  preview do mesmo plano por artefato sem escrever nada.
+- **Document** (`--write`) — transforma essa avaliação em um plano
+  interativo, por artefato: para cada artefato você escolhe corrigir
+  no lugar, recriar do zero, criar se estiver faltando, ou pular — e
+  só os itens escolhidos são escritos. Só roda quando explicitamente
+  pedido, e nunca escreve sem confirmação.
 
 ## Os quatro checks
 
@@ -55,14 +58,33 @@ baselines distintas, e os findings e a referência gerada são
 agrupados de acordo. Uma superfície não versionada é só o caso de
 versão única.
 
-## O write gate
+## O write gate é um plano por artefato
 
 `--write` nunca toca código de aplicação — só a spec OpenAPI e a
-referência para integradores. Antes de escrever qualquer coisa, ele
-resolve os paths de saída (autodetectados primeiro, com default em
-seguida) e pede confirmação em cada um, oferecendo qualquer layout
-legado detectado como default para preservar convenções existentes.
-Ele mostra o plano antes de escrever, não depois.
+referência para integradores. Em vez de regenerar tudo atrás de um
+único gate all-or-nothing, ele apresenta um plano por artefato e por
+versão construído a partir da mesma avaliação que o report de validate
+mostra. Cada artefato carrega um estado — `absent`, `stale` ou `ok` —
+derivado dos quatro checks, e as ações que fazem sentido para ele:
+
+- **`correct`** — um patch cirúrgico mínimo que fecha o drift que os
+  checks acharam, preservando prosa, ordem e exemplos escritos à mão.
+  Para uma referência curada que só ficou obsoleta em pontos.
+- **`recreate`** — um rebuild inteiro a partir do contrato do código,
+  descartando a estrutura existente. Para um doc tão divergente que
+  remendar vira ruído.
+- **`create`** — um caminho de primeira classe para um artefato que
+  ainda não existe, de modo que bootstrapar docs de uma API não
+  documentada é um item do plano, não um branch de erro.
+- **`skip`** — deixa intocado.
+
+Os paths de saída são autodetectados primeiro, com default em seguida,
+e qualquer layout legado detectado é oferecido como default para
+preservar convenções existentes. O check `breaking` anota a ação que
+você escolhe — marcando-a com `🚫` e a mudança específica antes de
+aplicá-la — para que nada breaking seja escrito em silêncio. O gate
+mostra o diff de cada item escolhido e então escreve só esses itens
+mediante confirmação.
 
 ## Contraste com audit-contracts
 

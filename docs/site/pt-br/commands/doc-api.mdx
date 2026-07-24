@@ -22,10 +22,11 @@ honrar uma regra de negócio que um ADR documenta.
 
 A skill roda em um de dois modos:
 
-- **Validate** (default) — read-only, full-surface. Reporta drift
-  sem tocar em nada.
-- **Document** (`--write`) — regenera o `openapi.yaml` canônico e uma
-  referência para integradores atrás de um gate de confirmação.
+- **Validate** (default) — read-only, full-surface. Reporta drift e
+  mostra um preview do plano por artefato sem tocar em nada.
+- **Document** (`--write`) — transforma a avaliação em um plano
+  interativo por artefato (`correct` / `recreate` / `create` / `skip`)
+  e escreve só os itens escolhidos, atrás de um gate de confirmação.
 
 Os dois modos rodam contra quatro checks, cada um escopado **por
 versão de API detectada** (route-explicit, header, query, ou
@@ -50,8 +51,9 @@ não-versionada):
 /octopus:doc-api [--write] [--only=<checks>] [--stacks=<list>] [--spec=<path>] [--out=<path>] [--base=<ref>]
 ```
 
-- `--write` — troca de validate para document mode: atualiza a spec
-  e a referência para integradores atrás do gate de confirmação.
+- `--write` — troca de validate para document mode: avalia cada
+  artefato e escolhe `correct` / `recreate` / `create` / `skip` por
+  item, escrevendo só os escolhidos atrás do gate de confirmação.
   Default: só validate, read-only.
 - `--only=<checks>` — subconjunto separado por vírgula de
   `openapi,errors,breaking,grounding`. Default: os quatro.
