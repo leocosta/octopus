@@ -2,7 +2,7 @@
 // design.tokens.json. App-agnostic: every color/font comes from tokens,
 // every scene/timeline call is derived from beats — nothing here hardcodes
 // a brand, route, or copy.
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import config from "../promo.config.mjs";
 
 const SCENE_OVERLAP = 0.2; // seconds two consecutive scenes crossfade
@@ -11,10 +11,27 @@ const beatsPath = new URL("../beats.json", import.meta.url);
 const tokensPath = new URL("../design.tokens.json", import.meta.url);
 const compositionPath = new URL("../composition.html", import.meta.url);
 const outPath = new URL("../index.html", import.meta.url);
+const highlightsPath = new URL("../highlights.json", import.meta.url);
 
 const { beats } = JSON.parse(readFileSync(beatsPath, "utf8"));
 const tokens = JSON.parse(readFileSync(tokensPath, "utf8"));
 let template = readFileSync(compositionPath, "utf8");
+// Rects measured live during capture.mjs (selector-based highlights), keyed
+// by beat.id — {x,y,w,h} in the still's 1920×1080 pixel space. Wins over any
+// manual beat.highlight.{x,y,w,h}; the label always comes from beat.highlight.label.
+const highlights = existsSync(highlightsPath) ? JSON.parse(readFileSync(highlightsPath, "utf8")) : {};
+
+// Effective highlight rect for a beat: measured (capture.mjs) > manual
+// beat.highlight {x,y,w,h}. Returns null if neither exists. Label always
+// comes from beat.highlight.label (selector-only highlights still need a
+// `label` on the highlight object).
+function effectiveHighlight(beat) {
+  const measured = highlights[beat.id];
+  const manual = beat.highlight && beat.highlight.x !== undefined ? beat.highlight : null;
+  const rect = measured || manual;
+  if (!rect) return null;
+  return { x: rect.x, y: rect.y, w: rect.w, h: rect.h, label: beat.highlight?.label };
+}
 
 if (!Array.isArray(beats) || beats.length < 3) {
   console.error("beats.json must have >= 3 beats (see templates/beats.schema.json)");
@@ -155,13 +172,14 @@ function renderApp(beat, prefix, start, dur, idx) {
     : "";
 
   let html, js;
+  const rect = effectiveHighlight(beat);
 
   if (isMobile) {
     const vp = config.viewports?.mobile || { width: 440, height: 900 };
     const screenW = 470, screenH = 982; // .phone-screen interior after padding (498-2*14, 1010-2*14)
     const scaleX = screenW / vp.width, scaleY = screenH / vp.height;
-    const highlightHtml = beat.highlight
-      ? `<div id="${prefix}-fbox" class="fbox" style="left:${(beat.highlight.x * scaleX).toFixed(0)}px;top:${(beat.highlight.y * scaleY).toFixed(0)}px;width:${(beat.highlight.w * scaleX).toFixed(0)}px;height:${(beat.highlight.h * scaleY).toFixed(0)}px;">${beat.highlight.label ? `<div class="fbox-name">${escapeHtml(beat.highlight.label)}</div>` : ""}</div>`
+    const highlightHtml = rect
+      ? `<div id="${prefix}-fbox" class="fbox" style="left:${(rect.x * scaleX).toFixed(0)}px;top:${(rect.y * scaleY).toFixed(0)}px;width:${(rect.w * scaleX).toFixed(0)}px;height:${(rect.h * scaleY).toFixed(0)}px;">${rect.label ? `<div class="fbox-name">${escapeHtml(rect.label)}</div>` : ""}</div>`
       : "";
     html = `
       <div id="${prefix}" class="scene clip" data-start="${start.toFixed(2)}" data-duration="${dur.toFixed(2)}" data-track-index="${idx}" style="z-index:${idx};">
@@ -176,13 +194,13 @@ function renderApp(beat, prefix, start, dur, idx) {
     jsLines.push(`tl.fromTo("#${prefix}-glow", { scale:0.7, opacity:0 }, { scale:1, opacity:1, duration:0.9, ease:"power2.out" }, ${(start + 0.05).toFixed(2)});`);
     jsLines.push(`tl.fromTo("#${prefix}-phone", { scale:0.86, y:30, opacity:0 }, { scale:1, y:0, opacity:1, duration:0.6, ease:"back.out(1.3)" }, ${(start + 0.15).toFixed(2)});`);
     jsLines.push(`tl.to("#${prefix}-phone", { scale:1.06, duration:${(dur - 0.7).toFixed(2)}, ease:"power1.inOut" }, ${(start + 0.7).toFixed(2)});`);
-    if (beat.highlight) jsLines.push(`fbox("${prefix}-fbox", ${(start + 0.9).toFixed(2)});`);
+    if (rect) jsLines.push(`fbox("${prefix}-fbox", ${(start + 0.9).toFixed(2)});`);
     if (callout) jsLines.push(`callout("${prefix}-callout", ${(start + 1.1).toFixed(2)}, ${side === "left" ? -40 : 40});`);
     jsLines.push(`tl.to("#${prefix}i", { filter:"blur(16px)", opacity:0, duration:0.42, ease:"power2.in" }, ${(start + dur - 0.42).toFixed(2)});`);
     js = jsLines.join("\n      ");
   } else {
-    const highlightHtml = beat.highlight
-      ? `<div id="${prefix}-fbox" class="fbox" style="left:${beat.highlight.x}px;top:${beat.highlight.y}px;width:${beat.highlight.w}px;height:${beat.highlight.h}px;">${beat.highlight.label ? `<div class="fbox-name">${escapeHtml(beat.highlight.label)}</div>` : ""}</div>`
+    const highlightHtml = rect
+      ? `<div id="${prefix}-fbox" class="fbox" style="left:${rect.x}px;top:${rect.y}px;width:${rect.w}px;height:${rect.h}px;">${rect.label ? `<div class="fbox-name">${escapeHtml(rect.label)}</div>` : ""}</div>`
       : "";
     html = `
       <div id="${prefix}" class="scene clip" data-start="${start.toFixed(2)}" data-duration="${dur.toFixed(2)}" data-track-index="${idx}" style="z-index:${idx};">
@@ -196,7 +214,7 @@ function renderApp(beat, prefix, start, dur, idx) {
 
     const jsLines = [];
     jsLines.push(`appScene("${prefix}", ${start.toFixed(2)}, ${dur.toFixed(2)}, { z0:${z0}, z1:${z1} });`);
-    if (beat.highlight) {
+    if (rect) {
       const at = start + 0.9;
       jsLines.push(`fbox("${prefix}-fbox", ${at.toFixed(2)});`);
       jsLines.push(

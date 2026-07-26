@@ -18,6 +18,10 @@
           "still": { "type": "string", "description": "path to a pre-captured still under assets/, overrides route capture" },
           "viewport": { "enum": ["desktop", "mobile"], "default": "desktop" },
           "waitFor": { "type": "string", "description": "CSS selector to await before screenshot (defaults to 'main')" },
+          "captureClicks": {
+            "type": "array", "items": { "type": "string" },
+            "description": "kind:app only — CSS selectors clicked in order (each waited-for, then ~800ms + networkidle) BEFORE the screenshot, to reach a state the initial route doesn't show (e.g. open a chat thread)."
+          },
           "durationSec": { "type": "number", "default": 4.6, "description": "3-5s recommended for punch" },
           "pushIn": {
             "type": "object",
@@ -30,11 +34,12 @@
           },
           "highlight": {
             "type": "object",
-            "description": "spotlight box over the hero element, in STILL-pixel space (child of the scaled shot → tracks the zoom)",
-            "required": ["x", "y", "w", "h"],
+            "description": "spotlight box over the hero element, in STILL-pixel space (child of the scaled shot → tracks the zoom). Give EITHER manual x/y/w/h OR selector (auto-measured during capture, preferred — pixel-perfect, no hand-tuning); label applies to both.",
             "properties": {
-              "x": { "type": "number" }, "y": { "type": "number" },
-              "w": { "type": "number" }, "h": { "type": "number" },
+              "x": { "type": "number", "description": "manual mode" }, "y": { "type": "number", "description": "manual mode" },
+              "w": { "type": "number", "description": "manual mode" }, "h": { "type": "number", "description": "manual mode" },
+              "selector": { "type": "string", "description": "auto-measured mode (mutually exclusive with x/y/w/h) — CSS selector; capture.mjs measures getBoundingClientRect() on the live page and writes the rect to highlights.json" },
+              "padding": { "type": "number", "default": 8, "description": "auto-measured mode only — px expanded on each side of the measured rect" },
               "label": { "type": "string", "description": "bracket label, e.g. RECEBIDO NO MÊS" }
             }
           },

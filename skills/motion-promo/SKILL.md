@@ -122,7 +122,9 @@ spot-check the target element is present).
 ### 4. Define beats + generate the composition
 
 Fill `beats.json` (route/still, highlight `{x,y,w,h,label}` in still-pixel
-space, callout `{kicker,headline,sub}`, viewport, durations). Run
+space — or `{selector,label,padding?}`, auto-measured by capture.mjs and
+preferred over hand-tuned coords, callout `{kicker,headline,sub}`, viewport,
+durations). Run
 `templates/engine/compose-gen.mjs` → `index.html` from
 `templates/composition.html`, injecting tokens + beats. Keep it **punchy**:
 3–5 s per beat, hard cuts, one idea per beat.

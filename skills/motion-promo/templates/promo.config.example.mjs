@@ -33,6 +33,10 @@ export default {
     mobile: { width: 440, height: 900, deviceScaleFactor: 2 },
   },
 
+  // Note: beats.json highlight boxes can be `{selector, label, padding?}`
+  // instead of manual x/y/w/h — capture.mjs measures the element's live rect
+  // (pixel-perfect, no hand-tuning). Prefer it over manual coords.
+
   // ── Output ────────────────────────────────────────────────────────────────
   chromePath: "/usr/bin/google-chrome",
   fps: 30,
