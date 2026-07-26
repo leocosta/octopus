@@ -1,5 +1,12 @@
 // Shared headless-browser helper. Reads promo.config from the target project.
-// App-agnostic: authentication is delegated to config.authInject().
+// App-agnostic: authentication is delegated to the config. Two styles:
+//   - config.authInject(): return { localStorage?, sessionStorage?, cookies? }
+//     to inject before navigation (token-in-storage / cookie / API-key apps).
+//   - config.authFlow(page, { appUrl }): DRIVE the login UI in the browser
+//     (interactive SSO — e.g. Azure AD). The engine then snapshots the resulting
+//     session (localStorage + sessionStorage + cookies, incl. HttpOnly) and
+//     injects it into every subsequent page. Use this when there is no way to
+//     obtain a token programmatically.
 import puppeteer from "puppeteer-core";
 import config from "../promo.config.mjs";
 
@@ -13,25 +20,52 @@ export async function launchBrowser() {
   });
 }
 
-// Memoize the auth payload so many pages/beats cost ONE login (demo APIs
-// commonly rate-limit /auth). Cleared per-process.
-let _authPayload = null;
-async function authPayload() {
-  if (!_authPayload) _authPayload = await config.authInject();
-  return _authPayload;
+// One login per process (demo APIs / IdPs commonly rate-limit). The payload is
+// { localStorage, sessionStorage, cookies } regardless of which style produced it.
+let _payload = null;
+async function ensurePayload(browser) {
+  if (_payload) return _payload;
+  if (typeof config.authFlow === "function") {
+    // Interactive login: drive it on a bootstrap page, then snapshot the session.
+    const boot = await browser.newPage();
+    await boot.setViewport(config.viewports.desktop);
+    await config.authFlow(boot, { appUrl: config.appUrl });
+    const storage = await boot.evaluate(() => ({
+      localStorage: Object.fromEntries(Object.entries(localStorage)),
+      sessionStorage: Object.fromEntries(Object.entries(sessionStorage)),
+    }));
+    const cookies = await boot.cookies(); // includes HttpOnly session cookies
+    await boot.close();
+    _payload = { ...storage, cookies };
+  } else if (typeof config.authInject === "function") {
+    _payload = (await config.authInject()) || {};
+  } else {
+    _payload = {};
+  }
+  return _payload;
 }
 
 export async function newAuthedPage(browser, { viewport = "desktop" } = {}) {
-  const payload = await authPayload();
+  const payload = await ensurePayload(browser);
   const page = await browser.newPage();
   await page.setViewport(config.viewports[viewport]);
-  await page.evaluateOnNewDocument((p) => {
-    for (const [k, v] of Object.entries(p.localStorage || {})) localStorage.setItem(k, v);
-    for (const c of p.cookies || []) {
-      const parts = [`${c.name}=${c.value}`, `path=${c.path || "/"}`, "max-age=31536000", "samesite=Lax"];
-      document.cookie = parts.join("; ");
-    }
-  }, payload);
+
+  // Cookies via the jar (handles HttpOnly + explicit domains from a snapshot;
+  // domain-less cookies from authInject get the app origin as their url).
+  const cookies = (payload.cookies || []).map((c) =>
+    c.domain ? c : { name: c.name, value: c.value, url: config.appUrl, path: c.path || "/" }
+  );
+  if (cookies.length) await page.setCookie(...cookies).catch(() => {});
+
+  // localStorage + sessionStorage before any page script runs.
+  await page.evaluateOnNewDocument(
+    (ls, ss) => {
+      try { for (const [k, v] of Object.entries(ls || {})) localStorage.setItem(k, v); } catch {}
+      try { for (const [k, v] of Object.entries(ss || {})) sessionStorage.setItem(k, v); } catch {}
+    },
+    payload.localStorage || {},
+    payload.sessionStorage || {},
+  );
   return page;
 }
 

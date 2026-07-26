@@ -50,7 +50,13 @@ screen capture is cheaper), or apps with no runnable demo environment.
 **No API keys / secrets are required.** HyperFrames `render` is keyless (local
 HTML→MP4), and fonts (Google Fonts) + the default music (incompetech) are public
 URLs. The only credential is the *target app's demo login*, which lives in the
-target repo's `promo.config.mjs` (`authInject()`), never in this skill.
+target repo's `promo.config.mjs` — never in this skill. Auth is a pluggable
+recipe: `authInject()` returns values to inject (token in localStorage, cookie,
+API-key, multi-step tenant-select), or `authFlow(page)` DRIVES an interactive
+login UI (Azure AD / Entra, Okta, Google SSO) and the engine snapshots the
+session (localStorage + sessionStorage + cookies, incl. HttpOnly). SSO creds come
+from env, not the file. **Headless cannot pass interactive MFA** — use a demo
+account exempt from MFA (Conditional Access exception) or an app password.
 
 **System deps (you install these — the skill cannot):** Node 20+, system Chrome
 (`google-chrome`/Chromium), `ffmpeg` + `ffprobe`. Network egress for fonts/music.

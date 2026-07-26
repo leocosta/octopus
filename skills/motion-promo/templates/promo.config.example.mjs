@@ -27,6 +27,28 @@ export default {
     };
   },
 
+  // ── Interactive SSO (alternative to authInject) ───────────────────────────
+  // Provide `authFlow` INSTEAD of `authInject` when the app logs in via an
+  // interactive redirect (Azure AD / Entra, Okta, Google) and there is no
+  // programmatic token endpoint. It DRIVES the login UI; the engine snapshots
+  // the resulting session and injects it into every page. Credentials come from
+  // env, never the file. NOTE: headless cannot pass interactive MFA — use a demo
+  // account exempt from MFA (Conditional Access exception) or an app password.
+  //
+  // async authFlow(page, { appUrl }) {
+  //   await page.goto(appUrl, { waitUntil: "networkidle2" }); // → login.microsoftonline.com
+  //   // Azure AD / Entra ID: email → Next → password → Sign in → "Stay signed in?"
+  //   await page.waitForSelector('input[type=email]', { timeout: 30000 });
+  //   await page.type('input[type=email]', process.env.PROMO_SSO_USER);
+  //   await page.click('input[type=submit]');                       // Next
+  //   await page.waitForSelector('input[type=password]', { visible: true, timeout: 30000 });
+  //   await page.type('input[type=password]', process.env.PROMO_SSO_PASS);
+  //   await page.click('input[type=submit]');                       // Sign in
+  //   await page.waitForSelector('#idSIButton9', { timeout: 30000 }).catch(() => {});
+  //   await page.click('#idSIButton9').catch(() => {});             // "Stay signed in?" → Yes
+  //   await page.waitForNavigation({ waitUntil: "networkidle2" }).catch(() => {}); // back on the app
+  // },
+
   // ── Viewports ─────────────────────────────────────────────────────────────
   viewports: {
     desktop: { width: 1920, height: 1080, deviceScaleFactor: 2 },
