@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- @FONTS@ -->
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      /* Brand-neutral defaults — compose-gen.mjs overwrites this block from
+         design.tokens.json (sampled from the target app) + promo.config
+         overrides. Never hardcode a brand color/font outside this block. */
+      :root {
+        --bg: #17191c;
+        --accent: #70a23f;
+        --fg: #f5f4f0;
+        --muted: #c0bcaf;
+        --font-hero: 'Bricolage Grotesque', sans-serif;
+        --font-mono: 'DM Mono', monospace;
+        --radius: 16px;
+      }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); }
+      .scene { position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; background: var(--bg); overflow: hidden; }
+
+      .t-label { font-family: var(--font-mono); font-size: 26px; letter-spacing: 0.22em; color: var(--accent); text-transform: uppercase; }
+      .t-hero  { font-family: var(--font-hero); font-size: 116px; font-weight: 800; color: var(--fg); line-height: 0.94; letter-spacing: -0.035em; }
+      .t-accent { color: var(--accent); }
+      .t-sub   { font-family: var(--font-mono); font-size: 30px; color: var(--muted); }
+      .word    { display: inline-block; will-change: transform, opacity; }
+
+      /* .shot is the element GSAP applies `scale` to for the cinematic push-in.
+         Anything that must track the zoom (the .fbox highlight) MUST be a DOM
+         child of .shot, in the still's pixel-coordinate space — never a
+         sibling, or it stays fixed while the image zooms and drifts off the
+         target across the shot (see SKILL.md Rules → Highlight tracking). */
+      .shot { position: absolute; inset: 0; will-change: transform; }
+      .shot img { width: 1920px; height: 1080px; display: block; }
+      .dim  { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
+
+      .fbox {
+        position: absolute; border-radius: 6px; opacity: 0;
+        border: 2.5px solid color-mix(in srgb, var(--accent) 95%, transparent);
+        box-shadow: 0 0 26px color-mix(in srgb, var(--accent) 45%, transparent),
+                    inset 0 0 40px color-mix(in srgb, var(--accent) 8%, transparent);
+      }
+      .fbox::before, .fbox::after { content: ''; position: absolute; width: 16px; height: 16px; border-color: color-mix(in srgb, var(--accent) 70%, white); border-style: solid; }
+      .fbox::before { top: -3px; left: -3px; border-width: 3px 0 0 3px; }
+      .fbox::after  { bottom: -3px; right: -3px; border-width: 0 3px 3px 0; }
+      .fbox-name {
+        position: absolute; top: -46px; left: 0; white-space: nowrap;
+        font-family: var(--font-mono); font-size: 21px; font-weight: 500; letter-spacing: 0.06em;
+        padding: 6px 14px; border-radius: 7px;
+        background: color-mix(in srgb, var(--accent) 35%, #000);
+        border: 1px solid color-mix(in srgb, var(--accent) 55%, #000);
+        color: color-mix(in srgb, var(--accent) 55%, #fff);
+      }
+
+      .callout {
+        position: absolute; opacity: 0; max-width: 720px; padding: 30px 40px; border-radius: var(--radius);
+        background: color-mix(in srgb, var(--bg) 85%, transparent);
+        backdrop-filter: blur(8px);
+        border-left: 6px solid var(--accent);
+      }
+      .callout.right { border-left: none; border-right: 6px solid var(--accent); }
+      .callout .k { font-family: var(--font-mono); font-size: 23px; letter-spacing: 0.16em; color: var(--accent); text-transform: uppercase; }
+      .callout .h { font-family: var(--font-hero); font-size: 56px; font-weight: 800; color: var(--fg); line-height: 1.03; margin-top: 8px; letter-spacing: -0.02em; }
+      .callout .s { font-family: var(--font-mono); font-size: 25px; color: var(--muted); margin-top: 12px; }
+
+      /* phone frame for mobile-viewport beats */
+      .phone {
+        position: absolute; top: 50%; left: 50%; width: 498px; height: 1010px; margin: -505px 0 0 -249px;
+        border-radius: 52px; padding: 14px; will-change: transform;
+        background: color-mix(in srgb, var(--bg) 60%, #000);
+        box-shadow: 0 40px 120px rgba(0,0,0,0.6), 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent);
+      }
+      .phone-screen { position: relative; width: 100%; height: 100%; border-radius: 40px; overflow: hidden; background: var(--bg); }
+      .phone-screen img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
+      /* .fbox inside .phone-screen is a descendant of the scaled .phone → tracks it too */
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="@COMPID@"
+      data-start="0"
+      data-duration="@DURATION@"
+      data-width="1920"
+      data-height="1080"
+    ><!-- @SCENES@ --></div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      // ── Shared motion helpers — reused by generated per-beat timeline code ──
+
+      // Kinetic entrance/exit for a captured app screen: blur-in the scene
+      // wrapper, push-in the .shot (opts.z0 → opts.z1 scale), fade the .dim
+      // vignette in, then blur-out near the end of the beat's duration.
+      function appScene(prefix, start, dur, opts) {
+        opts = opts || {};
+        tl.fromTo("#" + prefix + "i", { opacity: 0, filter: "blur(16px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.5, ease: "power2.out" }, start);
+        tl.fromTo("#" + prefix + "-shot", { scale: opts.z0 || 1.03 }, { scale: opts.z1 || 1.16, duration: dur - 0.1, ease: "power1.inOut" }, start + 0.05);
+        if (document.querySelector("#" + prefix + "-dim"))
+          tl.fromTo("#" + prefix + "-dim", { opacity: 0 }, { opacity: 1, duration: 0.7, ease: "power2.out" }, start + 0.6);
+        tl.to("#" + prefix + "i", { scale: 1.04, filter: "blur(16px)", opacity: 0, duration: 0.42, ease: "power2.in" }, start + dur - 0.4);
+      }
+
+      // Kinetic callout card (kicker → headline → sub, internally staggered).
+      // fromX: negative slides in from the left, positive from the right.
+      function callout(prefix, at, fromX) {
+        tl.fromTo("#" + prefix, { opacity: 0, x: fromX }, { opacity: 1, x: 0, duration: 0.5, ease: "expo.out" }, at);
+        tl.fromTo("#" + prefix + " .k", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }, at + 0.12);
+        tl.fromTo("#" + prefix + " .h", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.42, ease: "expo.out" }, at + 0.24);
+        tl.fromTo("#" + prefix + " .s", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "sine.out" }, at + 0.55);
+      }
+
+      // Spotlight highlight box pop-in (bracket corners + label chip).
+      function fbox(prefix, at) {
+        tl.fromTo("#" + prefix, { scale: 0.82, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(1.8)" }, at);
+        tl.fromTo("#" + prefix + " .fbox-name", { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" }, at + 0.2);
+      }
+
+      <!-- @TIMELINE@ -->
+
+      window.__timelines["@COMPID@"] = tl;
+    </script>
+  </body>
+</html>
