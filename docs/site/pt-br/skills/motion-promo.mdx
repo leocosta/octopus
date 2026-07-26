@@ -1,0 +1,73 @@
+---
+title: motion-promo
+description: Transforma um app em execução em um vídeo promocional de alta fidelidade e com trilha — dirige o produto real headless contra um ambiente de demo, captura telas limpas e compõe um corte de motion design com HyperFrames + GSAP. Gera um master 16:9 e um corte 9:16.
+source_hash: "sha256:d6e7640aa9d199d88fd5fd5624c398c35d9ecf5b4c4d43175112debf2eda5b5d"
+needs_retranslation: false
+---
+
+`motion-promo` renderiza um vídeo promocional de nível de anúncio de um produto
+*real* — não é gravação de tela e não é mockup. Ele dirige o app de verdade num
+navegador headless contra um ambiente de demo, captura telas limpas de cada
+tela e compõe um corte de motion design por cima delas: tipografia cinética,
+push-ins cinematográficos, destaques (spotlight) que acompanham o zoom, molduras
+de celular nas telas mobile, cortes ritmados e uma trilha sonora. A saída é um
+master 16:9 e um corte vertical 9:16.
+
+É a contraparte de renderização do `launch-feature`: o `launch-feature` escreve
+o roteiro (`video-roteiro.md`); o `motion-promo` transforma uma lista de batidas
+(*beats*) no vídeo final, com trilha.
+
+## Por que autorar o movimento em vez de gravar a tela
+
+Navegação capturada ao vivo parece amadora — as telas ficam paradas, o ritmo é
+uniforme e nada recebe ênfase. E é frágil: o screencast do navegador para de
+emitir frames numa tela estática e roda abaixo do frame rate nominal. O
+`motion-promo` usa o app só para produzir *stills* e *design tokens*; todo o
+movimento é autorado em HTML/GSAP e renderizado deterministicamente para MP4. É
+isso que transforma telas reais num anúncio dinâmico.
+
+## Agnóstico ao app, com a marca automática
+
+Nada específico do app mora na skill. O repositório-alvo fornece um
+`promo.config.mjs` (URL do app, receita de auth, saída) e um `beats.json` (a
+lista de tomadas). Dois passos removem o trabalho manual mais chato:
+
+- **Extração do design system** — o pipeline amostra o fundo, o accent, a cor de
+  texto e as fontes do próprio app-alvo e as injeta na composição como
+  variáveis CSS. Uma única skill produz promos na marca de qualquer app, sem
+  escolher tokens na mão.
+- **Destaque por seletor** — uma batida nomeia um seletor CSS do elemento a
+  destacar; a captura mede o *bounding box* real dele, então o destaque fica
+  pixel-perfect, sem coordenadas ajustadas na mão.
+
+## As batidas
+
+Cada batida é uma cena: uma tela capturada com push-in, um destaque opcional e
+um *callout* cinético — entre uma abertura de tipografia cinética e um card
+final de CTA. Mantenha-as diretas: 3–5 segundos cada, cortes secos, uma ideia
+por batida.
+
+## Autenticação
+
+A auth é uma receita plugável no repositório-alvo, então a skill permanece
+agnóstica a autenticação:
+
+- **`authInject()`** retorna valores para injetar antes da navegação — um token
+  no `localStorage`, um cookie de sessão, uma API key, uma seleção de tenant em
+  vários passos.
+- **`authFlow(page)`** dirige uma UI de login interativa (Azure AD / Entra,
+  Okta, Google SSO) quando não há token programático; o engine então tira um
+  snapshot da sessão resultante (`localStorage` + `sessionStorage` + cookies,
+  incluindo `HttpOnly`). Headless não passa por MFA interativo — use uma conta de
+  demo isenta de MFA.
+
+## Sem segredos, auto-provisionável
+
+A renderização é keyless (o HyperFrames é um render local HTML→MP4; as fontes e a
+trilha CC-BY padrão são URLs públicas). O `hyperframes` é buscado sob demanda via
+`npx`, o `puppeteer-core` usa o Chrome do sistema e o `npm run preflight` verifica
+as dependências de sistema antes de rodar.
+
+Faz parte do bundle `growth`.
+
+[Fonte: `skills/motion-promo/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/motion-promo/SKILL.md)

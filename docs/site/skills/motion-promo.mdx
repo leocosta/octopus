@@ -1,0 +1,69 @@
+---
+title: motion-promo
+description: Turn a running app into a high-fidelity, scored promo video — drive the real product headless against a demo environment, capture clean screens, and composite a motion-design cut with HyperFrames + GSAP. Emits a 16:9 master and a 9:16 cut.
+---
+
+`motion-promo` renders an ad-grade promo video of a *real* product — not a
+screen recording and not a mockup. It drives the actual app in a headless
+browser against a demo environment, captures clean stills of each screen, and
+composites a motion-design cut over them: kinetic typography, cinematic
+push-ins, spotlight highlights that track the zoom, phone frames for mobile
+screens, rhythmic cuts, and a music bed. The output is a 16:9 master and a 9:16
+vertical cut.
+
+It is the render counterpart to `launch-feature`: `launch-feature` writes the
+script (`video-roteiro.md`); `motion-promo` turns a beats list into the
+finished, scored video.
+
+## Why author the motion instead of recording the screen
+
+Captured live navigation looks amateur — screens sit static, pacing is uniform,
+and nothing is emphasised. It is also fragile: the browser's screencast stops
+emitting frames on a static page and runs below its nominal frame rate.
+`motion-promo` uses the app only to produce *stills* and *design tokens*; all
+motion is authored in HTML/GSAP and rendered deterministically to MP4. That is
+what turns real screens into a dynamic ad.
+
+## App-agnostic, on-brand automatically
+
+Nothing app-specific lives in the skill. A target repo provides a
+`promo.config.mjs` (app URL, auth recipe, output) and a `beats.json` (the shot
+list). Two steps remove the fiddliest manual work:
+
+- **Design-system extraction** — the pipeline samples the target app's own
+  background, accent, foreground and fonts, and feeds them to the composition as
+  CSS variables. One skill produces on-brand promos for any app, with no token
+  picking by hand.
+- **Highlight-by-selector** — a beat names a CSS selector for the element to
+  spotlight; capture measures its live bounding box, so the highlight is
+  pixel-perfect with no hand-tuned coordinates.
+
+## The beats
+
+Each beat is one scene: a captured screen with a push-in, an optional spotlight
+highlight, and a kinetic callout — bracketed by a kinetic-typography intro and
+an end-card CTA. Keep them punchy: 3–5 seconds each, hard cuts, one idea per
+beat.
+
+## Authentication
+
+Auth is a pluggable recipe in the target repo, so the skill stays auth-agnostic:
+
+- **`authInject()`** returns values to inject before navigation — a token in
+  `localStorage`, a session cookie, an API key, a multi-step tenant select.
+- **`authFlow(page)`** drives an interactive login UI (Azure AD / Entra, Okta,
+  Google SSO) when there is no programmatic token; the engine then snapshots the
+  resulting session (`localStorage` + `sessionStorage` + cookies, including
+  `HttpOnly`). Headless cannot pass interactive MFA — use an MFA-exempt demo
+  account.
+
+## No secrets, self-provisioning
+
+The render is keyless (HyperFrames is a local HTML→MP4 render; fonts and the
+default CC-BY music are public URLs). `hyperframes` is fetched on demand via
+`npx`, `puppeteer-core` uses the system Chrome, and `npm run preflight` verifies
+the system dependencies before a run.
+
+Ships in the `growth` bundle.
+
+[Source: `skills/motion-promo/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/motion-promo/SKILL.md)
