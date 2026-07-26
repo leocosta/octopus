@@ -1,0 +1,195 @@
+---
+name: motion-promo
+description: >
+  Turn a running app into a high-fidelity, dynamic promo video by driving the
+  REAL product (headless Chrome) against a demo/sandbox environment, capturing
+  clean screens, and compositing a motion-design cut (kinetic typography,
+  cinematic push-ins, spotlight highlights, phone frames, scored) with
+  HyperFrames + GSAP. App-agnostic: reads a per-project promo.config and a
+  beats list; auto-extracts the target app's design system so overlays match
+  its brand. Emits 16:9 master + 9:16 cut.
+triggers:
+  paths: ["video/**", "docs/marketing/**", "promo.config.*"]
+  keywords: ["promo video", "demo video", "product video", "motion", "hero video", "landing page video", "sizzle"]
+  tools: []
+---
+
+# Motion Promo Protocol
+
+## Overview
+
+This skill renders a **dynamic, ad-grade promo video of a real product**, not a
+screen recording and not a mockup. It drives the actual app in a headless
+browser against a demo environment, captures clean stills of each screen, and
+composites a motion-design cut over them: kinetic typography, cinematic
+push-ins, spotlight highlights that track the zoom, phone frames for mobile
+screens, rhythmic scene cuts, and a music bed. Output is a 16:9 master and a
+9:16 vertical cut.
+
+It is the **render counterpart** to `launch-feature`: `launch-feature` writes a
+`video-roteiro.md` (the script/beats in prose); `motion-promo` turns a beats
+list into the finished, scored video. When both run, chain them —
+`launch-feature` roteiro → `motion-promo` beats.
+
+**Why HyperFrames (HTML→MP4) and not screen recording:** deterministic,
+re-runnable, brand-controllable, and it sidesteps the failure modes of
+capturing live navigation (see Rules). The app is only used to produce *stills*
++ *design tokens*; all motion is authored.
+
+## When to Use
+
+- A landing page / sales page needs a product demo or hero video.
+- Announcing a feature and you want the rendered video, not just the script.
+- You have a demo/sandbox tenant with real-ish data to show.
+
+Do **not** use for: internal walkthroughs where fidelity doesn't matter (a raw
+screen capture is cheaper), or apps with no runnable demo environment.
+
+## Prerequisites
+
+- Node 20+, system Chrome (`google-chrome`/Chromium), `ffmpeg` + `ffprobe`.
+- `npx hyperframes@<pinned>` reachable (HTML→MP4 renderer).
+- Network egress (Google Fonts at compile, music fetch).
+- A **runnable demo/sandbox** of the target app + credentials.
+
+## Inputs
+
+Everything project-specific lives in the **target repo**, never in this skill:
+
+1. **`promo.config.mjs`** — the contract (see `templates/promo.config.example.mjs`).
+   App URL / how to serve, auth recipe, demo account/tenant, output paths, and
+   music preference. Design tokens are auto-extracted (step 2) but can be
+   overridden here.
+2. **`beats.json`** — the ordered shot list (see `templates/beats.schema.json`).
+   Each beat = a screen (route or captured still) + optional highlight target +
+   callout copy + viewport (desktop/mobile).
+
+Scaffold both into `video/<slug>/` in the target repo from `templates/`.
+
+## Protocol
+
+Work inside `video/<slug>/` in the target repo. Each step has a verification.
+
+### 0. Cure the demo data (do this first — it makes or breaks the video)
+
+Demo/sandbox data is usually **stale or zeroed** for the current period
+(unpaid current-month invoices, empty funnels), which reads as *"R$0 revenue"*
+next to *"on autopilot"* — actively off-message. Before capturing, write an
+**idempotent, current-date-relative** seed that gives every beat healthy
+numbers (see Rules → *Demo-data zeros*). Verify by querying the metrics each
+beat will show.
+
+### 1. Serve the app against the demo API, on a CORS-allowed origin
+
+Build/serve the app pointed at the demo API. **The serving origin must be in
+the API's CORS allow-list** or every data fetch is blocked and screens render
+empty (see Rules → *CORS origin*). Probe the API's allow-list and serve on an
+allowed port. Verify: a deep route returns 200 and an authenticated
+`/api/...` request from that origin returns 2xx.
+
+### 2. Extract the target app's design system
+
+Run `templates/engine/extract-design.mjs` against the served, authenticated
+app. It samples computed styles (page background, primary/accent color from
+buttons/links, heading + mono font families, radius) → `design.tokens.json`.
+These feed the composition as CSS variables so the kinetic overlays, accent,
+and fonts **match the app's brand automatically**. Review + override in
+`promo.config` if a sampled token is wrong.
+
+### 3. Capture clean stills per beat
+
+Run `templates/engine/capture.mjs`. It authenticates (via the config's
+`authInject` recipe), navigates each beat's route at its viewport, **waits for
+real data to land** (not just network-idle — see Rules), and screenshots to
+`assets/<beat>.png`. Verify each still shows loaded content (size > ~10 KB,
+spot-check the target element is present).
+
+### 4. Define beats + generate the composition
+
+Fill `beats.json` (route/still, highlight `{x,y,w,h,label}` in still-pixel
+space, callout `{kicker,headline,sub}`, viewport, durations). Run
+`templates/engine/compose-gen.mjs` → `index.html` from
+`templates/composition.html`, injecting tokens + beats. Keep it **punchy**:
+3–5 s per beat, hard cuts, one idea per beat.
+
+### 5. Fetch a free music track
+
+Run `templates/engine/fetch-music.mjs` → `assets/music.mp3`. Default source is
+CC-BY (incompetech); **CC-BY requires attribution** (record it for the LP
+description). Prefer a project-provided/CC0 track when available.
+
+### 6. Render
+
+`npx hyperframes render` → silent MP4. Run `hyperframes lint`/`inspect` first;
+treat off-canvas decorative/exit-animation overflow as noise, real text
+clipping as a fix.
+
+### 7. Review frames + fix highlight alignment
+
+Extract frames at the **start and end of each push-in** and eyeball them. The
+#1 defect: **spotlight highlight drifts off its target during the zoom** —
+because the highlight box must be a *child of the scaled container* (see Rules
+→ *Highlight tracking*). Also verify: no empty/spinner screens, mobile screens
+sit cleanly in the phone frame, copy is legible.
+
+### 8. Mux the music
+
+Run `templates/engine/mux.mjs` → final scored MP4 (loudnorm, fade in/out,
+`-shortest`). Verify the output has an audio stream and matches video duration.
+
+### 9. Derive the 9:16 cut
+
+`mux.mjs --reframe` produces a 1080×1920 cut. Do **not** center-crop (it cuts
+bottom-anchored callouts) — use a blurred-letterbox that preserves the whole
+frame; mobile beats already sit centered.
+
+## Rules (hard-won — do not relearn these)
+
+- **Highlight tracking.** A spotlight/highlight rectangle over a screen that
+  push-ins MUST be a **child of the same element that gets the `scale`
+  transform**, in the still's pixel-coordinate space. As a sibling it stays
+  fixed while the image zooms and drifts off-target across the shot.
+- **Demo-data zeros.** The current period is often unpaid/empty. Cure it with a
+  seed that is **idempotent** (deterministic ids, delete-then-insert) and
+  **relative to `current_date`** so it self-heals every period.
+- **CORS origin.** A locally-served build calling a deployed demo API is
+  cross-origin. Serve on an origin the API allow-lists (probe it) — **never**
+  disable browser web security to work around it.
+- **Wait for real data.** `networkidle2` can resolve *before* the app's data
+  request lands → you capture a spinner. Additionally wait for a successful
+  `/api/...` response (or the target content selector) before screenshotting.
+- **HyperFrames over live-capture.** CDP screencast stops emitting frames on a
+  visually static page and runs below nominal fps; authoring in HTML (GSAP)
+  avoids both. If you ever must record live, jitter the cursor and encode at
+  the *effective* fps.
+- **Music licensing.** CC-BY (incompetech/Kevin MacLeod) needs attribution in
+  the LP description; CC0 (Pixabay etc.) does not. Never ship an unlicensed
+  scraped clip on a published page.
+- **Concat with the filter, not the demuxer** if segments have varying fps —
+  the demuxer silently drops frames.
+
+## Design-system extraction (agnostic branding)
+
+The composition is brand-neutral; `extract-design.mjs` fills its CSS variables
+from the *target app itself*: `--bg` (body background), `--accent`
+(primary/link color), `--fg` (heading color), `--font-hero`/`--font-mono`
+(computed font families), `--radius`. This is what makes one skill produce
+on-brand promos for **any** app without hand-picking tokens. Always review the
+sampled tokens — a low-contrast or ad-hoc color occasionally samples wrong;
+override in `promo.config.design`.
+
+## Errors
+
+- App won't authenticate headless → the config's `authInject` recipe is wrong;
+  verify tokens land in `localStorage`/cookies *before* first navigation.
+- Screens render empty → CORS origin (step 1) or wait-for-data (Rule) missed.
+- Render off-canvas errors → real text clipping needs smaller font / wrapping;
+  decorative/exit overflow is noise.
+- Highlight misaligned → it isn't a child of the scaled container (Rule).
+
+## Composition with the marketer role
+
+Use the **marketer** role for copy: kickers, headlines, and the value framing
+per beat should follow the project voice (`launch-feature`'s `voice.md` /
+`marketer-hooks.md` when present). Keep on-screen copy to a kicker + a short
+headline + one sub-line per beat.

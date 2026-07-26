@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "motion-promo beats",
+  "description": "Ordered shot list for the promo. Each app beat becomes a scene: captured still + optional highlight + kinetic callout. First/last beats are usually kinetic-type intro + CTA (no shot).",
+  "type": "object",
+  "required": ["beats"],
+  "properties": {
+    "beats": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["id", "kind"],
+        "properties": {
+          "id": { "type": "string", "description": "kebab id, e.g. 02-financeiro" },
+          "kind": { "enum": ["intro", "app", "cta"], "description": "intro=kinetic hook, app=captured screen w/ motion, cta=end card" },
+          "route": { "type": "string", "description": "app route to capture (kind:app). Omit if `still` is pre-supplied." },
+          "still": { "type": "string", "description": "path to a pre-captured still under assets/, overrides route capture" },
+          "viewport": { "enum": ["desktop", "mobile"], "default": "desktop" },
+          "waitFor": { "type": "string", "description": "CSS selector to await before screenshot (defaults to 'main')" },
+          "durationSec": { "type": "number", "default": 4.6, "description": "3-5s recommended for punch" },
+          "pushIn": {
+            "type": "object",
+            "description": "cinematic zoom over the shot",
+            "properties": {
+              "origin": { "type": "string", "default": "50% 50%", "description": "transform-origin, aim at the hero element" },
+              "from": { "type": "number", "default": 1.03 },
+              "to": { "type": "number", "default": 1.16 }
+            }
+          },
+          "highlight": {
+            "type": "object",
+            "description": "spotlight box over the hero element, in STILL-pixel space (child of the scaled shot → tracks the zoom)",
+            "required": ["x", "y", "w", "h"],
+            "properties": {
+              "x": { "type": "number" }, "y": { "type": "number" },
+              "w": { "type": "number" }, "h": { "type": "number" },
+              "label": { "type": "string", "description": "bracket label, e.g. RECEBIDO NO MÊS" }
+            }
+          },
+          "callout": {
+            "type": "object",
+            "properties": {
+              "kicker": { "type": "string", "description": "small mono uppercase, e.g. FINANCEIRO" },
+              "headline": { "type": "string", "description": "short bold headline, use \\n for line break" },
+              "sub": { "type": "string", "description": "one supporting mono line" },
+              "side": { "enum": ["left", "right"], "default": "left" }
+            }
+          },
+          "text": {
+            "type": "object",
+            "description": "for kind:intro / kind:cta — the kinetic copy",
+            "properties": {
+              "kicker": { "type": "string" },
+              "lines": { "type": "array", "items": { "type": "string" }, "description": "hero lines; wrap the accent word in *asterisks*" },
+              "sub": { "type": "string" },
+              "url": { "type": "string", "description": "cta only" }
+            }
+          }
+        }
+      }
+    }
+  }
+}
