@@ -346,53 +346,24 @@ $Timestamp    = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
 } | ConvertTo-Json | Set-Content -Path $MetadataFile -Encoding UTF8
 
 # ── Install shim ───────────────────────────────────────────────────────────────
+#
+# Copy the shims shipped in the release tree (bin/octopus.ps1 + octopus.cmd)
+# rather than embedding them here — mirrors install.sh's install_shim (RM-019),
+# so a shim change ships with the release instead of being frozen into the
+# installer. Both delegate to the version-independent `current` link, so they
+# need no per-version healing.
+$ShimSourceDir = Join-Path $DestDir "bin"
+$Shims = @("octopus.ps1", "octopus.cmd")
 
 New-Item -ItemType Directory -Path $BinDir -Force | Out-Null
-
-# PowerShell shim — delegates to the release's bin/octopus via Git Bash or WSL.
-$ShimPs1 = Join-Path $BinDir "octopus.ps1"
-@"
-# Octopus CLI shim — delegates to bash (Git Bash or WSL)
-`$CacheRoot  = if (`$env:OCTOPUS_CLI_CACHE_ROOT) { `$env:OCTOPUS_CLI_CACHE_ROOT } else { Join-Path `$HOME ".octopus-cli" }
-`$CurrentDir = Join-Path `$CacheRoot "current"
-
-function Find-Bash {
-    `$bashOnPath = Get-Command bash -ErrorAction SilentlyContinue
-    `$candidates = @(
-        "C:\Program Files\Git\bin\bash.exe",
-        "C:\Program Files (x86)\Git\bin\bash.exe",
-        `$(if (`$bashOnPath) { `$bashOnPath.Source } else { `$null })
-    )
-    foreach (`$c in `$candidates) { if (`$c -and (Test-Path `$c)) { return `$c } }
-    if (Get-Command wsl -ErrorAction SilentlyContinue) { return "wsl" }
-    throw "No bash executor found. Install Git for Windows or enable WSL."
-}
-
-`$BashExe = Find-Bash
-`$RawPath = Join-Path `$CurrentDir "bin\octopus"
-
-if (`$BashExe -eq "wsl") {
-    # WSL expects /mnt/c/... — translate without a scriptblock so this works on
-    # Windows PowerShell 5.1 (scriptblock -replace substitution is PS 6+ only).
-    `$ScriptPath = `$RawPath -replace '\\', '/'
-    if (`$ScriptPath -match '^([A-Za-z]):(.*)`$') {
-        `$ScriptPath = "/mnt/" + `$Matches[1].ToLower() + `$Matches[2]
+foreach ($name in $Shims) {
+    $src = Join-Path $ShimSourceDir $name
+    if (-not (Test-Path $src)) {
+        Write-Err "Shim not found in extracted release at $src"
+        exit 1
     }
-    wsl bash `$ScriptPath @args
-} else {
-    # Git Bash expects /c/... format
-    `$ScriptPath = `$RawPath -replace '\\', '/'
-    `$ScriptPath = `$ScriptPath -replace '^([A-Za-z]):', '/`$1'
-    & `$BashExe `$ScriptPath @args
+    Copy-Item -LiteralPath $src -Destination (Join-Path $BinDir $name) -Force
 }
-"@ | Set-Content -Path $ShimPs1 -Encoding UTF8
-
-# CMD wrapper so `octopus` works in cmd.exe too
-$ShimCmd = Join-Path $BinDir "octopus.cmd"
-@"
-@echo off
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0octopus.ps1" %*
-"@ | Set-Content -Path $ShimCmd -Encoding ASCII
 
 Write-Success "Installed shim to $BinDir"
 
