@@ -8,6 +8,11 @@ set -euo pipefail
 #   curl -fsSL https://github.com/leocosta/octopus/releases/latest/download/install.sh | bash
 #   # Or with a specific version:
 #   curl -fsSL https://github.com/leocosta/octopus/releases/download/v0.15.0/install.sh | bash -s -- --version v0.15.0
+#
+# This is the source of truth for the release contract. install.ps1 (Windows)
+# MUST mirror it — release-asset tarball, SHA-256 + GPG verification, the
+# cache-integrity marker, and the shim. When you change the download/verify/shim
+# behavior here, update install.ps1 too and run tests/test_install_ps1_invariants.sh.
 
 OCTOPUS_CACHE_DIR="${OCTOPUS_CACHE_DIR:-$HOME/.octopus-cli}"
 OCTOPUS_BIN_DIR="${OCTOPUS_BIN_DIR:-$HOME/.local/bin}"
