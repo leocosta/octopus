@@ -26,7 +26,7 @@ if (!Array.isArray(beats) || beats.length < 3) {
 const escapeHtml = (s) =>
   String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-const slugId = (s) => String(s).replace(/[^a-zA-Z0-9_-]/g, "-");
+const slugId = (s) => { const v = String(s).replace(/[^a-zA-Z0-9_-]/g, "-"); return /^[a-zA-Z]/.test(v) ? v : "s" + v; }; // ids must start with a letter (CSS selectors)
 
 // "Sua *academia* no piloto" → words with the *marked* one flagged accent.
 // Returns [{ text, accent }].
@@ -297,4 +297,10 @@ template = template.replaceAll("@COMPID@", compId);
 template = template.replaceAll("@DURATION@", totalDuration.toFixed(2));
 
 writeFileSync(outPath, template);
-console.log(`index.html written — ${beats.length} scenes, ${totalDuration.toFixed(1)}s total (composition id "${compId}").`);
+
+// HyperFrames needs meta.json (composition id/name) next to index.html; keep it
+// in sync with the composition id so `hyperframes render` resolves it.
+writeFileSync(new URL("../meta.json", import.meta.url),
+  JSON.stringify({ id: compId, name: compId, createdAt: "2026-01-01T00:00:00.000Z" }, null, 2) + "\n");
+
+console.log(`index.html + meta.json written — ${beats.length} scenes, ${totalDuration.toFixed(1)}s total (composition id "${compId}").`);

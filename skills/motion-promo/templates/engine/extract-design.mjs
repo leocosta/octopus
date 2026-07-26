@@ -68,7 +68,13 @@ const tokens = {
   muted: dark ? "#c0bcaf" : "#5b5f66",
   fontHero: sampled.fontHero || "'Bricolage Grotesque', sans-serif",
   fontMono: sampled.fontMono || "'DM Mono', monospace",
-  radius: sampled.radius || "16px",
+  // cap pill radii: a sampled button often gives 9999px, which would round the
+  // rectangular highlight box into a stadium. Keep only sane card-like radii.
+  radius: (() => {
+    const m = String(sampled.radius || "").match(/^([\d.]+)px$/);
+    const px = m ? Number(m[1]) : NaN;
+    return Number.isFinite(px) && px <= 32 ? sampled.radius : "16px";
+  })(),
   ...(config.design || {}), // hard overrides win
 };
 
