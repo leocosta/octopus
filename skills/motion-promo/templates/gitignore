@@ -1,0 +1,7 @@
+# Scaffolded by motion-promo. Rename to .gitignore in the target project.
+node_modules/
+renders/
+design.tokens.json
+index.html
+assets/music.mp3
+assets/music.attribution.txt

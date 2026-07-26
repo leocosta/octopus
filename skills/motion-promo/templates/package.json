@@ -1,0 +1,20 @@
+{
+  "name": "motion-promo-project",
+  "private": true,
+  "type": "module",
+  "description": "Scaffolded by the motion-promo skill. Run steps in order.",
+  "scripts": {
+    "preflight": "node engine/preflight.mjs",
+    "design": "node engine/extract-design.mjs",
+    "capture": "node engine/capture.mjs",
+    "compose": "node engine/compose-gen.mjs",
+    "render": "npx --yes hyperframes@0.4.42 render",
+    "music": "node engine/fetch-music.mjs",
+    "mux": "node engine/mux.mjs",
+    "reframe": "node engine/mux.mjs --reframe",
+    "build": "npm run capture && npm run design && npm run compose && npm run render && npm run music && npm run mux && npm run reframe"
+  },
+  "dependencies": {
+    "puppeteer-core": "^23.0.0"
+  }
+}

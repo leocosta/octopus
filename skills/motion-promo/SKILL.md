@@ -45,12 +45,26 @@ capturing live navigation (see Rules). The app is only used to produce *stills*
 Do **not** use for: internal walkthroughs where fidelity doesn't matter (a raw
 screen capture is cheaper), or apps with no runnable demo environment.
 
-## Prerequisites
+## Prerequisites & secrets
 
-- Node 20+, system Chrome (`google-chrome`/Chromium), `ffmpeg` + `ffprobe`.
-- `npx hyperframes@<pinned>` reachable (HTML→MP4 renderer).
-- Network egress (Google Fonts at compile, music fetch).
-- A **runnable demo/sandbox** of the target app + credentials.
+**No API keys / secrets are required.** HyperFrames `render` is keyless (local
+HTML→MP4), and fonts (Google Fonts) + the default music (incompetech) are public
+URLs. The only credential is the *target app's demo login*, which lives in the
+target repo's `promo.config.mjs` (`authInject()`), never in this skill.
+
+**System deps (you install these — the skill cannot):** Node 20+, system Chrome
+(`google-chrome`/Chromium), `ffmpeg` + `ffprobe`. Network egress for fonts/music.
+
+**Auto/on-demand deps:** `hyperframes` is fetched on demand via `npx` (no
+pre-install). `puppeteer-core` is a scaffolded npm dependency — it uses the
+**system Chrome** and does *not* download a Chromium.
+
+**Setup:** scaffold `templates/` into `video/<slug>/`, rename `gitignore` →
+`.gitignore`, then `npm install` and `npm run preflight` (verifies Chrome,
+ffmpeg/ffprobe, and puppeteer-core; fails loudly if any is missing). Run the
+pipeline step-by-step or `npm run build`.
+
+- A **runnable demo/sandbox** of the target app.
 
 ## Inputs
 
