@@ -8,8 +8,10 @@
 #   2. Downloads the signed *release asset*, not the bare git archive
 #      (the archive lacks bin/fzf/windows-amd64/fzf.exe that `octopus setup` needs).
 #   3. SHA-256 verified and the real checksum lands in metadata.json.
-#   4. WSL shim path translation is Windows-PowerShell-5.1-safe (no scriptblock
-#      substitution in -replace).
+#   4. The Windows shims (bin/octopus.ps1 + octopus.cmd) are shipped in the
+#      release tree and COPIED by install.ps1 (RM-019), not embedded via a
+#      heredoc; the .ps1 path translation is Windows-PowerShell-5.1-safe (no
+#      scriptblock substitution in -replace).
 #   5. OCTOPUS_INSTALL_ENDPOINT / signature env knobs honored (parity w/ .sh).
 #
 # Static assertions only — this does not execute PowerShell. A behavioral,
@@ -18,6 +20,8 @@ set -uo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PS1="$DIR/install.ps1"
+SHIM_PS1="$DIR/bin/octopus.ps1"
+SHIM_CMD="$DIR/bin/octopus.cmd"
 PASS=0; FAIL=0
 check() { local d="$1"; shift; if "$@"; then echo "PASS: $d"; PASS=$((PASS + 1)); else echo "FAIL: $d"; FAIL=$((FAIL + 1)); fi; }
 
@@ -52,11 +56,43 @@ t_checksum() {
 }
 check "verifies SHA-256 (fail-closed) and records it in metadata" t_checksum
 
-# 4. WSL shim translation is 5.1-safe: no scriptblock substitution in -replace
-#    (PS 6+ only); the drive-letter translation uses -match/$Matches instead.
+# 4. Shims are shipped in the release tree and copied (RM-019), not embedded via
+#    a heredoc; the .ps1 translation is 5.1-safe (no scriptblock -replace).
+t_shims_exist() { [[ -f "$SHIM_PS1" && -f "$SHIM_CMD" ]]; }
+check "ships bin/octopus.ps1 and bin/octopus.cmd" t_shims_exist
+
+t_installer_copies_shims() {
+  # install.ps1 copies the shipped shims and no longer embeds them via heredoc
+  # (the embedded shim's `function Find-Bash {` is gone from the installer).
+  grep -qF 'Copy-Item' "$PS1" \
+    && grep -qF 'octopus.ps1' "$PS1" \
+    && grep -qF 'octopus.cmd' "$PS1" \
+    && ! grep -qE '^function Find-Bash \{' "$PS1"
+}
+check "install.ps1 copies the shipped shims (no embedded heredoc)" t_installer_copies_shims
+
+t_shim_delegates() {
+  # The .ps1 delegates to the version-independent current/bin/octopus; the .cmd
+  # invokes it through powershell.
+  grep -qF 'CurrentDir' "$SHIM_PS1" \
+    && grep -qF 'bin\octopus' "$SHIM_PS1" \
+    && grep -qF 'octopus.ps1' "$SHIM_CMD"
+}
+check "shims delegate to current/bin/octopus" t_shim_delegates
+
+t_cmd_crlf_pinned() {
+  # octopus.cmd must ship with CRLF (cmd.exe label/goto parsing is LF-fragile);
+  # pinned in .gitattributes so it survives regardless of committer platform.
+  grep -qE 'bin/octopus\.cmd[[:space:]]+text[[:space:]]+eol=crlf' "$DIR/.gitattributes"
+}
+check "bin/octopus.cmd is pinned to CRLF in .gitattributes" t_cmd_crlf_pinned
+
 t_shim_51_safe() {
+  # No scriptblock substitution in -replace anywhere (installer or shim — PS 6+
+  # only); the .ps1 drive-letter translation uses -match/$Matches instead.
   ! grep -qE "\-replace[^#]*,[[:space:]]*\{" "$PS1" \
-    && grep -qF 'Matches[1].ToLower()' "$PS1"
+    && ! grep -qE "\-replace[^#]*,[[:space:]]*\{" "$SHIM_PS1" \
+    && grep -qF 'Matches[1].ToLower()' "$SHIM_PS1"
 }
 check "WSL shim uses 5.1-safe -match/\$Matches (no scriptblock -replace)" t_shim_51_safe
 

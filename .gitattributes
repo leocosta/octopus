@@ -1,0 +1,6 @@
+# The Windows entrypoint shims must ship with CRLF regardless of the committer's
+# platform or core.autocrlf setting. Scoped to just these two files so the LF
+# install.ps1 (consumed as downloaded text) is not renormalized into a noisy
+# whole-file diff, and the bash shim (bin/octopus) stays LF by default.
+bin/octopus.ps1 text eol=crlf
+bin/octopus.cmd text eol=crlf
