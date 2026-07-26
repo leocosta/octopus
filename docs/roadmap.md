@@ -853,3 +853,44 @@ _RM-088 (`audit-grounding`) shipped in v1.69.0. **Cluster 16** (manager-multipli
 | RM-088 | `audit-grounding` skill + `grounding-check` Stop hook — signal-only divergence from the source of truth (invented conventions, unsupported domain facts) | completed → v1.69.0 | 2026-05-30 |
 | RM-161 | `doc-api` skill + command — on-demand, integrator-facing API contract-fidelity validator and doc generator (code ↔ OpenAPI ↔ business knowledge from ADRs/specs/system-maps); per-version scoping; `--write` updates `openapi.yaml` + integrator reference behind a confirm gate; reuses `audit-grounding`; `docs` bundle; not in `audit-all` | completed → v1.89.0 | 2026-07-18 |
 | RM-162 | `doc-api` Assess & Plan flow — `--write` becomes an interactive per-artifact plan (`correct` / `recreate` / `create` / `skip`) over spec + integrator reference, derived from the four checks; `create`-from-scratch is first-class; `breaking` annotates the chosen action before it is applied; validate mode gains a read-only Improvement Plan preview | completed → v1.90.0 | 2026-07-24 |
+
+---
+
+### Cluster 28 — Windows installer parity & hardening
+
+_Proposed (added 2026-07-26). Follow-ups from the Windows installer repair (#212, v1.90.1) and the RM-019 shim-parity refactor (#213, v1.90.2). `install.ps1` now mirrors `install.sh`'s release contract and ships `bin/octopus.ps1` + `octopus.cmd`, but two gaps remain: the Windows delegator shims get no drift signal on `octopus update` (bash-driven, can't see the PowerShell-side bin dir), and `install.ps1` has no behavioral coverage because there is no pwsh/Windows in CI — the invariants test is static-only._
+
+### RM-163 — `octopus doctor` drift-check for stale Windows shims
+
+- **Priority:** 🟡 Medium
+- **Effort:** low
+- **Status:** proposed
+- **Added:** 2026-07-26
+
+`octopus update` is bash-driven and never refreshes the Windows delegator shims
+(`$BinDir/octopus.ps1` + `octopus.cmd`); if the delegation contract changes
+(bash discovery / path translation), a stale shim keeps running silently. Add a
+`doctor` check that compares the installed shims against
+`current/bin/octopus.{ps1,cmd}` and advises re-running `install.ps1` on drift.
+Detection-only — self-heal is out of scope (doctor runs under bash and does not
+know the PowerShell-side bin dir).
+
+**Rationale:** Closes the one residual gap of RM-019 Windows parity surfaced in
+review — the drift is real but currently undocumented and unobservable.
+
+### RM-164 — pwsh CI job for end-to-end `install.ps1` coverage
+
+- **Priority:** 🟡 Medium
+- **Effort:** medium
+- **Status:** proposed
+- **Added:** 2026-07-26
+
+`tests/test_install_ps1_invariants.sh` is static-only (greps source) because
+there is no pwsh/Windows in CI. Add a job that runs the installer end-to-end
+under `pwsh` against a `file://` `OCTOPUS_INSTALL_ENDPOINT` fixture (mirroring
+`tests/test_installer.sh`), exercising download → checksum → extract → shim
+copy → metadata; the bash-delegation tail legitimately stays static.
+
+**Rationale:** Moves the highest-risk path (download / verify / copy) from
+grep-asserted to behaviorally verified; pwsh Core runs on Linux, so no Windows
+runner is strictly required.
