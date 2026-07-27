@@ -36,6 +36,23 @@ t_email_copy() {
 }
 check "email.md replaces email-lancamento.md with subject variants + preheader" t_email_copy
 
+# Brand tokens
+t_brand() {
+  [[ -f "$S/templates/brand.yml" ]] \
+    && grep -qE '^primary:' "$S/templates/brand.yml" \
+    && grep -qE '^unsubscribe_url:' "$S/templates/brand.yml" \
+    && grep -qE '^utm_' "$S/templates/brand.yml"
+}
+check "brand.yml has color + unsubscribe + utm tokens" t_brand
+
+# SaaS copy framework
+t_framework() {
+  [[ -f "$S/templates/email-saas-framework.md" ]] \
+    && grep -qiF 'Subject lines' "$S/templates/email-saas-framework.md" \
+    && grep -qiF 'what changed' "$S/templates/email-saas-framework.md"
+}
+check "email-saas-framework.md has subject formulas + body structure" t_framework
+
 echo ""
 echo "launch-feature channels: $PASS passed, $FAIL failed."
 [[ "$FAIL" -eq 0 ]]
