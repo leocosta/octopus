@@ -1,18 +1,20 @@
 ---
 title: launch-feature
-description: Transforma uma feature concluída (RM, spec, caminho de pesquisa ou PR) em um kit de lançamento multi-canal versionado — posts, email, copy de landing page, changelog comercial, roteiro de vídeo e assets de imagem opcionais.
+description: Transforma uma feature concluída (RM, spec, caminho de pesquisa ou PR) em um kit de lançamento multi-canal versionado — copy de landing page, um email HTML, WhatsApp, posts sociais, changelog comercial, roteiro de vídeo e assets de imagem opcionais.
 sidebar:
   order: 18
-source_hash: "sha256:9894d17c0565d3b7d3695b2eb0870b4f37c9a41ab378615871d60563cf23f851"
+source_hash: "sha256:71490a35cc656f977e6752ace4df1c62f20b6f4bc750f0296f44eabe68cc4b8f"
 needs_retranslation: false
 ---
 
 `launch-feature` pega uma feature que acabou de ser lançada e
-produz os artefatos que o time precisa para anunciá-la: uma
-seção de landing page, um template de email, posts sociais para
-as plataformas que o time usa, uma entrada de changelog comercial
-(voz diferente do CHANGELOG técnico) e, opcionalmente, um roteiro
-de vídeo e assets de imagem.
+produz os artefatos que o time precisa para anunciá-la. Ela cobre
+dois públicos a partir de uma única fonte: superfícies de
+**aquisição** (copy de landing page, posts sociais) e mensagens de
+**lifecycle** para a sua lista de contatos existente (um email
+HTML profissional e uma mensagem de WhatsApp), além de uma entrada
+de changelog comercial e, opcionalmente, um roteiro de vídeo e
+assets de imagem.
 
 ## Por que uma skill de lançamento em vez de "o marketer escreve"
 
@@ -23,11 +25,14 @@ Dois motivos:
   — a motivação do RM, as restrições da spec, o diff do PR. Esse
   contexto vive no repo, não na cabeça do marketer. Gerar a
   partir da fonte faz com que o lançamento combine com a feature.
-- **O lançamento é multi-canal.** Email, Slack, X, LinkedIn,
-  landing page — cada um tem uma voz e um comprimento diferentes.
-  Escrever seis versões manualmente é trabalhoso e propenso a
-  divergência entre canais. A skill produz todas as seis a partir
-  de uma única fonte, aplicando a voz específica de cada canal.
+- **O lançamento é multi-canal.** Email, WhatsApp, X, LinkedIn,
+  Instagram, landing page — cada um tem uma voz e um comprimento
+  diferentes. Escrever cada versão manualmente é trabalhoso e
+  propenso a divergência entre canais. A skill produz todas a
+  partir de uma única fonte, aplicando a voz específica de cada
+  canal, e você pode restringir a um subconjunto — por exemplo
+  `--channels=email,whatsapp` para um anúncio de lifecycle à sua
+  lista.
 
 ## O que entra em um kit de lançamento
 
@@ -36,29 +41,37 @@ A saída fica em
 
 | Arquivo | Canal |
 |---|---|
-| `landing.html` | Seção de landing page de marketing |
-| `email.md` | Email de newsletter / anúncio |
-| `slack.md` | Post no Slack para o canal de clientes / comunidade do time |
-| `x.md` | Thread no X / Twitter |
-| `linkedin.md` | Post no LinkedIn |
-| `changelog.md` | Entrada de changelog comercial (voltada ao usuário) |
-| `script.md` | Roteiro de vídeo de 60-90 segundos (se aplicável) |
-| `assets/` | Assets de imagem opcionais gerados em sintonia |
+| `copy-lp.md` | Copy da seção de landing page |
+| `email.md` | Email de anúncio — copy |
+| `email.html` | Email de anúncio — HTML pronto para envio (tokens de marca, rodapé com unsubscribe, links com UTM) |
+| `whatsapp.md` | Mensagem de broadcast no WhatsApp |
+| `post-instagram.md` | Post no Instagram |
+| `post-linkedin.md` | Post no LinkedIn |
+| `thread-x.md` | Thread no X / Twitter |
+| `changelog-vendedor.md` | Entrada de changelog comercial (voltada ao usuário) |
+| `roteiro-video.md` | Roteiro de vídeo de 60-90 segundos (se aplicável) |
+| `image-prompts.md` / `images/` | Assets de imagem opcionais |
+| `README.md` | Índice do kit, registrando qual fonte de override cada canal usou |
 
 O time escolhe quais canais são relevantes e ignora os demais —
 a skill produz todos para eliminar a fricção do "eu também
-deveria escrever um post no Slack".
+deveria escrever uma mensagem de WhatsApp".
 
 ## Voz por canal
 
-- **Email** — segunda pessoa, endereça a dor do cliente;
-  termina com a chamada para ação.
-- **Slack** — curto, casual, com link para a landing page;
-  gancho de uma linha + bullet + link.
+- **Email** — segunda pessoa, focado em benefício, estruturado
+  como *o que mudou / por que importa / o que fazer*, com uma
+  única chamada para ação. A variante HTML carrega os tokens de
+  marca de `brand.yml`, um rodapé com unsubscribe + endereço da
+  empresa e links com UTM; a copy segue o framework de email SaaS
+  embutido.
+- **WhatsApp** — curto: um headline em negrito, uma linha de
+  gancho, até dois destaques e um link de CTA.
 - **X** — thread; o primeiro post é o gancho, os seguintes
-  desenvolvem o caso de uso; o último post é o link.
+  desenvolvem o caso de uso, o último post é o link.
 - **LinkedIn** — mais longo que o X, tom profissional, post único.
-- **Seção de landing page** — terceira pessoa, headline focada em
+- **Instagram** — legenda visual-first com gancho e CTA.
+- **Copy de landing page** — terceira pessoa, headline focada em
   benefício, pontos técnicos de prova.
 - **Changelog comercial** — tom neutro, focado no comportamento
   visível ao usuário, sem jargão interno.
@@ -73,10 +86,10 @@ publicar de forma autônoma — uma proteção deliberada.
 
 ## Combinando com `launch-release`
 
-`launch-feature` é para uma feature lançada. `launch-release` é
-para uma release inteira que agrupou várias. A variante de
-release adiciona um resumo de release notes, uma entrada de
-status page e um banner in-app — canais que cabem em uma release
-versionada, mas não em uma feature isolada.
+`launch-feature` anuncia uma feature lançada. `launch-release`
+anuncia uma release inteira que agrupou várias — ela adiciona um
+resumo de release notes, uma entrada de status page, um banner
+in-app e uma landing page temática, canais que cabem em uma
+release versionada, mas não em uma feature isolada.
 
 [Fonte: `skills/launch-feature/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/launch-feature/SKILL.md)
