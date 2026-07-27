@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{EMAIL_TITLE}}</title>
+</head>
+<body style="margin:0;padding:0;background:{{BRAND_BG}};color:{{BRAND_TEXT}};font-family:{{BRAND_FONT_BODY}};">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">{{PREHEADER}}</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:{{BRAND_BG}};">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
+        <tr><td style="padding:0 0 24px;">{{BRAND_LOGO_IMG}}</td></tr>
+        <tr><td style="padding:0 0 8px;">
+          <h1 style="margin:0;font-family:{{BRAND_FONT_DISPLAY}};font-size:26px;color:{{BRAND_PRIMARY}};line-height:1.25;">{{EMAIL_HEADLINE}}</h1>
+        </td></tr>
+        <tr><td style="padding:0 0 20px;font-size:16px;line-height:1.6;">{{EMAIL_BODY_HTML}}</td></tr>
+        <tr><td style="padding:8px 0 28px;">
+          <a href="{{CTA_URL_WITH_UTM}}" style="display:inline-block;padding:12px 24px;background:{{BRAND_PRIMARY}};color:{{BRAND_BG}};text-decoration:none;font-weight:600;border-radius:6px;">{{CTA_TEXT}}</a>
+        </td></tr>
+        <tr><td style="padding:24px 0 0;border-top:1px solid {{BRAND_SURFACE}};color:{{BRAND_MUTED}};font-size:12px;line-height:1.5;">
+          {{SIGNOFF}}<br>
+          {{COMPANY_NAME}} &middot; {{COMPANY_ADDRESS}}<br>
+          <a href="{{UNSUBSCRIBE_URL}}" style="color:{{BRAND_MUTED}};text-decoration:underline;">Unsubscribe</a>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>

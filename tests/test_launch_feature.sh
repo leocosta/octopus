@@ -18,6 +18,24 @@ t_wa() {
 }
 check "whatsapp channel exists with CTA+UTM placeholder" t_wa
 
+# HTML email shell
+t_email_html() {
+  [[ -f "$CH/email.html.tmpl" ]] \
+    && grep -qF '{{CTA_URL_WITH_UTM}}' "$CH/email.html.tmpl" \
+    && grep -qiF 'unsubscribe' "$CH/email.html.tmpl" \
+    && grep -qF '{{PREHEADER}}' "$CH/email.html.tmpl"
+}
+check "email.html.tmpl has CTA(UTM), preheader, unsubscribe" t_email_html
+
+# Email copy (renamed from email-lancamento.md)
+t_email_copy() {
+  [[ -f "$CH/email.md" ]] \
+    && [[ ! -f "$CH/email-lancamento.md" ]] \
+    && grep -qiF 'Subject line options' "$CH/email.md" \
+    && grep -qF '{{PREHEADER_ONE_SENTENCE}}' "$CH/email.md"
+}
+check "email.md replaces email-lancamento.md with subject variants + preheader" t_email_copy
+
 echo ""
 echo "launch-feature channels: $PASS passed, $FAIL failed."
 [[ "$FAIL" -eq 0 ]]
