@@ -53,6 +53,16 @@ t_framework() {
 }
 check "email-saas-framework.md has subject formulas + body structure" t_framework
 
+# SKILL.md wiring
+t_skill() {
+  local f="$S/SKILL.md"
+  grep -qiF 'lifecycle' "$f" \
+    && grep -qF 'whatsapp' "$f" \
+    && grep -qF 'email-saas-framework.md' "$f" \
+    && grep -qF 'brand.yml' "$f"
+}
+check "SKILL.md wires channels, framework, brand tokens, lifecycle positioning" t_skill
+
 echo ""
 echo "launch-feature channels: $PASS passed, $FAIL failed."
 [[ "$FAIL" -eq 0 ]]
