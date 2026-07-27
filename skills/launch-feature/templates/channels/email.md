@@ -4,16 +4,21 @@ generated_by: octopus:launch-feature
 generated_at: {{TODAY}}
 voice_source: {{VOICE_SOURCE}}
 angle: "{{ANGLE}}"
+channel: email
 ---
 
-# Launch email
+# Launch email — copy
 
-**Subject:** {{SUBJECT_6_TO_9_WORDS}}
+## Subject line options
+1. {{SUBJECT_A_6_TO_9_WORDS}}
+2. {{SUBJECT_B_6_TO_9_WORDS}}
+3. {{SUBJECT_C_6_TO_9_WORDS}}
+
 **Preheader:** {{PREHEADER_ONE_SENTENCE}}
 
 ---
 
-{{GREETING}}
+{{GREETING_WITH_OPTIONAL_FIRST_NAME}}
 
 {{HOOK_PARAGRAPH}}
 
@@ -21,13 +26,13 @@ angle: "{{ANGLE}}"
 
 **What's new**
 
-- {{POINT_1}}
-- {{POINT_2}}
-- {{POINT_3}}
+- {{BENEFIT_1}}
+- {{BENEFIT_2}}
+- {{BENEFIT_3}}
 
 {{OUTCOME_PARAGRAPH}}
 
-{{SINGLE_CTA_LINK}}
+{{CTA_TEXT}} → {{CTA_URL_WITH_UTM}}
 
 —
 {{SIGNOFF}}

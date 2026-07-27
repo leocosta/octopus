@@ -1,16 +1,17 @@
 ---
 title: launch-feature
-description: Turn a completed feature (RM, spec, research path, or PR) into a versioned multi-channel launch kit — posts, email, landing-page copy, commercial changelog, video script, optional image assets.
+description: Turn a completed feature (RM, spec, research path, or PR) into a versioned multi-channel launch kit — landing-page copy, an HTML email, WhatsApp, social posts, a commercial changelog, a video script, and optional image assets.
 sidebar:
   order: 18
 ---
 
 `launch-feature` takes a feature that just shipped and produces
-the artefacts the team needs to announce it: a landing-page
-section, an email template, social posts for the platforms the
-team uses, a commercial changelog entry (different voice from the
-technical CHANGELOG), and optionally a video script and image
-assets.
+the artefacts the team needs to announce it. It spans two
+audiences from one source: **acquisition** surfaces (landing-page
+copy, social posts) and **lifecycle** messages to your existing
+contact list (a professional HTML email and a WhatsApp message),
+plus a commercial changelog entry and an optional video script and
+image assets.
 
 ## Why a launch skill instead of "the marketer writes it"
 
@@ -22,11 +23,13 @@ Two reasons:
   context lives in the repo, not in the marketer's head.
   Generating from the source means the launch matches the
   feature.
-- **The launch is multi-channel.** Email, Slack, X, LinkedIn,
-  landing page — each has a different voice and length. Writing
-  six versions manually is high-friction and prone to drift
-  between channels. The skill produces all six from one source
-  with the channel-specific voice applied.
+- **The launch is multi-channel.** Email, WhatsApp, X, LinkedIn,
+  Instagram, landing page — each has a different voice and length.
+  Writing every version manually is high-friction and prone to
+  drift between channels. The skill produces them all from one
+  source with the channel-specific voice applied, and you can
+  scope to a subset — e.g. `--channels=email,whatsapp` for a
+  lifecycle announcement to your list.
 
 ## What goes in a launch kit
 
@@ -35,29 +38,37 @@ The output lives at
 
 | File | Channel |
 |---|---|
-| `landing.html` | Marketing landing page section |
-| `email.md` | Newsletter / announcement email |
-| `slack.md` | Slack post for the team's customer / community channel |
-| `x.md` | X / Twitter thread |
-| `linkedin.md` | LinkedIn post |
-| `changelog.md` | Commercial changelog entry (user-facing) |
-| `script.md` | 60-90 second video script (if applicable) |
-| `assets/` | Optional image assets generated to match |
+| `copy-lp.md` | Landing-page section copy |
+| `email.md` | Announcement email — copy |
+| `email.html` | Announcement email — send-ready HTML (brand tokens, unsubscribe footer, UTM-tagged links) |
+| `whatsapp.md` | WhatsApp broadcast message |
+| `post-instagram.md` | Instagram post |
+| `post-linkedin.md` | LinkedIn post |
+| `thread-x.md` | X / Twitter thread |
+| `changelog-vendedor.md` | Commercial changelog entry (user-facing) |
+| `roteiro-video.md` | 60-90 second video script (if applicable) |
+| `image-prompts.md` / `images/` | Optional image assets |
+| `README.md` | Kit index, recording which override source each channel used |
 
 The team picks which channels are relevant and ignores the rest —
 the skill produces them all to remove the friction of "I should
-write a Slack post too".
+write a WhatsApp message too".
 
 ## Voice per channel
 
-- **Email** — second-person, addresses the customer's pain;
-  ends with the call to action.
-- **Slack** — short, casual, links to the landing page; one-line
-  hook + bullet + link.
-- **X** — thread; first post is the hook, subsequent posts
-  develop the use case; last post is the link.
+- **Email** — second-person, benefit-led, structured as
+  *what changed / why it matters / what to do* with a single call
+  to action. The HTML variant carries the brand tokens from
+  `brand.yml`, an unsubscribe + company-address footer, and
+  UTM-tagged links; the copy follows the embedded SaaS email
+  framework.
+- **WhatsApp** — short: a bold headline, one hook line, up to two
+  highlights, and one CTA link.
+- **X** — thread; the first post is the hook, subsequent posts
+  develop the use case, the last post is the link.
 - **LinkedIn** — longer than X, professional tone, single post.
-- **Landing-page section** — third-person, benefit-led headline,
+- **Instagram** — visual-first caption with a hook and a CTA.
+- **Landing-page copy** — third-person, benefit-led headline,
   technical proof points.
 - **Commercial changelog** — neutral tone, focused on user-
   visible behaviour, no internal jargon.
@@ -72,10 +83,10 @@ deliberate guardrail.
 
 ## Pairing with `launch-release`
 
-`launch-feature` is for one shipped feature. `launch-release` is
-for a whole release that bundled several. The release variant
-adds a release-notes summary, a status-page entry, and an in-app
-banner — channels that fit a versioned release but not a single
-feature.
+`launch-feature` announces one shipped feature. `launch-release`
+announces a whole release that bundled several — it adds a
+release-notes summary, a status-page entry, an in-app banner, and
+a themed landing page, channels that fit a versioned release but
+not a single feature.
 
 [Source: `skills/launch-feature/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/launch-feature/SKILL.md)

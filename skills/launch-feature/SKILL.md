@@ -3,8 +3,10 @@ name: launch-feature
 description: >
   Turn a completed feature (RM-NNN, spec path, research path, or PR)
   into a versioned multi-channel launch kit under
-  docs/marketing/launches/YYYY-MM-DD-<slug>/ — posts, email, LP copy,
-  commercial changelog, video script, and optional image assets.
+  docs/marketing/launches/YYYY-MM-DD-<slug>/ — feature-driven announcements
+  across acquisition and lifecycle channels: posts, email (HTML) and
+  WhatsApp, LP copy, commercial changelog, video script, and optional
+  image assets.
 triggers:
   paths: ["docs/marketing/**", "docs/launches/**", "roadmap.md"]
   keywords: ["launch", "marketing", "announcement", "go-to-market", "channel"]
@@ -18,7 +20,10 @@ triggers:
 This skill turns a completed feature into a publish-ready launch kit. It
 resolves the feature reference, collects context (spec, research, commits),
 applies a brand/voice override cascade, renders per-channel templates, and
-optionally generates images using free providers.
+optionally generates images using free providers. Beyond acquisition
+channels (social posts, LP copy), it also covers lifecycle announcements —
+email and WhatsApp — sent to an existing contact list, not only net-new
+audience acquisition.
 
 The skill composes with the existing `marketer` role for copywriting
 judgment (hook choice, channel adaptation) — it does not duplicate that role.
@@ -41,7 +46,8 @@ and image generation.
 **Options:**
 
 - `--channels=<list>` — comma-separated subset of
-  `instagram,linkedin,x,email,lp,changelog,video`. Default: all applicable.
+  `instagram,linkedin,x,email,whatsapp,lp,changelog,video`. Default: all
+  applicable.
 - `--dry-run` — print generated content to chat without creating files.
 - `--no-images` — skip image generation even if a provider is configured.
 - `--images-only` — regenerate only images; reuse existing text artifacts.
@@ -112,6 +118,20 @@ For each selected channel, read the matching template under
 with content grounded in the resolved feature context, and write it to the
 launch directory.
 
+- For the `email` channel specifically: also fill
+  `skills/launch-feature/templates/channels/email.html.tmpl` from the brand
+  tokens in `templates/brand.yml` (override at `docs/marketing/brand.yml` in
+  the target repo) and write the result as `email.html` alongside `email.md`.
+  Append the `utm_source`/`utm_medium`/`utm_campaign_prefix` tokens to every
+  link in both files, and always include the unsubscribe link and company
+  address in the footer.
+- For the `whatsapp` channel: append UTM tokens to `{{CTA_URL_WITH_UTM}}` the
+  same way. `utm_source`/`utm_medium` should reflect the channel rather than
+  reusing the email default — `brand.yml`'s `utm_source: "email"` applies to
+  the `email` and `email.html` files only; for WhatsApp use
+  `utm_source=whatsapp` (and a channel-appropriate `utm_medium`, e.g.
+  `lifecycle`).
+
 **Placeholder rules:**
 
 - Never leave a placeholder literal in the output.
@@ -133,6 +153,9 @@ repo path, or `embedded` when the default was used).
   exists, EXCEPT `roteiro-video.md` which requires a `video-roteiro` override
   in the target repo (embedded default alone is not enough to produce a video
   script — the repo-specific style matters too much).
+- Channels include `whatsapp` (a lifecycle channel, single template); the
+  `email` channel emits two files — `email.md` (copy) and `email.html`
+  (send-ready, rendered from `templates/brand.yml`).
 - With `--channels=<list>`: only those channels, regardless of override
   presence.
 
@@ -212,6 +235,13 @@ Fail fast and print an actionable message. Common cases:
 The `marketer` role (see `roles/marketer.md`) owns copywriting
 judgment. When this skill needs to choose a hook, adapt a message for a
 specific channel, or resolve an ambiguous brief, invoke the role's guidance:
+
+- For the `email` and `whatsapp` channels, first follow
+  `templates/email-saas-framework.md` (override at
+  `docs/marketing/email-saas-framework.md` in the target repo; subject-line
+  formulas, benefit-over-feature framing, and the "what changed / why it
+  matters / what to do" body structure), then compose the final copy with
+  the `marketer` role for judgment.
 
 - Use its "Operating Principles" to decide between hook candidates.
 - Use its "Audience and Inputs" checklist to decide whether to ask the user

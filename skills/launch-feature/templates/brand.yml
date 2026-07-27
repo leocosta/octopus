@@ -1,0 +1,27 @@
+# Email brand tokens for octopus:launch-feature.
+# Override by creating docs/marketing/brand.yml in the target repository.
+product_name: "{{PRODUCT_NAME}}"
+
+# Visual
+primary: "#2563eb"     # accent / CTA / headline
+background: "#ffffff"
+text: "#1f2937"
+muted: "#6b7280"
+surface: "#e5e7eb"     # divider
+font_display: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+font_body: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+logo_url: ""           # absolute URL; empty -> omit logo, rely on the headline
+
+# CTA
+cta_text: "See what's new"
+cta_base_url: "https://example.com/whats-new"
+
+# Deliverability / compliance (CAN-SPAM)
+company_name: "{{COMPANY_NAME}}"
+company_address: "{{COMPANY_POSTAL_ADDRESS}}"
+unsubscribe_url: "{{UNSUBSCRIBE_URL}}"
+
+# UTM defaults appended to CTA links
+utm_source: "email"
+utm_medium: "announcement"
+utm_campaign_prefix: "feature"
