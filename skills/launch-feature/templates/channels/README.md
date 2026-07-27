@@ -40,7 +40,9 @@ images_provider: {{PROVIDER_OR_NONE}}
 - `post-instagram.md`
 - `post-linkedin.md`
 - `thread-x.md`
-- `email-lancamento.md`
+- `email.md`
+- `email.html`
+- `whatsapp.md`
 - `copy-lp.md`
 - `changelog-vendedor.md`
 - `roteiro-video.md` (only if video-roteiro override exists in the repo)

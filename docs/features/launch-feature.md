@@ -65,7 +65,7 @@ A directory `docs/marketing/launches/YYYY-MM-DD-<slug>/` containing:
 
 - `README.md` — kit index + chosen angle + source refs
 - `post-instagram.md`, `post-linkedin.md`, `thread-x.md`
-- `email-lancamento.md`, `copy-lp.md`, `changelog-vendedor.md`
+- `email.md`, `email.html`, `whatsapp.md`, `copy-lp.md`, `changelog-vendedor.md`
 - `roteiro-video.md` (only when the repo has a `video-roteiro` override)
 - `image-prompts.md`
 - `images/` (when a provider ran)

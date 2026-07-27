@@ -32,7 +32,7 @@ channel: email
 
 {{OUTCOME_PARAGRAPH}}
 
-{{SINGLE_CTA_TEXT}} → {{CTA_URL_WITH_UTM}}
+{{CTA_TEXT}} → {{CTA_URL_WITH_UTM}}
 
 —
 {{SIGNOFF}}

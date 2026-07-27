@@ -125,6 +125,12 @@ launch directory.
   Append the `utm_source`/`utm_medium`/`utm_campaign_prefix` tokens to every
   link in both files, and always include the unsubscribe link and company
   address in the footer.
+- For the `whatsapp` channel: append UTM tokens to `{{CTA_URL_WITH_UTM}}` the
+  same way. `utm_source`/`utm_medium` should reflect the channel rather than
+  reusing the email default — `brand.yml`'s `utm_source: "email"` applies to
+  the `email` and `email.html` files only; for WhatsApp use
+  `utm_source=whatsapp` (and a channel-appropriate `utm_medium`, e.g.
+  `lifecycle`).
 
 **Placeholder rules:**
 
@@ -231,10 +237,11 @@ judgment. When this skill needs to choose a hook, adapt a message for a
 specific channel, or resolve an ambiguous brief, invoke the role's guidance:
 
 - For the `email` and `whatsapp` channels, first follow
-  `templates/email-saas-framework.md` (subject-line formulas, benefit-over-
-  feature framing, and the "what changed / why it matters / what to do" body
-  structure), then compose the final copy with the `marketer` role for
-  judgment.
+  `templates/email-saas-framework.md` (override at
+  `docs/marketing/email-saas-framework.md` in the target repo; subject-line
+  formulas, benefit-over-feature framing, and the "what changed / why it
+  matters / what to do" body structure), then compose the final copy with
+  the `marketer` role for judgment.
 
 - Use its "Operating Principles" to decide between hook candidates.
 - Use its "Audience and Inputs" checklist to decide whether to ask the user
