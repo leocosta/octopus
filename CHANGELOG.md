@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.92.2] - 2026-07-28
+
+⚡ **`commit` joins `pr-open` on the sonnet tier.** Following v1.92.1, `commands/commit.md` now declares `model: sonnet` — suggesting a Conventional Commits message from the staged diff is the same light `diff→text` authoring, so it runs off the session's Opus-class model. Same mechanism (the delivery transform passes the frontmatter field through; Claude Code honours it after the next `octopus setup`/`update`), and the tier assertion in `test_workflow_commands.sh` now loops over both authoring commands. This completes the safe authoring-family subset — `pr-comments` (writes code) and `respond-to-review` (judgement) stay on the session model. (#218)
+
 ## [1.92.1] - 2026-07-28
 
 ⚡ **`pr-open` runs on the sonnet tier.** Writing a PR title and body over a diff is light, mechanical work that does not need the session's Opus-class model, so `commands/pr-open.md` now declares `model: sonnet`. Claude Code honours a `model:` field on a slash command's frontmatter, and the command-delivery transform (`_deliver_cmd_file`) strips only `name:`/`cli:`, so the tier flows through to `.claude/commands/octopus:pr-open.md` unchanged and takes effect after the next `octopus setup`/`update` (Copilot prompt-file / CLI-agent deliveries drop the field by design). This extends the RM-130 model tiering from dispatched skills to the interactive authoring command — `commit` is a natural follow-up, while `pr-comments` (writes code) and `respond-to-review` (judgement) deliberately stay on the session model. 🧪 `test_workflow_commands.sh` asserts the delivered command keeps the tier, guarding against a dropped field or a future whitelist rewrite of the strip transform. (#217)
