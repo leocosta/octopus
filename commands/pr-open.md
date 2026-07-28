@@ -1,6 +1,7 @@
 ---
 name: pr-open
 description: (Octopus) Open a PR with an agent-written title + body following Octopus conventions
+model: sonnet
 cli: octopus.sh pr-open
 ---
 
