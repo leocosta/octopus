@@ -1,6 +1,7 @@
 ---
 name: commit
 description: (Octopus) Suggest a Conventional Commits message from the staged diff and commit after confirmation
+model: sonnet
 cli: octopus commit
 ---
 

@@ -37,12 +37,15 @@ deliver_commands "claude"
 # Verify content has instructions
 grep -q "Instructions" "$TMPDIR/.claude/commands/octopus:pr-open.md" || { echo "FAIL: instructions missing"; exit 1; }
 
-# pr-open pins a model tier (sonnet) so PR authoring runs off the session model.
-# This asserts BOTH that the source declares it AND that _deliver_cmd_file keeps
-# it — the strip transform is a blacklist (name/cli only), so a switch to a
-# whitelist would silently drop the tier and this check catches it.
-grep -Eq "^model:[[:space:]]*sonnet[[:space:]]*$" "$TMPDIR/.claude/commands/octopus:pr-open.md" \
-  || { echo "FAIL: pr-open model tier (sonnet) not delivered"; exit 1; }
+# The diff->text authoring commands pin a model tier (sonnet) so they run off
+# the session model. This asserts BOTH that the source declares it AND that
+# _deliver_cmd_file keeps it — the strip transform is a blacklist (name/cli
+# only), so a switch to a whitelist would silently drop the tier and this
+# check catches it.
+for tiered in pr-open commit; do
+  grep -Eq "^model:[[:space:]]*sonnet[[:space:]]*$" "$TMPDIR/.claude/commands/octopus:${tiered}.md" \
+    || { echo "FAIL: ${tiered} model tier (sonnet) not delivered"; exit 1; }
+done
 
 echo "PASS: workflow commands for Claude"
 
