@@ -97,6 +97,12 @@ Record which source was used per override in the launch-kit `README.md`
 frontmatter (`overrides:` map) so the reviewer sees where each style decision
 came from.
 
+The `voice` override (whichever source resolves) tunes tone and structure
+on top of a floor that never moves: `skills/_shared/substance-voice.md` is
+the governing voice for every channel — product-led, evidence-backed, no
+hype or manufactured urgency. A repo's `voice` override customizes register
+and structure; it does not opt out of the substance rule.
+
 ## Output Assembly
 
 Create `docs/marketing/launches/YYYY-MM-DD-<slug>/` in the target repository
@@ -158,6 +164,12 @@ repo path, or `embedded` when the default was used).
   (send-ready, rendered from `templates/brand.yml`).
 - With `--channels=<list>`: only those channels, regardless of override
   presence.
+
+**Substance lint:** after every selected channel file is written, run
+`bash skills/_shared/substance-lint.sh docs/marketing/launches/YYYY-MM-DD-<slug>/`
+and revise any file it flags before handing the kit to the reviewer. The
+lint is advisory (exit 0); it will not block the run, but a flagged hit
+means: name the concrete outcome or number, or cut the line.
 
 ## Image Generation
 

@@ -1,18 +1,8 @@
 # Voice (default)
 
-> Embedded default. Override at `docs/marketing/voice.md`.
-
-## Tone
-
-- Direct, concrete, confident. No marketing inflation.
-- Short sentences. Active voice.
-- Speak to one person, not a segment.
-
-## Vocabulary
-
-- Prefer verbs over nouns ("ship" over "delivery of").
-- Prefer numbers over adjectives ("3x" over "significantly").
-- Skip: "revolutionize", "unlock", "seamless", "game-changer", "synergy".
+> Tone, vocabulary, and the substance rule live in the shared
+> `skills/_shared/substance-voice.md` (override at `docs/marketing/substance-voice.md`).
+> This file keeps only the per-post structure.
 
 ## Structure per post
 
