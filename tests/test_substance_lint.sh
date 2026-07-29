@@ -38,6 +38,12 @@ check "exits non-zero under --strict on hits" t_strict_fail
 t_strict_clean() { "$LINT" --strict "$tmp/sober.md" >/dev/null; [[ $? -eq 0 ]]; }
 check "exits zero under --strict on clean copy" t_strict_clean
 
+t_release_wired() {
+  grep -qF 'substance-voice.md' "$DIR/skills/launch-release/SKILL.md" \
+    && grep -qF 'substance-lint.sh' "$DIR/skills/launch-release/SKILL.md"
+}
+check "launch-release wires substance-voice + lint" t_release_wired
+
 echo ""
 echo "substance-lint: $PASS passed, $FAIL failed."
 [[ "$FAIL" -eq 0 ]]

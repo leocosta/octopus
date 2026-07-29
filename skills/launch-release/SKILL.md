@@ -85,6 +85,12 @@ constrained by the theme's `voice.tone` and `voice.persona` and the
 `--audience` flag. Never copy changelog text verbatim into
 user-facing channels — always re-voice.
 
+The governing voice for every rewrite is
+`skills/_shared/substance-voice.md`: product-led, evidence-backed,
+no hype or manufactured urgency. The theme's `voice.tone` /
+`voice.persona` tune register within that shared frame — they do not
+override it.
+
 Abort with the 5 nearest fuzzy matches when a ref cannot be resolved.
 
 ## Highlight Structure (FBE)
@@ -101,10 +107,12 @@ into a three-field record before any output is produced:
   evidence: "Affected ~3% of daily active sessions; metrics cleared 2026-04-18."
 ```
 
-- `feature` and `benefit` are required; `evidence` is encouraged whenever
-  the source material supports it (numbers, before/after, concrete
-  example). When no evidence is available, omit the field — never
-  fabricate.
+- `feature` and `benefit` are required; `evidence` is **default-required**
+  per `skills/_shared/substance-voice.md` — pull it from the source
+  material whenever a metric, before/after, or concrete example exists.
+  When no evidence is available, `benefit` must state the concrete
+  behavior the user now sees instead of a bare claim. Never fabricate a
+  number.
 - `feature` may reuse CHANGELOG prose; `benefit` must be re-voiced in
   second person ("you can now…"). Never copy changelog text verbatim.
 - The theme's `voice.tone` and `voice.persona` constrain wording; the
@@ -245,6 +253,14 @@ Always execute in this order:
 6. **Channel projections** → each channel reads `narrative.yml` for
    hero/CTA, then projects highlights using the FBE priority table for
    the theme's `intent`.
+7. **Substance self-check + lint** → mandatory before the kit is
+   considered done. First, a pre-publish self-check: every headline and
+   `benefit` in `narrative.yml` and the rendered channels names a
+   concrete outcome or number, or is revised until it does (see
+   `skills/_shared/substance-voice.md`). Then run
+   `bash skills/_shared/substance-lint.sh docs/releases/<YYYY-MM-DD-slug>/`
+   and revise any file it flags — the lint is advisory (exit 0); pass
+   `--strict` to gate a CI run.
 
 Channels never re-synthesise the narrative. If a channel needs a
 shorter headline, it truncates `narrative.yml` — it does not invent
@@ -345,6 +361,10 @@ listed above.
 - `hero_pattern` — protagonist of the hero section (`product-led` → the
   feature is the subject; `customer-led` → "You asked for…"; `team-led` →
   "We spent the sprint on…").
+
+Per `skills/_shared/substance-voice.md`'s tone calibration: a `bold`
+`voice.tone` is allowed only when a concrete result backs it (not
+exclamation); `playful` is opt-in per brand, never the default.
 
 Twelve presets ship: `classic` (default), `jade`, `dark`, `bold`,
 `newsletter`, `sunset`, `ocean`, `terminal`, `paper`, plus `dark-blue`,
