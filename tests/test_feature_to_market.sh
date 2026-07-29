@@ -140,3 +140,9 @@ if grep -rIlE "\b($PT_NAMES)\b" skills/launch-feature/SKILL.md skills/launch-fea
 fi
 echo "PASS: no Portuguese-named templates remain"
 
+echo "Test: no stray Portuguese 'roteiro' word in English skill files"
+if grep -rIwn "roteiro" skills/launch-feature skills/motion-promo >/dev/null 2>&1; then
+  echo "FAIL: stray 'roteiro' in an English skill file"; grep -rIwn "roteiro" skills/launch-feature skills/motion-promo; exit 1
+fi
+echo "PASS: no stray 'roteiro' in English skill files"
+

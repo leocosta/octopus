@@ -29,7 +29,7 @@ screens, rhythmic scene cuts, and a music bed. Output is a 16:9 master and a
 It is the **render counterpart** to `launch-feature`: `launch-feature` writes a
 `video-script.md` (the script/beats in prose); `motion-promo` turns a beats
 list into the finished, scored video. When both run, chain them —
-`launch-feature` roteiro → `motion-promo` beats.
+`launch-feature` script → `motion-promo` beats.
 
 **Why HyperFrames (HTML→MP4) and not screen recording:** deterministic,
 re-runnable, brand-controllable, and it sidesteps the failure modes of
