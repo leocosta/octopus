@@ -44,6 +44,12 @@ t_release_wired() {
 }
 check "launch-release wires substance-voice + lint" t_release_wired
 
+t_feature_wired() {
+  grep -qF 'substance-voice.md' "$DIR/skills/launch-feature/SKILL.md" \
+    && grep -qF 'substance-lint.sh' "$DIR/skills/launch-feature/SKILL.md"
+}
+check "launch-feature wires substance-voice + lint" t_feature_wired
+
 echo ""
 echo "substance-lint: $PASS passed, $FAIL failed."
 [[ "$FAIL" -eq 0 ]]
