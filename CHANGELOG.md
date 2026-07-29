@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.93.0] - 2026-07-29
+
+✨ **A shared substance-voice gate gives the launch skills a product-led, anti-hype voice.** The launch skills carried scattered copy guidance that only *encouraged* substance, and a theme's `voice.tone: bold|playful` could drift into hype. A new `skills/_shared/substance-voice.md` becomes the governing voice for both `launch-release` and `launch-feature` — product-led, respectful of the reader, anchored on the Ogilvy / Basecamp / Stripe axis with the direct-response / "lançamento" school as an explicit anti-reference. It forces substance instead of suggesting it: evidence is **default-required** (no metric → describe the concrete behavior; never fabricate a number), superlative/hype and FOMO/urgency vocabulary (EN + PT) are cut, the CTA is single and non-urgent, and tone is calibrated (bold needs evidence, playful is opt-in). A companion `skills/_shared/substance-lint.sh` scans generated copy for hype/FOMO terms and reports `file:line` — advisory by default, `--strict` for a CI gate in any argument position. `launch-release` flips its `feature/benefit/evidence` model to evidence-required and gains a pre-publish self-check; `launch-feature`'s `voice.md` folds its Tone/Vocabulary into the shared fragment. 🧪 `test_substance_lint.sh` locks the lint behavior (EN + PT, advisory/strict) and the wiring. (#219)
+
 ## [1.92.2] - 2026-07-28
 
 ⚡ **`commit` joins `pr-open` on the sonnet tier.** Following v1.92.1, `commands/commit.md` now declares `model: sonnet` — suggesting a Conventional Commits message from the staged diff is the same light `diff→text` authoring, so it runs off the session's Opus-class model. Same mechanism (the delivery transform passes the frontmatter field through; Claude Code honours it after the next `octopus setup`/`update`), and the tier assertion in `test_workflow_commands.sh` now loops over both authoring commands. This completes the safe authoring-family subset — `pr-comments` (writes code) and `respond-to-review` (judgement) stay on the session model. (#218)
