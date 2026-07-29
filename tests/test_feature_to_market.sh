@@ -64,7 +64,7 @@ echo "PASS: audience + hashtags defaults present"
 
 echo "Test 6: default strategy templates exist"
 
-for f in marketer-guide.md marketer-hooks.md caption-templates.md viral-content-ideas.md video-roteiro.md; do
+for f in marketer-guide.md marketer-hooks.md caption-templates.md viral-content-ideas.md video-script.md; do
   [[ -f "$TEMPLATES/$f" ]] || { echo "FAIL: template $f missing"; exit 1; }
 done
 
@@ -73,7 +73,7 @@ echo "PASS: strategy defaults present"
 echo "Test 7: channel templates (IG, LI, X, email, WhatsApp) exist"
 
 CHANNELS="$TEMPLATES/channels"
-for f in post-instagram.md post-linkedin.md thread-x.md email.md whatsapp.md; do
+for f in instagram.md linkedin.md x.md email.md whatsapp.md; do
   [[ -f "$CHANNELS/$f" ]] || { echo "FAIL: channel template $f missing"; exit 1; }
   grep -q "^---$" "$CHANNELS/$f" || { echo "FAIL: $f missing frontmatter"; exit 1; }
 done
@@ -82,7 +82,7 @@ echo "PASS: channel templates part 1 present"
 
 echo "Test 8: channel templates (LP, changelog, video, images, README) exist"
 
-for f in copy-lp.md changelog-vendedor.md roteiro-video.md image-prompts.md README.md; do
+for f in landing-copy.md commercial-changelog.md video-script.md image-prompts.md README.md; do
   [[ -f "$CHANNELS/$f" ]] || { echo "FAIL: channel template $f missing"; exit 1; }
 done
 
@@ -129,4 +129,20 @@ grep -q "launch-feature" "$CMD_FILE" \
   || { echo "FAIL: command body does not reference the skill"; exit 1; }
 
 echo "PASS: slash command present"
+
+echo "Test: no Portuguese-named templates remain"
+PT_NAMES='copy-lp|changelog-vendedor|post-instagram|post-linkedin|thread-x|roteiro-video|video-roteiro'
+if find skills/launch-feature/templates -type f | grep -qE "/($PT_NAMES)\.md$"; then
+  echo "FAIL: a Portuguese-named template file still exists"; exit 1
+fi
+if grep -rIlE "\b($PT_NAMES)\b" skills/launch-feature/SKILL.md skills/launch-feature/templates/channels/README.md >/dev/null 2>&1; then
+  echo "FAIL: SKILL.md or kit README still references a Portuguese name"; exit 1
+fi
+echo "PASS: no Portuguese-named templates remain"
+
+echo "Test: no stray Portuguese 'roteiro' word in English skill files"
+if grep -rIwn "roteiro" skills/launch-feature skills/motion-promo >/dev/null 2>&1; then
+  echo "FAIL: stray 'roteiro' in an English skill file"; grep -rIwn "roteiro" skills/launch-feature skills/motion-promo; exit 1
+fi
+echo "PASS: no stray 'roteiro' in English skill files"
 

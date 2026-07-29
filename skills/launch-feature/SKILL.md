@@ -84,7 +84,7 @@ words).
 
 For each of the override names — `brand`, `voice`, `audience`, `hashtags`,
 `marketer-guide`, `marketer-hooks`, `caption-templates`,
-`viral-content-ideas`, `video-roteiro` — resolve the first path that exists:
+`viral-content-ideas`, `video-script` — resolve the first path that exists:
 
 1. `docs/marketing/<name>.md` (canonical Octopus location)
 2. `docs/<NAME_UPPER>.md` where `NAME_UPPER` is the name uppercased with
@@ -156,7 +156,7 @@ repo path, or `embedded` when the default was used).
 **Channel selection:**
 
 - Default: all channels whose override source exists OR whose embedded default
-  exists, EXCEPT `roteiro-video.md` which requires a `video-roteiro` override
+  exists, EXCEPT `video-script.md` which requires a `video-script` override
   in the target repo (embedded default alone is not enough to produce a video
   script — the repo-specific style matters too much).
 - Channels include `whatsapp` (a lifecycle channel, single template); the

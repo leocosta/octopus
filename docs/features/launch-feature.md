@@ -43,7 +43,7 @@ these (first-match wins per name):
 - `docs/marketing/social-media-hooks.md`
 - `docs/marketing/caption-templates.md`
 - `docs/marketing/viral-content-ideas.md`
-- `docs/marketing/video-roteiro.md`
+- `docs/marketing/video-script.md`
 
 For compatibility with repos that already keep these at the root of `docs/`
 (uppercase with underscores, e.g. `SOCIAL_MEDIA_GUIDE.md`), the skill also
@@ -64,9 +64,9 @@ Use `--no-images` to skip entirely.
 A directory `docs/marketing/launches/YYYY-MM-DD-<slug>/` containing:
 
 - `README.md` — kit index + chosen angle + source refs
-- `post-instagram.md`, `post-linkedin.md`, `thread-x.md`
-- `email.md`, `email.html`, `whatsapp.md`, `copy-lp.md`, `changelog-vendedor.md`
-- `roteiro-video.md` (only when the repo has a `video-roteiro` override)
+- `instagram.md`, `linkedin.md`, `x.md`
+- `email.md`, `email.html`, `whatsapp.md`, `landing-copy.md`, `commercial-changelog.md`
+- `video-script.md` (only when the repo has a `video-script` override)
 - `image-prompts.md`
 - `images/` (when a provider ran)
 

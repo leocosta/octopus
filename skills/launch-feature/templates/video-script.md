@@ -1,6 +1,6 @@
 # Video Script Template (default)
 
-> Embedded default. Override at `docs/marketing/video-roteiro.md`.
+> Embedded default. Override at `docs/marketing/video-script.md`.
 
 ## 30–60s script frame
 
