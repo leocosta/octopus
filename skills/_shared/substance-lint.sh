@@ -6,8 +6,11 @@
 set -uo pipefail
 
 STRICT=0
-[[ "${1:-}" == "--strict" ]] && { STRICT=1; shift; }
-TARGET="${1:-.}"
+args=()
+for a in "$@"; do
+  if [[ "$a" == "--strict" ]]; then STRICT=1; else args+=("$a"); fi
+done
+TARGET="${args[0]:-.}"
 
 # Superlative/hype + FOMO/urgency terms (EN + PT). Accented and plain variants are
 # listed explicitly to avoid multibyte chars inside bracket expressions.

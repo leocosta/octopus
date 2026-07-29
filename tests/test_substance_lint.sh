@@ -35,6 +35,9 @@ check "advisory by default (exit 0 on hits)" t_advisory
 t_strict_fail() { "$LINT" --strict "$tmp/hype.md" >/dev/null; [[ $? -ne 0 ]]; }
 check "exits non-zero under --strict on hits" t_strict_fail
 
+t_strict_after_target() { "$LINT" "$tmp/hype.md" --strict >/dev/null; [[ $? -ne 0 ]]; }
+check "recognizes --strict after the target" t_strict_after_target
+
 t_strict_clean() { "$LINT" --strict "$tmp/sober.md" >/dev/null; [[ $? -eq 0 ]]; }
 check "exits zero under --strict on clean copy" t_strict_clean
 
