@@ -13,7 +13,7 @@ overrides:
   social-media-hooks: {{HOOKS_SOURCE}}
   caption-templates: {{CAPTIONS_SOURCE}}
   viral-content-ideas: {{VIRAL_SOURCE}}
-  video-roteiro: {{VIDEO_SOURCE}}
+  video-script: {{VIDEO_SOURCE}}
 channels_included: [{{CHANNELS_LIST}}]
 images_provider: {{PROVIDER_OR_NONE}}
 ---
@@ -37,15 +37,15 @@ images_provider: {{PROVIDER_OR_NONE}}
 
 ## Files in this kit
 
-- `post-instagram.md`
-- `post-linkedin.md`
-- `thread-x.md`
+- `instagram.md`
+- `linkedin.md`
+- `x.md`
 - `email.md`
 - `email.html`
 - `whatsapp.md`
-- `copy-lp.md`
-- `changelog-vendedor.md`
-- `roteiro-video.md` (only if video-roteiro override exists in the repo)
+- `landing-copy.md`
+- `commercial-changelog.md`
+- `video-script.md` (only if video-script override exists in the repo)
 - `image-prompts.md`
 - `images/` (only when a provider generated PNGs)
 

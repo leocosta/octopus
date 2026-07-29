@@ -27,7 +27,7 @@ screens, rhythmic scene cuts, and a music bed. Output is a 16:9 master and a
 9:16 vertical cut.
 
 It is the **render counterpart** to `launch-feature`: `launch-feature` writes a
-`video-roteiro.md` (the script/beats in prose); `motion-promo` turns a beats
+`video-script.md` (the script/beats in prose); `motion-promo` turns a beats
 list into the finished, scored video. When both run, chain them —
 `launch-feature` roteiro → `motion-promo` beats.
 
