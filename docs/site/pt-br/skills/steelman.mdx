@@ -1,0 +1,57 @@
+---
+title: steelman
+description: "Constrói a versão mais forte possível do argumento contra a sua própria posição — a melhor evidência, o melhor enquadramento, o crítico mais competente que plausivelmente existiria — e então mostra quais partes realmente mordem e no que você precisaria acreditar para a sua posição sobreviver. Read-only."
+---
+
+A maior parte da crítica chega mais fraca do que deveria. O revisor está sendo
+educado, o contra-argumento é um espantalho fácil de derrubar, ou você já ensaiou a
+resposta. Nada disso diz se a sua posição se sustenta. A skill `steelman` constrói a
+versão **mais forte** do caso contrário e então localiza onde o seu raciocínio de fato
+sustenta peso.
+
+## O que resolve
+
+Uma posição que só enfrentou oposição fraca está não-testada, não validada. O modo de
+falha é específico e comum: as "alternativas consideradas" que nunca foram sérias, a
+objeção que você respondeu porque era a fácil, a decisão que pareceu óbvia porque
+ninguém defendeu bem o outro lado. O steel man inverte o movimento habitual — em vez
+de caçar falhas na oposição, concede a ela toda suposição razoável e pergunta o que
+sobrevive.
+
+O resultado não é um veredito sobre quem está certo. É uma versão mais afiada da
+discordância, que é o que permite responder a parte que importa em vez da parte que
+era mais fácil de responder.
+
+## Como resolve
+
+Seis passos, todos read-only:
+
+1. **Extrair a posição real** — o que está sendo defendido raramente é o que foi dito.
+   "Devíamos usar Kafka" normalmente defende "nossos consumidores precisam de replay".
+   Fazer steel man da posição errada transforma todo o resto em ruído.
+2. **Achar a oposição genuína** — o contrário forte, não o conveniente. O espantalho é
+   a falha padrão desse exercício.
+3. **Construir o caso máximo** — melhor evidência, melhor enquadramento, o crítico mais
+   competente que plausivelmente existiria. Sem hedge e sem pré-refutação; um steel man
+   que telegrafa a própria fraqueza é um espantalho de roupa nova.
+4. **Separar o que morde do que é retórica** — nem todo ponto forte é letal. Um steel
+   man em que tudo acerta está bajulando a oposição, não testando-a.
+5. **O teste de sobrevivência** — no que você precisaria acreditar para a sua posição
+   ainda ficar de pé? É aqui que a fraqueza real aparece, normalmente como uma
+   suposição que nunca foi examinada porque nunca precisou ser dita.
+6. **Dois baldes** — o que exige resposta e o que pode ser concedido sem custar a tese.
+   Conceder o segundo tipo é o que torna a posição restante defensável em vez de
+   teimosa.
+
+## Quando usar
+
+Use quando há uma **posição sendo defendida** e você quer testá-la: antes de se
+comprometer com uma direção técnica, quando uma decisão parece fácil demais, ou quando
+a oposição até aqui foi fraca. O `doc-adr` invoca o mesmo protocolo antes de rejeitar
+uma alternativa que era uma opção viva, para que o ADR registre por que a decisão foi
+apertada em vez de uma linha de `Pros:` que ninguém consegue auditar depois.
+
+Não use para pesar várias opções — isso é o `council`, que roda cinco lentes
+divergentes sobre uma decisão. E note a fronteira que define esta skill: o Contrarian
+do `council` **ataca** uma ideia, enquanto o `steelman` **constrói o caso do outro
+lado**. Perder essa distinção colapsa um no outro.
