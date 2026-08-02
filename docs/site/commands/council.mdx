@@ -30,16 +30,26 @@ The command invokes the `council` skill, which owns the full four-phase protocol
 The verdict is presented in chat as markdown. The council is **read-only** and
 writes no files unless `--transcript` is passed.
 
+`--pre-mortem` changes the framing, not the machinery. Phase 1 rewrites the question
+as a post-failure autopsy — the plan shipped six months ago and failed, explain why —
+and phase 4 returns failure modes ranked by likelihood × impact, each with a
+mitigation and a tripwire. The five lenses and the anonymous review run untouched,
+because each lens already fails a plan its own way.
+
 ## Usage & parameters
 
 ```
 /octopus:council <the decision or question>
 /octopus:council --transcript <the decision or question>
+/octopus:council --pre-mortem <the plan or launch>
 ```
 
 - `<the decision or question>` — the high-stakes call to pressure-test. Use it for
   genuine decisions with a tradeoff, not factual lookups or creation tasks.
 - `--transcript` — also save a `council-transcript-<slug>.md` in the working
   directory (otherwise the council writes nothing).
+- `--pre-mortem` — treat the plan as **already failed** and have the council explain
+  why. Use it once the call is made, when you want the blind spots before spending
+  the money.
 
 [Source: `commands/council.md`](https://github.com/leocosta/octopus/blob/main/commands/council.md)

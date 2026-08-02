@@ -17,13 +17,21 @@ for a transcript.
 ```
 /octopus:council <the decision or question>
 /octopus:council --transcript <the decision or question>
+/octopus:council --pre-mortem <the plan or launch>
 ```
+
+- `--transcript` — also save a `council-transcript-<slug>.md` in the working directory.
+- `--pre-mortem` — treat the plan as **already failed** and have the council explain
+  why. Same five lenses, same anonymous review; the verdict becomes ranked failure
+  modes, each with a mitigation and a tripwire. Use it when the call is made and you
+  want the blind spots before spending the money.
 
 **Examples:**
 
 ```
 /octopus:council should I launch a paid workshop or a free course first?
 /octopus:council which of these three positioning angles is strongest?
+/octopus:council --pre-mortem we ship the new checkout in six weeks
 ```
 
 ## Instructions

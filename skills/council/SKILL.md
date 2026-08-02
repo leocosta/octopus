@@ -12,7 +12,9 @@ triggers:
   paths: []
   keywords: ["council", "council this", "run the council", "war room",
     "pressure-test", "stress-test", "debate this", "should I X or Y",
-    "which option", "I can't decide", "I'm torn between", "validate this decision"]
+    "which option", "I can't decide", "I'm torn between", "validate this decision",
+    "pre-mortem", "premortem", "what could go wrong", "before we launch",
+    "how might this fail"]
   tools: []
 ---
 
@@ -36,6 +38,7 @@ The council is **read-only**: it reads the workspace to frame the question and
 ```
 /octopus:council <the decision or question>
 /octopus:council --transcript <the decision or question>   # also save a transcript
+/octopus:council --pre-mortem <the plan or launch>         # autopsy a future failure
 ```
 
 It also auto-activates on the trigger phrases above — but only when the message
@@ -50,6 +53,8 @@ being wrong:
 - "Which of these three positioning angles is strongest?"
 - "I'm thinking of pivoting from X to Y — am I crazy?"
 - "Here's my plan / landing page / architecture — what's weak?"
+- `--pre-mortem`: "we ship the new checkout in six weeks" — the call is already made
+  and you want the failure modes while they are still cheap.
 
 ## When NOT to
 
@@ -117,6 +122,19 @@ what is at stake. Do **not** inject your own opinion or steer the answer. If the
 question is too vague to council, ask **exactly one** clarifying question, then
 proceed. Save the framed question — every later phase reuses it verbatim.
 
+#### Under `--pre-mortem`
+
+Only the framing changes; the framed question still reaches phases 2 and 3 verbatim.
+Rewrite it as a **post-failure autopsy**:
+
+- **The failure is settled fact, not a risk.** "It is six months on, the plan
+  shipped, and it **already failed** — explain why." Never "what could go wrong":
+  a hypothetical failure gets hypothetical answers, and the advisors hedge back into
+  the balanced takes the council exists to avoid.
+- **Horizon:** default **six months** past launch; an explicit user horizon wins.
+- Carry what ships, to whom, and what success was supposed to look like — without the
+  success criterion the failure contradicts nothing.
+
 ### Phase 2 — Convene (5 advisors in parallel)
 
 Dispatch all five advisors **simultaneously** via
@@ -130,6 +148,11 @@ fatal flaw say it, if you see massive upside say it; 150–300 words, no preambl
 warning — output shape unchanged. In the sequential path, instruct each advisor
 to ignore the other advisors' answers, since phase-1 independence can no longer be
 guaranteed by isolation.
+
+**Under `--pre-mortem` this phase is unchanged** — no sixth lens. Each existing lens
+fails the plan its own way (Contrarian the fatal flaw, Executor the first step that
+never shipped), so the five yield five distinct **failure modes**, not five phrasings
+of one.
 
 ### Phase 3 — Anonymous peer-review (5 in parallel)
 
@@ -166,6 +189,22 @@ this **fixed structure** — use these exact headings:
   it, and must explain why.
 - `## The One Thing to Do First` — a single concrete next step. Not a list. One.
 
+### Phase 4 under `--pre-mortem`
+
+Same chairman, same inputs, different verdict shape — use these exact headings
+(`Where the Council Clashes` and `The Recommendation` do not apply: no decision is
+left to recommend, and disagreement over *how* it died ranks rather than arbitrates):
+
+- `## The Failure Modes` — every distinct way the plan died, **ranked by likelihood ×
+  impact**. Each carries the failure, the lens that raised it, a **mitigation**, and a
+  **tripwire**: the early signal it is materialising, concrete enough to notice
+  ("week 3 and integration tests still aren't green", not "watch for delays"). A mode
+  without one is a worry, not a finding.
+- `## Converging Failure Modes` — modes reached independently by two or more lenses;
+  the high-confidence set, playing the role `Where the Council Agrees` plays above.
+- `## Blind Spots the Council Caught` — unchanged, still fed by peer-review.
+- `## The One Thing to Do First` — unchanged. One step, not a list.
+
 ## Presenting the verdict
 
 Present the verdict directly in chat as markdown, headed
@@ -196,6 +235,9 @@ final verdict.
 - Writing any file when `--transcript` was not asked for.
 - Letting the chairman (or you, while framing) inject an opinion into the framed
   question.
+- Hedging a `--pre-mortem` frame into "this could go wrong", shipping failure modes
+  without tripwires, or adding a sixth lens for it — the first two turn the autopsy
+  into a risk list nobody can act on, and the third misses that it is a reframe.
 
 ## Related
 

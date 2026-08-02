@@ -68,13 +68,45 @@ check "skill: ephemeral lenses, not roles"       t_ephemeral
 check "skill: read-only / no files by default"   t_read_only
 
 # ---------------------------------------------------------------------------
+# SKILL.md — RM-165 pre-mortem flag (reframe of phase 1 + phase 4 verdict)
+# ---------------------------------------------------------------------------
+t_pm_flag()      { grep -q -- '--pre-mortem' "$SKILL"; }
+t_pm_triggers()  {
+  grep -q '"pre-mortem"' "$SKILL" || return 1
+  grep -q 'what could go wrong' "$SKILL"
+}
+# The technique dies if the failure is hedged as a risk — it must be stated as
+# settled fact, with a horizon.
+t_pm_reframe()   {
+  grep -qiE 'already failed|it failed|has failed' "$SKILL" \
+    && grep -qi 'six months' "$SKILL"
+}
+t_pm_verdict()   {
+  grep -q 'The Failure Modes' "$SKILL" \
+    && grep -q 'Converging Failure Modes' "$SKILL" \
+    && grep -qi 'tripwire' "$SKILL" \
+    && grep -qi 'likelihood' "$SKILL"
+}
+# Phases 2–3 are reused untouched; the five lenses must still be the source of
+# the failure modes rather than a sixth lens being bolted on.
+t_pm_reuses_lenses() { grep -qiE 'failure mode' "$SKILL" && grep -q 'Executor' "$SKILL"; }
+
+check "skill: pre-mortem flag documented"        t_pm_flag
+check "skill: pre-mortem trigger keywords"       t_pm_triggers
+check "skill: failure stated as fact + horizon"  t_pm_reframe
+check "skill: pre-mortem verdict structure"      t_pm_verdict
+check "skill: pre-mortem reuses the five lenses" t_pm_reuses_lenses
+
+# ---------------------------------------------------------------------------
 # Command — thin delegator
 # ---------------------------------------------------------------------------
 t_cmd_refs_skill() { [[ -f "$CMD" ]] && grep -qE 'skills/council|`council` skill' "$CMD"; }
 t_cmd_thin()       { [[ -f "$CMD" ]] && [[ "$(wc -l < "$CMD")" -le 60 ]]; }
+t_cmd_premortem()  { [[ -f "$CMD" ]] && grep -q -- '--pre-mortem' "$CMD"; }
 
 check "command: thin delegator references skill" t_cmd_refs_skill
 check "command: thin (<= 60 lines)"              t_cmd_thin
+check "command: documents --pre-mortem"          t_cmd_premortem
 
 # ---------------------------------------------------------------------------
 # Wiring — bundle + doc pages
