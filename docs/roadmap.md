@@ -894,3 +894,127 @@ copy → metadata; the bash-delegation tail legitimately stays static.
 **Rationale:** Moves the highest-risk path (download / verify / copy) from
 grep-asserted to behaviorally verified; pwsh Core runs on Linux, so no Windows
 runner is strictly required.
+
+---
+
+### Cluster 29 — Reasoning pressure-test coverage
+
+_Proposed (added 2026-08-01). Audit of Octopus against the classic critical-thinking
+techniques found two already covered and two missing. **First-principles** ships as
+the `council` advisor of that name (`skills/council/SKILL.md:76`); **red-team** ships
+twice over — the whole `council` for ideas, `roles/security.md:97` threat modeling for
+code. **Pre-mortem** and **steel man** have no home. `roles/mentor.md:45` deliberately
+rejects the ELI5 register ("explain to a capable peer, never condescend"), so that one
+is a design decision, not a gap._
+
+_The two items land differently on purpose: pre-mortem **reuses** the council engine
+(five divergent lenses map cleanly onto five distinct failure modes), so it is a flag;
+steel man reuses **nothing** from it (no divergence to arbitrate, no synthesis to
+perform), so it needs its own home._
+
+### RM-165 — `council --pre-mortem` — prospective-hindsight reframe
+
+- **Priority:** 🟡 Medium
+- **Effort:** low
+- **Status:** proposed
+- **Added:** 2026-08-01
+
+Add a `--pre-mortem` flag to `council` that reframes the Phase 1 framed question as a
+post-failure autopsy ("it is six months from now and this failed — explain why")
+instead of an open decision. Phases 2–3 are untouched: the five existing lenses each
+surface a structurally different failure mode — Contrarian the fatal flaw, First
+Principles the wrong problem solved, Expansionist the missed window, Outsider the
+proposition nobody understood, Executor the first step that never shipped. Phase 4
+branches to a pre-mortem verdict shape: failure modes ranked by likelihood × impact,
+each with a mitigation and a tripwire, replacing the
+`Agrees / Clashes / Blind Spots / Recommendation / One Thing` headings.
+
+Discovery is the flag's weak point — someone wanting a pre-mortem before a launch does
+not think "convene a council". Mitigate by extending `triggers.keywords` with
+`"pre-mortem"`, `"what could go wrong"`, `"before we launch"`, `"how might this fail"`.
+
+**Rationale:** A separate skill would duplicate ~200 lines of protocol (parallel
+dispatch, A–E anonymisation, chairman synthesis) to change one framing paragraph and a
+set of headings. The `--transcript` flag already establishes the pattern.
+
+### RM-166 — `steelman` skill — build the strongest case against your own position
+
+- **Priority:** 🟡 Medium
+- **Effort:** medium
+- **Status:** proposed
+- **Added:** 2026-08-01
+
+A standalone skill that constructs the **strongest** version of the opposing argument —
+distinct from attacking the idea, which is what `council`'s Contrarian and the
+devil's-advocate framing already do. Protocol:
+
+1. **Extract the real position** — what is actually being defended is rarely what was
+   stated; steel-manning the wrong position makes the whole exercise noise.
+2. **Find the genuine opposition** — the strong contrary, not the convenient strawman.
+3. **Build the maximal case** — best available evidence, best framing, the most
+   competent critic who would plausibly exist.
+4. **Separate what bites from what is rhetoric** — not every strong point is lethal.
+5. **Survival test** — "what would you have to believe for your position to still
+   stand?" This is where the real weakness surfaces.
+6. **Return two buckets** — what demands an answer vs. what can be conceded without
+   losing the thesis.
+
+Bundle: `workflow-extras`, alongside `council` — both are situational reasoning
+pressure-tests, not per-task work. The skill's primary surface is standalone
+(`/octopus:steelman <argument>`), for sharpening a position with no ADR or PR in sight.
+One call site reuses the same definition rather than restating it, following the
+`audit-all` composer precedent (`skills/audit-all/SKILL.md:60`, "Do not copy"):
+
+- `doc-adr` — `templates/adr.md:22` `## Alternatives Considered` and
+  `skills/doc-adr/SKILL.md:112` ask for rejected alternatives, but recording a
+  rejection is not steel-manning it; in practice the section degrades to chaff
+  ("considered X, too complex"). Require the strong form before the rejection.
+
+`respond-to-review` was evaluated as a second call site and **deliberately excluded**.
+Rule 3 (`SKILL.md:57`) would have supplied a clean gate — steel man serves only the
+push-back bucket, ~1–2 threads per PR — but the flow already carries diff + comments +
+threads, and PR feedback is not where the team wants the extra step. Reviewers who want
+it can invoke the skill standalone.
+
+**Invocation — subagent dispatch behind a conditional gate**, applying RM-125
+(`skills/audit-all/SKILL.md`: an audit with no domain-matching files is not
+dispatched, because "spawning it only burns tokens"). `doc-adr` already owns the gate —
+it knows which alternative it is rejecting — so no new heuristic is needed.
+
+Estimated cost (skill sized against `prototype` ~1.1k tok and `interview` ~1.6k tok, so
+~1.4k; per-dispatch overhead is an estimate, not instrumented):
+
+| Path | Dispatches | Cost |
+|---|---|---|
+| `doc-adr`, gated | 1 (the alternative actually being rejected) | ~6k |
+| `doc-adr`, ungated (per alternative) | 2–4 | 15–30k |
+
+Inline (reading the skill into the calling context) costs ~1.4k once per session and
+does not multiply, but pays that cost **even when unused** — and the common case is an
+ADR with no alternative worth steel-manning. For scale, a full `council` run is 11
+dispatches; a gated steel man is ~1/10 of that.
+
+**Open — verify before implementing.** With `respond-to-review` dropped, the
+subagent-vs-inline call is no longer comfortable. At cardinality 1, inline costs ~1.4k
+unconditionally and dispatch costs ~6k only when it fires, so dispatch wins only while
+the share of ADRs with a steel-mannable alternative stays under ~23%. That threshold is
+derived from the uninstrumented ~5–8k per-dispatch figure: if real overhead is nearer
+~3k, break-even moves to ~47% and inline likely wins. The context argument that settled
+it before belonged to `respond-to-review` and left with it. Measure one real dispatch
+before committing to either.
+
+**Naming:** `steelman` as a single-word verb, per the `<verb>` foundational-action form
+in `skills/scaffold-skill/REFERENCE.md:97` (`debug`, `implement`, `prototype`).
+`steel-man` was rejected — the hyphen is orthographic rather than structural and
+implies a `steel-*` family that does not exist. `challenge-argument` / `oppose-position`
+fit the `<verb>-<noun>` form but connote attacking, which is precisely the distinction
+the skill exists to preserve; `test-argument` collides with the `test-*` family;
+`pressure-test` would steal `council`'s existing trigger keywords. Jargon opacity is
+carried by the `description` plus `triggers.keywords` (`"steel man"`,
+`"strongest counterargument"`, `"best case against"`, `"argue the other side"`,
+`"where is my reasoning weak"`) — the same trade `consigliere` already makes.
+Zero-jargon fallback: `build-counter-case`.
+
+**Rationale:** The capability's home and its injection points are different questions —
+binding it only to ADR and PR-review makes it unreachable whenever the trigger is
+neither. One canonical definition, three entry points.
