@@ -76,6 +76,33 @@ ships next, or nothing at all.
 No `Despite these challenges, X continues to thrive`. If there is a limitation,
 name it and say what is being done.
 
+## Portuguese
+
+Not a translation of the list above. Portuguese has its own tells, and some of
+the strongest have no English equivalent.
+
+- **Reflexive copula avoidance** — `se destaca como`, `se consolida como`,
+  `configura-se como`, `atua como`. Use `é`.
+- **Linking gerunds** — a gerund clause bolted onto a finished sentence:
+  `…, garantindo mais confiabilidade`, `…, visando reduzir custos`,
+  `…, proporcionando uma experiência melhor`. This is the PT participle tail, and
+  it is far more frequent in generated Portuguese than its English counterpart.
+- **Signposting connectives** — `Nesse sentido,`, `Dessa forma,`, `Por sua vez,`,
+  `Vale ressaltar que`, `Cabe destacar que`. They announce a transition instead
+  of making one.
+- **Significance inflation** — `desempenha um papel fundamental`, `um marco
+  importante`, `um divisor de águas`, `momento decisivo`.
+- **Negative parallelism** — `não apenas X, mas também Y`, `não se trata de X, e
+  sim de Y`.
+- **Generic conclusions** — `o futuro é promissor`, `um grande passo`,
+  `Apesar desses desafios…`.
+
+**The word is not the problem; the position is.** `garantir`, `destacar`,
+`fundamental` and `robusto` are ordinary in Brazilian technical writing.
+"Garanta a consistência antes da migração" is fine. "…, garantindo a
+consistência" tacked onto a complete sentence is the tell. Judge the
+construction, never the bare word.
+
 ## Structural tells
 
 Individual sentences can be clean while the shape gives it away.

@@ -24,10 +24,16 @@ PATTERN_HYPE='revolutioniz|revolutionary|\bunlock|seamless|game[ -]?changer|cutt
 # absent — `key` (API key), `critical` (critical path), `align` (align with the spec),
 # `highlight` (highlight a row), `enhance` (a real improvement). Judgement calls that
 # regex cannot make live in human-voice.md.
-# PT is not covered here: whether generated Portuguese carries the same constructions
-# has not been checked, and guessing would produce exactly the false positives this
-# list is calibrated to avoid.
 PATTERN_TELL='testament|pivotal|\bdelve|intricate|serves as|stands as|\bboasts\b|not just .{1,40} it.s|Despite these challenges|future looks bright|^Additionally,|tapestry|\brealm\b|underscor|fostering|showcas'
+
+# PT tells are not translations of the EN list — Portuguese has its own: reflexive
+# copula avoidance (`se destaca como`), linking gerunds after a finished clause,
+# and signposting connectives. Precision matters more here, because `garantir`,
+# `destacar`, `fundamental` and `robusto` are ordinary words in Brazilian technical
+# writing. Every pattern below therefore anchors on syntactic position — a comma
+# before the gerund, the reflexive before `como` — never on the bare word.
+# Calibrated against the repo's own 89k-word pt-br docs: 1 hit, and that one legitimate.
+PATTERN_TELL_PT='se destaca como|se consolida como|configura-se como|desempenha um papel (fundamental|crucial|essencial)|um marco (importante|histórico)|divisor de águas|não (apenas|só) .{1,50}(mas também|mas sim)|^Além disso,|Nesse sentido,|Dessa forma,|Vale (ressaltar|destacar) que|, (garantindo|visando|proporcionando|refletindo|ressaltando)|futuro (é|se mostra) (promissor|animador)|[Aa]pesar (desses|destes) desafios'
 
 if [[ -d "$TARGET" ]]; then
   mapfile -t files < <(find "$TARGET" -type f \( -name '*.md' -o -name '*.html' -o -name '*.txt' \) 2>/dev/null)
@@ -53,6 +59,11 @@ for f in "${files[@]}"; do
     printf '  [tell] %s:%s: %s\n' "$f" "$line" "$(printf '%s' "$text" | sed 's/^[[:space:]]*//')"
     tell=$((tell+1))
   done < <(strip_code_spans "$f" | grep -niE "$PATTERN_TELL" 2>/dev/null)
+  while IFS=: read -r line text; do
+    [[ -n "$line" ]] || continue
+    printf '  [tell] %s:%s: %s\n' "$f" "$line" "$(printf '%s' "$text" | sed 's/^[[:space:]]*//')"
+    tell=$((tell+1))
+  done < <(strip_code_spans "$f" | grep -nE "$PATTERN_TELL_PT" 2>/dev/null)
 done
 
 if [[ $((hype + tell)) -gt 0 ]]; then
