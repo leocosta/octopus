@@ -12,11 +12,9 @@ angle: "{{ANGLE}}"
 
 {{CONTEXT_2_3_LINES}}
 
-What we shipped:
+{{WHAT_WE_SHIPPED_LEAD}}
 
-- {{POINT_1}}
-- {{POINT_2}}
-- {{POINT_3}}
+{{POINTS_2_TO_4}}
 
 {{OUTCOME_QUANTIFIED}}
 

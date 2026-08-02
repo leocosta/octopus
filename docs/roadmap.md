@@ -1028,3 +1028,107 @@ Zero-jargon fallback: `build-counter-case`.
 **Rationale:** The capability's home and its injection points are different questions —
 binding it only to ADR and PR-review makes it unreachable whenever the trigger is
 neither. One canonical definition, three entry points.
+
+---
+
+### Cluster 30 — Growth copy reads as AI-generated
+
+_Proposed (added 2026-08-02). Reported from the outside: the `growth` bundle's output
+(`launch-feature`, `launch-release`, `marketer`) is visibly machine-written. The
+diagnosis is not that the voice work is missing — v1.93.0 shipped
+`skills/_shared/substance-voice.md` plus `substance-lint.sh`, and they are sound. They
+just police a **different axis**: hype and manufactured urgency, not the tells that
+mark text as LLM output. A passage can clear the substance gate completely and still
+announce itself in the first line._
+
+_Demonstrated: a sample carrying `testament`, `pivotal moment`, `serves as`,
+`underscoring`, `not just X — it's Y`, `Additionally`, `delves`, `intricate interplay`,
+bold inline-header lists, a rule of three, `Industry observers have noted`,
+`Despite these challenges` and `The future looks bright` returns
+`substance-lint: clean`. None of those terms is hype or FOMO, so nothing fires._
+
+_Reference catalogue: [blader/humanizer](https://github.com/blader/humanizer) — 33
+patterns across content, language and style, derived from
+[Wikipedia:Signs of AI writing](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing)
+(WikiProject AI Cleanup). Note it also carries two things Octopus has nowhere: voice
+calibration from real writing samples, and a rewrite→audit→rewrite double pass. One
+overlap already exists — `substance-voice.md`'s "Never fabricate a number" is the
+no-fabrication rule._
+
+### RM-167 — `_shared/human-voice.md` + an anti-tell class in `substance-lint`
+
+- **Priority:** 🔴 High
+- **Effort:** medium
+- **Status:** proposed
+- **Added:** 2026-08-02
+
+Add a sibling fragment to `substance-voice.md` covering the second axis, and extend the
+lint with a second pattern class. Leave the existing anti-hype rules untouched — that
+axis is solved; this one is missing.
+
+Fragment scope — the subset of the 33 that actually bites in product copy: significance
+inflation (`testament`, `pivotal`, `marks a shift`), copula avoidance (`serves as`,
+`stands as`, `boasts`), negative parallelism (`not just X, it's Y`), superficial `-ing`
+tails (`underscoring`, `highlighting`, `fostering`), bold inline-header lists, AI
+vocabulary (`Additionally`, `delve`, `intricate`, `landscape`, `leverage`), and generic
+positive conclusions.
+
+`substance-lint.sh` already has the scan mechanics, `--strict`, and file:line reporting
+— what is missing is the second `PATTERN`. These constructions are as regex-detectable
+as hype: `testament|pivotal|serves as|underscor|delve|intricate|Additionally,|not just
+.* it.s|Despite these challenges|future looks bright`. Report the two classes under
+separate labels so a hype hit and a tell hit stay distinguishable.
+
+**Rationale:** The gate that exists cannot see the problem being reported. Everything
+else in this cluster is downstream of having a rule to point at.
+
+### RM-168 — Stop the templates from hardcoding the tells
+
+- **Priority:** 🔴 High
+- **Effort:** low
+- **Status:** proposed
+- **Added:** 2026-08-02
+
+The rule of three is not the model drifting — the **form requires it**. Every
+LinkedIn post ships exactly three bullets, every Instagram caption exactly three
+values, every landing page exactly three:
+
+| File | Line |
+|---|---|
+| `skills/launch-feature/templates/channels/instagram.md` | 19 — `✔ {{VALUE_3}}` |
+| `skills/launch-feature/templates/channels/linkedin.md` | 19 — `- {{POINT_3}}` |
+| `skills/launch-feature/templates/channels/landing-copy.md` | 21 — `- {{BULLET_3}}` |
+| `skills/launch-feature/templates/caption-templates.md` | 14, 31 |
+
+Replace the fixed slots with a variable count (`{{POINTS_2_TO_4}}`) plus an instruction
+to vary it per post, and drop the hardcoded `✔` decoration
+(`instagram.md:17-19`, `caption-templates.md:12-14` — pattern 17, emoji).
+
+Also loosen the single skeleton. `templates/voice.md` prescribes
+Hook → Context → Mechanism → Outcome → CTA for *every* post, and
+`channels/x.md` fixes 8 tweets with an assigned role each. Even with every sentence
+clean, uniform structure across every channel and every launch reads as machine
+cadence — the "soulless writing" failure, distinct from any individual pattern. Allow a
+post to open on the number, on the objection, or on a flat sentence.
+
+**Rationale:** Highest impact for the effort in this cluster. No prompt-level guidance
+can avoid a pattern the form mandates, so this has to be fixed in the templates before
+any rule about it can hold.
+
+### RM-169 — Anti-tell audit pass before a launch kit closes
+
+- **Priority:** 🟡 Medium
+- **Effort:** low
+- **Status:** proposed
+- **Added:** 2026-08-02
+
+`launch-release` already runs a pre-publish self-check, but it checks *substance*.
+Add the humanizer's audit step to both launch skills: after the copy is drafted, ask
+the literal question — "what makes this obviously AI-generated?" — answer it briefly,
+then revise. The single-pass rewrite is what leaves the tells in; the value of the
+double pass is that the second look is adversarial rather than generative.
+
+Depends on RM-167 for the vocabulary to audit against.
+
+**Rationale:** Rules catch what an author remembers to check. An explicit audit prompt
+catches what they do not.

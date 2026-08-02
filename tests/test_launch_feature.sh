@@ -63,6 +63,36 @@ t_skill() {
 }
 check "SKILL.md wires channels, framework, brand tokens, lifecycle positioning" t_skill
 
+# --- RM-168: the templates must not hardcode AI tells ----------------------
+# The rule of three was not model drift — the form mandated it. Every channel
+# shipped exactly three bullets because it offered exactly three slots. These
+# guard the regression: a future template edit must not restore a fixed third
+# slot or the decorative glyph.
+
+# No fixed third slot in any channel template or the caption reference.
+t_no_fixed_triad() {
+  ! grep -rqE '(VALUE|POINT|BULLET)[_ ]?(BULLET )?3' "$S/templates/"
+}
+check "templates: no fixed third bullet slot (rule of three)" t_no_fixed_triad
+
+# No decorative check-mark glyph baked into captions (pattern 17, emoji).
+t_no_glyph() {
+  ! grep -rqF '✔' "$S/templates/"
+}
+check "templates: no hardcoded decorative glyph" t_no_glyph
+
+# The replacement must express a variable count, not a new fixed number.
+t_variable_count() {
+  grep -rqE '\{\{(POINTS|VALUES|BULLETS)_[0-9]_TO_[0-9]\}\}' "$S/templates/"
+}
+check "templates: bullets use a variable count placeholder" t_variable_count
+
+# The post skeleton is guidance, not a form — structure must be allowed to vary.
+t_skeleton_is_guidance() {
+  grep -qiE 'vary|not a form|need not|does not have to' "$S/templates/voice.md"
+}
+check "voice.md: skeleton is guidance, structure may vary" t_skeleton_is_guidance
+
 echo ""
 echo "launch-feature channels: $PASS passed, $FAIL failed."
 [[ "$FAIL" -eq 0 ]]

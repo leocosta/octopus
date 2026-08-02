@@ -6,30 +6,25 @@ voice_source: {{VOICE_SOURCE}}
 angle: "{{ANGLE}}"
 ---
 
-# X thread (5–8 tweets)
+# X thread (4–8 tweets)
 
-## 1/ Hook
-{{HOOK_STANDALONE}}
+{{THREAD_TWEETS}}
 
-## 2/
-{{PROBLEM_SPECIFIC}}
+## Beats to draw from
 
-## 3/
-{{WHY_PAINFUL_TODAY}}
+Pick the ones this feature needs, in the order that serves it. Not a checklist —
+a thread that hits all eight every time has a recognisable silhouette.
 
-## 4/
-{{WHAT_WE_SHIPPED}}
+- Hook that stands alone (required — it is the only tweet most people see).
+- The specific problem.
+- Why it is painful today.
+- What shipped.
+- How it works.
+- Outcome, before/after.
+- An edge case worth calling out.
+- CTA with link (required).
 
-## 5/
-{{HOW_IT_WORKS_BULLETS}}
-
-## 6/
-{{OUTCOME_BEFORE_AFTER}}
-
-## 7/
-{{CALL_OUT_EDGE_CASE}}
-
-## 8/ CTA
-{{CTA_WITH_LINK}}
+A four-tweet thread that earns each tweet beats an eight-tweet thread padded to
+fill the beats. If a beat has nothing concrete behind it, drop it.
 
 > Image prompt: see `image-prompts.md` (16:9 card for tweet 1).
