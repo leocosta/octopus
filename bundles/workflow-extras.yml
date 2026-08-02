@@ -1,12 +1,13 @@
 name: workflow-extras
-description: Opt-in workflow skills that are situational rather than per-task — system mapping (manual-only repo orientation deck), role delegation (@role pipelines), and a decision council (5-lens pressure-test of one high-stakes call). Split out of starter so they don't load by default.
+description: Opt-in workflow skills that are situational rather than per-task — system mapping (manual-only repo orientation deck), role delegation (@role pipelines), a decision council (5-lens pressure-test of one high-stakes call), and a steel man (the strongest case against a position you hold). Split out of starter so they don't load by default.
 category: intent
-persona_question: "Do you want the situational workflow extras (map-system, delegate, council)?"
+persona_question: "Do you want the situational workflow extras (map-system, delegate, council, steelman)?"
 persona_default: false
 skills:
   - map-system
   - delegate
   - council
+  - steelman
 roles: []
 rules: []
 mcp: []

@@ -1,0 +1,48 @@
+---
+title: steelman
+description: "Constrói o caso mais forte contra a sua própria posição — a melhor evidência, o crítico mais competente — e então mostra o que de fato morde e no que você precisaria acreditar para a sua posição sobreviver. Read-only."
+---
+
+`/octopus:steelman` testa uma posição que você já sustenta construindo o **melhor**
+argumento contra ela, não o mais fácil — e então diz quais partes desse argumento
+realmente mordem.
+
+## O que resolve
+
+Uma posição que só enfrentou oposição fraca está não-testada. A objeção que você
+respondeu era a conveniente; a alternativa que você rejeitou nunca foi defendida com
+força total. Este comando concede ao caso contrário toda suposição razoável e reporta
+o que sobrevive, para você responder a parte que importa em vez da mais fácil.
+
+## Como resolve
+
+O comando invoca a skill `steelman`, que detém o protocolo completo de seis passos:
+extrair a posição de fato defendida, achar a oposição genuína em vez de um espantalho,
+construir o caso máximo sem hedge, separar os pontos que mudariam a decisão daqueles
+que são apenas bem argumentados, rodar o teste de sobrevivência (*no que você
+precisaria acreditar para isso ainda ficar de pé?*) e fechar com dois baldes — o que
+exige resposta e o que pode ser concedido sem perder a tese.
+
+Tudo é apresentado no chat. O comando é **read-only** e não escreve arquivo algum.
+
+## Uso & parâmetros
+
+```
+/octopus:steelman <a posição que você está defendendo>
+```
+
+- `<a posição que você está defendendo>` — uma posição que você sustenta e quer
+  testar. Precisa ser uma posição, não uma pergunta: "o Postgres suporta índices
+  parciais" tem resposta, então não há o que fazer steel man.
+
+**Exemplos:**
+
+```
+/octopus:steelman devíamos separar o serviço de fulfillment do monolito
+/octopus:steelman reescrever o checkout in-house é melhor que contratar um provedor
+```
+
+Note a fronteira: isto constrói o caso do outro lado **para cima**. Atacar a sua ideia
+para achar falhas é a lente Contrarian do `council`, não este comando.
+
+[Source: `commands/steelman.md`](https://github.com/leocosta/octopus/blob/main/commands/steelman.md)

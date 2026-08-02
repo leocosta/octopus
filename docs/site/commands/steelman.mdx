@@ -1,0 +1,48 @@
+---
+title: steelman
+description: "Build the strongest case against your own position — the best evidence, the most competent critic — then show what actually bites and what you would have to believe for your position to survive. Read-only."
+---
+
+`/octopus:steelman` tests a position you already hold by constructing the **best**
+argument against it, not the easiest one — then tells you which parts of that argument
+genuinely bite.
+
+## What it solves
+
+A position that has only faced weak opposition is untested. The objection you answered
+was the convenient one; the alternative you rejected was never argued at full strength.
+This command grants the opposing case every reasonable assumption and reports what
+survives, so you answer the part that matters rather than the part that was easiest.
+
+## How it works
+
+The command invokes the `steelman` skill, which owns the full six-step protocol:
+extract the position actually being defended, find the genuine opposition rather than
+a strawman, build the maximal case without hedging it, separate the points that would
+change the decision from those that are merely well-argued, run the survival test
+(*what would you have to believe for this to still stand?*), and close with two
+buckets — what demands an answer and what can be conceded without losing the thesis.
+
+Everything is presented in chat. The command is **read-only** and writes no files.
+
+## Usage & parameters
+
+```
+/octopus:steelman <the position you are defending>
+```
+
+- `<the position you are defending>` — a position you hold and want tested. It needs
+  to be a position, not a question: "does Postgres support partial indexes" has an
+  answer, so there is nothing to steel-man.
+
+**Examples:**
+
+```
+/octopus:steelman we should split the fulfillment service out of the monolith
+/octopus:steelman rewriting the checkout in-house beats buying a provider
+```
+
+Note the boundary: this builds the opposing side's case **up**. Attacking your idea to
+find its flaws is `council`'s Contrarian lens, not this command.
+
+[Source: `commands/steelman.md`](https://github.com/leocosta/octopus/blob/main/commands/steelman.md)

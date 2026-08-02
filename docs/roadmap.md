@@ -916,7 +916,7 @@ perform), so it needs its own home._
 
 - **Priority:** 🟡 Medium
 - **Effort:** low
-- **Status:** proposed
+- **Status:** implemented — completed → v1.94.0 (#221, 2026-08-02)
 - **Added:** 2026-08-01
 
 Add a `--pre-mortem` flag to `council` that reframes the Phase 1 framed question as a
@@ -941,7 +941,7 @@ set of headings. The `--transcript` flag already establishes the pattern.
 
 - **Priority:** 🟡 Medium
 - **Effort:** medium
-- **Status:** proposed
+- **Status:** implemented
 - **Added:** 2026-08-01
 
 A standalone skill that constructs the **strongest** version of the opposing argument —
@@ -994,14 +994,24 @@ does not multiply, but pays that cost **even when unused** — and the common ca
 ADR with no alternative worth steel-manning. For scale, a full `council` run is 11
 dispatches; a gated steel man is ~1/10 of that.
 
-**Open — verify before implementing.** With `respond-to-review` dropped, the
-subagent-vs-inline call is no longer comfortable. At cardinality 1, inline costs ~1.4k
-unconditionally and dispatch costs ~6k only when it fires, so dispatch wins only while
-the share of ADRs with a steel-mannable alternative stays under ~23%. That threshold is
-derived from the uninstrumented ~5–8k per-dispatch figure: if real overhead is nearer
-~3k, break-even moves to ~47% and inline likely wins. The context argument that settled
-it before belonged to `respond-to-review` and left with it. Measure one real dispatch
-before committing to either.
+**Resolved at implementation — inline, and the measurement was not the deciding
+input.** The open question asked for one instrumented dispatch before choosing
+subagent vs inline. It was closed on **consistency of execution** instead, which
+decides ahead of cost:
+
+- The primary surface is standalone, where the skill runs in the main context like
+  every other Octopus prompt-skill. Dispatching the *same* skill from `doc-adr` would
+  give it two execution shapes, and the protocol would have to be written for both.
+- The `audit-all` precedent does not transfer: it dispatches because each audit sweeps
+  a different file subset and the work parallelises. Steel man inside `doc-adr` is one
+  piece of reasoning over context already present in an interactive session.
+- The output has to become prose in `## Alternatives Considered`; reintegrating a
+  subagent's returned text is strictly more work than producing it in place.
+
+For the record, the cost picture was genuinely marginal — inline ~1.4k per session
+even when unused, versus ~6k per dispatch when it fires, with break-even around a 23%
+usage rate on an uninstrumented per-dispatch estimate. The measurement would only have
+flipped the answer if cost were the dominant criterion, and it was not.
 
 **Naming:** `steelman` as a single-word verb, per the `<verb>` foundational-action form
 in `skills/scaffold-skill/REFERENCE.md:97` (`debug`, `implement`, `prototype`).

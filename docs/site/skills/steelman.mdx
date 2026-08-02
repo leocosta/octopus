@@ -1,0 +1,57 @@
+---
+title: steelman
+description: "Build the strongest possible version of the argument against your own position — the best evidence, the best framing, the most competent critic who would plausibly exist — then show which parts actually bite and what you would have to believe for your position to survive. Read-only."
+---
+
+Most critique arrives weaker than it should be. A reviewer is being polite, a
+counter-argument is a strawman that was easy to knock down, or you have already
+rehearsed the rebuttal. None of that tells you whether your position holds. The
+`steelman` skill constructs the **strongest** version of the opposing case and then
+locates where your reasoning is actually load-bearing.
+
+## What it solves
+
+A position that has only faced weak opposition is untested, not validated. The
+failure mode is specific and common: the "alternatives considered" that were never
+serious, the objection you answered because it was the easy one, the decision that
+felt obvious because nobody argued the other side well. Steel-manning inverts the
+usual move — instead of hunting for flaws in the opposition, it grants the opposition
+every reasonable assumption and asks what survives.
+
+The output is not a verdict on who is right. It is a sharper version of the
+disagreement, which is what lets you answer the part that matters instead of the part
+that was easiest to answer.
+
+## How it works
+
+Six steps, all read-only:
+
+1. **Extract the real position** — what is being defended is rarely what was stated.
+   "We should use Kafka" usually defends "our consumers need replay". Steel-manning
+   the wrong position makes everything downstream noise.
+2. **Find the genuine opposition** — the strong contrary, not the convenient one. The
+   strawman is the default failure of this exercise.
+3. **Build the maximal case** — best evidence, best framing, the most competent critic
+   who would plausibly exist. No hedging and no pre-rebutting; a steel man that
+   telegraphs its own weakness is a strawman wearing better clothes.
+4. **Separate what bites from what is rhetoric** — not every strong point is lethal.
+   A steel man that lands everything is flattering the opposition, not testing it.
+5. **The survival test** — what would you have to believe for your position to still
+   stand? This is where the real weakness surfaces, usually as an assumption that was
+   never examined because it never had to be stated.
+6. **Two buckets** — what demands an answer, and what can be conceded without costing
+   the thesis. Conceding the second kind is what makes the remaining position
+   defensible rather than stubborn.
+
+## When to use
+
+Reach for it when there is a **position being defended** and you want it tested:
+before committing to a technical direction, when a decision feels too easy, or when
+the opposition so far has been weak. `doc-adr` invokes the same protocol before an
+alternative that was a live option gets rejected, so the ADR records why the decision
+was close rather than a `Pros:` line nobody can audit later.
+
+Do not reach for it to weigh several options — that is `council`, which runs five
+divergent lenses over one decision. And note the boundary that defines this skill:
+`council`'s Contrarian **attacks** an idea, while `steelman` **builds the other
+side's case up**. Losing that distinction collapses one into the other.
