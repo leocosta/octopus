@@ -14,9 +14,7 @@ angle: "{{ANGLE}}"
 
 {{CONTEXT_1_LINE}}
 
-✔ {{VALUE_1}}
-✔ {{VALUE_2}}
-✔ {{VALUE_3}}
+{{VALUES_2_TO_4}}
 
 {{CTA}}
 

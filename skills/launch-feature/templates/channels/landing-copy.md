@@ -16,9 +16,7 @@ angle: "{{ANGLE}}"
 
 ## Value bullets
 
-- {{BULLET_1}}
-- {{BULLET_2}}
-- {{BULLET_3}}
+{{BULLETS_2_TO_4}}
 
 ## Primary CTA
 {{CTA_VERB_FIRST}}
