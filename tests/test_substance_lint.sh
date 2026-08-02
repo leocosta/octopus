@@ -96,6 +96,22 @@ check "no false positives on legitimate technical copy" t_no_false_positives
 t_sober_still_clean() { "$LINT" "$tmp/sober.md" | grep -q 'substance-lint: clean'; }
 check "sober copy still clean under both classes" t_sober_still_clean
 
+# Mention vs use: naming a banned term inside backticks is documentation, not a
+# violation. Found by running the lint against this change's own PR body.
+cat > "$tmp/mentions.md" <<'EOF'
+Avoid `testament` and `pivotal` in copy; `serves as` is copula avoidance.
+The phrase `not just X, it's Y` is a negative parallelism, and `revolutionary` is hype.
+EOF
+t_mentions_not_flagged() { "$LINT" "$tmp/mentions.md" | grep -q 'substance-lint: clean'; }
+check "quoted terms are mentions, not violations" t_mentions_not_flagged
+
+# ...but the same words outside backticks still fire.
+cat > "$tmp/uses.md" <<'EOF'
+This release is a testament to the team and marks a pivotal moment.
+EOF
+t_unquoted_still_flagged() { "$LINT" "$tmp/uses.md" | grep -qi 'testament'; }
+check "the same terms unquoted still fire" t_unquoted_still_flagged
+
 t_human_voice_exists() { [[ -f "$DIR/skills/_shared/human-voice.md" ]]; }
 check "human-voice.md fragment exists" t_human_voice_exists
 

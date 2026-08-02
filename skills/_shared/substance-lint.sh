@@ -35,6 +35,11 @@ else
   files=("$TARGET")
 fi
 
+# Mention vs use: a term quoted inside backticks is being named, not employed —
+# documentation about this lint would otherwise flag itself on every example.
+# Blanking the span (rather than deleting the line) keeps line numbers intact.
+strip_code_spans() { sed 's/`[^`]*`//g' "$1" 2>/dev/null; }
+
 hype=0; tell=0
 for f in "${files[@]}"; do
   [[ -f "$f" ]] || continue
@@ -42,12 +47,12 @@ for f in "${files[@]}"; do
     [[ -n "$line" ]] || continue
     printf '  [hype] %s:%s: %s\n' "$f" "$line" "$(printf '%s' "$text" | sed 's/^[[:space:]]*//')"
     hype=$((hype+1))
-  done < <(grep -niE "$PATTERN_HYPE" "$f" 2>/dev/null)
+  done < <(strip_code_spans "$f" | grep -niE "$PATTERN_HYPE" 2>/dev/null)
   while IFS=: read -r line text; do
     [[ -n "$line" ]] || continue
     printf '  [tell] %s:%s: %s\n' "$f" "$line" "$(printf '%s' "$text" | sed 's/^[[:space:]]*//')"
     tell=$((tell+1))
-  done < <(grep -niE "$PATTERN_TELL" "$f" 2>/dev/null)
+  done < <(strip_code_spans "$f" | grep -niE "$PATTERN_TELL" 2>/dev/null)
 done
 
 if [[ $((hype + tell)) -gt 0 ]]; then
