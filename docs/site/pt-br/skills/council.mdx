@@ -43,6 +43,28 @@ cria nenhum arquivo de role e não reusa nenhum (diferente do `delegate`, que
 despacha roles persistidas). O veredito é apresentado no chat como markdown; o
 conselho **não escreve arquivo por padrão** — um transcript é opt-in.
 
+## Modo pre-mortem
+
+`--pre-mortem` responde uma pergunta diferente com a mesma maquinaria: em vez de pesar
+uma decisão em aberto, trata um plano já decidido como **já fracassado** e pede que o
+conselho explique por quê. A fase 1 reformula a pergunta como uma autópsia
+pós-fracasso — o plano foi lançado, seis meses se passaram, ele fracassou — e o
+fracasso é declarado como fato consumado, não como risco, porque um fracasso
+hipotético só arranca respostas hipotéticas.
+
+As fases 2 e 3 não mudam, e nenhuma sexta lente é adicionada. Esse é justamente o
+ponto: cada lente existente já fracassa um plano do seu próprio jeito — o Contrarian
+acha a falha fatal, o First Principles acha que o problema errado foi resolvido, o
+Expansionist acha a janela que fechou, o Outsider acha a proposta que ninguém
+entendeu, o Executor acha o primeiro passo que nunca saiu do papel. Cinco modos de
+falha estruturalmente distintos, não cinco formulações de um só.
+
+A fase 4 os devolve ranqueados por probabilidade × impacto, cada um com uma
+**mitigação** e um **tripwire** — o sinal antecipado de que aquele modo está se
+materializando, concreto o bastante para alguém notar ("semana 3 e os testes de
+integração ainda não estão verdes", não "fique de olho em atrasos"). Um modo sem
+tripwire é uma preocupação, não um achado.
+
 ## Quando usar
 
 Convoque o conselho para uma decisão genuína com risco e tradeoff — "lançar X ou Y

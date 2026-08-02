@@ -43,6 +43,27 @@ creates no role file and reuses none (unlike `delegate`, which dispatches persis
 roles). The verdict is presented in chat as markdown; the council writes **no files
 by default** — a transcript is opt-in.
 
+## Pre-mortem mode
+
+`--pre-mortem` answers a different question with the same machinery: instead of
+weighing an open decision, it treats a plan that has already been decided as
+**already failed** and asks the council to explain why. Phase 1 reframes the question
+as a post-failure autopsy — the plan shipped, six months passed, it failed — and the
+failure is stated as settled fact rather than a risk, because a hypothetical failure
+only ever draws hypothetical answers.
+
+Phases 2 and 3 do not change, and no sixth lens is added. That is the point: each
+existing lens already fails a plan its own way — the Contrarian finds the fatal flaw,
+First Principles finds the wrong problem solved, the Expansionist finds the window
+that closed, the Outsider finds the proposition nobody understood, the Executor finds
+the first step that never shipped. Five structurally different failure modes rather
+than five phrasings of one.
+
+Phase 4 returns them ranked by likelihood × impact, each carrying a **mitigation** and
+a **tripwire** — the early signal that this mode is materialising, concrete enough to
+notice ("week 3 and integration tests still aren't green", not "watch for delays"). A
+mode without a tripwire is a worry, not a finding.
+
 ## When to use
 
 Convene the council for a genuine decision with stakes and a tradeoff — "launch X

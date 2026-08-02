@@ -31,16 +31,26 @@ O comando invoca a skill `council`, que detém o protocolo completo de quatro fa
 O veredito é apresentado no chat como markdown. O conselho é **read-only** e não
 escreve arquivo algum a menos que `--transcript` seja passado.
 
+`--pre-mortem` muda o enquadramento, não a maquinaria. A fase 1 reescreve a pergunta
+como uma autópsia pós-fracasso — o plano foi lançado há seis meses e fracassou,
+explique por quê — e a fase 4 devolve modos de falha ranqueados por probabilidade ×
+impacto, cada um com uma mitigação e um tripwire. As cinco lentes e o peer-review
+anônimo rodam intocados, porque cada lente já fracassa um plano do seu próprio jeito.
+
 ## Uso & parâmetros
 
 ```
 /octopus:council <a decisão ou pergunta>
 /octopus:council --transcript <a decisão ou pergunta>
+/octopus:council --pre-mortem <o plano ou lançamento>
 ```
 
 - `<a decisão ou pergunta>` — a decisão de alto risco a pressionar. Use para
   decisões genuínas com tradeoff, não para lookups factuais ou tarefas de criação.
 - `--transcript` — também salva um `council-transcript-<slug>.md` no diretório de
   trabalho (caso contrário o conselho não escreve nada).
+- `--pre-mortem` — trate o plano como **já fracassado** e faça o conselho explicar
+  por quê. Use quando a decisão já está tomada e você quer os pontos cegos antes de
+  gastar o dinheiro.
 
 [Source: `commands/council.md`](https://github.com/leocosta/octopus/blob/main/commands/council.md)
