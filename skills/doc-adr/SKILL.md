@@ -106,10 +106,30 @@ When a previous decision is reversed or replaced:
 | Testing | Framework choice, coverage requirements, test strategy |
 | Process | Branching strategy, code review policy, release process |
 
+## Steel-manning a rejected alternative
+
+Recording a rejection is not the same as steel-manning it. Left alone, the
+`Pros:` line under an alternative degrades to chaff — "considered X, too
+complex" — which teaches a future reader nothing about why the decision was
+close or whether it still holds.
+
+Before writing the rejection for an alternative you are **seriously** rejecting
+— one a competent engineer would have picked — apply the `steelman` protocol
+(`skills/steelman/SKILL.md`) inline: state the alternative's strongest case, then
+say which part of it genuinely bites, then what you would have to believe for the
+chosen decision to still stand. Those beliefs are the ADR's real content; they are
+what a future reader checks when the context changes.
+
+Gate it. This is for the one or two alternatives that were live options, not for
+every stub in the template. An alternative nobody would seriously pick needs a
+line, not a protocol.
+
 ## Guidelines
 
 - Write ADRs when the decision is made, not after — capture the reasoning while it's fresh
 - Include rejected alternatives — future readers need to know what was considered
+- Steel-man the ones that were live options (see above) — a weak `Pros:` line is a
+  rejection nobody can audit later
 - Keep them concise — an ADR is not a design document
 - ADRs are immutable once accepted — create new ones to change decisions
 - Not every decision needs an ADR — only significant ones that affect architecture
