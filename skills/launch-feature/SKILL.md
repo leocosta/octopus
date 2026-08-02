@@ -98,10 +98,18 @@ frontmatter (`overrides:` map) so the reviewer sees where each style decision
 came from.
 
 The `voice` override (whichever source resolves) tunes tone and structure
-on top of a floor that never moves: `skills/_shared/substance-voice.md` is
-the governing voice for every channel — product-led, evidence-backed, no
-hype or manufactured urgency. A repo's `voice` override customizes register
-and structure; it does not opt out of the substance rule.
+on top of a floor that never moves. Two shared fragments make that floor,
+and they police different failures:
+
+- `skills/_shared/substance-voice.md` — product-led, evidence-backed, no hype
+  or manufactured urgency.
+- `skills/_shared/human-voice.md` — no constructions that mark the copy as
+  LLM-generated (significance inflation, copula avoidance, participle tails,
+  negative parallelism, forced triads, generic upbeat endings).
+
+Copy can clear the first and fail the second, which is the common case. A
+repo's `voice` override customizes register and structure; it opts out of
+neither.
 
 ## Output Assembly
 
@@ -168,8 +176,22 @@ repo path, or `embedded` when the default was used).
 **Substance lint:** after every selected channel file is written, run
 `bash skills/_shared/substance-lint.sh docs/marketing/launches/YYYY-MM-DD-<slug>/`
 and revise any file it flags before handing the kit to the reviewer. The
-lint is advisory (exit 0); it will not block the run, but a flagged hit
-means: name the concrete outcome or number, or cut the line.
+lint is advisory (exit 0); it will not block the run. Findings come labelled:
+a `[hype]` hit means name the concrete outcome or number, or cut the line; a
+`[tell]` hit means the phrasing marks the copy as generated — rewrite it per
+`skills/_shared/human-voice.md`.
+
+**Audit pass:** the lint catches only what regex can see. After it is clean,
+read the drafted copy once more and answer, in a few words:
+
+> What makes this obviously AI-generated?
+
+Then revise against that answer. Do not skip this when the lint is clean —
+the structural tells (every post the same silhouette, uniform sentence
+rhythm, perfectly balanced sections) are invisible to the lint by
+construction. The value of this pass is that it is adversarial rather than
+generative: the draft came from one pass, and a second generative pass would
+reproduce the same habits.
 
 ## Image Generation
 

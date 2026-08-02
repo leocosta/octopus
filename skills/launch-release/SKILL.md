@@ -85,11 +85,12 @@ constrained by the theme's `voice.tone` and `voice.persona` and the
 `--audience` flag. Never copy changelog text verbatim into
 user-facing channels — always re-voice.
 
-The governing voice for every rewrite is
-`skills/_shared/substance-voice.md`: product-led, evidence-backed,
-no hype or manufactured urgency. The theme's `voice.tone` /
-`voice.persona` tune register within that shared frame — they do not
-override it.
+Two shared fragments govern every rewrite, policing different failures:
+`skills/_shared/substance-voice.md` (product-led, evidence-backed, no
+hype or manufactured urgency) and `skills/_shared/human-voice.md` (no
+constructions that mark the copy as LLM-generated). Copy can clear the
+first and fail the second. The theme's `voice.tone` / `voice.persona`
+tune register within that shared frame — they do not override it.
 
 Abort with the 5 nearest fuzzy matches when a ref cannot be resolved.
 
@@ -260,7 +261,16 @@ Always execute in this order:
    `skills/_shared/substance-voice.md`). Then run
    `bash skills/_shared/substance-lint.sh docs/releases/<YYYY-MM-DD-slug>/`
    and revise any file it flags — the lint is advisory (exit 0); pass
-   `--strict` to gate a CI run.
+   `--strict` to gate a CI run. Findings are labelled: `[hype]` wants a
+   concrete outcome, `[tell]` wants a rewrite per
+   `skills/_shared/human-voice.md`.
+8. **Audit pass** → after the lint is clean, read the copy once more and
+   answer in a few words: *what makes this obviously AI-generated?* Then
+   revise against that answer. Run it even when the lint is clean — the
+   structural tells (every channel the same silhouette, uniform sentence
+   rhythm, evenly balanced sections) are invisible to regex by
+   construction. This pass has to be adversarial rather than generative;
+   a second generative pass just reproduces the first pass's habits.
 
 Channels never re-synthesise the narrative. If a channel needs a
 shorter headline, it truncates `narrative.yml` — it does not invent
