@@ -15,6 +15,10 @@
 #   1  at least one finding failed to anchor (the caller should demote those)
 #   2  usage or repository error
 
+# See the note in audit-scope.sh: `cli/octopus.sh` sources this with -e active.
+# A finding line with no citation makes `anchor_extract`'s grep return 1, which
+# under -e would abort mid-report instead of recording `no-anchor`.
+set +e
 set -uo pipefail
 
 REVIEW_ANCHOR_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -61,11 +65,15 @@ fi
 
 annotated="$(anchor_annotate_stream "$BASE" "$REF" < "$input")"
 
-anchored=0; failed=0; unanchored=0
+# `not-in-diff` is counted on its own and does NOT drive the exit status: a
+# finding about pre-existing code reached through the diff is legitimate. Only
+# locations that cannot exist — missing-file, line-out-of-range — are failures.
+anchored=0; not_in_diff=0; failed=0; unanchored=0
 while IFS= read -r row; do
   [[ -z "${row//[[:space:]]/}" ]] && continue
   case "${row%%$'\t'*}" in
     anchored) anchored=$((anchored + 1)) ;;
+    not-in-diff) not_in_diff=$((not_in_diff + 1)) ;;
     no-anchor) unanchored=$((unanchored + 1)) ;;
     *) failed=$((failed + 1)) ;;
   esac
@@ -74,7 +82,7 @@ done <<< "$annotated"
 if [[ -z "$QUIET" ]]; then
   printf '%s\n' "$annotated"
   echo ""
-  echo "OCTOPUS_ANCHOR_SUMMARY anchored=$anchored failed=$failed no-anchor=$unanchored"
+  echo "OCTOPUS_ANCHOR_SUMMARY anchored=$anchored not-in-diff=$not_in_diff failed=$failed no-anchor=$unanchored"
 fi
 
 [[ $failed -eq 0 ]]

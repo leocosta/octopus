@@ -91,6 +91,26 @@ git add -A && git commit -qm more
 out="$(run_scope audit-fake --base HEAD~2 --ref HEAD)"
 assert_contains "a changed diff misses the cache" "OCTOPUS_AUDIT_SCOPE=scoped" "$out"
 
+# --- dispatcher path -------------------------------------------------------
+# Regression: cli/octopus.sh runs with `set -euo pipefail` and *sources* the
+# command, so -e is inherited. Invoking the script directly (as every test above
+# does) hides that. The skip path returns non-zero internally and used to kill
+# the shell before printing its marker.
+
+run_dispatch() {
+  env AUDIT_PREPASS_OCTOPUS_DIR="$FIXTURE" AUDIT_CACHE_OCTOPUS_DIR="$FIXTURE" \
+    bash "$OCTOPUS_DIR/cli/octopus.sh" audit-scope "$@"
+}
+
+echo "still irrelevant" > notes2.md
+git add -A && git commit -qm unrelated2
+
+out="$(run_dispatch audit-fake --base HEAD~1 --ref HEAD)"
+assert_contains "dispatcher: skip path survives inherited set -e" "OCTOPUS_AUDIT_SCOPE=skip" "$out"
+
+out="$(run_dispatch audit-fake --base HEAD~3 --ref HEAD)"
+assert_contains "dispatcher: scoped path works through octopus.sh" "OCTOPUS_AUDIT_SCOPE=" "$out"
+
 # --- errors ----------------------------------------------------------------
 
 run_scope audit-does-not-exist --base HEAD~1 --ref HEAD >/dev/null 2>&1

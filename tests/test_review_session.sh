@@ -173,6 +173,19 @@ assert_eq "already-consumed records are not re-appended" "$lines_first" "$lines_
 
 [[ -f .octopus/review-log/.last-record ]] && pass "hook records a watermark" || fail "hook records a watermark"
 
+# --- dispatcher path -------------------------------------------------------
+# Regression: cli/octopus.sh sources the command with `set -e` active.
+
+DISPATCH="$OCTOPUS_DIR/cli/octopus.sh"
+out="$(bash "$DISPATCH" review-session record --base HEAD~1 --ref HEAD --report "$WORK/report.md" 2>&1)"
+assert_contains "dispatcher: record works through octopus.sh" "OCTOPUS_REVIEW_SESSION=" "$out"
+
+out="$(bash "$DISPATCH" review-session list 2>&1)"
+assert_contains "dispatcher: list works through octopus.sh" "findings" "$out"
+
+bash "$DISPATCH" review-session show does-not-exist >/dev/null 2>&1
+assert_eq "dispatcher: unknown id still exits 1, not killed by -e" 1 "$?"
+
 popd >/dev/null
 
 # --- errors ----------------------------------------------------------------

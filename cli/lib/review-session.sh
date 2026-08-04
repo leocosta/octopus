@@ -12,6 +12,10 @@
 #
 # Exit: 0 ok, 1 nothing found, 2 usage/repository error.
 
+# See the note in audit-scope.sh: `cli/octopus.sh` sources this with -e active.
+# `show` on an unknown id and `list` with no records both return non-zero by
+# design, and the record parser tolerates greps that match nothing.
+set +e
 set -uo pipefail
 
 REVIEW_SESSION_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
