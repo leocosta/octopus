@@ -187,6 +187,29 @@ review that produced many unanchored findings is visible as such.
 
 This step is deterministic and costs no model call.
 
+## Phase 4.6 — Record the Run
+
+Persist the aggregated report before acting on it (RM-176):
+
+```bash
+octopus review-session record --base <base> --ref <ref> \
+  --report <report-file> [--audits <resolutions-file>]
+```
+
+`--audits` takes one `<audit-name> <outcome>` per line, using the
+Phase 2 `audit-scope` verdicts (`skip` / `cached` / `scoped`). Pass
+it — a record that says which audits ran is the difference between
+"no findings" and "nothing looked".
+
+The record carries each finding's origin, severity, anchor verdict
+from Phase 4.5, and the reviewed sha, at
+`.octopus/reviews/<id>.json`. Query it later with
+`octopus review-session show latest --severity BLOCKING`.
+
+This costs no model call. It is what lets a review be consumed
+later — by the team-learning capture, by CI, or by the next person
+asking whether this finding has appeared before.
+
 ## Phase 5 — Block Commit
 
 Block the commit if any BLOCKING or CRITICAL finding is open.
