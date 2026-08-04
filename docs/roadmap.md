@@ -1132,3 +1132,441 @@ Depends on RM-167 for the vocabulary to audit against.
 
 **Rationale:** Rules catch what an author remembers to check. An explicit audit prompt
 catches what they do not.
+
+---
+
+### Cluster 31 — Review-engine parity (deterministic detection layer)
+
+_Proposed (added 2026-08-03). Comparison against
+[alibaba/open-code-review](https://github.com/alibaba/open-code-review) (Apache-2.0, a Go
+CLI derived from an internal reviewer that served thousands of engineers for two years).
+The split is clean and worth stating before the items: Octopus is ahead on **review
+governance** — roles with merge authority (`architect`/`dba`/`security`), the data-layer
+dual gate, BLOCKING-vs-ADVISORY, domain routing into business risk (`audit-money`,
+`audit-tenant`, `audit-contracts`), model tiering, and the fact that review sits inside a
+lifecycle (dev-flow → commit → pr-open → release). OCR only emits comments; it decides
+nothing. But it is ahead on the **detection engine**, and every item below is from that
+side._
+
+_The root difference: their determinism is compiled, ours is prose.
+`skills/_shared/audit-pre-pass.md` and `audit-cache.md` describe file selection and
+caching as protocols the model is asked to follow; OCR does the same work in code, before
+any model call. Everything downstream — position accuracy, false-positive filtering,
+bundling, rule matching — follows from that._
+
+_Estimates below are order-of-magnitude, not measured. "Added tokens" is per review run,
+relative to a current mid-size fan-out (~30–60k tokens); "Runtime" is added wall-clock per
+run; "Effort" is implementation, in person-days for one engineer with an agent._
+
+| RM | Item | Effort | Added tokens | Runtime | External dep |
+|----|------|--------|--------------|---------|--------------|
+| RM-170 | Anchor verification — every finding's `path:line` proven against the diff | low (1–2d) | ~0 (bash); net negative | +2–5s | none |
+| RM-171 | Reflection pass — adversarial false-positive filter before the report is emitted | medium (2–4d) | +10–20% (~4–8k) | +20–60s | none |
+| RM-172 | Compile the pre-pass and cache protocols into `cli/lib/` | medium (3–5d) | **−8–15%** (~1.2k/audit) | −5–15s | none |
+| RM-173 | Size-based bundling inside the domain fan-out | medium (4–6d) | +5% overhead, unblocks large diffs | −30–50% wall-clock on big diffs | none |
+| RM-174 | Data-driven rule catalogue, matched by path and language | high (8–12d) | **−10–25%** once rules replace prose | neutral | rule seed corpus (licence check) |
+| RM-175 | Review evaluation harness with annotated ground truth | high (10–15d + ongoing) | n/a per review; ~500k–2M per bench round | hours per round | **yes** — annotated PR corpus, API budget |
+| RM-176 | Persist review sessions; `--json` and `--severity` output | medium (3–4d) | ~0 | ~0 | none |
+| RM-177 | Headless review in CI (GitHub Action) | high (6–10d) | +1 full review per PR | 3–10 min/PR | **yes** — API key, billing, repo secrets |
+| RM-178 | Full-file scan mode (no git history) | medium (4–6d) | **very high** (repo-scale) | 10–40 min | none |
+
+Dependency order: RM-170 → RM-171 (a reflection pass that cannot trust its own anchors is
+filtering noise with noise). RM-175 gates the value of RM-171 and RM-174 — without
+measurement, a precision change is a belief. RM-172 is independent and should go first on
+cost grounds alone.
+
+### RM-170 — Anchor verification for review findings
+
+- **Priority:** 🔴 High
+- **Effort:** low
+- **Status:** proposed
+- **Added:** 2026-08-03
+
+Every finding in a `codereview` / `pr-review` report cites `path:line`, and that citation
+is written from the model's head — nothing checks it. OCR treats this as a first-class
+failure mode ("position drift") and ships an **external positioning module** that resolves
+the location outside the agent.
+
+Deterministic version for Octopus: after Phase 4 aggregation and before the report is
+printed or posted, run each finding through a check — does the file exist at that ref, is
+the line within the file's length, and does the line fall inside a hunk this diff actually
+touched? A finding that fails demotes to QUESTION with `[origin: …] unanchored` rather
+than being silently reported at the wrong place. Reuse the diff already computed in
+Phase 1; no second `git diff`.
+
+- **Token cost:** none — pure bash over the report and the cached diff. Net negative in
+  practice, since a demoted finding stops generating follow-up reads.
+- **Runtime:** +2–5s per review.
+- **External deps:** none (`git`, `awk`).
+
+**Benefits:**
+
+- **Reviewer time back.** A reviewer who opens the wrong file to check a finding pays
+  the full cost of a real finding for nothing. This is the most common way review
+  output wastes a senior's afternoon.
+- **Unblocks inline PR comments.** Posting a finding on its line
+  (`gh api .../comments` with `line` + `side`) requires an anchor the API will accept —
+  today a bad line number is a failed API call or a comment on unrelated code, so
+  `pr-review` can only post one aggregated blob. With anchors proven, per-finding inline
+  comments become safe to ship.
+- **Turns a hallucination into a labelled one.** An invented location currently arrives
+  indistinguishable from a real one. `unanchored` makes the failure legible instead of
+  plausible.
+- **Makes automatic scoring possible.** RM-175 can only count a hit if the finding lands
+  on the annotated line; without anchors, every benchmark run needs a human to adjudicate
+  matches.
+
+**Rationale:** A wrong line number is the most visible failure a reviewer can produce and
+the cheapest to prevent. It also gates RM-171 — filtering findings is meaningless while
+the findings point at the wrong code.
+
+### RM-171 — Reflection pass: filter false positives before emitting
+
+- **Priority:** 🔴 High
+- **Effort:** medium
+- **Status:** proposed
+- **Added:** 2026-08-03
+
+OCR runs a **comment-reflection module** — a dedicated pass whose only job is to kill
+false positives, and it is the mechanism behind their deliberate precision-over-recall
+trade. Octopus has `audit-grounding` and `audit-verification`, but both are signal-only
+and run *after* the fact; neither stands between a finding and the PR comment.
+
+Add a Phase 4.5 between aggregation and report: each finding is re-read adversarially
+against its anchored code (RM-170), with the burden of proof on the finding. Send the
+findings plus their anchored hunks, **not** the whole diff — that is what keeps this
+affordable. Run it on Sonnet (mechanical adjudication, not architecture). A finding that
+does not survive is dropped with a one-line reason kept in the session record (RM-176), so
+the filter is auditable rather than a black hole.
+
+- **Token cost:** +10–20% of a review run (~4–8k on a mid-size diff), bounded by finding
+  count rather than diff size.
+- **Runtime:** +20–60s (one extra LLM call, parallelisable per finding).
+- **External deps:** none.
+
+**Benefits:**
+
+- **Makes the Phase 5 commit block defensible.** `codereview` already blocks a commit on
+  any open BLOCKING finding. A false BLOCKING therefore stops real work — and the fastest
+  way to teach a team to bypass the gate is to block them wrongly once. Precision is a
+  precondition for having an automated gate at all, not a refinement of one.
+- **Lowers triage cost, which is where review actually gets abandoned.** Twelve findings
+  where four are noise costs more than four findings, because every one must be read and
+  dismissed by a human who cannot tell them apart in advance.
+- **Auditable filtering.** The discard reason is recorded (RM-176), so an over-aggressive
+  filter is visible and tunable rather than a silent hole in coverage.
+- **Prerequisite for unattended review.** A CI reviewer (RM-177) with a high false-positive
+  rate gets muted within two weeks, and then the spend continues with the value gone.
+
+**Rationale:** Reviewer trust is spent by the first confident wrong finding, not earned by
+the tenth right one. Depends on RM-170; its value is unprovable without RM-175.
+
+### RM-172 — Compile the pre-pass and cache protocols into `cli/lib/`
+
+- **Priority:** 🔴 High
+- **Effort:** medium
+- **Status:** proposed
+- **Added:** 2026-08-03
+
+`skills/_shared/audit-pre-pass.md` (41 lines) and `audit-cache.md` (52 lines) are loaded
+into every dispatched `audit-*` sub-agent and describe work that is entirely mechanical:
+`git diff --name-only | grep -E <pattern>`, an early exit, a line filter, a
+`sha256sum`-keyed cache lookup. The model is asked to run them faithfully every time. OCR
+does the equivalent in a binary — file selection and bundling are guaranteed, not
+requested.
+
+Move both into `cli/lib/` as executable steps that read `pre_pass.file_patterns`,
+`pre_pass.line_patterns` and the skill hash from the frontmatter the skills already
+declare, and hand the sub-agent a scoped diff plus a cache verdict. The skills keep a
+one-line reference instead of the protocol body. `cli/lib/audit-map.sh` and
+`tests/test_audit_output_cache.sh` already establish the pattern and the contract.
+
+- **Token cost:** **−8–15%** per review — roughly 1.2k tokens of protocol text saved per
+  dispatched audit, plus the cache hits that currently depend on the model choosing to
+  check.
+- **Runtime:** −5–15s (bash beats a model reasoning about `grep`).
+- **External deps:** none.
+
+**Benefits:**
+
+- **The cache stops being optional.** The saving from `audit-cache.md` today is conditional
+  on the model choosing to compute the key and check the file. Compiled, a repeat review of
+  an unchanged diff costs a `sha256sum` instead of a model call — the largest single
+  saving in the cluster, and it applies to the re-review loop (fix, re-run) that happens
+  several times per PR.
+- **Early exit becomes guaranteed.** A dispatched audit whose domain has no matching files
+  should cost nothing. Today it costs a sub-agent spin-up plus the protocol read before the
+  model concludes there is nothing to do.
+- **One place to change.** Protocol edits currently have to hold across every skill that
+  embeds them, with drift invisible until an audit behaves differently from its siblings.
+- **Testable as behaviour.** `tests/test_audit_output_cache.sh` can assert what the code
+  does; against prose it can only assert that the text still says it.
+
+**Rationale:** The cheapest item in the cluster and the only one that pays for itself
+immediately. It also converts "the pre-pass usually runs" into "the pre-pass ran".
+
+### RM-173 — Size-based bundling inside the domain fan-out
+
+- **Priority:** 🟡 Medium
+- **Effort:** medium
+- **Status:** proposed
+- **Added:** 2026-08-03
+
+The Phase 1 matrix fans out by **risk domain** — better than OCR on that axis, since it
+routes to business risk no generic ruleset detects. But it does not fan out by **size**: a
+400-file change that matches only `audit-tenant` goes to a single sub-agent, and the
+Phase 0 size gate only decides single-pass vs fan-out, never how wide the fan-out is.
+
+OCR's answer is bundling — group related files into review units, one isolated sub-agent
+each, concurrent. Port the second half of that: after the domain match, if a domain's file
+subset exceeds a threshold (~40 files or ~2k changed lines), split it into bundles grouped
+by directory proximity and shared imports, dispatch one sub-agent per bundle, and merge
+their findings under the same origin before Phase 4.
+
+- **Token cost:** +~5% coordination overhead; the real effect is making large reviews
+  possible at all instead of degrading silently near the context limit.
+- **Runtime:** −30–50% wall-clock on large diffs (concurrency), unchanged on small ones.
+- **External deps:** none.
+
+**Benefits:**
+
+- **Removes a silent failure mode.** A domain subset that overflows the context window does
+  not error — it produces a shorter report. The review looks like it passed. This is the
+  worst class of bug a quality gate can have, and it fires precisely on the migrations,
+  refactors and vendor bumps that carry the most risk.
+- **Coverage becomes reportable.** Bundles make "which files were actually reviewed" a
+  known list, so a partial review can say so instead of implying completeness.
+- **Large PRs re-enter the normal loop.** A 20-minute serial review gets deferred; a
+  6-minute concurrent one gets run.
+- **Keeps the domain routing intact.** This adds a second axis under the existing risk
+  matrix rather than replacing it with OCR's generic file grouping — the domain skills
+  (`audit-money`, `audit-tenant`) still see their own files, just in shards.
+
+**Rationale:** Today a big single-domain PR gets the worst review, which is exactly
+backwards from the risk it carries.
+
+### RM-174 — Data-driven rule catalogue matched by path and language
+
+- **Priority:** 🟡 Medium
+- **Effort:** high
+- **Status:** proposed
+- **Added:** 2026-08-03
+
+Octopus rules live as prose inside each `audit-*` SKILL.md. Adding a check means editing
+or authoring a skill, and every check in a skill is loaded whether or not the diff can
+trigger it. OCR ships a rule catalogue — NPE, thread-safety, XSS, SQL injection across 10+
+languages — matched to each file by a template engine with path filtering, so only
+applicable rules enter the prompt, and a custom rule is a config entry.
+
+Scope for Octopus: a `rules/catalogue/<language>.yml` format (id, language, path glob,
+detection hint, severity, example), a matcher in `cli/lib/` that resolves the applicable
+set per file, and injection of only those rules into the sub-agent. The existing
+`triggers`/`pre_pass` frontmatter is the precedent for path-based selection.
+
+- **Token cost:** **−10–25%** at steady state — matched rules are shorter than the prose
+  they replace and scale with the diff instead of the catalogue. Transitional cost while
+  both forms coexist.
+- **Runtime:** neutral.
+- **External deps:** seeding from a public ruleset (OCR's own is Apache-2.0; Semgrep
+  community rules are LGPL-2.1) needs a licence and attribution review before any import.
+  Authoring from scratch has no dependency.
+
+**Benefits:**
+
+- **The team can extend review without authoring skills.** This is the manager-multiplier
+  payoff (Cluster 16): an engineer who just debugged a production incident can add the rule
+  that would have caught it, as a YAML entry, in the same PR as the fix. Today that
+  requires learning the skill format and touching a shared skill body — a barrier high
+  enough that the rule usually never gets written.
+- **Rules become fleet assets.** A rule is data, so it can be diffed, reviewed, versioned,
+  and distributed across repos by `fleet-bootstrap` — with `audit-fleet` reporting which
+  repos are missing which rules. Prose inside a skill cannot be distributed selectively.
+- **Cost scales with the diff, not the catalogue.** Adding the 200th rule costs nothing on
+  a diff that does not match it. Today every check in a skill is loaded whether or not it
+  can fire, which caps how large the catalogue can get.
+- **Language coverage without skill sprawl.** New-language support becomes a catalogue
+  file rather than a new audit skill or another `cli/lib/adapter-*.sh`.
+- **Rules gain provenance.** id, severity and example per rule means a finding can cite
+  *which* rule it violated — which is what makes a finding teachable (the `mentor` role)
+  instead of merely correct.
+
+**Rationale:** Turns "a new check requires a skill author" into "a new check is a YAML
+entry" — the difference between a catalogue the team extends and one only its maintainer
+touches.
+
+### RM-175 — Review evaluation harness with annotated ground truth
+
+- **Priority:** 🔴 High
+- **Effort:** high
+- **Status:** proposed
+- **Added:** 2026-08-03
+
+This is the item that makes the others measurable, and the one Octopus most conspicuously
+lacks. OCR publishes a benchmark — 50 repos, 200 PRs, 10 languages, 1,505 validated issues
+— and reports precision, recall, F1 and token consumption against general-purpose agents.
+Octopus `tests/` covers routing, caching, bundles and tiering: mechanics, never accuracy.
+Every prompt change to an `audit-*` today is an act of faith.
+
+Build a corpus of PRs with human-annotated findings (start small — 20–30 PRs across the
+stacks actually in use), a runner that executes the review pipeline against each at a
+pinned ref, and a scorer reporting precision / recall / F1 / tokens per run. Anchor
+matching (RM-170) is what makes automatic scoring possible — a finding counts as a hit
+only if it lands on the annotated line.
+
+- **Token cost:** not per-review. ~500k–2M output tokens per full benchmark round
+  depending on corpus size; run per release, not per PR.
+- **Runtime:** hours per round, unattended.
+- **External deps:** **yes, and this is the real cost** — the annotated corpus needs human
+  judgement (est. 15–25h for the initial set) and cannot be generated by the system under
+  test. Plus API budget for the rounds. Public repos avoid any licensing question; using
+  internal PRs does not.
+
+**Benefits:**
+
+- **Ends prompt tuning by opinion.** Every change to an `audit-*` body currently ships on
+  the author's judgement. With a scorer, a change that sounds better but reviews worse is
+  caught before release rather than absorbed silently.
+- **Regression protection for quality.** Skill edits, model swaps and the compression pass
+  (`compress-skill`) can each quietly degrade detection. Mechanics tests will not notice.
+  This is the only thing that would.
+- **Proves the savings are free.** RM-172 and RM-174 claim double-digit token cuts. Measured
+  alongside F1, the harness distinguishes "cheaper" from "cheaper because it stopped
+  looking" — which is otherwise indistinguishable from the outside.
+- **Model tiering by evidence.** RM-130 and RM-160 assigned Haiku/Sonnet/Opus by reasoning
+  about the work each skill does. A benchmark answers it empirically, and may well show
+  some domain audits run fine a tier lower.
+- **A number to show.** For fleet adoption, "our reviewer finds X% of known issues" is an
+  argument other teams can evaluate; "our reviewer is good" is not.
+
+**Rationale:** Without this, every claim about review quality — including the ones in this
+cluster — is unfalsifiable. It is the difference between tuning and guessing.
+
+### RM-176 — Persist review sessions; machine-readable output
+
+- **Priority:** 🟡 Medium
+- **Effort:** medium
+- **Status:** proposed
+- **Added:** 2026-08-03
+
+A Octopus review report is ephemeral: printed to the user or posted as a PR comment, then
+gone. OCR persists sessions — `session list`, `--resume` for an interrupted run,
+`session comments --severity critical,high --json`, and a browser replay viewer.
+
+Minimum useful version: write each run to `.octopus/reviews/<ref>-<timestamp>.json`
+(findings with origin, severity, anchor, verdict, and the reflection reason from RM-171),
+a `--json` flag on `codereview`/`pr-review`, and `--severity` filtering. `--resume` for an
+interrupted fan-out follows from the same record. Skip the browser viewer. The
+`.octopus/cache/` gitignore guard is the precedent for placement.
+
+- **Token cost:** ~0 (serialisation of data the run already produced).
+- **Runtime:** ~0.
+- **External deps:** none.
+
+**Benefits:**
+
+- **An interrupted review stops being a total loss.** A large fan-out that dies partway
+  through today discards every completed sub-agent's work — the user pays the full cost
+  again. `--resume` recovers it.
+- **Review output becomes queryable.** `--json` + `--severity` is what lets anything
+  downstream consume findings: a CI gate (RM-177), the RM-175 scorer, or a trend view
+  alongside `code-metrics`.
+- **Trends, not snapshots.** With runs on disk, "are the same findings recurring across
+  PRs?" becomes answerable — which is where a manager learns what to teach, versus what to
+  fix once.
+- **Best cost-to-value ratio in the cluster.** Roughly zero token and runtime cost, and
+  three other items are gated on it.
+
+**Rationale:** Prerequisite for anything that consumes review output — the RM-175 scorer,
+CI gating in RM-177, and trend tracking alongside `code-metrics` — none of which can read
+a report that was never written down.
+
+### RM-177 — Headless review in CI
+
+- **Priority:** 🟡 Medium
+- **Effort:** high
+- **Status:** proposed
+- **Added:** 2026-08-03
+
+Octopus review requires a human driving an interactive agent. `.github/workflows/` carries
+only `build-release.yml` and `pages.yml`. OCR runs headless in GitHub Actions, GitLab CI,
+Gerrit and GitFlic, with OpenTelemetry for observability — review happens whether or not
+anyone remembers to ask for it.
+
+Ship a reusable GitHub Action that runs the review pipeline against a PR diff, posts the
+aggregated report as a PR comment (already the `pr-review` Phase 5 format, signature
+included), and optionally fails the check on BLOCKING/CRITICAL. Requires RM-176 for the
+machine-readable output the step gates on. Given the fleet framing (`audit-fleet`,
+`fleet-bootstrap`), the Action should be consumable per-repo from one pinned source, the
+same delivery model the release Action already uses.
+
+- **Token cost:** high and recurring — one full review per PR, unattended. On a 6-repo
+  fleet this is the single largest ongoing spend in the cluster; RM-172 and RM-174 should
+  land first to lower the unit cost.
+- **Runtime:** 3–10 min per PR.
+- **External deps:** **yes** — an API key with billing attached, repo/org secrets, and
+  `pull-requests: write` on the workflow token. Fork PRs need the usual
+  `pull_request_target` handling and a secret-exposure review.
+
+**Benefits:**
+
+- **Review stops depending on discipline.** Every other item improves a review someone
+  chose to run. Across 6+ repos, the reviews that matter most are the ones nobody
+  remembered to run — a rushed hotfix on a Friday is exactly the diff that skips
+  `/octopus:codereview`.
+- **A uniform floor across the fleet.** Repos at different adoption tiers currently get
+  different review quality by accident. An Action pinned from one source gives every repo
+  the same baseline regardless of who is working in it.
+- **Human reviewers start from a cleaner diff.** The debug statement, the missing tenant
+  filter and the TODO are already flagged when the human opens the PR, so their attention
+  goes to design — the part no checklist covers.
+- **Consistency between local and CI.** Reusing the `pr-review` Phase 5 report format and
+  signature means CI does not become a second, divergent reviewer with its own opinions.
+- **Adoption becomes measurable.** With RM-176, findings per repo over time feed
+  `audit-fleet` — showing where standards are actually landing rather than where they
+  were configured.
+
+**Rationale:** Everything else in the cluster improves a review someone chose to run. This
+is the one that makes review unconditional — and the one with a standing bill, which is
+why it is Medium and sequenced last.
+
+### RM-178 — Full-file scan mode (no git history)
+
+- **Priority:** 🟢 Low
+- **Effort:** medium
+- **Status:** proposed
+- **Added:** 2026-08-03
+
+Every `audit-*` is diff-centric: the pre-pass starts from `git diff --name-only`, so an
+audit of an unfamiliar codebase with no relevant recent changes finds nothing. OCR ships
+`ocr scan [--path]` for exactly this — full-file review for auditing a repo you have just
+inherited. Octopus has `map-system` (structure) and `code-metrics` (health signal), but no
+defect scan over existing code.
+
+Add a `--scan <path>` mode that feeds the same audit skills a file set from a path walk
+instead of a diff. Unbounded scanning is the trap, so the mode must ship with
+prioritisation — highest-risk paths first (the `audit-map.sh` domains), a file budget, and
+resumability via RM-176 — and report explicitly what it did not cover.
+
+- **Token cost:** **very high** — scales with repo size, not change size; easily 10–50×
+  a diff review. Only viable with a hard budget and a stated coverage report.
+- **Runtime:** 10–40 min for a mid-size repo.
+- **External deps:** none.
+
+**Benefits:**
+
+- **Covers the case where the diff tells you nothing.** Inheriting a repo, taking over a
+  service, or auditing a vendor drop — the risk is entirely in code nobody is currently
+  changing, which every `audit-*` is structurally blind to.
+- **Completes the onboarding story.** `map-system` explains the structure and
+  `code-metrics` reports health; neither says "here are the defects". A new owner
+  (or a new team member) gets the third piece.
+- **Produces a debt baseline.** One scan establishes the inventory; the diff-mode reviews
+  then keep it from growing. Without a baseline, "is this repo getting better?" has no
+  starting point.
+- **Reuses everything else.** It is a different file-selection front end on the same
+  skills, rules (RM-174) and reflection pass (RM-171) — so it inherits their quality
+  rather than needing its own.
+
+**Rationale:** Fits the manager-multiplier framing (Cluster 16) — inheriting a repo is
+when a defect scan is worth most. Lowest priority because it is the only item here that
+does not improve the reviews already being run, and the most expensive to run casually.
