@@ -17,6 +17,12 @@
 # Exit status is 0 for all three resolved paths; non-zero means the resolution
 # itself failed (unknown skill, not a git repo, no sha256 tool).
 
+# `cli/octopus.sh` runs with `set -euo pipefail` and *sources* this file, so -e is
+# inherited. This command reports outcomes through exit codes and markers — a
+# non-zero return is data here, not a failure — and under -e the most common path
+# (`skip`, when no files matched) would kill the shell before printing anything.
+# Disable it explicitly; every status that matters is checked by hand below.
+set +e
 set -uo pipefail
 
 AUDIT_SCOPE_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

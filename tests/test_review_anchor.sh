@@ -107,8 +107,18 @@ assert_contains "real finding is marked anchored" "anchored"$'\t'"  [origin: dba
 assert_contains "untouched-line finding is marked not-in-diff" "not-in-diff" "$out"
 assert_contains "missing-file finding is marked" "missing-file" "$out"
 assert_contains "a header line has no anchor" "no-anchor"$'\t'"BLOCKING (2)" "$out"
-assert_contains "summary is emitted" "OCTOPUS_ANCHOR_SUMMARY anchored=1 failed=2 no-anchor=2" "$out"
+# not-in-diff is counted apart from failed — a finding about pre-existing code is
+# legitimate, so only missing-file and line-out-of-range drive the exit status.
+assert_contains "summary counts not-in-diff apart from failures" \
+  "OCTOPUS_ANCHOR_SUMMARY anchored=1 not-in-diff=1 failed=1 no-anchor=2" "$out"
 [[ $rc -eq 1 ]] && pass "exits 1 when a finding fails to anchor" || fail "exits 1 when a finding fails to anchor" "got $rc"
+
+# A report whose only non-anchored finding is not-in-diff must still exit 0.
+cat > "$WORK/pre-existing.txt" <<'EOF'
+  [origin: architect] leak at src/app.ts:5
+EOF
+bash "$CMD" --base HEAD~1 --ref HEAD --file "$WORK/pre-existing.txt" >/dev/null 2>&1
+assert_eq "not-in-diff alone does not fail the run" 0 "$?"
 
 # All-clean input exits 0.
 printf '  [origin: dba] index at src/app.ts:3\n' > "$WORK/clean.txt"
@@ -123,6 +133,18 @@ assert_contains "reads findings from stdin" "anchored" "$out"
 blanks="$(printf 'a\n\nb\n' | bash "$CMD" --base HEAD~1 --ref HEAD --quiet; echo rc=$?)"
 assert_contains "quiet mode suppresses output" "rc=0" "$blanks"
 
+popd >/dev/null
+
+# --- dispatcher path -------------------------------------------------------
+# Regression: cli/octopus.sh sources the command with `set -e` active. A finding
+# line with no citation makes anchor_extract's grep return 1, which used to abort
+# the run instead of recording `no-anchor`.
+
+pushd "$REPO" >/dev/null
+out="$(bash "$OCTOPUS_DIR/cli/octopus.sh" review-anchor --base HEAD~1 --ref HEAD --file "$WORK/findings.txt" 2>&1)"
+assert_contains "dispatcher: uncited lines do not abort the run" "no-anchor" "$out"
+assert_contains "dispatcher: the summary still prints" "OCTOPUS_ANCHOR_SUMMARY" "$out"
+assert_contains "dispatcher: anchored findings survive" "anchored" "$out"
 popd >/dev/null
 
 # --- errors ----------------------------------------------------------------
