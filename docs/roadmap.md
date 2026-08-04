@@ -1162,7 +1162,7 @@ run; "Effort" is implementation, in person-days for one engineer with an agent._
 |----|------|--------|--------------|---------|--------------|
 | RM-170 | Anchor verification — every finding's `path:line` proven against the diff | low (1–2d) | ~0 (bash); net negative | +2–5s | none |
 | RM-171 | Reflection pass — adversarial false-positive filter before the report is emitted | medium (2–4d) | +10–20% (~4–8k) | +20–60s | none |
-| RM-172 | Compile the pre-pass and cache protocols into `cli/lib/` | medium (3–5d) | **−8–15%** (~1.2k/audit) | −5–15s | none |
+| RM-172 | Compile the pre-pass and cache protocols into `cli/lib/` | medium (3–5d) | **~−5% measured** (~590 tok/audit) | −5–15s | none |
 | RM-173 | Size-based bundling inside the domain fan-out | medium (4–6d) | +5% overhead, unblocks large diffs | −30–50% wall-clock on big diffs | none |
 | RM-174 | Data-driven rule catalogue, matched by path and language | high (8–12d) | **−10–25%** once rules replace prose | neutral | rule seed corpus (licence check) |
 | RM-175 | Review evaluation harness with annotated ground truth | high (10–15d + ongoing) | n/a per review; ~500k–2M per bench round | hours per round | **yes** — annotated PR corpus, API budget |
@@ -1179,7 +1179,7 @@ cost grounds alone.
 
 - **Priority:** 🔴 High
 - **Effort:** low
-- **Status:** proposed
+- **Status:** in review — [Spec](specs/review-anchor-verification.md), #226
 - **Added:** 2026-08-03
 
 Every finding in a `codereview` / `pr-review` report cites `path:line`, and that citation
@@ -1265,7 +1265,7 @@ the tenth right one. Depends on RM-170; its value is unprovable without RM-175.
 
 - **Priority:** 🔴 High
 - **Effort:** medium
-- **Status:** proposed
+- **Status:** implemented — [Spec](specs/audit-pre-pass-compiled.md), #225
 - **Added:** 2026-08-03
 
 `skills/_shared/audit-pre-pass.md` (41 lines) and `audit-cache.md` (52 lines) are loaded
@@ -1281,11 +1281,23 @@ declare, and hand the sub-agent a scoped diff plus a cache verdict. The skills k
 one-line reference instead of the protocol body. `cli/lib/audit-map.sh` and
 `tests/test_audit_output_cache.sh` already establish the pattern and the contract.
 
-- **Token cost:** **−8–15%** per review — roughly 1.2k tokens of protocol text saved per
-  dispatched audit, plus the cache hits that currently depend on the model choosing to
-  check.
+- **Token cost:** **~−5% measured** (originally projected −8–15%). See the correction
+  below.
 - **Runtime:** −5–15s (bash beats a model reasoning about `grep`).
 - **External deps:** none.
+
+**Correction (2026-08-04, on implementation):** the −8–15% projection assumed ~1.2k tokens
+of protocol per dispatched audit. The fragments are **658** (`audit-pre-pass.md` 1,273 B,
+`audit-cache.md` 1,361 B), and each skill's File Discovery section grew ~67 tokens to
+carry the new call — so the net is **~590 tokens per dispatched audit**, ~2.4k per review
+with four audits matched. That is roughly **5%** of a mid-size run, not 8–15%.
+
+The structural saving is larger and remains **unmeasured**: on `skip` and `cached` no
+sub-agent is spawned at all, avoiding a system prompt, tool definitions, the model's
+reasoning and its output — all well beyond 658 tokens. Quantifying it needs the
+instrumented end-to-end review from RM-175. Until then the honest claim is ~5% measured on
+static text, with the structural saving real but unquantified. See
+[Spec](specs/audit-pre-pass-compiled.md).
 
 **Benefits:**
 
@@ -1448,15 +1460,39 @@ cluster — is unfalsifiable. It is the difference between tuning and guessing.
 - **Status:** proposed
 - **Added:** 2026-08-03
 
-A Octopus review report is ephemeral: printed to the user or posted as a PR comment, then
-gone. OCR persists sessions — `session list`, `--resume` for an interrupted run,
-`session comments --severity critical,high --json`, and a browser replay viewer.
+**Correction (2026-08-04):** the original entry claimed the review report is ephemeral —
+"printed to the user or posted as a PR comment, then gone". That is wrong.
+`hooks/stop/review-log-capture.sh` (RM-093) already writes findings to
+`.octopus/review-log/<date>.md`. The gap is not that nothing is written; it is **how**.
+
+The hook greps the session transcript for lines carrying a severity token
+(`grep -iE '(BLOCKING|ADVISORY|QUESTION)' | head -40`) and appends them as prose grouped
+by date, for `continuous-learning` team mode to aggregate across the fleet. That serves
+pedagogy, and serves it adequately. As a record of a review it fails in five ways:
+
+- it depends on the finding's **text formatting** — a finding whose severity token is not
+  on the same line is not captured;
+- it **truncates at 40 findings**, silently;
+- it **disappears with the transcript** — soft-skips without `jq`, without a transcript,
+  or under a different agent;
+- it keeps **no structure**: no origin audit, no `base`/`ref`, no cache key, no anchor,
+  no verdict;
+- it records **nothing about the run** — which audits skipped, cached, or dispatched — so
+  nothing can be resumed from it.
+
+So the item is not "start writing reviews down". It is **emit structured output at the
+source** instead of scavenging the transcript afterwards.
 
 Minimum useful version: write each run to `.octopus/reviews/<ref>-<timestamp>.json`
-(findings with origin, severity, anchor, verdict, and the reflection reason from RM-171),
-a `--json` flag on `codereview`/`pr-review`, and `--severity` filtering. `--resume` for an
-interrupted fan-out follows from the same record. Skip the browser viewer. The
-`.octopus/cache/` gitignore guard is the precedent for placement.
+(findings with origin, severity, anchor from RM-170, verdict, and the reflection reason
+from RM-171, plus per-audit `skip`/`cached`/`scoped` resolution), a `--json` flag on
+`codereview`/`pr-review`, and `--severity` filtering. `--resume` for an interrupted fan-out
+follows from the same record. Skip the browser viewer OCR ships — the value is the record
+and the flag, not an interface. The `.octopus/cache/` gitignore guard is the precedent for
+placement.
+
+`review-log-capture.sh` should then **consume that record** rather than grep a transcript,
+which removes the truncation and the format coupling from RM-093 as a side effect.
 
 - **Token cost:** ~0 (serialisation of data the run already produced).
 - **Runtime:** ~0.
