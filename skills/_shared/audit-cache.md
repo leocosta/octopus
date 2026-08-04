@@ -1,53 +1,36 @@
 # Audit Output Cache Protocol
 
-## Cache Check (before LLM analysis)
-
-Execute immediately after the Pre-Pass produces SCOPED_DIFF, before any inspection check.
-
-**Step 1 — compute CACHE_KEY**
+**This protocol is compiled (RM-172).** It is no longer executed by reading these
+steps — it runs as code, before any model call, in `cli/lib/audit-cache.sh`,
+reached through:
 
 ```bash
-SKILL_HASH=$(sha256sum <path-to-this-SKILL.md> | cut -c1-64)
-CACHE_KEY=$(echo -n "${SCOPED_DIFF}${SKILL_HASH}" | sha256sum | cut -c1-64)
+octopus audit-scope <skill> --base <base> --ref <ref>          # check
+octopus audit-scope <skill> --write <key> --from <report-file> # persist
 ```
 
-**Step 2 — check for hit**
+This file remains the description of the contract; the implementation is the
+authority on behaviour.
 
-```
-CACHE_FILE=.octopus/cache/<skill-name>/<CACHE_KEY>.md
-```
+## Contract
 
-If `CACHE_FILE` exists:
-- Strip the YAML frontmatter (lines between the first `---` and the closing `---`)
-- Print the body as-is
-- Stop — do not proceed to inspection checks
+- **Key** — `sha256( scoped_diff || sha256(SKILL.md) )`, truncated to 64 chars.
+  A change to either the reviewed diff or the skill definition invalidates.
+- **Entry** — `.octopus/cache/<skill>/<key>.md`, carrying `skill`, `ref`, `base`
+  and `created_at` frontmatter above the audit's verbatim output.
+- **Hit** — the stored body is returned with its frontmatter stripped, surfacing
+  as `OCTOPUS_AUDIT_SCOPE=cached`. No model call happens.
+- **Guard** — `.octopus/cache/` is appended to `.gitignore` once; failure to
+  write warns and never aborts.
 
-**Step 3 — on miss: proceed**
+## Notes for maintainers
 
-Continue to inspection checks normally. After the LLM produces its full output, execute the Cache Write steps below before returning to the user.
-
-## Cache Write (after LLM produces output)
-
-**Step 4 — ensure directory exists**
-
-Create `.octopus/cache/<skill-name>/` if it does not exist.
-
-**Step 5 — write cache file**
-
-Write `CACHE_FILE` with this structure:
-
-```
----
-skill: <skill-name>
-ref: <ref argument>
-base: <base branch>
-created_at: <current UTC datetime in ISO 8601>
----
-
-<full audit output exactly as printed to the user>
-```
-
-**Step 6 — .gitignore guard**
-
-If `.octopus/cache/` is not present in the repo's `.gitignore`, append it.
-Warn the user if `.gitignore` cannot be written; do not abort.
+- The key derivation is byte-compatible with the pre-RM-172 prose version, so
+  entries written before the change still hit. `tests/test_audit_cache.sh` pins
+  this against the literal derivation.
+- `sha256sum`, `shasum -a 256` and `openssl dgst -sha256` are all accepted and
+  must agree — a cache written on Linux has to be readable on macOS, where
+  `sha256sum` is absent. `AUDIT_CACHE_HASH_TOOL` pins one for testing.
+- **Known limitation:** the key covers the diff and the SKILL.md, not the active
+  ruleset. A change under `rules/common/` does not invalidate cached reports.
+  Deliberate for now — revisit if rule edits start going stale in review output.

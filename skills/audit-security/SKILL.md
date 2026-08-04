@@ -15,9 +15,19 @@ pre_pass:
 
 ## File Discovery
 
-Follow the Pre-Pass protocol in `skills/_shared/audit-pre-pass.md`.
-Use this skill's `pre_pass.file_patterns` and `pre_pass.line_patterns` from the frontmatter.
-Then follow the Cache protocol in `skills/_shared/audit-cache.md` before proceeding to audit areas.
+Resolve the scope deterministically before any analysis (RM-172):
+
+```bash
+octopus audit-scope audit-security --base <base> --ref <ref>
+```
+
+Branch on the marker it prints, and do not second-guess it:
+
+- `skip` — no auth/secret-touching files changed. Print the reason and stop.
+- `cached` — an identical diff was already audited. Print the report that
+  follows the marker and stop.
+- `scoped` — audit **only** the diff that follows, then persist the result:
+  `octopus audit-scope audit-security --write <key> --from <report-file>`
 
 ## When to Use
 

@@ -37,6 +37,10 @@ PR diff:
   the fan-out below.
 - **Detect** what the diff touches (DB, security, money, tenant,
   contracts, general code), recording the file subset per match.
+- **Resolve scope** for each matched audit with
+  `octopus audit-scope <skill> --base <base> --ref <ref>` before
+  dispatching (RM-172) — `skip` and `cached` do not spawn a
+  sub-agent at all.
 - **Dispatch** in parallel, each agent receiving **only its
   domain-matching file subset** (not the whole PR diff):
   - `dba` role (if the diff touches the data layer) — `roles/dba.md`

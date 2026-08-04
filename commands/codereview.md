@@ -59,11 +59,31 @@ baseline and adds threat modeling over the diff.
 
 ## Phase 2 — Dispatch in Parallel
 
-Invoke the matched skills and roles **concurrently** — they do not
-depend on each other. Pass each one **only its domain-matching file
-subset** from Phase 1 (e.g. `audit-tenant` sees the tenant-scoped
-files, not the frontend diff) — this is the dominant token cost, so
-scoping it down is the point.
+Before dispatching an `audit-*` skill, resolve its scope
+deterministically (RM-172) — this costs no model call:
+
+```bash
+octopus audit-scope <skill> --base <base> --ref <ref>
+```
+
+Branch on the marker it prints:
+
+| Marker | Action |
+|---|---|
+| `skip` | **Do not dispatch.** No files matched; record it as "no changes detected" in the report. |
+| `cached` | **Do not dispatch.** Fold the returned report into Phase 4 as-is. |
+| `scoped` | Dispatch, passing the scoped diff that follows the marker. After the sub-agent returns, persist it: `octopus audit-scope <skill> --write <key> --from <report-file>`. |
+
+The saving is in not spawning: a sub-agent that starts only to
+discover it has nothing to review has already cost the spin-up.
+
+Invoke the remaining skills and roles **concurrently** — they do not
+depend on each other. Each dispatched audit receives **only its
+domain-matching file subset** (e.g. `audit-tenant` sees the
+tenant-scoped files, not the frontend diff) — this is the dominant
+token cost, so scoping it down is the point. Roles (`architect`,
+`dba`, `security`) have no `pre_pass` and are dispatched with the
+Phase 1 file subset directly.
 
 Dispatch each **`audit-*` skill on the tier declared in its SKILL.md
 `model:` frontmatter** — spawn it as a sub-agent (Agent tool) with `model`

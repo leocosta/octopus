@@ -43,9 +43,19 @@ Report prefix: `money`.
 
 ## File Discovery
 
-Follow the Pre-Pass protocol in `skills/_shared/audit-pre-pass.md`.
-Use this skill's `pre_pass.file_patterns` and `pre_pass.line_patterns` from the frontmatter.
-Then follow the Cache protocol in `skills/_shared/audit-cache.md` before proceeding to inspection checks.
+Resolve the scope deterministically before any analysis (RM-172):
+
+```bash
+octopus audit-scope audit-money --base <base> --ref <ref>
+```
+
+Branch on the marker it prints, and do not second-guess it:
+
+- `skip` — no money-touching files changed. Print the reason and stop.
+- `cached` — an identical diff was already audited. Print the report that
+  follows the marker and stop.
+- `scoped` — audit **only** the diff that follows, then persist the result:
+  `octopus audit-scope audit-money --write <key> --from <report-file>`
 
 A separate "spec set" is collected: any `docs/specs/*.md`,
 `docs/research/*.md`, or `docs/roadmap.md` section touched by the same
