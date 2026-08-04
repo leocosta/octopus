@@ -159,10 +159,41 @@ the report keeps each finding's native severity and groups them
 under a unified order: BLOCKING ≡ CRITICAL > HIGH ≡ ADVISORY
 > MEDIUM > LOW ≡ QUESTION.
 
+## Phase 4.5 — Anchor Verification
+
+Before the report is printed or posted, prove every `path:line`
+citation in it (RM-170). The citations are written by the model;
+nothing has checked them until now.
+
+```bash
+octopus review-anchor --base <base> --ref <ref> --file <report>
+```
+
+Each finding comes back with a verdict:
+
+| Verdict | Meaning | Action |
+|---|---|---|
+| `anchored` | the line exists at `<ref>` and this diff touched it | keep as-is |
+| `not-in-diff` | the line exists but the change did not touch it | keep, but say so — the finding may be about pre-existing code |
+| `line-out-of-range` | the file has fewer lines than cited | **demote to QUESTION**, tagged `unanchored` |
+| `missing-file` | no such file at `<ref>` | **demote to QUESTION**, tagged `unanchored` |
+| `no-anchor` | the line carries no citation (headers, prose) | keep as-is |
+
+A demoted finding keeps its text and its origin — the claim may
+still be true — but it can no longer block a commit on a location
+nobody can verify. Report the summary line
+(`OCTOPUS_ANCHOR_SUMMARY anchored=N failed=N no-anchor=N`) so a
+review that produced many unanchored findings is visible as such.
+
+This step is deterministic and costs no model call.
+
 ## Phase 5 — Block Commit
 
 Block the commit if any BLOCKING or CRITICAL finding is open.
 Report exactly which findings must be resolved.
+
+A finding demoted to QUESTION by Phase 4.5 does **not** block —
+an unverifiable location is not grounds to stop a commit.
 
 If only ADVISORY/MEDIUM/LOW findings remain, surface them but
 allow the commit — they belong in the PR description as
