@@ -1,41 +1,38 @@
 # Pre-Pass Protocol
 
-## Pre-Pass (deterministic file discovery)
+**This protocol is compiled (RM-172).** It is no longer executed by reading these
+steps — it runs as code, before any model call, in
+`cli/lib/audit-prepass.sh`, reached through:
 
-Execute before LLM analysis. Steps run in order; abort the skill at Step 2 if no candidates are found.
-
-**Step 1 — candidate files**
-
-Run:
+```bash
+octopus audit-scope <skill> --base <base> --ref <ref>
 ```
-git diff --name-only <base>..<ref> | grep -E "<pre_pass.file_patterns from this skill's frontmatter>"
-```
-Store the result as `CANDIDATE_FILES` (newline-separated list of file paths).
 
-**Step 2 — early exit**
+This file remains the description of the contract; the implementation is the
+authority on behaviour.
 
-If `CANDIDATE_FILES` is empty, print:
-```
-no <skill-domain> changes detected
-```
-and stop. Do not proceed to inspection checks.
+## Contract
 
-**Step 3 — optional line filter**
+Given a skill's `pre_pass` frontmatter, the pre-pass produces the file set that
+the audit is allowed to see:
 
-If this skill's frontmatter defines `pre_pass.line_patterns`, apply a secondary filter.
-For each file in `CANDIDATE_FILES`, check whether it contains at least one added or changed line matching the pattern:
-```
-git diff <base>..<ref> -- <file> | grep -E "^\+" | grep -qE "<pre_pass.line_patterns>"
-```
-Remove files that do not match. If all files are removed, apply the same early exit as Step 2.
+1. **Candidates** — `git diff --name-only <base>..<ref>` filtered by
+   `pre_pass.file_patterns`.
+2. **Early exit** — an empty candidate set ends the audit before any analysis,
+   surfacing as `OCTOPUS_AUDIT_SCOPE=skip`.
+3. **Line filter** — when `pre_pass.line_patterns` is present, a candidate
+   survives only if an added line (`^+`) in its diff matches. An empty result
+   applies the same early exit.
+4. **Scoped diff** — a `## Scoped files` list plus `git diff` restricted to those
+   paths. This replaces the full diff in the audit's input.
 
-**Step 4 — scoped diff output**
+## Notes for maintainers
 
-Produce the input for LLM analysis:
-```
-## Scoped files
-<CANDIDATE_FILES — one path per line>
-
-<git diff <base>..<ref> -- <CANDIDATE_FILES>>
-```
-Pass this output to the LLM in place of the full diff. Do not re-run `git diff` without the file filter.
+- `file_patterns` and `line_patterns` are YAML double-quoted scalars, so `\\.env`
+  in the frontmatter is the regex `\.env`. The implementation unescapes them;
+  a hand-written pipeline that skips this step will not match the same files.
+- Step 3 greps `^+` over the raw diff, which also sees the `+++ b/<path>` header.
+  This is preserved deliberately — it is the historical behaviour, and changing
+  it would alter which files each audit reviews.
+- Covered by `tests/test_audit_prepass.sh`, including verbatim parity against the
+  four shipped audits.

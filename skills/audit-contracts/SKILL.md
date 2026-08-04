@@ -53,9 +53,20 @@ Report prefix: `contract`.
 
 ## File Discovery
 
-Follow the Pre-Pass protocol in `skills/_shared/audit-pre-pass.md`.
-Use this skill's `pre_pass.file_patterns` and `pre_pass.line_patterns` from the frontmatter.
-Then follow the Cache protocol in `skills/_shared/audit-cache.md` before proceeding to stack discovery and inspection checks.
+Resolve the scope deterministically before stack discovery and any analysis
+(RM-172):
+
+```bash
+octopus audit-scope audit-contracts --base <base> --ref <ref>
+```
+
+Branch on the marker it prints, and do not second-guess it:
+
+- `skip` — no contract-touching files changed. Print the reason and stop.
+- `cached` — an identical diff was already audited. Print the report that
+  follows the marker and stop.
+- `scoped` — audit **only** the diff that follows, then persist the result:
+  `octopus audit-scope audit-contracts --write <key> --from <report-file>`
 
 ## Stack Discovery
 
