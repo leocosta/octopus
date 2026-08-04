@@ -78,6 +78,18 @@ costs more here than in a local review: demote `missing-file` and
 `line-out-of-range` findings to QUESTION, tagged `unanchored`, and
 only then post.
 
+## Phase 4.6 — Record the Run
+
+Persist the report before posting it (RM-176):
+
+```bash
+octopus review-session record --base <base> --ref <ref> \
+  --report <report-file> [--audits <resolutions-file>]
+```
+
+A posted PR comment is the *presentation*; the record is the data.
+Only the record survives in a form anything downstream can read.
+
 ## Phase 5 — Post Report and Assign Reviewers
 
 1. Sign the report before posting: end the report body with the

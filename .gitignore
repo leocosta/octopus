@@ -21,6 +21,7 @@ AGENTS.md
 .octopus/proposals/
 .octopus/onboarding/
 .octopus/review-log/
+.octopus/reviews/
 site/node_modules/
 site/dist/
 site/.astro/
