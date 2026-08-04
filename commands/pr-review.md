@@ -64,6 +64,20 @@ PR diff:
 The data-layer **dual gate** (both `dba` and `architect` must
 pass) applies — see `.claude/core/pr-workflow.md`.
 
+## Phase 4.5 — Anchor Verification
+
+Run `codereview` Phase 4.5 against the aggregated report **before
+posting it** (RM-170):
+
+```bash
+octopus review-anchor --base <base> --ref <ref> --file <report>
+```
+
+A PR comment is public and durable, so an unverifiable `path:line`
+costs more here than in a local review: demote `missing-file` and
+`line-out-of-range` findings to QUESTION, tagged `unanchored`, and
+only then post.
+
 ## Phase 5 — Post Report and Assign Reviewers
 
 1. Sign the report before posting: end the report body with the
