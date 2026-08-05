@@ -153,9 +153,10 @@ pushd "$REPO" >/dev/null
 
 # Finding 1 is the BLOCKING dba one; finding 2 the ADVISORY audit-money one.
 printf '1\treject\tthe index exists at line 12\n2\treject\trounding happens in the caller\n' > "$WORK/verdicts.tsv"
-out="$(reflect_apply main HEAD "$WORK/report.txt" "$WORK/verdicts.tsv" "$WORK/filtered.tsv")"
+out="$(reflect_apply main HEAD "$WORK/report.txt" "$WORK/verdicts.tsv" "$WORK/filtered.tsv" 2>"$WORK/summary.txt")"
 
 assert_contains "a rejected blocker survives, demoted" "was BLOCKING; reflection: the index exists at line 12" "$out"
+assert_not_contains "the summary line is not mixed into stdout" "OCTOPUS_REFLECT_SUMMARY" "$out"
 assert_contains "the demoted finding keeps its origin" "[origin: dba]" "$out"
 assert_contains "the demoted finding keeps its text" "Missing index at src/app.ts:20" "$out"
 assert_eq "the demoted finding no longer sits under BLOCKING" "" \
@@ -164,25 +165,29 @@ assert_not_contains "a rejected non-blocker leaves the report" "Rounding at src/
 assert_contains "the dropped finding is recorded with its reason" "rounding happens in the caller" "$(cat "$WORK/filtered.tsv")"
 assert_contains "the dropped row carries its original severity" "ADVISORY" "$(cat "$WORK/filtered.tsv")"
 assert_contains "ineligible findings are untouched" "TODO introduced" "$out"
-assert_contains "summary counts the outcome" "OCTOPUS_REFLECT_SUMMARY kept=0 demoted=1 filtered=1" "$out"
+assert_contains "summary counts the outcome, on stderr" "OCTOPUS_REFLECT_SUMMARY kept=0 demoted=1 filtered=1" "$(cat "$WORK/summary.txt")"
 
 # Header counts are recomputed, not left stale.
 assert_contains "the emptied section's count is corrected" "BLOCKING (1)" "$out"
 
 # Fail-open, three ways.
+# The grep -v '^OCTOPUS_REFLECT_SUMMARY' strip these two used to need is gone:
+# with the summary line off stdout entirely (fix round 2), a plain byte-for-byte
+# compare is strictly stronger — it would now fail loudly if the summary ever
+# leaked back onto stdout, instead of silently stripping it away first.
 : > "$WORK/empty.tsv"
 out="$(reflect_apply main HEAD "$WORK/report.txt" "$WORK/empty.tsv")"
 assert_eq "an empty verdicts file changes nothing" \
-  "$(cat "$WORK/report.txt")" "$(printf '%s\n' "$out" | grep -v '^OCTOPUS_REFLECT_SUMMARY')"
+  "$(cat "$WORK/report.txt")" "$out"
 
 out="$(reflect_apply main HEAD "$WORK/report.txt" "$WORK/does-not-exist.tsv")"
 assert_eq "a missing verdicts file changes nothing" \
-  "$(cat "$WORK/report.txt")" "$(printf '%s\n' "$out" | grep -v '^OCTOPUS_REFLECT_SUMMARY')"
+  "$(cat "$WORK/report.txt")" "$out"
 
 printf '1\treject\tgone\n99\treject\tno such finding\n' > "$WORK/partial.tsv"
-out="$(reflect_apply main HEAD "$WORK/report.txt" "$WORK/partial.tsv")"
+out="$(reflect_apply main HEAD "$WORK/report.txt" "$WORK/partial.tsv" 2>"$WORK/summary-partial.txt")"
 assert_contains "an unmentioned finding is kept" "Rounding at src/app.ts:5" "$out"
-assert_contains "an unknown id is ignored" "OCTOPUS_REFLECT_SUMMARY kept=1 demoted=1 filtered=0" "$out"
+assert_contains "an unknown id is ignored, per the stderr summary" "OCTOPUS_REFLECT_SUMMARY kept=1 demoted=1 filtered=0" "$(cat "$WORK/summary-partial.txt")"
 
 printf '1\tkeep\tthe index really is missing\n' > "$WORK/keep.tsv"
 out="$(reflect_apply main HEAD "$WORK/report.txt" "$WORK/keep.tsv")"
@@ -216,8 +221,8 @@ assert_not_contains "an earlier bracket on the line is not mistaken for the tag'
 # Important: filtered-out is truncated once per call, not appended to forever.
 printf 'STALE-ROW-FROM-A-PREVIOUS-RUN\n' > "$WORK/stale-filtered.tsv"
 printf '2\treject\trounding happens in the caller\n' > "$WORK/drop-verdict.tsv"
-reflect_apply main HEAD "$WORK/report.txt" "$WORK/drop-verdict.tsv" "$WORK/stale-filtered.tsv" >/dev/null
-reflect_apply main HEAD "$WORK/report.txt" "$WORK/drop-verdict.tsv" "$WORK/stale-filtered.tsv" >/dev/null
+reflect_apply main HEAD "$WORK/report.txt" "$WORK/drop-verdict.tsv" "$WORK/stale-filtered.tsv" >/dev/null 2>&1
+reflect_apply main HEAD "$WORK/report.txt" "$WORK/drop-verdict.tsv" "$WORK/stale-filtered.tsv" >/dev/null 2>&1
 assert_not_contains "filtered-out does not retain rows from a previous run" \
   "STALE-ROW-FROM-A-PREVIOUS-RUN" "$(cat "$WORK/stale-filtered.tsv")"
 assert_eq "filtered-out holds exactly one row after two identical runs" \
@@ -304,6 +309,29 @@ assert_eq "prepare exits 1 through the CLI when nothing is eligible" "1" "$?"
 out="$(bash "$CMD" apply --base main --ref HEAD --file "$WORK/report.txt" \
   --verdicts "$WORK/verdicts.tsv" --filtered "$WORK/cli-filtered.tsv")"
 assert_contains "apply through the CLI rewrites the report" "was BLOCKING; reflection:" "$out"
+
+# fix round 2 regression: the documented orchestrator pipeline is
+# `apply ... > <report>.new && mv <report>.new <report>`. Run it for real —
+# not just reflect_apply captured into a shell variable — and prove the file
+# that lands on disk never carries the stderr-only summary line, on both a
+# run that demotes a finding and a fail-open run that rejects nothing.
+cp "$WORK/report.txt" "$WORK/pipeline-demote.txt"
+bash "$CMD" apply --base main --ref HEAD --file "$WORK/pipeline-demote.txt" \
+  --verdicts "$WORK/verdicts.tsv" --filtered "$WORK/pipeline-demote-filtered.tsv" \
+  > "$WORK/pipeline-demote.txt.new" && mv "$WORK/pipeline-demote.txt.new" "$WORK/pipeline-demote.txt"
+assert_not_contains "the documented pipeline persists no summary line (demote case)" \
+  "OCTOPUS_REFLECT_SUMMARY" "$(cat "$WORK/pipeline-demote.txt")"
+assert_contains "the documented pipeline still persists the rewritten report (demote case)" \
+  "was BLOCKING; reflection:" "$(cat "$WORK/pipeline-demote.txt")"
+
+cp "$WORK/report.txt" "$WORK/pipeline-noop.txt"
+bash "$CMD" apply --base main --ref HEAD --file "$WORK/pipeline-noop.txt" \
+  --verdicts "$WORK/empty.tsv" \
+  > "$WORK/pipeline-noop.txt.new" && mv "$WORK/pipeline-noop.txt.new" "$WORK/pipeline-noop.txt"
+assert_not_contains "the documented pipeline persists no summary line (fail-open case)" \
+  "OCTOPUS_REFLECT_SUMMARY" "$(cat "$WORK/pipeline-noop.txt")"
+assert_eq "the documented pipeline's fail-open run leaves the report byte-identical" \
+  "$(cat "$WORK/report.txt")" "$(cat "$WORK/pipeline-noop.txt")"
 
 out="$(bash "$CMD" prepare --base main --ref HEAD --file "$WORK/no-such-report.txt" 2>&1)"; rc=$?
 assert_eq "a missing report is a usage error" "2" "$rc"

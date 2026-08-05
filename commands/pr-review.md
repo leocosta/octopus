@@ -119,9 +119,10 @@ octopus review-reflect apply --base <base> --ref <ref> --file <report> \
 
 A rejected BLOCKING/CRITICAL is **demoted to ADVISORY**, not deleted — the claim
 stays readable and stops gating. A rejected finding below that tier leaves the
-report and lands in `<filtered-file>` for Phase 4.6. Report the
-`OCTOPUS_REFLECT_SUMMARY` line so an over-aggressive filter is visible in the run
-itself.
+report and lands in `<filtered-file>` for Phase 4.6. `apply` prints the
+`OCTOPUS_REFLECT_SUMMARY` line to stderr, separately from the captured report
+on stdout — it never ends up inside `<report>`. Report it anyway so an
+over-aggressive filter is visible in the run itself.
 
 If the sub-agent fails or returns nothing usable, `apply` still exits 0 and
 prints the report unchanged — the filter never removes what it did not

@@ -298,7 +298,12 @@ reflect_apply() {
     return 2
   fi
 
-  printf 'OCTOPUS_REFLECT_SUMMARY kept=%d demoted=%d filtered=%d\n' "$kept" "$demoted" "$dropped"
+  # stderr, not stdout: stdout is the rewritten report body and only that —
+  # the documented `apply ... > <report>.new && mv <report>.new <report>`
+  # pipeline captures stdout verbatim, and a summary line mixed into it would
+  # get persisted into the report and, via pr-review.md's --body-file, posted
+  # into a public PR comment.
+  printf 'OCTOPUS_REFLECT_SUMMARY kept=%d demoted=%d filtered=%d\n' "$kept" "$demoted" "$dropped" >&2
   return 0
 }
 
