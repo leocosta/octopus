@@ -12,7 +12,9 @@
 #   reflect_origin_eligible <origin>                 → exit 0 if model-authored
 #   reflect_code_window <ref> <path> <line> [radius] → numbered slice, cited line marked
 #   reflect_prepare <base> <ref> <report>            → payload; exit 1 if nothing eligible
-#   reflect_apply <base> <ref> <report> <verdicts> [filtered-out] → rewritten report
+#   reflect_apply <base> <ref> <report> <verdicts> [filtered-out] → rewritten report;
+#                                                       returns non-zero if --filtered
+#                                                       cannot be written or the rewrite fails
 #
 # Sourced by cli/lib/review-reflect.sh and from tests. No side effects on source.
 
@@ -157,16 +159,28 @@ reflect_prepare() {
 # triage cost is what the filter exists to remove.
 #
 # Fail-open throughout: a missing or empty verdicts file, or an id nobody
-# mentioned, leaves the finding exactly where it was.
+# mentioned, leaves the finding exactly where it was. Fail-closed on internal
+# failure: a --filtered path that cannot be written, or a broken rewrite
+# pipeline, must not report success — see cli/lib/review-reflect.sh, which
+# validates --filtered before ever calling in and now propagates this
+# function's real exit status instead of hardcoding 0.
 # ---------------------------------------------------------------------------
 reflect_apply() {
   local base="$1" ref="$2" report="$3" verdicts="$4" filtered_out="${5:-}"
   local scan decisions row n severity id path lineno v r origin
-  local kept=0 demoted=0 dropped=0
+  local kept=0 demoted=0 dropped=0 rewrite_status=0
 
   # Truncate once per call, not once per drop — otherwise discards accumulate
-  # across repeated or retried runs against the same path.
-  [[ -n "$filtered_out" ]] && : > "$filtered_out"
+  # across repeated or retried runs against the same path. A path whose parent
+  # directory does not exist (or is not writable) fails the whole call rather
+  # than continuing to scan and rewrite against a sink that will never
+  # receive the drops. `2>/dev/null` must precede the failing `>` redirection
+  # to suppress bash's own diagnostic — see the matching note in
+  # cli/lib/review-reflect.sh, which validates this same path first in the
+  # normal (command) path, so this is the direct-caller/test fallback.
+  if [[ -n "$filtered_out" ]] && ! { : 2>/dev/null > "$filtered_out"; }; then
+    return 2
+  fi
 
   scan="$(_reflect_scan "$base" "$ref" "$report")"
   decisions="$(mktemp)"
@@ -259,9 +273,20 @@ reflect_apply() {
       }
     }
   ' "$report" | _reflect_recount
+  # PIPESTATUS[0] is the rewrite awk's own exit status — captured immediately,
+  # before any other command runs and overwrites it. A truncated or unreadable
+  # $report makes this non-zero; the caller must not be told the rewrite
+  # succeeded when it didn't (deferred from Task 4: previously discarded).
+  rewrite_status=${PIPESTATUS[0]}
 
   rm -f "$decisions"
+
+  if [[ $rewrite_status -ne 0 ]]; then
+    return 2
+  fi
+
   printf 'OCTOPUS_REFLECT_SUMMARY kept=%d demoted=%d filtered=%d\n' "$kept" "$demoted" "$dropped"
+  return 0
 }
 
 # ---------------------------------------------------------------------------

@@ -258,6 +258,22 @@ out="$(reflect_apply main HEAD "$WORK/report.txt" "$WORK/backslash-amp.tsv")"
 assert_contains "a backslash next to an ampersand round-trips exactly" \
   'reflection: a\&b weirdness' "$out"
 
+# --- fix round 1 (Task 5 review) regressions --------------------------------
+# Critical: apply used to report success unconditionally. It must fail closed
+# when it cannot honor --filtered, and when the report rewrite itself fails —
+# a caller doing `apply ... > new && mv new report` must never be told a
+# truncated report was a success.
+
+out="$(reflect_apply main HEAD "$WORK/report.txt" "$WORK/verdicts.tsv" "/no/such/dir/filtered.tsv" 2>"$WORK/apply-lib-stderr.txt")"
+rc=$?
+assert_eq "reflect_apply fails when --filtered cannot be written" "2" "$rc"
+assert_eq "reflect_apply emits no report when --filtered cannot be written" "" "$out"
+assert_eq "reflect_apply leaks no raw bash redirection error" "" "$(cat "$WORK/apply-lib-stderr.txt")"
+
+out="$(reflect_apply main HEAD "$WORK/no-such-report-for-apply.txt" "$WORK/verdicts.tsv" 2>/dev/null)"
+rc=$?
+assert_eq "reflect_apply fails when the rewrite pipeline itself fails" "2" "$rc"
+
 popd >/dev/null
 
 # --- the command -----------------------------------------------------------
@@ -278,8 +294,40 @@ out="$(bash "$CMD" prepare --base main --ref HEAD --file "$WORK/no-such-report.t
 assert_eq "a missing report is a usage error" "2" "$rc"
 assert_contains "the missing report is named" "no such file" "$out"
 
+# Important: unknown/absent subcommand must be caught before --file is ever
+# consulted, so the message is a usage message, never the --file guard's.
 out="$(bash "$CMD" frobnicate 2>&1)"; rc=$?
 assert_eq "an unknown subcommand is a usage error" "2" "$rc"
+assert_contains "an unknown subcommand prints usage, not the --file guard" "Usage: octopus.sh review-reflect" "$out"
+assert_not_contains "an unknown subcommand does not fall through to the --file guard" "no such file" "$out"
+
+out="$(bash "$CMD" frobnicate --file "$WORK/report.txt" 2>&1)"; rc=$?
+assert_eq "an unknown subcommand with a valid --file is still a usage error" "2" "$rc"
+assert_contains "an unknown subcommand with a valid --file prints usage" "Usage: octopus.sh review-reflect" "$out"
+
+out="$(bash "$CMD" 2>&1)"; rc=$?
+assert_eq "no subcommand at all is a usage error" "2" "$rc"
+assert_contains "no subcommand at all prints usage" "Usage: octopus.sh review-reflect" "$out"
+
+# Important repro: a leading flag used to be swallowed as the subcommand,
+# producing "unknown argument '<path>'" instead of a usage message.
+out="$(bash "$CMD" --file "$WORK/report.txt" 2>&1)"; rc=$?
+assert_eq "a leading flag alone is a usage error, not a value error" "2" "$rc"
+assert_contains "a leading flag prints usage instead of misreading itself as an argument" \
+  "Usage: octopus.sh review-reflect" "$out"
+assert_not_contains "a leading flag is not blamed as an unknown argument" "unknown argument" "$out"
+
+# Critical: an unwritable --filtered path is a clean usage error, not a raw
+# bash error naming this library's internal file and line number.
+out="$(bash "$CMD" apply --base main --ref HEAD --file "$WORK/report.txt" \
+  --verdicts "$WORK/verdicts.tsv" --filtered "/no/such/dir/cli-filtered.tsv" 2>"$WORK/apply-cli-stderr.txt")"
+rc=$?
+assert_eq "an unwritable --filtered path is a usage error" "2" "$rc"
+assert_eq "an unwritable --filtered path emits no report on stdout" "" "$out"
+assert_contains "an unwritable --filtered path names the problem" \
+  "cannot write" "$(cat "$WORK/apply-cli-stderr.txt")"
+assert_not_contains "an unwritable --filtered path does not leak the library's internal file" \
+  "reflect-payload.sh" "$(cat "$WORK/apply-cli-stderr.txt")"
 
 popd >/dev/null
 
