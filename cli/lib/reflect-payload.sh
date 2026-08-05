@@ -211,6 +211,19 @@ reflect_apply() {
       continue
     fi
     r="${r:-no reason given}"
+    # The reason is free text an LLM wrote and ends up in two places that
+    # cannot tolerate it unsanitised: spliced into the report line inside the
+    # note's own "(was <SEV>; reflection: ...)" parens (a stray '(' or ')' in
+    # the reason would make review-record.sh's `[^)]*` read either truncate
+    # at the reason's own close-paren or leave an unbalanced open-paren), and
+    # a column in filtered_out's TSV row (a literal tab would shift every
+    # column after it, same as in review-record.sh). Collapsing tabs to
+    # spaces and dropping parens from the reason itself is the trade: a
+    # reason that round-trips beats one that reads slightly better and gets
+    # truncated or misparsed.
+    r="${r//$'\t'/ }"
+    r="${r//(/}"
+    r="${r//)/}"
 
     case "$severity" in
       BLOCKING|CRITICAL)

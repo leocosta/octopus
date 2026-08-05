@@ -274,6 +274,21 @@ out="$(reflect_apply main HEAD "$WORK/no-such-report-for-apply.txt" "$WORK/verdi
 rc=$?
 assert_eq "reflect_apply fails when the rewrite pipeline itself fails" "2" "$rc"
 
+# --- fix round 1 (Task 6 review) regressions --------------------------------
+# Important: a parenthetical aside in the reason must not survive into the
+# note. review-record.sh's reflection reader stops at the first ")" it sees,
+# so a "(" or ")" left in the reason would either truncate it mid-sentence or
+# leave the note's own wrapper unbalanced. reflect_apply strips both — and
+# collapses tabs, so a literal tab in a reason cannot shift filtered_out's
+# TSV columns either — so the note's own "(was <SEV>; reflection: ...)"
+# parens are the only ones present.
+printf '1\treject\tthe guard exists at :31 (see helper) and he said "no" \\ ok\n' > "$WORK/paren.tsv"
+out="$(reflect_apply main HEAD "$WORK/report.txt" "$WORK/paren.tsv")"
+assert_contains "a parenthetical aside in the reason does not truncate the note" \
+  'reflection: the guard exists at :31 see helper and he said "no" \ ok)' "$out"
+assert_not_contains "the reason keeps no parens of its own" \
+  "(see helper)" "$out"
+
 popd >/dev/null
 
 # --- the command -----------------------------------------------------------

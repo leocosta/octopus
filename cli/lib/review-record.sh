@@ -77,10 +77,17 @@ review_record_parse() {
     fi
 
     text="$(printf '%s' "$line" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+    # A literal tab in a finding's text would otherwise shift every column
+    # after it once it lands in this row (same hazard the awk reader below
+    # is already guarding against for empty fields).
+    text="${text//$'\t'/ }"
 
     # RM-171: a demoted finding carries its own reason in its text — apply wrote
-    # it there, so the record needs no side channel to recover it.
-    reflection="$(printf '%s' "$line" | sed -n 's/.*reflection:[[:space:]]*\([^)]*\)).*/\1/p')"
+    # it there, so the record needs no side channel to recover it. Anchored on
+    # the full "(was <SEV>; reflection: " prefix apply actually writes, not on
+    # a bare "reflection:" — a finding whose own prose happens to contain that
+    # word must not be misread as a demotion.
+    reflection="$(printf '%s' "$line" | sed -n 's/.*(was [A-Z][A-Z]*; reflection:[[:space:]]*\([^)]*\)).*/\1/p')"
 
     printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
       "${severity:-UNKNOWN}" "$origin" "$path" "$lineno" "$verdict" "$text" "$reflection"

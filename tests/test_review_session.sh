@@ -221,6 +221,30 @@ bash "$CMD" record --base main --ref HEAD --report "$WORK/reflected.txt" \
 out="$(bash "$CMD" show latest --filtered)"
 assert_contains "show --filtered surfaces the discards" "rounding happens in the caller" "$out"
 
+# --- fix round 1 (Task 6 review) regressions --------------------------------
+
+# Important: a finding's own prose can contain the word "reflection:" without
+# ever being demoted — the reader must require the full "(was <SEV>;
+# reflection: ...)" prefix apply actually writes, not a bare "reflection:".
+cat > "$WORK/false-positive.txt" <<'EOF'
+BLOCKING (1)
+  [origin: architect] add a reflection: field (see spec) to the DTO at src/app.ts:5
+EOF
+rows="$(review_record_parse main HEAD "$WORK/false-positive.txt")"
+assert_eq "a finding's own prose is not misread as a demotion" "" \
+  "$(printf '%s\n' "$rows" | awk -F'\t' '{print $7; exit}')"
+
+# Important: a literal tab inside a finding's text must not shift the row's
+# columns — it would otherwise land in $7 and be read back as a fabricated
+# reflection reason.
+printf 'BLOCKING (1)\n  [origin: dba] path%svalue check at src/app.ts:5\n' $'\t' > "$WORK/tabtext.txt"
+rows="$(review_record_parse main HEAD "$WORK/tabtext.txt")"
+assert_eq "a literal tab in a finding's text does not add a column" "7" \
+  "$(printf '%s\n' "$rows" | awk -F'\t' '{print NF; exit}')"
+assert_contains "the tab in a finding's text becomes a space" "path value check" "$rows"
+assert_eq "the literal tab does not fabricate a reflection" "" \
+  "$(printf '%s\n' "$rows" | awk -F'\t' '{print $7; exit}')"
+
 popd >/dev/null
 
 # --- errors ----------------------------------------------------------------
