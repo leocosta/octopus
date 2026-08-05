@@ -187,19 +187,93 @@ review that produced many unanchored findings is visible as such.
 
 This step is deterministic and costs no model call.
 
+## Phase 4.55 — Reflection Pass
+
+Findings are written by models and nothing has judged them yet — Phase 4.5
+proved only that their locations are real. A false BLOCKING stops real work, and
+the fastest way to teach a team to bypass a gate is to block them wrongly once
+(RM-171).
+
+```bash
+octopus review-reflect prepare --base <base> --ref <ref> --file <report>
+```
+
+**Exit 1 means nothing was eligible — skip the rest of this phase entirely.** Do
+not spawn the sub-agent. Only findings from a role or an `audit-*` skill whose
+anchor resolved are adjudicable; `fallback` and `definition-of-done` findings are
+deterministic and never enter. **Exit 2 is a usage or repository error — stop
+and report it.** Do not dispatch the sub-agent and do not proceed as if this
+phase ran.
+
+Otherwise dispatch **one** sub-agent on the tier the payload's
+`OCTOPUS_REFLECT_MODEL` line names (Agent tool, `model` set to that value). Give
+it the payload and this instruction:
+
+> For each finding, decide whether the code shown sustains the claim. The burden
+> of proof is on the finding: if the window does not sustain it, `reject`. One
+> exception — if the window does not show enough to judge (a claim about coupling
+> across files, for instance), `keep`. Doubt favours the finding. Each finding's
+> `anchor:` line says how its cited code relates to this change — `anchored`
+> means the change touched that line, `not-in-diff` means the line is
+> pre-existing and this change never touched it. Do not look for new issues and
+> do not read files beyond what you were given. Return one line per finding,
+> tab-separated: `<id>	keep|reject	<one-line reason>`.
+
+Write the sub-agent's reply verbatim to a `<verdicts-file>` next to the report,
+and pick a `<filtered-file>` path for the discards — `apply` reads the first and
+writes the second, and neither exists until you create it:
+
+```bash
+cat > <verdicts-file> <<'VERDICTS'
+<the sub-agent's reply, unedited>
+VERDICTS
+```
+
+Do not reformat, renumber or drop lines on the way in. A line `apply` cannot
+read is a line it keeps, so an edit here can only cost a finding, never save
+one.
+
+`apply` prints the rewritten report to stdout — it never edits `<report>` in
+place. Capture it to a temp file and move that over `<report>` only after
+`apply` exits 0, so a failed run can never leave a truncated report on disk:
+
+```bash
+octopus review-reflect apply --base <base> --ref <ref> --file <report> \
+  --verdicts <verdicts-file> --filtered <filtered-file> > <report>.new \
+  && mv <report>.new <report>
+```
+
+A rejected BLOCKING/CRITICAL is **demoted to ADVISORY**, not deleted — the claim
+stays readable and stops gating. A rejected finding below that tier leaves the
+report and lands in `<filtered-file>` for Phase 4.6. `apply` prints the
+`OCTOPUS_REFLECT_SUMMARY` line to stderr, separately from the captured report
+on stdout — it never ends up inside `<report>`. Report it anyway so an
+over-aggressive filter is visible in the run itself.
+
+If the sub-agent fails or returns nothing usable, `apply` still exits 0 and
+prints the report unchanged — the filter never removes what it did not
+explicitly reject, and the `mv` above still applies it. If `apply` fails
+instead, the `&&` short-circuits: `<report>` stays exactly what Phase 4.5 left
+it. Either way, Phase 4.6 must record, and Phase 5 must gate on, `<report>` as
+it stands after this step — not the pre-reflection version.
+
 ## Phase 4.6 — Record the Run
 
-Persist the aggregated report before acting on it (RM-176):
+Persist the report — rewritten by Phase 4.55, if it ran — before acting on it
+(RM-176):
 
 ```bash
 octopus review-session record --base <base> --ref <ref> \
-  --report <report-file> [--audits <resolutions-file>]
+  --report <report-file> [--audits <resolutions-file>] [--filtered <filtered-file>]
 ```
 
 `--audits` takes one `<audit-name> <outcome>` per line, using the
 Phase 2 `audit-scope` verdicts (`skip` / `cached` / `scoped`). Pass
 it — a record that says which audits ran is the difference between
 "no findings" and "nothing looked".
+
+`--filtered` takes the file Phase 4.55 wrote. Pass it — a filter whose discards
+are not recorded is a silent hole in coverage rather than a tunable one.
 
 The record carries each finding's origin, severity, anchor verdict
 from Phase 4.5, and the reviewed sha, at
@@ -215,8 +289,10 @@ asking whether this finding has appeared before.
 Block the commit if any BLOCKING or CRITICAL finding is open.
 Report exactly which findings must be resolved.
 
-A finding demoted to QUESTION by Phase 4.5 does **not** block —
-an unverifiable location is not grounds to stop a commit.
+A finding demoted by Phase 4.5 (to QUESTION, unverifiable location) or by
+Phase 4.55 (to ADVISORY, claim not sustained by its own code) does **not**
+block. Neither an unverifiable location nor an unsustained claim is grounds to
+stop a commit.
 
 If only ADVISORY/MEDIUM/LOW findings remain, surface them but
 allow the commit — they belong in the PR description as

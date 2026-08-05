@@ -186,6 +186,135 @@ assert_contains "dispatcher: list works through octopus.sh" "findings" "$out"
 bash "$DISPATCH" review-session show does-not-exist >/dev/null 2>&1
 assert_eq "dispatcher: unknown id still exits 1, not killed by -e" 1 "$?"
 
+# --- RM-171: reflection and filtered findings ------------------------------
+
+cat > "$WORK/reflected.txt" <<'EOF'
+Code Review Report
+==================
+
+BLOCKING (1)
+  [origin: dba] Real problem at src/app.ts:20
+
+ADVISORY (1)
+  [origin: architect] (was BLOCKING; reflection: the guard exists at :31) Missing guard at src/app.ts:20
+EOF
+
+printf 'MEDIUM\taudit-money\tsrc/app.ts\t5\trounding happens in the caller\n' > "$WORK/filtered.tsv"
+
+out="$(review_record_json main HEAD "$WORK/reflected.txt" "" "$WORK/filtered.tsv")"
+
+assert_contains "a demoted finding carries its reflection reason" \
+  '"reflection": "the guard exists at :31"' "$out"
+assert_contains "an untouched finding has a null reflection" '"reflection": null' "$out"
+assert_contains "the filtered array carries the dropped finding" '"filtered": [' "$out"
+assert_contains "the dropped finding keeps its original severity" '"severity": "MEDIUM"' "$out"
+assert_contains "the dropped finding keeps its reason" '"reason": "rounding happens in the caller"' "$out"
+
+# A record written without --filtered stays valid.
+out="$(review_record_json main HEAD "$WORK/reflected.txt")"
+assert_contains "filtered is empty when the pass did not run" '"filtered": []' "$out"
+
+# Through the command. ($CMD and $WORK are already set up at the top of this
+# file — tests/test_review_session.sh:6 and :23.)
+out="$(bash "$CMD" record --base main --ref HEAD --report "$WORK/reflected.txt" \
+  --filtered "$WORK/filtered.tsv")"
+rid="$(printf '%s\n' "$out" | sed -n 's/^OCTOPUS_REVIEW_SESSION=//p')"
+assert_contains "record counts only what was reported, not what was filtered" "findings: 2" "$out"
+out="$(bash "$CMD" show latest --filtered)"
+assert_contains "show --filtered surfaces the discards" "rounding happens in the caller" "$out"
+
+# --- the finding count must not include the filtered ones --------------------
+# `findings[]` keeps meaning "what was reported" (RM-176), so every consumer of
+# the count must answer the same number whether or not the reflection pass
+# dropped anything. `list` used to grep '"severity"' over the whole record,
+# which counts filtered[] entries too — they carry the key as well — and so
+# silently disagreed with `list --json`'s `.findings | length`.
+
+assert_eq "the record under test really does carry a filtered entry" "1" \
+  "$(jq '.filtered | length' ".octopus/reviews/${rid}.json")"
+assert_eq "and exactly two findings" "2" \
+  "$(jq '.findings | length' ".octopus/reviews/${rid}.json")"
+assert_eq "list counts findings only, not filtered[] entries" "2" \
+  "$(bash "$CMD" list | awk -v id="$rid" '$1 == id { print $2 }')"
+assert_eq "list and list --json agree on every record" \
+  "$(bash "$CMD" list --json | jq '[.[].findings] | add')" \
+  "$(bash "$CMD" list | awk '{ s += $2 } END { print s+0 }')"
+
+# --- a citation inside a reflection reason must not hijack the anchor --------
+# apply splices "(was <SEV>; reflection: <reason>)" in ahead of the finding's
+# own citation, and anchor_extract takes the first citation on the line.
+# Rejecting a claim by pointing at the real code is the natural way to write
+# these reasons, so the record — the durable artifact everything downstream
+# reads — must still cite the finding's location, not the adjudicator's.
+
+cat > "$WORK/reason-cites-code.txt" <<'EOF'
+BLOCKING (1)
+  [origin: dba] real problem at src/app.ts:3
+
+ADVISORY (1)
+  [origin: architect] (was BLOCKING; reflection: the index already exists at src/gone.ts:30 in the migration) missing index at src/app.ts:7
+EOF
+rows="$(review_record_parse HEAD~1 HEAD "$WORK/reason-cites-code.txt")"
+
+assert_contains "a demoted finding records its own citation, not the reason's" \
+  "ADVISORY"$'\t'"architect"$'\t'"src/app.ts"$'\t'"7"$'\t'"not-in-diff" "$rows"
+assert_eq "the reason's location never becomes the record's path" "" \
+  "$(printf '%s\n' "$rows" | awk -F'\t' '$3 == "src/gone.ts" { print "hijacked" }')"
+assert_contains "the reason itself survives intact, citation and all" \
+  "the index already exists at src/gone.ts:30 in the migration" "$rows"
+
+# --- show latest resolves by mtime, not by filename --------------------------
+# Two records for the same sha in the same second: the second is written as
+# "<id>-2.json", which sorts lexicographically *before* the plain "<id>.json"
+# it collided with ('-' < '.'). A filename sort would therefore resolve `latest`
+# to the oldest of the batch. Probed in an isolated record root, with mtimes set
+# explicitly so the assertion cannot pass by accident of write order.
+
+PROBE="$WORK/latest-probe"
+mkdir -p "$PROBE"
+_probe_record() {
+  printf '{"created_at": "2026-08-04T00:00:00Z", "repo": "r", "base": "main", "ref": "HEAD",\n' > "$2"
+  printf '  "ref_sha": "deadbee", "audits": [], "findings": [\n' >> "$2"
+  printf '    {"severity": "LOW", "origin": "dba", "path": null, "line": null, "anchor": "no-anchor", "text": "%s", "reflection": null}\n' "$1" >> "$2"
+  printf '  ], "filtered": []}\n' >> "$2"
+}
+_probe_record OLDER-RECORD "$PROBE/20260804T120000Z-deadbee.json"
+_probe_record NEWER-RECORD "$PROBE/20260804T120000Z-deadbee-2.json"
+touch -t 202608041200.00 "$PROBE/20260804T120000Z-deadbee.json"
+touch -t 202608041200.01 "$PROBE/20260804T120000Z-deadbee-2.json"
+
+out="$(REVIEW_RECORD_ROOT="$PROBE" bash "$CMD" show latest --json)"
+assert_contains "show latest resolves to the newest record" "NEWER-RECORD" "$out"
+if printf '%s' "$out" | grep -q "OLDER-RECORD"; then
+  fail "show latest does not fall back to the lexicographically first name"
+else
+  pass "show latest does not fall back to the lexicographically first name"
+fi
+
+# --- the reflection reader must not fire on a finding's own prose -----------
+
+# Important: a finding's own prose can contain the word "reflection:" without
+# ever being demoted — the reader must require the full "(was <SEV>;
+# reflection: ...)" prefix apply actually writes, not a bare "reflection:".
+cat > "$WORK/false-positive.txt" <<'EOF'
+BLOCKING (1)
+  [origin: architect] add a reflection: field (see spec) to the DTO at src/app.ts:5
+EOF
+rows="$(review_record_parse main HEAD "$WORK/false-positive.txt")"
+assert_eq "a finding's own prose is not misread as a demotion" "" \
+  "$(printf '%s\n' "$rows" | awk -F'\t' '{print $7; exit}')"
+
+# Important: a literal tab inside a finding's text must not shift the row's
+# columns — it would otherwise land in $7 and be read back as a fabricated
+# reflection reason.
+printf 'BLOCKING (1)\n  [origin: dba] path%svalue check at src/app.ts:5\n' $'\t' > "$WORK/tabtext.txt"
+rows="$(review_record_parse main HEAD "$WORK/tabtext.txt")"
+assert_eq "a literal tab in a finding's text does not add a column" "7" \
+  "$(printf '%s\n' "$rows" | awk -F'\t' '{print NF; exit}')"
+assert_contains "the tab in a finding's text becomes a space" "path value check" "$rows"
+assert_eq "the literal tab does not fabricate a reflection" "" \
+  "$(printf '%s\n' "$rows" | awk -F'\t' '{print $7; exit}')"
+
 popd >/dev/null
 
 # --- errors ----------------------------------------------------------------
