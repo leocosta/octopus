@@ -8,8 +8,8 @@
 #
 # Public API:
 #   review_record_parse <base> <ref> [report-file]   → one TSV row per finding:
-#                                                      severity<TAB>origin<TAB>path<TAB>line<TAB>anchor<TAB>text
-#   review_record_json <base> <ref> <report-file> [audits-file] → the full record
+#                                                      severity<TAB>origin<TAB>path<TAB>line<TAB>anchor<TAB>text<TAB>reflection
+#   review_record_json <base> <ref> <report-file> [audits-file] [filtered-file] → the full record
 #   review_record_dir                                → the records directory
 #
 # Sourced by cli/lib/review-session.sh and from tests. No side effects on source.
@@ -48,7 +48,7 @@ _review_record_escape() {
 # ---------------------------------------------------------------------------
 review_record_parse() {
   local base="$1" ref="$2" report="${3:-}"
-  local severity="" line origin anchor path lineno text
+  local severity="" line origin anchor path lineno text reflection
 
   _review_record_stream() {
     if [[ -n "$report" ]]; then cat "$report"; else cat; fi
@@ -78,20 +78,27 @@ review_record_parse() {
 
     text="$(printf '%s' "$line" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
 
-    printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
-      "${severity:-UNKNOWN}" "$origin" "$path" "$lineno" "$verdict" "$text"
+    # RM-171: a demoted finding carries its own reason in its text — apply wrote
+    # it there, so the record needs no side channel to recover it.
+    reflection="$(printf '%s' "$line" | sed -n 's/.*reflection:[[:space:]]*\([^)]*\)).*/\1/p')"
+
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+      "${severity:-UNKNOWN}" "$origin" "$path" "$lineno" "$verdict" "$text" "$reflection"
   done < <(_review_record_stream)
 }
 
 # ---------------------------------------------------------------------------
-# review_record_json <base> <ref> <report-file> [audits-file]
+# review_record_json <base> <ref> <report-file> [audits-file] [filtered-file]
 #
 # audits-file, when given, is "<audit-name> <outcome>" per line, where outcome is
 # skip | cached | scoped — the audit-scope resolution from RM-172. Recording it is
 # what lets a later run know what was actually covered.
+#
+# filtered-file, when given, is reflect_apply's filtered.tsv (RM-171):
+# severity<TAB>origin<TAB>path<TAB>line<TAB>reason, one dropped finding per line.
 # ---------------------------------------------------------------------------
 review_record_json() {
-  local base="$1" ref="$2" report="$3" audits="${4:-}"
+  local base="$1" ref="$2" report="$3" audits="${4:-}" filtered="${5:-}"
   local created repo rows first
 
   created="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -124,7 +131,8 @@ review_record_json() {
   #
   # Read with awk, not `IFS=$'\t' read`: tab is IFS-whitespace, so bash collapses
   # consecutive tabs and a finding with no citation (two empty fields in a row)
-  # would shift every column after it.
+  # would shift every column after it. Same hazard applies to $7 (reflection):
+  # it is empty for every untouched finding.
   printf '  "findings": ['
   if [[ -n "$rows" ]]; then
     printf '%s\n' "$rows" | awk -F'\t' '
@@ -136,15 +144,38 @@ review_record_json() {
       }
       NF == 0 { next }
       {
-        printf "%s\n    {\"severity\": \"%s\", \"origin\": \"%s\", \"path\": %s, \"line\": %s, \"anchor\": \"%s\", \"text\": \"%s\"}",
+        printf "%s\n    {\"severity\": \"%s\", \"origin\": \"%s\", \"path\": %s, \"line\": %s, \"anchor\": \"%s\", \"text\": \"%s\", \"reflection\": %s}",
           (n++ ? "," : ""),
           esc($1), esc($2),
           ($3 == "" ? "null" : "\"" esc($3) "\""),
           ($4 == "" ? "null" : $4),
-          esc($5), esc($6)
+          esc($5), esc($6),
+          ($7 == "" ? "null" : "\"" esc($7) "\"")
       }
       END { if (n) printf "\n  " }
     '
+  fi
+  printf ']'
+
+  # Filtered — the non-blockers reflect_apply dropped entirely (RM-171). A
+  # record written before this change has no such array; callers must treat
+  # its absence as empty rather than an error (see review-session.sh's
+  # `.filtered // []`).
+  printf ',\n  "filtered": ['
+  if [[ -n "$filtered" && -f "$filtered" ]]; then
+    awk -F'\t' '
+      function esc(s) { gsub(/\\/, "\\\\", s); gsub(/"/, "\\\"", s); gsub(/\r/, "", s); return s }
+      NF == 0 { next }
+      {
+        printf "%s\n    {\"severity\": \"%s\", \"origin\": \"%s\", \"path\": %s, \"line\": %s, \"reason\": \"%s\"}",
+          (n++ ? "," : ""),
+          esc($1), esc($2),
+          ($3 == "" ? "null" : "\"" esc($3) "\""),
+          ($4 == "" ? "null" : $4),
+          esc($5)
+      }
+      END { if (n) printf "\n  " }
+    ' "$filtered"
   fi
   printf ']\n'
   printf '}\n'

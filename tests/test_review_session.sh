@@ -186,6 +186,41 @@ assert_contains "dispatcher: list works through octopus.sh" "findings" "$out"
 bash "$DISPATCH" review-session show does-not-exist >/dev/null 2>&1
 assert_eq "dispatcher: unknown id still exits 1, not killed by -e" 1 "$?"
 
+# --- RM-171: reflection and filtered findings ------------------------------
+
+cat > "$WORK/reflected.txt" <<'EOF'
+Code Review Report
+==================
+
+BLOCKING (1)
+  [origin: dba] Real problem at src/app.ts:20
+
+ADVISORY (1)
+  [origin: architect] (was BLOCKING; reflection: the guard exists at :31) Missing guard at src/app.ts:20
+EOF
+
+printf 'MEDIUM\taudit-money\tsrc/app.ts\t5\trounding happens in the caller\n' > "$WORK/filtered.tsv"
+
+out="$(review_record_json main HEAD "$WORK/reflected.txt" "" "$WORK/filtered.tsv")"
+
+assert_contains "a demoted finding carries its reflection reason" \
+  '"reflection": "the guard exists at :31"' "$out"
+assert_contains "an untouched finding has a null reflection" '"reflection": null' "$out"
+assert_contains "the filtered array carries the dropped finding" '"filtered": [' "$out"
+assert_contains "the dropped finding keeps its original severity" '"severity": "MEDIUM"' "$out"
+assert_contains "the dropped finding keeps its reason" '"reason": "rounding happens in the caller"' "$out"
+
+# A record written without --filtered stays valid.
+out="$(review_record_json main HEAD "$WORK/reflected.txt")"
+assert_contains "filtered is empty when the pass did not run" '"filtered": []' "$out"
+
+# Through the command. ($CMD and $WORK are already set up at the top of this
+# file — tests/test_review_session.sh:6 and :23.)
+bash "$CMD" record --base main --ref HEAD --report "$WORK/reflected.txt" \
+  --filtered "$WORK/filtered.tsv" >/dev/null
+out="$(bash "$CMD" show latest --filtered)"
+assert_contains "show --filtered surfaces the discards" "rounding happens in the caller" "$out"
+
 popd >/dev/null
 
 # --- errors ----------------------------------------------------------------

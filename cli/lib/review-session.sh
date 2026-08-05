@@ -1,9 +1,9 @@
 # review-session.sh — Persist and query review runs.
 #
 # Usage:
-#   octopus.sh review-session record --base <ref> --ref <ref> --report <file> [--audits <file>]
+#   octopus.sh review-session record --base <ref> --ref <ref> --report <file> [--audits <file>] [--filtered <file>]
 #   octopus.sh review-session list [--json]
-#   octopus.sh review-session show <id|latest> [--severity A,B] [--json]
+#   octopus.sh review-session show <id|latest> [--severity A,B] [--json] [--filtered]
 #
 # RM-176. Writes the aggregated report to .octopus/reviews/<id>.json with each
 # finding's origin, severity, anchor verdict (RM-170) and the per-audit
@@ -23,9 +23,9 @@ REVIEW_SESSION_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$REVIEW_SESSION_LIB_DIR/review-record.sh"
 
 _review_session_usage() {
-  echo "Usage: octopus.sh review-session record --base <ref> --ref <ref> --report <file> [--audits <file>]"
+  echo "Usage: octopus.sh review-session record --base <ref> --ref <ref> --report <file> [--audits <file>] [--filtered <file>]"
   echo "       octopus.sh review-session list [--json]"
-  echo "       octopus.sh review-session show <id|latest> [--severity A,B] [--json]"
+  echo "       octopus.sh review-session show <id|latest> [--severity A,B] [--json] [--filtered]"
 }
 
 _review_session_gitignore_guard() {
@@ -54,13 +54,14 @@ DIR="$(review_record_dir)"
 
 case "$SUB" in
   record)
-    BASE="main"; REF="HEAD"; REPORT=""; AUDITS=""
+    BASE="main"; REF="HEAD"; REPORT=""; AUDITS=""; FILTERED=""
     while [[ $# -gt 0 ]]; do
       case "$1" in
         --base) BASE="${2:-}"; shift 2 ;;
         --ref) REF="${2:-}"; shift 2 ;;
         --report) REPORT="${2:-}"; shift 2 ;;
         --audits) AUDITS="${2:-}"; shift 2 ;;
+        --filtered) FILTERED="${2:-}"; shift 2 ;;
         *) echo "review-session: unknown argument '$1'" >&2; exit 2 ;;
       esac
     done
@@ -85,7 +86,7 @@ case "$SUB" in
     fi
     out="$DIR/${id}.json"
 
-    review_record_json "$BASE" "$REF" "$REPORT" "$AUDITS" > "$out" || {
+    review_record_json "$BASE" "$REF" "$REPORT" "$AUDITS" "$FILTERED" > "$out" || {
       echo "review-session: failed to write $out" >&2
       exit 2
     }
@@ -127,11 +128,12 @@ case "$SUB" in
   show)
     ID="${1:-latest}"
     shift 2>/dev/null || true
-    SEVERITY=""; JSON=""
+    SEVERITY=""; JSON=""; SHOW_FILTERED=""
     while [[ $# -gt 0 ]]; do
       case "$1" in
         --severity) SEVERITY="${2:-}"; shift 2 ;;
         --json) JSON=1; shift ;;
+        --filtered) SHOW_FILTERED=1; shift ;;
         *) echo "review-session: unknown argument '$1'" >&2; exit 2 ;;
       esac
     done
@@ -141,12 +143,29 @@ case "$SUB" in
       files=("$DIR"/*.json)
       shopt -u nullglob
       [[ ${#files[@]} -eq 0 ]] && { echo "review-session: no records yet" >&2; exit 1; }
-      file="${files[-1]}"
+      # Sort by mtime, not filename: an id-collision suffix ("-2", "-3", ...)
+      # sorts lexicographically *before* the unsuffixed name it collided with
+      # ('-' < '.'), so re-running a review within the same second would make
+      # the plain filename win even though it is the oldest of the batch.
+      file="$(ls -t "${files[@]}" | head -n 1)"
     else
       file="$DIR/${ID}.json"
     fi
 
     [[ -f "$file" ]] || { echo "review-session: no such record: $ID" >&2; exit 1; }
+
+    # --filtered and --severity are about different arrays — --filtered wins
+    # and ignores --severity.
+    if [[ -n "$SHOW_FILTERED" ]]; then
+      _review_session_require_jq || exit 2
+      selected="$(jq '.filtered // []' "$file")"
+      if [[ -n "$JSON" ]]; then
+        printf '%s\n' "$selected"
+      else
+        printf '%s\n' "$selected" | jq -r '.[] | "\(.severity)\t[\(.origin)]\t\(.path):\(.line)\t\(.reason)"'
+      fi
+      exit 0
+    fi
 
     if [[ -z "$SEVERITY" && -n "$JSON" ]]; then
       cat "$file"
