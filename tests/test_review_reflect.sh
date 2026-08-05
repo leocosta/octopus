@@ -119,6 +119,34 @@ assert_eq "an eligible origin with no anchor is not adjudicable" "" \
   "$(printf '%s\n' "$scan" | awk -F'\t' '$2 == "finding" && $5 == "" { print "leaked" }')"
 popd >/dev/null
 
+# --- payload ---------------------------------------------------------------
+
+pushd "$REPO" >/dev/null
+payload="$(reflect_prepare main HEAD "$WORK/report.txt")"
+rc=$?
+
+assert_eq "prepare exits 0 when something is eligible" "0" "$rc"
+assert_contains "payload declares the model tier as data" "OCTOPUS_REFLECT_MODEL sonnet" "$payload"
+assert_contains "payload opens each finding with its id" "--- FINDING 1 ---" "$payload"
+assert_contains "payload carries the second finding too" "--- FINDING 2 ---" "$payload"
+assert_eq "payload carries exactly the eligible findings" "2" \
+  "$(printf '%s\n' "$payload" | grep -c '^--- FINDING ')"
+assert_contains "payload states the severity" "severity: BLOCKING" "$payload"
+assert_contains "payload carries the finding text" "Missing index at src/app.ts:20" "$payload"
+assert_contains "payload shows the anchored code, cited line marked" ">    20 | line 20 CHANGED" "$payload"
+assert_not_contains "payload never carries an ineligible finding" "TODO introduced" "$payload"
+assert_not_contains "payload never carries an unanchored finding" "Layering is unclear" "$payload"
+
+# Nothing eligible → no payload, and the caller must not spawn a sub-agent.
+cat > "$WORK/nothing.txt" <<'EOF'
+BLOCKING (1)
+  [origin: fallback] TODO introduced at src/app.ts:20
+EOF
+out="$(reflect_prepare main HEAD "$WORK/nothing.txt")"; rc=$?
+assert_eq "prepare exits 1 when nothing is eligible" "1" "$rc"
+assert_eq "prepare emits no payload when nothing is eligible" "" "$out"
+popd >/dev/null
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [[ $FAIL -eq 0 ]]

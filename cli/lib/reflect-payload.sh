@@ -107,3 +107,43 @@ _reflect_scan() {
     fi
   done < "$report"
 }
+
+# ---------------------------------------------------------------------------
+# reflect_prepare <base> <ref> <report>
+#
+# The adjudicator's whole input: each eligible finding and the window of code it
+# points at. The origin travels inside the finding's own text, so it is not
+# repeated as a field.
+#
+# Exit 1 means nothing was eligible — the caller skips the model call, the same
+# "don't spawn" saving audit-scope makes for audits (RM-172).
+# ---------------------------------------------------------------------------
+reflect_prepare() {
+  local base="$1" ref="$2" report="$3"
+  local scan row n severity id path lineno text
+
+  scan="$(_reflect_scan "$base" "$ref" "$report")"
+  printf '%s\n' "$scan" | grep -q $'\tfinding\t' || return 1
+
+  printf 'OCTOPUS_REFLECT_MODEL %s\n' "$REFLECT_MODEL"
+
+  while IFS= read -r row; do
+    [[ -z "$row" ]] && continue
+    [[ "$(printf '%s' "$row" | cut -d$'\t' -f2)" == "finding" ]] || continue
+
+    n="$(printf '%s' "$row" | cut -d$'\t' -f1)"
+    severity="$(printf '%s' "$row" | cut -d$'\t' -f3)"
+    id="$(printf '%s' "$row" | cut -d$'\t' -f4)"
+    path="$(printf '%s' "$row" | cut -d$'\t' -f5)"
+    lineno="$(printf '%s' "$row" | cut -d$'\t' -f6)"
+    text="$(sed -n "${n}p" "$report" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+
+    printf '\n--- FINDING %s ---\n' "$id"
+    printf 'severity: %s\n' "$severity"
+    printf 'text: %s\n' "$text"
+    printf 'code: %s (cited line %s, marked >)\n' "$path" "$lineno"
+    reflect_code_window "$ref" "$path" "$lineno"
+  done <<< "$scan"
+
+  return 0
+}
