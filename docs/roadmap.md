@@ -1224,7 +1224,7 @@ the findings point at the wrong code.
 
 - **Priority:** 🔴 High
 - **Effort:** medium
-- **Status:** proposed
+- **Status:** in review — [Spec](specs/review-reflection-pass.md)
 - **Added:** 2026-08-03
 
 OCR runs a **comment-reflection module** — a dedicated pass whose only job is to kill
