@@ -119,7 +119,14 @@ case "$SUB" in
       jq -s '[.[] | {created_at, base, ref, findings: (.findings | length)}]' "${files[@]}"
     else
       for f in "${files[@]}"; do
-        n=$(grep -c '"severity"' "$f" || true)
+        # Count only the findings, not every object carrying a "severity" key:
+        # filtered[] entries carry one too (RM-171), so a plain grep over the
+        # whole file reported "findings: N + filtered" and silently disagreed
+        # with `list --json`, which counts `.findings | length`. review_record_json
+        # always writes findings[] before filtered[], so stopping at the
+        # "filtered": [ line is exact — and needs no jq, which the write path
+        # and this default (non---json) query path both do without.
+        n=$(awk '/"filtered": \[/ { exit } /"severity"/ { c++ } END { print c+0 }' "$f")
         printf '%s  %s findings\n' "$(basename "$f" .json)" "$n"
       done
     fi

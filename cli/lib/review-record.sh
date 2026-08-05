@@ -48,7 +48,7 @@ _review_record_escape() {
 # ---------------------------------------------------------------------------
 review_record_parse() {
   local base="$1" ref="$2" report="${3:-}"
-  local severity="" line origin anchor path lineno text reflection
+  local severity="" line cited origin anchor path lineno text reflection
 
   _review_record_stream() {
     if [[ -n "$report" ]]; then cat "$report"; else cat; fi
@@ -67,7 +67,20 @@ review_record_parse() {
     origin="$(printf '%s' "$line" | sed -n 's/.*\[origin:[[:space:]]*\([^]]*\)\].*/\1/p' | sed 's/[[:space:]]*$//')"
     [[ -n "$origin" ]] || origin="unknown"
 
-    anchor="$(anchor_extract "$line")"
+    # RM-171: a demoted finding carries "(was <SEV>; reflection: <reason>)"
+    # spliced in right after its [origin: x] tag — ahead of its own citation.
+    # The reason is free text, and rejecting a claim by pointing at the real
+    # code ("the index already exists at src/app.ts:30") is the natural way to
+    # write one, so the note must come off before anchor_extract, which takes
+    # the *first* citation on the line. Without this the record — the durable
+    # artifact everything downstream reads — cites the adjudicator's location
+    # instead of the finding's, and the RM-170 verdict is computed against the
+    # wrong file. Kept in the finding's `text` below: only the citation read is
+    # note-blind. The same strip is applied in _reflect_scan
+    # (cli/lib/reflect-payload.sh); a third reader should share one helper.
+    cited="$(printf '%s' "$line" | sed 's/[[:space:]]*(was [A-Z][A-Z]*; reflection:[^)]*)//')"
+
+    anchor="$(anchor_extract "$cited")"
     if [[ -n "$anchor" ]]; then
       path="${anchor%%$'\t'*}"
       lineno="${anchor##*$'\t'}"
