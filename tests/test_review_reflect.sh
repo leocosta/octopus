@@ -94,7 +94,7 @@ ADVISORY (3)
   [origin: audit-tenant] No tenant filter at missing.ts:9
 
 QUESTION (1)
-  Cannot verify table size
+  [origin: dba] Cannot verify table size
 EOF
 
 scan="$(_reflect_scan main HEAD "$WORK/report.txt")"
@@ -108,12 +108,13 @@ assert_eq "scan numbers eligible findings from 1, in report order" \
 assert_contains "scan records the section header in force" $'\theader\tBLOCKING\t' "$scan"
 
 skipped="$(printf '%s\n' "$scan" | awk -F'\t' '$2 == "skip" { c++ } END { print c+0 }')"
-assert_eq "ineligible findings are scanned but never given an id" "3" "$skipped"
+assert_eq "ineligible findings are scanned but never given an id" "4" "$skipped"
 
-# The three skips, each for a different reason:
+# The four skips, each for a different reason:
 #   fallback          → origin not model-authored
 #   architect (prose) → no anchor to confront
 #   missing.ts        → anchor already failed in Phase 4.5
+#   dba (prose)       → eligible origin but no anchor, same path as architect
 assert_eq "an eligible origin with no anchor is not adjudicable" "" \
   "$(printf '%s\n' "$scan" | awk -F'\t' '$2 == "finding" && $5 == "" { print "leaked" }')"
 popd >/dev/null
