@@ -164,6 +164,10 @@ reflect_apply() {
   local scan decisions row n severity id path lineno v r origin
   local kept=0 demoted=0 dropped=0
 
+  # Truncate once per call, not once per drop — otherwise discards accumulate
+  # across repeated or retried runs against the same path.
+  [[ -n "$filtered_out" ]] && : > "$filtered_out"
+
   scan="$(_reflect_scan "$base" "$ref" "$report")"
   decisions="$(mktemp)"
 
@@ -215,15 +219,24 @@ reflect_apply() {
       while ((getline d < dec) > 0) {
         split(d, f, "\t")
         act[f[1]] = f[2]; osev[f[1]] = f[3]; why[f[1]] = f[4]
+        # Escape backslash then ampersand so severity/reason text can be dropped
+        # into a sub() replacement below without either being read as the "&"
+        # matched-text idiom or a "\" escape — the reason is free text an LLM
+        # wrote, so both are ordinary characters in it.
+        gsub(/[\\&]/, "\\\\&", osev[f[1]])
+        gsub(/[\\&]/, "\\\\&", why[f[1]])
       }
       close(dec)
     }
     act[FNR] == "drop" { next }
     act[FNR] == "demote" {
       line = $0
-      # The first "]" closes [origin: x] — the reason goes right after it, so the
-      # record can read it back out of the text later.
-      sub(/\]/, "] (was " osev[FNR] "; reflection: " why[FNR] ")", line)
+      # Anchor on the [origin: x] tag itself, not on "the first ]" — a leading
+      # markdown checkbox ("- [ ] [origin: x] ...") or a "[P1]"-style prefix
+      # would otherwise steal the insertion point. "&" re-emits the matched tag
+      # so the reason lands right after it, where a later task reads it back
+      # out of the text.
+      sub(/\[origin:[^]]*\]/, "& (was " osev[FNR] "; reflection: " why[FNR] ")", line)
       dem[++nd] = line
       next
     }
@@ -257,13 +270,21 @@ reflect_apply() {
 # actually under it. Counts are recomputed rather than adjusted: a stale
 # "BLOCKING (2)" over one finding is exactly the kind of quiet wrongness this
 # cluster exists to remove.
+#
+# Only a line already shaped like a header with its count — "SEV (" — is
+# eligible for rewrite. The aggregated report format (commands/codereview.md
+# Phase 4) always writes the count that way, and the ADVISORY section this
+# module appends is written the same way, so real headers still match; a
+# prose line that merely starts with a severity word ("MEDIUM: revisit this
+# next quarter") does not, and passes through untouched instead of being
+# overwritten with a bogus "(0)".
 # ---------------------------------------------------------------------------
 _reflect_recount() {
   awk -v sev="$_REFLECT_SEVERITIES" '
     # Buffer everything, counting findings per section, then rewrite the counts.
     {
       lines[NR] = $0
-      if ($0 ~ "^[[:space:]]*(" sev ")([[:space:]]*\\(|:|[[:space:]]*$)") {
+      if ($0 ~ "^[[:space:]]*(" sev ")[[:space:]]*\\(") {
         current = NR
         match($0, "(" sev ")")
         sect[NR] = substr($0, RSTART, RLENGTH)

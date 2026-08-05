@@ -189,6 +189,55 @@ out="$(reflect_apply main HEAD "$WORK/report.txt" "$WORK/keep.tsv")"
 assert_contains "a kept blocker stays blocking" "BLOCKING (2)" "$out"
 assert_not_contains "a kept finding gains no reflection note" "reflection:" "$out"
 
+# --- fix round 1 regressions -------------------------------------------------
+
+# Critical: "&" in a reason must not be read as sub()'s matched-text idiom.
+printf '1\treject\tcost & benefit say no\n' > "$WORK/amp.tsv"
+out="$(reflect_apply main HEAD "$WORK/report.txt" "$WORK/amp.tsv")"
+assert_contains "an ampersand in the reason survives literally" \
+  "reflection: cost & benefit say no" "$out"
+assert_not_contains "an ampersand in the reason does not inject a stray ]" \
+  "cost ] benefit" "$out"
+
+# Important: the note must land after the "]" that closes [origin: x],
+# not after the first "]" on the line — probed with a markdown checkbox
+# bullet, a plausible report shape that has an earlier "]".
+cat > "$WORK/checkbox-report.txt" <<'EOF'
+BLOCKING (1)
+- [ ] [origin: dba] Missing index at src/app.ts:20
+EOF
+printf '1\treject\tno index needed\n' > "$WORK/checkbox-verdict.tsv"
+out="$(reflect_apply main HEAD "$WORK/checkbox-report.txt" "$WORK/checkbox-verdict.tsv")"
+assert_contains "the reflection note lands after the [origin: x] tag" \
+  "[origin: dba] (was BLOCKING; reflection: no index needed) Missing index at src/app.ts:20" "$out"
+assert_not_contains "an earlier bracket on the line is not mistaken for the tag's close" \
+  "- [ ] (was BLOCKING" "$out"
+
+# Important: filtered-out is truncated once per call, not appended to forever.
+printf 'STALE-ROW-FROM-A-PREVIOUS-RUN\n' > "$WORK/stale-filtered.tsv"
+printf '2\treject\trounding happens in the caller\n' > "$WORK/drop-verdict.tsv"
+reflect_apply main HEAD "$WORK/report.txt" "$WORK/drop-verdict.tsv" "$WORK/stale-filtered.tsv" >/dev/null
+reflect_apply main HEAD "$WORK/report.txt" "$WORK/drop-verdict.tsv" "$WORK/stale-filtered.tsv" >/dev/null
+assert_not_contains "filtered-out does not retain rows from a previous run" \
+  "STALE-ROW-FROM-A-PREVIOUS-RUN" "$(cat "$WORK/stale-filtered.tsv")"
+assert_eq "filtered-out holds exactly one row after two identical runs" \
+  "1" "$(wc -l < "$WORK/stale-filtered.tsv" | tr -d ' ')"
+
+# Important: _reflect_recount must not clobber prose shaped like a header —
+# probed on a fail-open no-op run (empty verdicts, nothing rejected).
+cat > "$WORK/prose-header-report.txt" <<'EOF'
+BLOCKING (1)
+  [origin: dba] Missing index at src/app.ts:20
+
+ADVISORY (0)
+  MEDIUM: the caching layer should be revisited next quarter
+EOF
+out="$(reflect_apply main HEAD "$WORK/prose-header-report.txt" "$WORK/empty.tsv")"
+assert_contains "a prose line shaped like a header survives a no-op recount" \
+  "MEDIUM: the caching layer should be revisited next quarter" "$out"
+assert_not_contains "the prose line is not rewritten into a bogus count" \
+  "MEDIUM (0)" "$out"
+
 popd >/dev/null
 
 echo ""
