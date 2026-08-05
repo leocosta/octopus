@@ -92,7 +92,9 @@ octopus review-reflect prepare --base <base> --ref <ref> --file <report>
 **Exit 1 means nothing was eligible — skip the rest of this phase entirely.** Do
 not spawn the sub-agent. Only findings from a role or an `audit-*` skill whose
 anchor resolved are adjudicable; `fallback` and `definition-of-done` findings are
-deterministic and never enter.
+deterministic and never enter. **Exit 2 is a usage or repository error — stop
+and report it.** Do not dispatch the sub-agent and do not proceed as if this
+phase ran.
 
 Otherwise dispatch **one** sub-agent on the tier the payload's
 `OCTOPUS_REFLECT_MODEL` line names (Agent tool, `model` set to that value). Give
@@ -105,11 +107,14 @@ it the payload and this instruction:
 > new issues and do not read files beyond what you were given. Return one line
 > per finding, tab-separated: `<id>	keep|reject	<one-line reason>`.
 
-Write its reply to a file and apply it:
+`apply` prints the rewritten report to stdout — it never edits `<report>` in
+place. Capture it to a temp file and move that over `<report>` only after
+`apply` exits 0, so a failed run can never leave a truncated report on disk:
 
 ```bash
 octopus review-reflect apply --base <base> --ref <ref> --file <report> \
-  --verdicts <verdicts-file> --filtered <filtered-file>
+  --verdicts <verdicts-file> --filtered <filtered-file> > <report>.new \
+  && mv <report>.new <report>
 ```
 
 A rejected BLOCKING/CRITICAL is **demoted to ADVISORY**, not deleted — the claim
@@ -118,12 +123,17 @@ report and lands in `<filtered-file>` for Phase 4.6. Report the
 `OCTOPUS_REFLECT_SUMMARY` line so an over-aggressive filter is visible in the run
 itself.
 
-If the sub-agent fails or returns nothing usable, `apply` leaves the report
-unchanged — the filter never removes what it did not explicitly reject.
+If the sub-agent fails or returns nothing usable, `apply` still exits 0 and
+prints the report unchanged — the filter never removes what it did not
+explicitly reject, and the `mv` above still applies it. If `apply` fails
+instead, the `&&` short-circuits: `<report>` stays exactly what Phase 4.5 left
+it. Either way, Phase 4.6 must record, and Phase 5 must post, `<report>` as it
+stands after this step — not the pre-reflection version.
 
 ## Phase 4.6 — Record the Run
 
-Persist the report before posting it (RM-176):
+Persist the report — rewritten by Phase 4.55, if it ran — before posting it
+(RM-176):
 
 ```bash
 octopus review-session record --base <base> --ref <ref> \
