@@ -238,6 +238,26 @@ assert_contains "a prose line shaped like a header survives a no-op recount" \
 assert_not_contains "the prose line is not rewritten into a bogus count" \
   "MEDIUM (0)" "$out"
 
+# --- fix round 2 regressions -------------------------------------------------
+# Round 1's escaping fixed "&" but doubled every literal "\" in the same pass
+# (a replacement-string escape applied to text no longer used as one). Splicing
+# with match()+substr() instead removes the need for any such escaping.
+
+# A lone backslash, not adjacent to any "&" — exactly what round 1 missed,
+# since a "\" immediately before "&" happened to round-trip by coincidence.
+printf '1\treject\tpath is C:\\Users\\foo and that is wrong\n' > "$WORK/backslash.tsv"
+out="$(reflect_apply main HEAD "$WORK/report.txt" "$WORK/backslash.tsv")"
+assert_contains "a lone backslash in the reason is not doubled" \
+  'reflection: path is C:\Users\foo and that is wrong' "$out"
+assert_not_contains "a lone backslash in the reason is not doubled (regression check)" \
+  'C:\\Users\\foo' "$out"
+
+# Backslash and ampersand together — the case that happened to survive round 1.
+printf '1\treject\ta\\&b weirdness\n' > "$WORK/backslash-amp.tsv"
+out="$(reflect_apply main HEAD "$WORK/report.txt" "$WORK/backslash-amp.tsv")"
+assert_contains "a backslash next to an ampersand round-trips exactly" \
+  'reflection: a\&b weirdness' "$out"
+
 popd >/dev/null
 
 echo ""

@@ -219,12 +219,6 @@ reflect_apply() {
       while ((getline d < dec) > 0) {
         split(d, f, "\t")
         act[f[1]] = f[2]; osev[f[1]] = f[3]; why[f[1]] = f[4]
-        # Escape backslash then ampersand so severity/reason text can be dropped
-        # into a sub() replacement below without either being read as the "&"
-        # matched-text idiom or a "\" escape — the reason is free text an LLM
-        # wrote, so both are ordinary characters in it.
-        gsub(/[\\&]/, "\\\\&", osev[f[1]])
-        gsub(/[\\&]/, "\\\\&", why[f[1]])
       }
       close(dec)
     }
@@ -233,10 +227,17 @@ reflect_apply() {
       line = $0
       # Anchor on the [origin: x] tag itself, not on "the first ]" — a leading
       # markdown checkbox ("- [ ] [origin: x] ...") or a "[P1]"-style prefix
-      # would otherwise steal the insertion point. "&" re-emits the matched tag
-      # so the reason lands right after it, where a later task reads it back
-      # out of the text.
-      sub(/\[origin:[^]]*\]/, "& (was " osev[FNR] "; reflection: " why[FNR] ")", line)
+      # would otherwise steal the insertion point. Splice with match()+substr()
+      # rather than a sub() replacement argument: "&" and "\" are only special
+      # inside a replacement string, and the reason is free text an LLM wrote,
+      # so both are ordinary characters in it — no escaping of osev[]/why[] is
+      # needed or wanted here, since escaping meant for a replacement string
+      # would itself corrupt a literal backslash once nothing reads it as one.
+      if (match(line, /\[origin:[^]]*\]/)) {
+        line = substr(line, 1, RSTART + RLENGTH - 1) \
+               " (was " osev[FNR] "; reflection: " why[FNR] ")" \
+               substr(line, RSTART + RLENGTH)
+      }
       dem[++nd] = line
       next
     }
