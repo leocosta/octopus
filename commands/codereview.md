@@ -212,9 +212,26 @@ it the payload and this instruction:
 > For each finding, decide whether the code shown sustains the claim. The burden
 > of proof is on the finding: if the window does not sustain it, `reject`. One
 > exception — if the window does not show enough to judge (a claim about coupling
-> across files, for instance), `keep`. Doubt favours the finding. Do not look for
-> new issues and do not read files beyond what you were given. Return one line
-> per finding, tab-separated: `<id>	keep|reject	<one-line reason>`.
+> across files, for instance), `keep`. Doubt favours the finding. Each finding's
+> `anchor:` line says how its cited code relates to this change — `anchored`
+> means the change touched that line, `not-in-diff` means the line is
+> pre-existing and this change never touched it. Do not look for new issues and
+> do not read files beyond what you were given. Return one line per finding,
+> tab-separated: `<id>	keep|reject	<one-line reason>`.
+
+Write the sub-agent's reply verbatim to a `<verdicts-file>` next to the report,
+and pick a `<filtered-file>` path for the discards — `apply` reads the first and
+writes the second, and neither exists until you create it:
+
+```bash
+cat > <verdicts-file> <<'VERDICTS'
+<the sub-agent's reply, unedited>
+VERDICTS
+```
+
+Do not reformat, renumber or drop lines on the way in. A line `apply` cannot
+read is a line it keeps, so an edit here can only cost a finding, never save
+one.
 
 `apply` prints the rewritten report to stdout — it never edits `<report>` in
 place. Capture it to a temp file and move that over `<report>` only after

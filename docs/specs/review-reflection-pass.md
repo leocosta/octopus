@@ -106,14 +106,19 @@ OCTOPUS_REFLECT_MODEL sonnet
 
 --- FINDING 1 ---
 severity: BLOCKING
-origin: dba
 anchor: anchored
 text: [origin: dba] Missing index on orders.tenant_id — db/schema.sql:42
-code: db/schema.sql
-  27 | ...
-> 42 | ...
-  57 | ...
+code: db/schema.sql (cited line 42, marked >)
+       27 | ...
+>      42 | ...
+       57 | ...
 ```
+
+`origin` is not a field of its own: it travels inside `text`, which is the
+finding's report line verbatim, `[origin: …]` tag included. `anchor` is the
+RM-170 verdict, and it is the one thing the window cannot show — `not-in-diff`
+says the cited line is pre-existing and this change never touched it, which is
+frequently the whole answer to "does this code sustain the claim".
 
 Finding ids are the eligible findings' ordinal position, in report order,
 starting at 1. `apply` re-derives eligibility from the same report, which is why
@@ -142,8 +147,11 @@ deterministic:
 
 `filtered.tsv` is
 `<severity><TAB><origin><TAB><path><TAB><line><TAB><reason>`, one dropped finding
-per line — the same tab-delimited shape `review_record_parse` already emits, so
-the record path reads it without a second parser.
+per line. It is tab-delimited for the same reason `review_record_parse`'s rows
+are — `awk -F'\t'` reads it without collapsing an empty column — but it is not
+the same shape: five columns against that function's seven, because a dropped
+finding has no anchor verdict left to record and no report line to quote. It
+gets its own `awk` reader in `review_record_json`, next to the findings one.
 
 The asymmetry is deliberate. The risks are not symmetric: wrongly dropping a
 claim that called itself critical is the one failure this pass could introduce,
@@ -162,9 +170,14 @@ defect of its own:
 3. An id the adjudicator did not mention is treated as `keep`. Only an explicit
    `reject` removes anything.
 
-**Summary line.** `apply` ends with
-`OCTOPUS_REFLECT_SUMMARY kept=N demoted=N filtered=N`, so an over-aggressive
-filter is visible in the run's own output and not only in the record.
+**Summary line.** `apply` writes
+`OCTOPUS_REFLECT_SUMMARY kept=N demoted=N filtered=N` to **stderr**, so an
+over-aggressive filter is visible in the run's own output and not only in the
+record. stdout is the rewritten report body and nothing else: the documented
+`apply … > <report>.new && mv <report>.new <report>` pipeline captures stdout
+verbatim, and a summary line mixed into it would be persisted into the report
+and, through `pr-review`'s `--body-file`, posted into a public PR comment. The
+orchestrators are told to report the line anyway.
 
 **Record integration (RM-176).** `review-session record` gains `--filtered <file>`:
 
@@ -225,7 +238,14 @@ adopting it. Records written without it are valid — `filtered[]` is simply emp
 - **Code window**: correct slice mid-file; truncation at both file boundaries; the
   cited line is marked.
 - **`prepare`**: exit 1 and no payload when nothing is eligible;
-  `OCTOPUS_REFLECT_MODEL sonnet` in the header.
+  `OCTOPUS_REFLECT_MODEL sonnet` in the header; every finding carries its
+  `anchor:` verdict, and the verdict follows the diff.
+- **Usage errors**: a report that exists but cannot be read is exit 2, not the
+  exit 1 that means "nothing was eligible"; a flag given no value is exit 2, not
+  a hang.
+- **The reason is free text**: `&`, `\`, parens, tabs and CRs all round-trip or
+  are stripped, and a `path:line` inside a reason never displaces the demoted
+  finding's own citation — in the record, or on a second `apply`.
 - **`apply`**: a rejected BLOCKING is demoted and still present; a rejected MEDIUM
   is removed and appears in `filtered.tsv`; `keep` leaves the line untouched; an
   unmentioned id is kept; an empty verdicts file yields a byte-identical report.
@@ -253,3 +273,6 @@ adopting it. Records written without it are valid — `filtered[]` is simply emp
 ## Changelog
 
 - **2026-08-04** — Initial draft (RM-171)
+- **2026-08-05** — Reconciled with what shipped: the payload block (no `origin:`
+  field, `anchor:` kept and now emitted), `filtered.tsv`'s real shape, and the
+  summary line's stream (RM-171)
