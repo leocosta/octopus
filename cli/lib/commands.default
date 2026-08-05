@@ -30,5 +30,6 @@ briefing|Proactive cadence summary over a knowledge root
 lens|Surface consigliere lens-context (playbook + political risk)
 review-session|Persist and query review runs (structured record with origin, anchor, and audit resolution)
 review-anchor|Verify that review findings cite real, changed code (path:line resolved against the diff)
+review-reflect|Adversarially filter review findings before they are reported (prepare payload, apply verdicts)
 audit-scope|Resolve an audit skill's scoped diff, cache hit, or early exit before any LLM call
 code-metrics|Local PR-time dual-delta read of coverage/complexity/module-size/deps vs. orphan-ref baseline; LLM curation only on breach

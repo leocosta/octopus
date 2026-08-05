@@ -260,6 +260,46 @@ assert_contains "a backslash next to an ampersand round-trips exactly" \
 
 popd >/dev/null
 
+# --- the command -----------------------------------------------------------
+
+pushd "$REPO" >/dev/null
+
+out="$(bash "$CMD" prepare --base main --ref HEAD --file "$WORK/report.txt")"
+assert_contains "prepare through the CLI emits a payload" "--- FINDING 1 ---" "$out"
+
+bash "$CMD" prepare --base main --ref HEAD --file "$WORK/nothing.txt" >/dev/null 2>&1
+assert_eq "prepare exits 1 through the CLI when nothing is eligible" "1" "$?"
+
+out="$(bash "$CMD" apply --base main --ref HEAD --file "$WORK/report.txt" \
+  --verdicts "$WORK/verdicts.tsv" --filtered "$WORK/cli-filtered.tsv")"
+assert_contains "apply through the CLI rewrites the report" "was BLOCKING; reflection:" "$out"
+
+out="$(bash "$CMD" prepare --base main --ref HEAD --file "$WORK/no-such-report.txt" 2>&1)"; rc=$?
+assert_eq "a missing report is a usage error" "2" "$rc"
+assert_contains "the missing report is named" "no such file" "$out"
+
+out="$(bash "$CMD" frobnicate 2>&1)"; rc=$?
+assert_eq "an unknown subcommand is a usage error" "2" "$rc"
+
+popd >/dev/null
+
+out="$(cd "$WORK" && bash "$CMD" prepare --file "$WORK/report.txt" 2>&1)"
+assert_contains "outside a git repo it refuses" "not a git repository" "$out"
+
+# --- registry --------------------------------------------------------------
+
+if grep -q "^review-reflect|" "$OCTOPUS_DIR/cli/lib/commands.default"; then
+  pass "review-reflect is a registered command"
+else
+  fail "review-reflect is a registered command"
+fi
+
+if grep -q "^reflect-payload|" "$OCTOPUS_DIR/cli/lib/commands.default"; then
+  fail "reflect-payload stays a helper lib"
+else
+  pass "reflect-payload stays a helper lib"
+fi
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [[ $FAIL -eq 0 ]]
