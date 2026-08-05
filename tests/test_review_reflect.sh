@@ -147,6 +147,50 @@ assert_eq "prepare exits 1 when nothing is eligible" "1" "$rc"
 assert_eq "prepare emits no payload when nothing is eligible" "" "$out"
 popd >/dev/null
 
+# --- verdict application ---------------------------------------------------
+
+pushd "$REPO" >/dev/null
+
+# Finding 1 is the BLOCKING dba one; finding 2 the ADVISORY audit-money one.
+printf '1\treject\tthe index exists at line 12\n2\treject\trounding happens in the caller\n' > "$WORK/verdicts.tsv"
+out="$(reflect_apply main HEAD "$WORK/report.txt" "$WORK/verdicts.tsv" "$WORK/filtered.tsv")"
+
+assert_contains "a rejected blocker survives, demoted" "was BLOCKING; reflection: the index exists at line 12" "$out"
+assert_contains "the demoted finding keeps its origin" "[origin: dba]" "$out"
+assert_contains "the demoted finding keeps its text" "Missing index at src/app.ts:20" "$out"
+assert_eq "the demoted finding no longer sits under BLOCKING" "" \
+  "$(printf '%s\n' "$out" | awk '/^BLOCKING/{f=1;next} /^[A-Z]+ \(/{f=0} f && /Missing index/{print "still blocking"}')"
+assert_not_contains "a rejected non-blocker leaves the report" "Rounding at src/app.ts:5" "$out"
+assert_contains "the dropped finding is recorded with its reason" "rounding happens in the caller" "$(cat "$WORK/filtered.tsv")"
+assert_contains "the dropped row carries its original severity" "ADVISORY" "$(cat "$WORK/filtered.tsv")"
+assert_contains "ineligible findings are untouched" "TODO introduced" "$out"
+assert_contains "summary counts the outcome" "OCTOPUS_REFLECT_SUMMARY kept=0 demoted=1 filtered=1" "$out"
+
+# Header counts are recomputed, not left stale.
+assert_contains "the emptied section's count is corrected" "BLOCKING (1)" "$out"
+
+# Fail-open, three ways.
+: > "$WORK/empty.tsv"
+out="$(reflect_apply main HEAD "$WORK/report.txt" "$WORK/empty.tsv")"
+assert_eq "an empty verdicts file changes nothing" \
+  "$(cat "$WORK/report.txt")" "$(printf '%s\n' "$out" | grep -v '^OCTOPUS_REFLECT_SUMMARY')"
+
+out="$(reflect_apply main HEAD "$WORK/report.txt" "$WORK/does-not-exist.tsv")"
+assert_eq "a missing verdicts file changes nothing" \
+  "$(cat "$WORK/report.txt")" "$(printf '%s\n' "$out" | grep -v '^OCTOPUS_REFLECT_SUMMARY')"
+
+printf '1\treject\tgone\n99\treject\tno such finding\n' > "$WORK/partial.tsv"
+out="$(reflect_apply main HEAD "$WORK/report.txt" "$WORK/partial.tsv")"
+assert_contains "an unmentioned finding is kept" "Rounding at src/app.ts:5" "$out"
+assert_contains "an unknown id is ignored" "OCTOPUS_REFLECT_SUMMARY kept=1 demoted=1 filtered=0" "$out"
+
+printf '1\tkeep\tthe index really is missing\n' > "$WORK/keep.tsv"
+out="$(reflect_apply main HEAD "$WORK/report.txt" "$WORK/keep.tsv")"
+assert_contains "a kept blocker stays blocking" "BLOCKING (2)" "$out"
+assert_not_contains "a kept finding gains no reflection note" "reflection:" "$out"
+
+popd >/dev/null
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [[ $FAIL -eq 0 ]]

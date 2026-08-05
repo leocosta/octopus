@@ -147,3 +147,136 @@ reflect_prepare() {
 
   return 0
 }
+
+# ---------------------------------------------------------------------------
+# reflect_apply <base> <ref> <report> <verdicts> [filtered-out]
+#
+# The asymmetry is the point. Wrongly deleting a claim that called itself
+# critical is the one failure this pass could introduce, so a rejected blocker
+# is demoted and stays readable; a rejected non-blocker is dropped, because
+# triage cost is what the filter exists to remove.
+#
+# Fail-open throughout: a missing or empty verdicts file, or an id nobody
+# mentioned, leaves the finding exactly where it was.
+# ---------------------------------------------------------------------------
+reflect_apply() {
+  local base="$1" ref="$2" report="$3" verdicts="$4" filtered_out="${5:-}"
+  local scan decisions row n severity id path lineno v r origin
+  local kept=0 demoted=0 dropped=0
+
+  scan="$(_reflect_scan "$base" "$ref" "$report")"
+  decisions="$(mktemp)"
+
+  # Pass 1 — one decision per rejected finding, keyed by its line in the report.
+  # Written to a file rather than an associative array: cli/lib/ carries no
+  # bash-4 features, and awk reads the map natively in pass 2.
+  while IFS= read -r row; do
+    [[ -z "$row" ]] && continue
+    [[ "$(printf '%s' "$row" | cut -d$'\t' -f2)" == "finding" ]] || continue
+
+    n="$(printf '%s' "$row" | cut -d$'\t' -f1)"
+    severity="$(printf '%s' "$row" | cut -d$'\t' -f3)"
+    id="$(printf '%s' "$row" | cut -d$'\t' -f4)"
+    path="$(printf '%s' "$row" | cut -d$'\t' -f5)"
+    lineno="$(printf '%s' "$row" | cut -d$'\t' -f6)"
+
+    v=""; r=""
+    if [[ -f "$verdicts" ]]; then
+      v="$(awk -F'\t' -v w="$id" '$1 == w { print $2; exit }' "$verdicts")"
+      r="$(awk -F'\t' -v w="$id" '$1 == w { print $3; exit }' "$verdicts")"
+    fi
+
+    # Anything not explicitly rejected is kept — a missing verdicts file, an
+    # empty one, and an id nobody mentioned all land here.
+    if [[ "$v" != "reject" ]]; then
+      kept=$((kept + 1))
+      continue
+    fi
+    r="${r:-no reason given}"
+
+    case "$severity" in
+      BLOCKING|CRITICAL)
+        demoted=$((demoted + 1))
+        printf '%s\tdemote\t%s\t%s\n' "$n" "$severity" "$r" >> "$decisions" ;;
+      *)
+        dropped=$((dropped + 1))
+        printf '%s\tdrop\t%s\t%s\n' "$n" "$severity" "$r" >> "$decisions"
+        if [[ -n "$filtered_out" ]]; then
+          origin="$(sed -n "${n}p" "$report" | sed -n 's/.*\[origin:[[:space:]]*\([^]]*\)\].*/\1/p')"
+          printf '%s\t%s\t%s\t%s\t%s\n' "$severity" "$origin" "$path" "$lineno" "$r" >> "$filtered_out"
+        fi ;;
+    esac
+  done <<< "$scan"
+
+  # Pass 2 — rewrite the report: drops vanish, demotions are lifted out and
+  # folded back in under ADVISORY, everything else passes through verbatim.
+  awk -v dec="$decisions" '
+    BEGIN {
+      while ((getline d < dec) > 0) {
+        split(d, f, "\t")
+        act[f[1]] = f[2]; osev[f[1]] = f[3]; why[f[1]] = f[4]
+      }
+      close(dec)
+    }
+    act[FNR] == "drop" { next }
+    act[FNR] == "demote" {
+      line = $0
+      # The first "]" closes [origin: x] — the reason goes right after it, so the
+      # record can read it back out of the text later.
+      sub(/\]/, "] (was " osev[FNR] "; reflection: " why[FNR] ")", line)
+      dem[++nd] = line
+      next
+    }
+    { out[++no] = $0 }
+    END {
+      for (i = 1; i <= no; i++) {
+        print out[i]
+        if (nd && !ins && out[i] ~ /^[[:space:]]*ADVISORY([[:space:]]*\(|:|[[:space:]]*$)/) {
+          for (j = 1; j <= nd; j++) print dem[j]
+          ins = 1
+        }
+      }
+      # No ADVISORY section to fold into — append one. Section order in the
+      # report is conventional; nothing downstream reads it.
+      if (nd && !ins) {
+        print ""
+        print "ADVISORY (" nd ")"
+        for (j = 1; j <= nd; j++) print dem[j]
+      }
+    }
+  ' "$report" | _reflect_recount
+
+  rm -f "$decisions"
+  printf 'OCTOPUS_REFLECT_SUMMARY kept=%d demoted=%d filtered=%d\n' "$kept" "$demoted" "$dropped"
+}
+
+# ---------------------------------------------------------------------------
+# _reflect_recount
+#
+# Reads a report on stdin and rewrites every section count from the findings
+# actually under it. Counts are recomputed rather than adjusted: a stale
+# "BLOCKING (2)" over one finding is exactly the kind of quiet wrongness this
+# cluster exists to remove.
+# ---------------------------------------------------------------------------
+_reflect_recount() {
+  awk -v sev="$_REFLECT_SEVERITIES" '
+    # Buffer everything, counting findings per section, then rewrite the counts.
+    {
+      lines[NR] = $0
+      if ($0 ~ "^[[:space:]]*(" sev ")([[:space:]]*\\(|:|[[:space:]]*$)") {
+        current = NR
+        match($0, "(" sev ")")
+        sect[NR] = substr($0, RSTART, RLENGTH)
+        count[NR] = 0
+      } else if (current && index($0, "[origin:")) {
+        count[current]++
+      }
+    }
+    END {
+      for (i = 1; i <= NR; i++) {
+        if (i in sect) printf "%s (%d)\n", sect[i], count[i]
+        else print lines[i]
+      }
+    }
+  '
+}
