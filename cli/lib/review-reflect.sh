@@ -31,6 +31,22 @@ _review_reflect_usage() {
   echo "       octopus.sh review-reflect apply --base <ref> --ref <ref> --file <report> --verdicts <tsv> [--filtered <tsv>]"
 }
 
+# _review_reflect_need_value <remaining-argc> <flag>
+#
+# Every flag this command takes needs a value, and `shift 2` with only the flag
+# itself left fails silently under `set +e` — the loop then spins on the same
+# argument forever instead of erroring out. That is the pre-existing pattern
+# elsewhere in cli/lib, but this command is invoked from model-generated prose,
+# where a flag whose value went missing is a plausible mistake and a hang is
+# the worst possible answer to it. Called with $# from inside the loop, so
+# "the flag plus its value" is >= 2.
+_review_reflect_need_value() {
+  [[ "$1" -ge 2 ]] && return 0
+  echo "review-reflect: $2 requires a value" >&2
+  _review_reflect_usage >&2
+  exit 2
+}
+
 SUB="${1:-}"
 shift 2>/dev/null || true
 
@@ -52,11 +68,11 @@ BASE="main"; REF="HEAD"; REPORT=""; VERDICTS=""; FILTERED=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --base) BASE="${2:-}"; shift 2 ;;
-    --ref) REF="${2:-}"; shift 2 ;;
-    --file) REPORT="${2:-}"; shift 2 ;;
-    --verdicts) VERDICTS="${2:-}"; shift 2 ;;
-    --filtered) FILTERED="${2:-}"; shift 2 ;;
+    --base) _review_reflect_need_value $# "$1"; BASE="$2"; shift 2 ;;
+    --ref) _review_reflect_need_value $# "$1"; REF="$2"; shift 2 ;;
+    --file) _review_reflect_need_value $# "$1"; REPORT="$2"; shift 2 ;;
+    --verdicts) _review_reflect_need_value $# "$1"; VERDICTS="$2"; shift 2 ;;
+    --filtered) _review_reflect_need_value $# "$1"; FILTERED="$2"; shift 2 ;;
     -h|--help) _review_reflect_usage; exit 0 ;;
     *) echo "review-reflect: unknown argument '$1'" >&2; exit 2 ;;
   esac
@@ -69,6 +85,18 @@ fi
 
 if [[ -z "$REPORT" || ! -f "$REPORT" ]]; then
   echo "review-reflect: --file <report>: no such file: ${REPORT:-<missing>}" >&2
+  exit 2
+fi
+
+# Readability is checked separately from existence, and it is a usage error
+# rather than "nothing was eligible". Without this, prepare's scan reads zero
+# lines from the unreadable report, finds nothing eligible and exits 1 — which
+# both orchestrators document as "skip the rest of this phase entirely" — so a
+# permission problem would silently disable the reflection pass while leaking a
+# raw `Permission denied` from inside the library. apply already fails with 2
+# here (its rewrite pipeline errors); prepare must too.
+if [[ ! -r "$REPORT" ]]; then
+  echo "review-reflect: --file <report>: cannot read $REPORT" >&2
   exit 2
 fi
 

@@ -72,11 +72,11 @@ _REFLECT_SEVERITIES='BLOCKING|ADVISORY|QUESTION|CRITICAL|HIGH|MEDIUM|LOW'
 # excluded — there is nothing to confront, and judging prose against prose is
 # what this pass exists to avoid.
 #
-# Emits: lineno<TAB>kind<TAB>severity<TAB>id<TAB>path<TAB>cited-line
+# Emits: lineno<TAB>kind<TAB>severity<TAB>id<TAB>path<TAB>cited-line<TAB>anchor
 # ---------------------------------------------------------------------------
 _reflect_scan() {
   local base="$1" ref="$2" report="$3"
-  local n=0 id=0 severity="" line origin anchor path lineno verdict
+  local n=0 id=0 severity="" line cited origin anchor path lineno verdict
 
   while IFS= read -r line; do
     n=$((n + 1))
@@ -91,7 +91,17 @@ _reflect_scan() {
 
     origin="$(printf '%s' "$line" | sed -n 's/.*\[origin:[[:space:]]*\([^]]*\)\].*/\1/p' | sed 's/[[:space:]]*$//')"
 
-    anchor="$(anchor_extract "$line")"
+    # A finding this pass already demoted carries "(was <SEV>; reflection:
+    # <reason>)" after its [origin: x] tag, and the reason is free text that
+    # very often cites real code ("the index already exists at src/app.ts:30").
+    # anchor_extract takes the first citation on the line, so the note has to
+    # come off first — otherwise re-running apply over its own output resolves
+    # the finding against the adjudicator's file, not its own, and eligibility
+    # flips on a line nobody touched. Mirrors the strip in review_record_parse
+    # (cli/lib/review-record.sh); a third reader should share one helper.
+    cited="$(printf '%s' "$line" | sed 's/[[:space:]]*(was [A-Z][A-Z]*; reflection:[^)]*)//')"
+
+    anchor="$(anchor_extract "$cited")"
     if [[ -n "$anchor" ]]; then
       path="${anchor%%$'\t'*}"
       lineno="${anchor##*$'\t'}"
@@ -103,9 +113,9 @@ _reflect_scan() {
     if reflect_origin_eligible "$origin" \
       && [[ "$verdict" == "anchored" || "$verdict" == "not-in-diff" ]]; then
       id=$((id + 1))
-      printf '%d\tfinding\t%s\t%d\t%s\t%s\n' "$n" "${severity:-UNKNOWN}" "$id" "$path" "$lineno"
+      printf '%d\tfinding\t%s\t%d\t%s\t%s\t%s\n' "$n" "${severity:-UNKNOWN}" "$id" "$path" "$lineno" "$verdict"
     else
-      printf '%d\tskip\t%s\t\t\t\n' "$n" "${severity:-UNKNOWN}"
+      printf '%d\tskip\t%s\t\t\t\t\n' "$n" "${severity:-UNKNOWN}"
     fi
   done < "$report"
 }
@@ -115,14 +125,17 @@ _reflect_scan() {
 #
 # The adjudicator's whole input: each eligible finding and the window of code it
 # points at. The origin travels inside the finding's own text, so it is not
-# repeated as a field.
+# repeated as a field. The RM-170 anchor verdict is, because it is the one thing
+# the window cannot show: `not-in-diff` says the cited line is pre-existing and
+# this change did not touch it, which is often the whole answer to "does this
+# code sustain the claim".
 #
 # Exit 1 means nothing was eligible — the caller skips the model call, the same
 # "don't spawn" saving audit-scope makes for audits (RM-172).
 # ---------------------------------------------------------------------------
 reflect_prepare() {
   local base="$1" ref="$2" report="$3"
-  local scan row n severity id path lineno text
+  local scan row n severity id path lineno anchor text
 
   scan="$(_reflect_scan "$base" "$ref" "$report")"
   printf '%s\n' "$scan" | grep -q $'\tfinding\t' || return 1
@@ -138,10 +151,12 @@ reflect_prepare() {
     id="$(printf '%s' "$row" | cut -d$'\t' -f4)"
     path="$(printf '%s' "$row" | cut -d$'\t' -f5)"
     lineno="$(printf '%s' "$row" | cut -d$'\t' -f6)"
+    anchor="$(printf '%s' "$row" | cut -d$'\t' -f7)"
     text="$(sed -n "${n}p" "$report" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
 
     printf '\n--- FINDING %s ---\n' "$id"
     printf 'severity: %s\n' "$severity"
+    printf 'anchor: %s\n' "$anchor"
     printf 'text: %s\n' "$text"
     printf 'code: %s (cited line %s, marked >)\n' "$path" "$lineno"
     reflect_code_window "$ref" "$path" "$lineno"
@@ -220,8 +235,11 @@ reflect_apply() {
     # column after it, same as in review-record.sh). Collapsing tabs to
     # spaces and dropping parens from the reason itself is the trade: a
     # reason that round-trips beats one that reads slightly better and gets
-    # truncated or misparsed.
+    # truncated or misparsed. A CR is dropped outright: a verdicts file saved
+    # with CRLF line endings would otherwise embed a literal ^M in the report
+    # body, which pr-review.md posts verbatim into a public PR comment.
     r="${r//$'\t'/ }"
+    r="${r//$'\r'/}"
     r="${r//(/}"
     r="${r//)/}"
 
@@ -233,7 +251,11 @@ reflect_apply() {
         dropped=$((dropped + 1))
         printf '%s\tdrop\t%s\t%s\n' "$n" "$severity" "$r" >> "$decisions"
         if [[ -n "$filtered_out" ]]; then
-          origin="$(sed -n "${n}p" "$report" | sed -n 's/.*\[origin:[[:space:]]*\([^]]*\)\].*/\1/p')"
+          # Same trailing-whitespace strip _reflect_scan and review_record_parse
+          # apply: "[origin: dba ]" must not make the record carry "dba " in
+          # filtered[] and "dba" in findings[] for the very same finding.
+          origin="$(sed -n "${n}p" "$report" \
+            | sed -n 's/.*\[origin:[[:space:]]*\([^]]*\)\].*/\1/p' | sed 's/[[:space:]]*$//')"
           printf '%s\t%s\t%s\t%s\t%s\n' "$severity" "$origin" "$path" "$lineno" "$r" >> "$filtered_out"
         fi ;;
     esac
@@ -289,7 +311,7 @@ reflect_apply() {
   # PIPESTATUS[0] is the rewrite awk's own exit status — captured immediately,
   # before any other command runs and overwrites it. A truncated or unreadable
   # $report makes this non-zero; the caller must not be told the rewrite
-  # succeeded when it didn't (deferred from Task 4: previously discarded).
+  # succeeded when it didn't — this status used to be discarded outright.
   rewrite_status=${PIPESTATUS[0]}
 
   rm -f "$decisions"

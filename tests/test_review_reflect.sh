@@ -132,6 +132,22 @@ assert_contains "payload carries the second finding too" "--- FINDING 2 ---" "$p
 assert_eq "payload carries exactly the eligible findings" "2" \
   "$(printf '%s\n' "$payload" | grep -c '^--- FINDING ')"
 assert_contains "payload states the severity" "severity: BLOCKING" "$payload"
+# The RM-170 verdict is the one thing the code window cannot show: "not-in-diff"
+# tells the adjudicator the cited line is pre-existing and this change never
+# touched it, which is often the whole answer to "does this code sustain the
+# claim".
+assert_eq "every eligible finding carries an anchor verdict" "2" \
+  "$(printf '%s\n' "$payload" | grep -c '^anchor: ')"
+
+# `main` is the branch HEAD is on in this fixture, so main..HEAD is empty and
+# every citation reads not-in-diff. Re-run against a base that does resolve to
+# prove the field follows the diff: src/app.ts:20 is the line the last commit
+# changed, src/app.ts:5 is not.
+diffed="$(reflect_prepare HEAD~1 HEAD "$WORK/report.txt")"
+assert_contains "payload marks a line this change touched as anchored" \
+  "anchor: anchored" "$diffed"
+assert_contains "payload marks a pre-existing line as not-in-diff" \
+  "anchor: not-in-diff" "$diffed"
 assert_contains "payload carries the finding text" "Missing index at src/app.ts:20" "$payload"
 assert_contains "payload shows the anchored code, cited line marked" ">    20 | line 20 CHANGED" "$payload"
 assert_not_contains "payload never carries an ineligible finding" "TODO introduced" "$payload"
@@ -172,7 +188,7 @@ assert_contains "the emptied section's count is corrected" "BLOCKING (1)" "$out"
 
 # Fail-open, three ways.
 # The grep -v '^OCTOPUS_REFLECT_SUMMARY' strip these two used to need is gone:
-# with the summary line off stdout entirely (fix round 2), a plain byte-for-byte
+# with the summary line off stdout entirely, a plain byte-for-byte
 # compare is strictly stronger — it would now fail loudly if the summary ever
 # leaked back onto stdout, instead of silently stripping it away first.
 : > "$WORK/empty.tsv"
@@ -194,7 +210,7 @@ out="$(reflect_apply main HEAD "$WORK/report.txt" "$WORK/keep.tsv")"
 assert_contains "a kept blocker stays blocking" "BLOCKING (2)" "$out"
 assert_not_contains "a kept finding gains no reflection note" "reflection:" "$out"
 
-# --- fix round 1 regressions -------------------------------------------------
+# --- the reason is free text spliced into the report -------------------------
 
 # Critical: "&" in a reason must not be read as sub()'s matched-text idiom.
 printf '1\treject\tcost & benefit say no\n' > "$WORK/amp.tsv"
@@ -243,10 +259,10 @@ assert_contains "a prose line shaped like a header survives a no-op recount" \
 assert_not_contains "the prose line is not rewritten into a bogus count" \
   "MEDIUM (0)" "$out"
 
-# --- fix round 2 regressions -------------------------------------------------
-# Round 1's escaping fixed "&" but doubled every literal "\" in the same pass
-# (a replacement-string escape applied to text no longer used as one). Splicing
-# with match()+substr() instead removes the need for any such escaping.
+# --- a backslash in the reason survives the splice ---------------------------
+# The first escaping attempt fixed "&" but doubled every literal "\" in the same
+# pass (a replacement-string escape applied to text no longer used as one).
+# Splicing with match()+substr() instead removes the need for any such escaping.
 
 # A lone backslash, not adjacent to any "&" — exactly what round 1 missed,
 # since a "\" immediately before "&" happened to round-trip by coincidence.
@@ -263,7 +279,7 @@ out="$(reflect_apply main HEAD "$WORK/report.txt" "$WORK/backslash-amp.tsv")"
 assert_contains "a backslash next to an ampersand round-trips exactly" \
   'reflection: a\&b weirdness' "$out"
 
-# --- fix round 1 (Task 5 review) regressions --------------------------------
+# --- apply fails closed on its own internal failures -------------------------
 # Critical: apply used to report success unconditionally. It must fail closed
 # when it cannot honor --filtered, and when the report rewrite itself fails —
 # a caller doing `apply ... > new && mv new report` must never be told a
@@ -279,7 +295,7 @@ out="$(reflect_apply main HEAD "$WORK/no-such-report-for-apply.txt" "$WORK/verdi
 rc=$?
 assert_eq "reflect_apply fails when the rewrite pipeline itself fails" "2" "$rc"
 
-# --- fix round 1 (Task 6 review) regressions --------------------------------
+# --- parens and tabs are stripped from the reason ----------------------------
 # Important: a parenthetical aside in the reason must not survive into the
 # note. review-record.sh's reflection reader stops at the first ")" it sees,
 # so a "(" or ")" left in the reason would either truncate it mid-sentence or
@@ -293,6 +309,54 @@ assert_contains "a parenthetical aside in the reason does not truncate the note"
   'reflection: the guard exists at :31 see helper and he said "no" \ ok)' "$out"
 assert_not_contains "the reason keeps no parens of its own" \
   "(see helper)" "$out"
+
+# Important: a CR must not survive either. A verdicts file saved with CRLF line
+# endings would otherwise put a literal ^M into the report body that pr-review
+# posts verbatim into a public PR comment.
+printf '1\treject\tthe index exists already\r\n' > "$WORK/crlf.tsv"
+out="$(reflect_apply main HEAD "$WORK/report.txt" "$WORK/crlf.tsv" 2>/dev/null)"
+assert_contains "a CRLF verdicts file still demotes the finding" \
+  "was BLOCKING; reflection: the index exists already)" "$out"
+assert_not_contains "a CRLF verdicts file embeds no CR in the report" $'\r' "$out"
+
+# Important: the filtered row's origin must match findings[]'s. Both are read
+# out of the same "[origin: x]" tag, so a tag written with a trailing space must
+# not yield "audit-money " in one array and "audit-money" in the other.
+cat > "$WORK/spaced-origin.txt" <<'EOF'
+ADVISORY (1)
+  [origin: audit-money ] Rounding at src/app.ts:5
+EOF
+printf '1\treject\trounding happens in the caller\n' > "$WORK/spaced-verdict.tsv"
+reflect_apply main HEAD "$WORK/spaced-origin.txt" "$WORK/spaced-verdict.tsv" \
+  "$WORK/spaced-filtered.tsv" >/dev/null 2>&1
+assert_eq "the filtered row's origin carries no trailing whitespace" \
+  "audit-money" "$(awk -F'\t' 'NR == 1 { print $2 }' "$WORK/spaced-filtered.tsv")"
+
+# --- a citation inside the reason must not hijack the finding ----------------
+# Important: apply splices the note in ahead of the finding's own citation, and
+# anchor_extract takes the *first* citation on the line. Rejecting a claim by
+# pointing at the real code is the natural way to write these reasons, so every
+# reader of a demoted line has to strip the note before resolving the anchor.
+# src/other.ts does not exist in this fixture repo: if the reason's location
+# won, the demoted finding would resolve to missing-file and drop out of
+# eligibility entirely.
+printf '1\treject\tthe index already exists at src/other.ts:30 in the migration\n' \
+  > "$WORK/citing-reason.tsv"
+reflect_apply main HEAD "$WORK/report.txt" "$WORK/citing-reason.tsv" 2>/dev/null \
+  > "$WORK/reflected-once.txt"
+
+rescan="$(_reflect_scan main HEAD "$WORK/reflected-once.txt")"
+assert_eq "a rescan resolves a demoted finding to its own citation, not the reason's" \
+  "src/app.ts:20:not-in-diff" \
+  "$(printf '%s\n' "$rescan" | awk -F'\t' '$2 == "finding" && $3 == "ADVISORY" { print $5 ":" $6 ":" $7; exit }')"
+assert_eq "the reason's own path never enters the scan" "" \
+  "$(printf '%s\n' "$rescan" | awk -F'\t' '$5 == "src/other.ts" { print "hijacked" }')"
+
+# ...and the whole pass is stable over its own output: a second apply that
+# rejects nothing must leave the already-reflected report byte-identical.
+out="$(reflect_apply main HEAD "$WORK/reflected-once.txt" "$WORK/empty.tsv" 2>/dev/null)"
+assert_eq "apply over its own output with no verdicts is byte-identical" \
+  "$(cat "$WORK/reflected-once.txt")" "$out"
 
 popd >/dev/null
 
@@ -310,7 +374,7 @@ out="$(bash "$CMD" apply --base main --ref HEAD --file "$WORK/report.txt" \
   --verdicts "$WORK/verdicts.tsv" --filtered "$WORK/cli-filtered.tsv")"
 assert_contains "apply through the CLI rewrites the report" "was BLOCKING; reflection:" "$out"
 
-# fix round 2 regression: the documented orchestrator pipeline is
+# The documented orchestrator pipeline is
 # `apply ... > <report>.new && mv <report>.new <report>`. Run it for real —
 # not just reflect_apply captured into a shell variable — and prove the file
 # that lands on disk never carries the stderr-only summary line, on both a
@@ -336,6 +400,33 @@ assert_eq "the documented pipeline's fail-open run leaves the report byte-identi
 out="$(bash "$CMD" prepare --base main --ref HEAD --file "$WORK/no-such-report.txt" 2>&1)"; rc=$?
 assert_eq "a missing report is a usage error" "2" "$rc"
 assert_contains "the missing report is named" "no such file" "$out"
+
+# Important: an existing but unreadable report is a usage error too. Exit 1 is
+# documented as "nothing was eligible — skip the rest of this phase entirely",
+# so returning it here would silently disable the reflection pass and leak a raw
+# "Permission denied" from inside the library.
+if [[ "$(id -u)" -ne 0 ]]; then
+  cp "$WORK/report.txt" "$WORK/unreadable.txt"
+  chmod 000 "$WORK/unreadable.txt"
+  out="$(bash "$CMD" prepare --base main --ref HEAD --file "$WORK/unreadable.txt" 2>&1)"; rc=$?
+  chmod 600 "$WORK/unreadable.txt"
+  assert_eq "an unreadable report is a usage error, not 'nothing eligible'" "2" "$rc"
+  assert_contains "an unreadable report says so" "cannot read" "$out"
+  assert_not_contains "an unreadable report leaks no raw bash error" "Permission denied" "$out"
+else
+  pass "an unreadable report is a usage error, not 'nothing eligible' (skipped: running as root)"
+fi
+
+# Important: every flag takes a value, and `shift 2` with only the flag left
+# fails silently under `set +e` and spins the loop forever. The command is
+# invoked from model-generated prose, so a value that went missing is a
+# plausible mistake and a hang is the worst possible answer to it.
+_run_bounded() { if command -v timeout >/dev/null 2>&1; then timeout 10 "$@"; else "$@"; fi; }
+for flag in --base --ref --file --verdicts --filtered; do
+  out="$(_run_bounded bash "$CMD" prepare "$flag" 2>&1)"; rc=$?
+  assert_eq "$flag with no value exits 2 instead of hanging" "2" "$rc"
+  assert_contains "$flag with no value says which flag" "$flag requires a value" "$out"
+done
 
 # Important: unknown/absent subcommand must be caught before --file is ever
 # consulted, so the message is a usage message, never the --file guard's.
