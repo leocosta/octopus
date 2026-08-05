@@ -56,3 +56,54 @@ reflect_code_window() {
     { printf "%s %5d | %s\n", (NR == c ? ">" : " "), NR, $0 }
   '
 }
+
+# Same severity set as _REVIEW_SEVERITIES in review-record.sh. Second occurrence:
+# a third should move it to a shared lib rather than add another copy.
+_REFLECT_SEVERITIES='BLOCKING|ADVISORY|QUESTION|CRITICAL|HIGH|MEDIUM|LOW'
+
+# ---------------------------------------------------------------------------
+# _reflect_scan <base> <ref> <report>
+#
+# One walk of the report, shared by prepare and apply. Eligibility is decided
+# here and nowhere else: a finding is adjudicable iff its origin is
+# model-authored AND its RM-170 anchor resolves to real code. no-anchor is
+# excluded — there is nothing to confront, and judging prose against prose is
+# what this pass exists to avoid.
+#
+# Emits: lineno<TAB>kind<TAB>severity<TAB>id<TAB>path<TAB>cited-line
+# ---------------------------------------------------------------------------
+_reflect_scan() {
+  local base="$1" ref="$2" report="$3"
+  local n=0 id=0 severity="" line origin anchor path lineno verdict
+
+  while IFS= read -r line; do
+    n=$((n + 1))
+
+    if [[ "$line" =~ ^[[:space:]]*($_REFLECT_SEVERITIES)([[:space:]]*\(|:|[[:space:]]*$) ]]; then
+      severity="${BASH_REMATCH[1]}"
+      printf '%d\theader\t%s\t\t\t\n' "$n" "$severity"
+      continue
+    fi
+
+    [[ "$line" == *"[origin:"* ]] || continue
+
+    origin="$(printf '%s' "$line" | sed -n 's/.*\[origin:[[:space:]]*\([^]]*\)\].*/\1/p' | sed 's/[[:space:]]*$//')"
+
+    anchor="$(anchor_extract "$line")"
+    if [[ -n "$anchor" ]]; then
+      path="${anchor%%$'\t'*}"
+      lineno="${anchor##*$'\t'}"
+      verdict="$(anchor_verify "$base" "$ref" "$path" "$lineno")"
+    else
+      path=""; lineno=""; verdict="no-anchor"
+    fi
+
+    if reflect_origin_eligible "$origin" \
+      && [[ "$verdict" == "anchored" || "$verdict" == "not-in-diff" ]]; then
+      id=$((id + 1))
+      printf '%d\tfinding\t%s\t%d\t%s\t%s\n' "$n" "${severity:-UNKNOWN}" "$id" "$path" "$lineno"
+    else
+      printf '%d\tskip\t%s\t\t\t\n' "$n" "${severity:-UNKNOWN}"
+    fi
+  done < "$report"
+}

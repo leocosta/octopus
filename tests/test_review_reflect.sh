@@ -71,6 +71,53 @@ assert_eq "end-truncated window has only real lines" "7" "$(printf '%s\n' "$win"
 
 popd >/dev/null
 
+# --- report scan -----------------------------------------------------------
+# A report mixing eligible and ineligible findings. src/app.ts:20 is touched by
+# the diff below; src/app.ts:5 is not; missing.ts does not exist at HEAD.
+
+pushd "$REPO" >/dev/null
+sed -i '20s/.*/line 20 CHANGED/' src/app.ts
+git add -A && git commit -qm change
+
+cat > "$WORK/report.txt" <<'EOF'
+Code Review Report
+==================
+Date: 2026-08-04
+
+BLOCKING (2)
+  [origin: dba] Missing index at src/app.ts:20
+  [origin: fallback] TODO introduced at src/app.ts:20
+
+ADVISORY (3)
+  [origin: audit-money] Rounding at src/app.ts:5
+  [origin: architect] Layering is unclear here
+  [origin: audit-tenant] No tenant filter at missing.ts:9
+
+QUESTION (1)
+  Cannot verify table size
+EOF
+
+scan="$(_reflect_scan main HEAD "$WORK/report.txt")"
+
+ids_of() { printf '%s\n' "$scan" | awk -F'\t' -v k=finding '$2 == k { print $4 ":" $5 ":" $6 }'; }
+
+assert_eq "scan numbers eligible findings from 1, in report order" \
+  "1:src/app.ts:20
+2:src/app.ts:5" "$(ids_of)"
+
+assert_contains "scan records the section header in force" $'\theader\tBLOCKING\t' "$scan"
+
+skipped="$(printf '%s\n' "$scan" | awk -F'\t' '$2 == "skip" { c++ } END { print c+0 }')"
+assert_eq "ineligible findings are scanned but never given an id" "3" "$skipped"
+
+# The three skips, each for a different reason:
+#   fallback          → origin not model-authored
+#   architect (prose) → no anchor to confront
+#   missing.ts        → anchor already failed in Phase 4.5
+assert_eq "an eligible origin with no anchor is not adjudicable" "" \
+  "$(printf '%s\n' "$scan" | awk -F'\t' '$2 == "finding" && $5 == "" { print "leaked" }')"
+popd >/dev/null
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [[ $FAIL -eq 0 ]]
