@@ -1179,7 +1179,7 @@ cost grounds alone.
 
 - **Priority:** 🔴 High
 - **Effort:** low
-- **Status:** in review — [Spec](specs/review-anchor-verification.md), #226
+- **Status:** implemented — [Spec](specs/review-anchor-verification.md), #226
 - **Added:** 2026-08-03
 
 Every finding in a `codereview` / `pr-review` report cites `path:line`, and that citation
@@ -1224,7 +1224,7 @@ the findings point at the wrong code.
 
 - **Priority:** 🔴 High
 - **Effort:** medium
-- **Status:** in review — [Spec](specs/review-reflection-pass.md)
+- **Status:** implemented — [Spec](specs/review-reflection-pass.md), #230
 - **Added:** 2026-08-03
 
 OCR runs a **comment-reflection module** — a dedicated pass whose only job is to kill
@@ -1457,7 +1457,7 @@ cluster — is unfalsifiable. It is the difference between tuning and guessing.
 
 - **Priority:** 🟡 Medium
 - **Effort:** medium
-- **Status:** proposed
+- **Status:** implemented — [Spec](specs/review-session-record.md), #228
 - **Added:** 2026-08-03
 
 **Correction (2026-08-04):** the original entry claimed the review report is ephemeral —
