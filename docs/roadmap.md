@@ -1621,7 +1621,7 @@ two pieces of code reading different data._
 
 - **Priority:** 🟡 Medium
 - **Effort:** low
-- **Status:** partially implemented — token parity and override append shipped; the combinator decision is open
+- **Status:** implemented — token parity, override append, and the hook's second stage
 - **Added:** 2026-08-05
 
 `cli/lib/audit-map.sh` (the pre-push hook and `codereview` Phase 1 routing) reads
@@ -1652,11 +1652,10 @@ even when the data is identical:
 That is what produced the original disagreement, and it survives reconciling the
 tokens: `cli/lib/review-session.sh` matches the `session` path token, so the hook
 fires, but none of its added lines match `password|secret|Bearer|Authorization|SQL|querySelector`,
-so the pre-pass drops it and `audit-scope` reports `skip`. Choosing one combinator
-is a **behaviour change with a real cost on either side** — making the map AND
-silently suppresses suggestions, making the pre-pass OR widens every scoped diff
-and the token bill with it — so it is a decision to take deliberately, not a bug to
-patch.
+so the pre-pass drops it and `audit-scope` reports `skip`. This looked at first
+like a choice between combinators; it is not — see the second part of the fix
+below, where the asymmetry turns out to be correct and the defect is in who
+reports it.
 
 Two further defects sit in the same file:
 
@@ -1682,13 +1681,37 @@ declares both, a roster assertion stops a new audit from escaping that compariso
 override appends as its own header always claimed. Both were mutation-checked:
 restoring the drift fails T16, restoring the replacing resolver fails T19.
 
-The second part is the open decision — **pick one combinator**. The options are to
-make the map AND (fewer, more accurate suggestions; some real ones lost), to make
-the pre-pass OR (never misses a candidate; every scoped diff grows), or to keep
-both deliberately and document that the hook is a wider net than the scope
-resolver, in which case the hook's wording should stop implying the audit will find
-something. Until that is settled the two commands can still disagree, and the
-disagreement is now at least explicable.
+**The second part turned out not to be a choice between combinators.** Comparing
+the two content vocabularies side by side settles it: the map's are
+secret-detection regexes (`\bsk-\w+`, `ghp_[A-Za-z0-9]+`, `api_key\s*=`) that must
+fire regardless of the file they appear in, so **OR is correct there** — ANDing
+them would kill exactly the most serious case, a key hardcoded in a file whose
+path matches nothing. The pre-pass's `line_patterns` narrow an already-relevant
+file down to a payload, so **AND is correct there** — that narrowing is where the
+RM-172 saving comes from.
+
+The two are not redundant, they are **sequential**: a wide net, then a fine filter.
+`codereview` already composes them correctly — Phase 1 routes by the matrix,
+Phase 2 runs `audit-scope` and obeys its `skip`. The only component that got it
+wrong was the pre-push hook, which ran stage one and reported the candidate as a
+conclusion.
+
+Fixed by making the hook run both stages before it suggests anything, and say how
+many files each audit would actually look at. Verified on the case that opened this
+item: the RM-171 range now produces no suggestion, matching `audit-scope`. Guarded
+by `tests/test_pre_push_hook_behavior.sh`, which runs the hook against git
+fixtures rather than checking its structure.
+
+**What that surfaced, and did not cause.** The hook now inherits the pre-pass's
+narrowness, so an audit whose `line_patterns` are too tight stops being suggested.
+This is visible in `audit-money`: a plain `const price = 10; // cents` in
+`billing.ts` matches the path token and none of
+`PERCENT[_A-Z]*\s*=|\bdecimal\b|asaas|stripe|mercadopago|webhook.*(signature|hmac)`,
+so it is not suggested — but `octopus audit-scope audit-money` on the same range
+already answered `skip`, and `codereview` Phase 2 already would not have dispatched
+it. The blindness predates this change; the hook was masking it with noise.
+Calibrating `line_patterns` against real money code is the follow-up, and it is a
+different question from routing.
 
 - **Token cost:** none — all of it is bash.
 - **Runtime:** none.
