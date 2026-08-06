@@ -2045,9 +2045,25 @@ deliver_git_hooks() {
   [[ -n "$core_hooks" ]] && hooks_dir="$core_hooks"
   mkdir -p "$hooks_dir"
 
-  # RM-029: pre-push audit-suggest hook.
-  # Conditions: postMergeAuditHook not false, at least one audit skill present.
-  if [[ "$OCTOPUS_POST_MERGE_AUDIT_HOOK" != "false" ]]; then
+  # Delegated to cli/lib/hooks.sh so `octopus hooks install` and setup write the
+  # same thing (RM-180). What this replaced had three defects that together meant
+  # every git-hook fix since RM-029 shipped to nobody: it `cp`-ed the script in
+  # INLINE, so the hook froze at the version that installed it; it did nothing at
+  # all when the ownership marker was already present, so it never refreshed; and
+  # its append branch wrote the delegation line onto the end of the inline copy,
+  # after that copy's own `exit 0`, where it could never run.
+  local hooks_cmd="$OCTOPUS_DIR/cli/lib/hooks.sh"
+  if [[ ! -f "$hooks_cmd" ]]; then
+    echo "WARNING: cli/lib/hooks.sh not found — skipping git hooks." >&2
+    return 0
+  fi
+
+  # RM-029 conditions still gate the audit hook: no audit skill selected, no
+  # audit hook. The rules-sync hooks are unconditional (RM-070).
+  local skip_args=()
+  if [[ "$OCTOPUS_POST_MERGE_AUDIT_HOOK" == "false" ]]; then
+    skip_args+=(--skip pre-push)
+  else
     local _has_audit=0
     for _skill in "${OCTOPUS_SKILLS[@]}"; do
       case "$_skill" in
@@ -2055,53 +2071,12 @@ deliver_git_hooks() {
           _has_audit=1; break ;;
       esac
     done
-    if (( _has_audit )); then
-      local audit_src="$OCTOPUS_DIR/hooks/git/pre-push-audit-suggest.sh"
-      if [[ ! -f "$audit_src" ]]; then
-        echo "WARNING: pre-push-audit-suggest.sh not found — skipping." >&2
-      else
-        local audit_target="$hooks_dir/pre-push"
-        if ! { [[ -f "$audit_target" ]] && grep -q "octopus:pre-push-audit-suggest" "$audit_target" 2>/dev/null; }; then
-          if [[ "${OCTOPUS_DRY_RUN:-}" == "true" ]]; then
-            _dry_run_log "would install pre-push audit-suggest hook → $audit_target"
-          elif [[ -f "$audit_target" ]]; then
-            printf '\n# octopus:pre-push-audit-suggest\nbash "%s"\n' "$audit_src" >> "$audit_target"
-          else
-            cp "$audit_src" "$audit_target" && chmod +x "$audit_target"
-            echo "  Installed pre-push audit-suggest hook at $audit_target"
-          fi
-        fi
-      fi
-    fi
+    (( _has_audit )) || skip_args+=(--skip pre-push)
   fi
 
-  # RM-070: post-merge and post-checkout rules-sync hooks.
-  # Re-runs octopus setup when .octopus/rules/*.local.md files change after a pull/checkout.
-  local rules_sync_src="$OCTOPUS_DIR/hooks/git/rules-sync.sh"
-  if [[ -f "$rules_sync_src" ]]; then
-    _install_rules_sync_hook "$hooks_dir/post-merge"    "$rules_sync_src"
-    _install_rules_sync_hook "$hooks_dir/post-checkout" "$rules_sync_src"
-  fi
-}
-
-_install_rules_sync_hook() {
-  local target="$1"
-  local hook_src="$2"
-  # Idempotent: skip if already installed.
-  if [[ -f "$target" ]] && grep -q "octopus:rules-sync" "$target" 2>/dev/null; then
-    return 0
-  fi
-  if [[ "${OCTOPUS_DRY_RUN:-}" == "true" ]]; then
-    _dry_run_log "would install rules-sync hook → $target"
-    return 0
-  fi
-  if [[ -f "$target" ]]; then
-    printf '\n# octopus:rules-sync\nbash "%s" "$@"\n' "$hook_src" >> "$target"
-  else
-    printf '#!/usr/bin/env bash\n# octopus:rules-sync\nbash "%s" "$@"\n' "$hook_src" > "$target"
-    chmod +x "$target"
-  fi
-  echo "  Installed rules-sync hook at $target"
+  ( cd "$root" && HOOKS_RELEASE_ROOT="$OCTOPUS_DIR" \
+      bash "$hooks_cmd" install "${skip_args[@]+"${skip_args[@]}"}" ) \
+    | sed 's/^/  /'
 }
 
 deliver_roles() {
