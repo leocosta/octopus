@@ -1606,3 +1606,110 @@ resumability via RM-176 — and report explicitly what it did not cover.
 **Rationale:** Fits the manager-multiplier framing (Cluster 16) — inheriting a repo is
 when a defect scan is worth most. Lowest priority because it is the only item here that
 does not improve the reviews already being run, and the most expensive to run casually.
+
+### Cluster 32 — Audit routing has two sources of truth
+
+_Found on 2026-08-05, running the pre-push hook's own suggestion against
+`audit-scope` after RM-171 merged. The hook said "this push touches code typically
+audited by `/octopus:audit-security`"; `octopus audit-scope audit-security` on the
+same range answered `skip — no security changes detected`. Both are deterministic,
+both answer the same question, and they disagreed. This is the failure mode
+Cluster 31 was opened to remove, one layer up: not prose pretending to be code, but
+two pieces of code reading different data._
+
+### RM-179 — One source of truth for audit path matching
+
+- **Priority:** 🟡 Medium
+- **Effort:** low
+- **Status:** partially implemented — token parity and override append shipped; the combinator decision is open
+- **Added:** 2026-08-05
+
+`cli/lib/audit-map.sh` (the pre-push hook and `codereview` Phase 1 routing) reads
+`## Path tokens` from `skills/audit-*/templates/patterns.md`.
+`cli/lib/audit-prepass.sh` (`audit-scope`, RM-172) reads `pre_pass.file_patterns`
+from the same skill's `SKILL.md` frontmatter. Nothing holds the two together, and
+they have drifted in both directions:
+
+| Audit | Only in `patterns.md` | Only in the frontmatter |
+|---|---|---|
+| `audit-security` | `login`, `signup`, `session`, `cookie` | — |
+| `audit-tenant` | `multitenant`, `tenancy`, `academy` | `org` |
+
+`audit-money` and `audit-contracts` currently agree, which is luck rather than
+structure. The RM-172 parity test (`tests/test_audit_prepass.sh` T5) does not cover
+this axis: it pins the compiled pre-pass against the *prose pipeline reading the
+same frontmatter*, so both sides of that comparison come from one source.
+
+**The token drift is not the whole story, and not even the main part.** The two
+readers also *combine* their two signals differently, which makes them disagree
+even when the data is identical:
+
+| | Path/file signal | Line/content signal | Combined |
+|---|---|---|---|
+| `audit-map.sh` (hook, routing) | `## Path tokens` | `## Content regex` | **OR** — either fires |
+| `audit-prepass.sh` (`audit-scope`) | `file_patterns` | `line_patterns` | **AND** — a file is a candidate only if both hit |
+
+That is what produced the original disagreement, and it survives reconciling the
+tokens: `cli/lib/review-session.sh` matches the `session` path token, so the hook
+fires, but none of its added lines match `password|secret|Bearer|Authorization|SQL|querySelector`,
+so the pre-pass drops it and `audit-scope` reports `skip`. Choosing one combinator
+is a **behaviour change with a real cost on either side** — making the map AND
+silently suppresses suggestions, making the pre-pass OR widens every scoped diff
+and the token bill with it — so it is a decision to take deliberately, not a bug to
+patch.
+
+Two further defects sit in the same file:
+
+- **The documented override contract is not implemented.** Every `patterns.md`
+  header says "Overrides append; they do not replace the defaults", but
+  `_audit_map_resolve_patterns` returns the first path that exists
+  (`docs/<audit>/patterns.md` → `skills/<audit>/templates/patterns.md`), so an
+  override *replaces*. Verified: a `docs/audit-security/patterns.md` containing
+  `keycloak` leaves `auth` and `secret` unmatched. A user adding one token silently
+  loses fifteen.
+- **Token matching is substring, on the whole path.** `session` matched
+  `cli/lib/review-session.sh` — a review session, not a user session. This one is
+  not obviously fixable by anchoring (the token *is* a delimited word there), so it
+  belongs in this item as a stated limitation with an escape hatch, not as a
+  promise to make matching semantic.
+
+**Fix, in two parts.** The first shipped with this item and is pinned by tests
+(`tests/test_audit_map.sh` T16–T20): the token lists were reconciled toward the
+union — minus `academy`, project vocabulary that leaked into a generic template,
+plus `org` — a parity assertion now compares the two files for every audit that
+declares both, a roster assertion stops a new audit from escaping that comparison,
+`audit-contracts` is pinned as the documented cross-stack exception, and the
+override appends as its own header always claimed. Both were mutation-checked:
+restoring the drift fails T16, restoring the replacing resolver fails T19.
+
+The second part is the open decision — **pick one combinator**. The options are to
+make the map AND (fewer, more accurate suggestions; some real ones lost), to make
+the pre-pass OR (never misses a candidate; every scoped diff grows), or to keep
+both deliberately and document that the hook is a wider net than the scope
+resolver, in which case the hook's wording should stop implying the audit will find
+something. Until that is settled the two commands can still disagree, and the
+disagreement is now at least explicable.
+
+- **Token cost:** none — all of it is bash.
+- **Runtime:** none.
+- **External deps:** none.
+
+**Benefits:**
+
+- **A suggestion that the next command refuses to act on spends attention for
+  nothing.** The hook is advisory, so the cost is not a broken build — it is the
+  reader learning that the suggestions are noise, which is how an advisory signal
+  dies.
+- **The inverse is the real risk.** The same drift can hide an audit that should
+  have fired: a path token present only in `patterns.md` means the hook suggests and
+  the scope resolver skips; a pattern present only in the frontmatter means nothing
+  suggests it at all. Today `org` is in exactly that position for `audit-tenant`.
+- **The override is the escape hatch for the substring limitation**, so it has to
+  work as documented before that limitation is acceptable to live with.
+- **It closes the audit that Cluster 31 opened.** RM-172 compiled the pre-pass and
+  proved the protocols with a parity test; this applies the same treatment to the
+  routing map, which was left on the prose side.
+
+**Rationale:** Small, and found by using the tooling rather than by reading it — the
+divergence had shipped through four releases without anyone noticing, because
+nothing compares the two files.

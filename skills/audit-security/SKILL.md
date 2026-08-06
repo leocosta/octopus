@@ -7,7 +7,7 @@ triggers:
   keywords: ["auth", "jwt", "oauth", "secret", "password", "credential"]
   tools: []
 pre_pass:
-  file_patterns: "auth|jwt|oauth|secret|token|password|credential|permission|role|middleware|\\.env"
+  file_patterns: "auth|jwt|oauth|secret|token|password|credential|permission|role|middleware|\\.env|login|signup|session|cookie"
   line_patterns: "password|secret|Bearer|Authorization|SQL|querySelector"
 ---
 
