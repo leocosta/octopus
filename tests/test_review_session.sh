@@ -338,6 +338,113 @@ else
   pass "review-record stays a helper lib"
 fi
 
+# --- RM-181: human verdicts and the precision score ------------------------
+# The corpus RM-175 needs is expensive to annotate up front. These verdicts
+# accumulate as a byproduct of reviews that were going to happen anyway, so
+# precision becomes measurable without a separate annotation project. Recall
+# does not — the record only contains findings the reviewer emitted.
+
+JROOT="$WORK/judge-root"
+mkdir -p "$JROOT"
+j() { REVIEW_RECORD_ROOT="$JROOT" bash "$CMD" "$@"; }
+
+cat > "$WORK/judge-report.txt" <<'EOF'
+BLOCKING (2)
+  [origin: dba] Missing index at src/app.ts:3
+  [origin: architect] No transaction boundary at src/app.ts:3
+
+ADVISORY (1)
+  [origin: audit-money] Rounding at src/app.ts:3
+EOF
+printf 'MEDIUM\taudit-money\tsrc/app.ts\t3\trounding is done by the caller\n' > "$WORK/judge-filtered.tsv"
+
+j record --base HEAD~1 --ref HEAD --report "$WORK/judge-report.txt" \
+  --filtered "$WORK/judge-filtered.tsv" >/dev/null
+JREC="$(ls "$JROOT"/*.json | head -1)"
+
+out="$(j judge latest --list)"
+assert_contains "judge --list numbers the findings" "finding  1" "$out"
+assert_contains "judge --list includes filtered rows" "filtered 1" "$out"
+assert_contains "judge --list marks an unjudged finding" "-" "$out"
+
+# The record is written without jq on purpose; recording a verdict must not
+# start rewriting it.
+before="$(md5sum < "$JREC")"
+j judge latest --finding 1 --verdict real >/dev/null
+after="$(md5sum < "$JREC")"
+assert_eq "judging leaves the record JSON untouched" "$before" "$after"
+[[ -f "${JREC%.json}.verdicts.tsv" ]] && pass "the verdict lands in a sidecar file" \
+  || fail "the verdict lands in a sidecar file"
+
+out="$(j judge latest --list)"
+assert_contains "judge --list shows the recorded verdict" "real" "$out"
+
+# Validation — a bad index or verb would silently skew the score.
+j judge latest --finding 99 --verdict real >/dev/null 2>&1
+assert_eq "an out-of-range index is rejected" "2" "$?"
+j judge latest --finding 1 --verdict maybe >/dev/null 2>&1
+assert_eq "an unknown verdict is rejected" "2" "$?"
+j judge latest --verdict real >/dev/null 2>&1
+assert_eq "judge without a target is rejected" "2" "$?"
+
+# wont-fix is a hit, not a miss: a real finding you chose not to act on is
+# still a true positive, and scoring it as a miss understates the reviewer.
+j judge latest --finding 2 --verdict wont-fix --note "tracked elsewhere" >/dev/null
+j judge latest --finding 3 --verdict false >/dev/null
+j judge latest --filtered 1 --verdict false >/dev/null
+
+out="$(j score --json)"
+assert_contains "score counts every judged finding once" '"judged": 3' "$out"
+assert_contains "score reports the wont-fix bucket" '"wont_fix": 1' "$out"
+
+# real + wont-fix are hits, false is the miss: 2 of 3.
+python3 - "$out" <<'PY'
+import json, sys
+d = json.loads(sys.argv[1])
+# The field is emitted with four decimals, so compare at that resolution.
+assert abs(d["precision"] - 2/3) < 1e-3, f"precision was {d['precision']}, expected 2/3"
+PY
+[[ $? -eq 0 ]] && pass "precision is real+wont-fix over judged" || fail "precision is real+wont-fix over judged"
+
+# The payoff: of what the reflection pass dropped, how much was actually real.
+assert_contains "score reports what the filter dropped" '"filtered_judged": 1' "$out"
+assert_contains "a correctly dropped finding is counted as such" '"filtered_correct": 1' "$out"
+
+j judge latest --filtered 1 --verdict real >/dev/null
+out="$(j score --json)"
+assert_contains "a real finding the filter removed is counted as wrongly dropped" \
+  '"filtered_wrong": 1' "$out"
+
+# Re-judging must not double-count: the file is append-only, so the score folds
+# to last-wins. Without this, correcting a verdict inflates the total.
+j judge latest --finding 3 --verdict real >/dev/null
+out="$(j score --json)"
+assert_contains "re-judging does not double-count" '"judged": 3' "$out"
+assert_contains "the latest verdict wins" '"false": 0' "$out"
+
+# wrong-location is an anchor failure (RM-170), not a judgement failure, so it
+# leaves the precision denominator.
+j judge latest --finding 1 --verdict wrong-location >/dev/null
+out="$(j score --json)"
+assert_contains "wrong-location is tracked on its own" '"wrong_location": 1' "$out"
+python3 - "$out" <<'PY'
+import json, sys
+d = json.loads(sys.argv[1])
+assert d["precision"] == 1.0, f"precision was {d['precision']}, expected 1.0 (2 hits / 2 judged)"
+PY
+[[ $? -eq 0 ]] && pass "wrong-location leaves the precision denominator" \
+  || fail "wrong-location leaves the precision denominator"
+
+# Batch form, for an agent recording a whole pass at once.
+printf 'finding\t2\tfalse\tbatched\n' > "$WORK/batch.tsv"
+out="$(j judge latest --from "$WORK/batch.tsv")"
+assert_contains "the batch form reports what it applied" "recorded 1 verdict" "$out"
+
+EMPTY="$WORK/empty-root"
+mkdir -p "$EMPTY"
+REVIEW_RECORD_ROOT="$EMPTY" bash "$CMD" score >/dev/null 2>&1
+assert_eq "score with no records exits 1" "1" "$?"
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [[ $FAIL -eq 0 ]]
