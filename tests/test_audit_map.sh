@@ -186,6 +186,93 @@ check "_audit_map_content_regexes extracts regexes" bash -c \
    echo "$regexes" | grep -q "sk-"' \
   _ "$OCTOPUS_DIR"
 
+# --- RM-179: one source of truth for path matching -------------------------
+# audit-map reads `## Path tokens` from patterns.md; audit-prepass reads
+# pre_pass.file_patterns from SKILL.md. Both answer "does this audit apply to
+# this diff?", and they had drifted in both directions — the pre-push hook
+# suggested audit-security on a range audit-scope then reported as `skip`.
+# Nothing compared the two files, so the divergence shipped through four
+# releases. These assertions are that comparison.
+
+export AUDIT_PREPASS_OCTOPUS_DIR="$OCTOPUS_DIR"
+# shellcheck source=../cli/lib/audit-prepass.sh
+source "$OCTOPUS_DIR/cli/lib/audit-prepass.sh"
+
+# Backslashes differ by encoding, not by meaning: the frontmatter carries the
+# regex `\.env`, patterns.md the literal token `.env`. Compare the sets.
+_norm_set() { tr -d '\\' | sort -u | tr '\n' ' '; }
+
+# audit-contracts is the documented exception: it routes through
+# _audit_map_match_cross_stack, so its patterns.md carries no path tokens at
+# all. T18 pins that, so a future audit cannot join the exemption by accident.
+PARITY_AUDITS="audit-security audit-money audit-tenant"
+
+for _skill in $PARITY_AUDITS; do
+  _fm="$(audit_prepass_file_patterns "$_skill" | tr '|' '\n' | _norm_set)"
+  _pm="$(_audit_map_path_tokens "$OCTOPUS_DIR/skills/$_skill/templates/patterns.md" | _norm_set)"
+  if [[ "$_fm" == "$_pm" ]]; then
+    echo "PASS: T16 parity: $_skill frontmatter == patterns.md"; PASS=$((PASS + 1))
+  else
+    echo "FAIL: T16 parity: $_skill frontmatter == patterns.md"
+    echo "      frontmatter: $_fm"
+    echo "      patterns.md: $_pm"
+    FAIL=$((FAIL + 1))
+  fi
+done
+
+# T17: the roster is complete — every audit shipping both sources is compared.
+check "T17 the parity roster covers every audit with both sources" bash -c '
+  cd "$1/skills"
+  both=""
+  for d in audit-*/; do
+    n="${d%/}"
+    [[ -f "$n/templates/patterns.md" ]] || continue
+    grep -q "file_patterns:" "$n/SKILL.md" 2>/dev/null || continue
+    grep -q "^## Path tokens" "$n/templates/patterns.md" || continue
+    both="$both $n"
+  done
+  # Compare as sets: the glob is alphabetical, the roster is written by hand.
+  [[ "$(printf "%s\n" $both | sort | tr "\n" " ")" == "$(printf "%s\n" $2 | sort | tr "\n" " ")" ]]
+' _ "$OCTOPUS_DIR" "$PARITY_AUDITS"
+
+# T18: audit-contracts is exempt because it routes by cross-stack, not tokens.
+check "T18 audit-contracts declares no path tokens (routes cross-stack)" bash -c \
+  '! grep -q "^## Path tokens" "$1/skills/audit-contracts/templates/patterns.md"' \
+  _ "$OCTOPUS_DIR"
+
+# T19: an override APPENDS to the defaults rather than replacing them, which is
+# what every patterns.md header has always claimed.
+override_root="$TMPDIR_TESTS/override"
+mkdir -p "$override_root/skills/audit-x/templates" "$override_root/docs/audit-x"
+printf '## Path tokens\n\nauth, secret\n' > "$override_root/skills/audit-x/templates/patterns.md"
+printf '## Path tokens\n\nkeycloak\n' > "$override_root/docs/audit-x/patterns.md"
+check "T19 an override appends to the shipped defaults" bash -c '
+  # export, not a prefix assignment: the resolver reads this at call time, so a
+  # prefix on `source` would not reach it.
+  export AUDIT_MAP_OCTOPUS_DIR="$2"
+  source "$1/cli/lib/audit-map.sh"
+  tokens="$(_audit_map_path_tokens $(_audit_map_resolve_patterns audit-x))"
+  echo "$tokens" | grep -qx auth && echo "$tokens" | grep -qx keycloak
+' _ "$OCTOPUS_DIR" "$override_root"
+
+# T20: and it does not resurrect a section from a neighbouring file — in_section
+# resets per file, so a file whose tokens section runs to EOF cannot bleed.
+printf '## Content regex\n\n- `zzz`\n## Path tokens\n\nonly-here\n' \
+  > "$override_root/docs/audit-x/patterns.md"
+check "T20 sections do not bleed between files" bash -c '
+  export AUDIT_MAP_OCTOPUS_DIR="$2"
+  source "$1/cli/lib/audit-map.sh"
+  files="$(_audit_map_resolve_patterns audit-x)"
+  regexes="$(_audit_map_content_regexes $files)"
+  tokens="$(_audit_map_path_tokens $files)"
+  # The override opens with a Content-regex section and closes with a Path-tokens
+  # one that runs to EOF; the default file that follows must not inherit it.
+  echo "$regexes" | grep -qx "zzz" \
+    && echo "$tokens" | grep -qx "only-here" \
+    && echo "$tokens" | grep -qx "auth" \
+    && ! echo "$tokens" | grep -qx "zzz"
+' _ "$OCTOPUS_DIR" "$override_root"
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [[ $FAIL -eq 0 ]]

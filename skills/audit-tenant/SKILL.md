@@ -12,7 +12,7 @@ triggers:
   keywords: ["tenant", "multi-tenant", "organization"]
   tools: []
 pre_pass:
-  file_patterns: "tenant|org|workspace|organization|scope"
+  file_patterns: "tenant|multitenant|tenancy|org|organization|workspace|scope"
   line_patterns: "tenantId|orgId|workspaceId|TenantId|OrgId"
 ---
 

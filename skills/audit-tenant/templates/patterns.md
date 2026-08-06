@@ -5,7 +5,7 @@
 
 ## Path tokens
 
-tenant, multitenant, tenancy, organization, workspace, academy, scope
+tenant, multitenant, tenancy, org, organization, workspace, scope
 
 ## Content regex
 

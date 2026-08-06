@@ -20,46 +20,54 @@ readonly _AUDIT_ORDER=( audit-security audit-money audit-tenant audit-contracts 
 _audit_map_resolve_patterns() {
   local name="$1"
   local root="$AUDIT_MAP_OCTOPUS_DIR"
+  local found=1
 
+  # Every patterns.md states "Overrides append; they do not replace the
+  # defaults" (RM-179). Returning only the first hit made an override REPLACE:
+  # a docs/<audit>/patterns.md adding one token silently dropped all fifteen
+  # defaults. Emit both, and let the callers read the union.
   local candidates=(
-    "$root/docs/${name}/patterns.md"
     "$root/skills/${name}/templates/patterns.md"
+    "$root/docs/${name}/patterns.md"
   )
   for f in "${candidates[@]}"; do
     if [[ -f "$f" ]]; then
       echo "$f"
-      return 0
+      found=0
     fi
   done
-  return 1
+  return $found
 }
 
 # ---------------------------------------------------------------------------
-# _audit_map_path_tokens <patterns-file>
-# Emits one path token per line from the "## Path tokens" section.
+# _audit_map_path_tokens <patterns-file>...
+# Emits one path token per line from the "## Path tokens" section of every file
+# given. Multiple files are the override case — the sections are unioned, not
+# replaced (RM-179). in_section resets per file so a trailing section in one
+# file cannot bleed into the next.
 # ---------------------------------------------------------------------------
 _audit_map_path_tokens() {
-  local file="$1"
   awk '
+    FNR == 1          { in_section=0 }
     /^## Path tokens/ { in_section=1; next }
     /^## /            { in_section=0 }
     in_section        { gsub(/[,]/, "\n"); print }
-  ' "$file" | tr -s '[:space:]' '\n' | grep -v '^$'
+  ' "$@" | tr -s '[:space:]' '\n' | grep -v '^$' | sort -u
 }
 
 # ---------------------------------------------------------------------------
-# _audit_map_content_regexes <patterns-file>
-# Emits one ERE regex per line from the "## Content regex" section.
-# Strips the markdown bullet prefix and backtick wrappers.
+# _audit_map_content_regexes <patterns-file>...
+# Emits one ERE regex per line from the "## Content regex" section of every file
+# given. Unioned across files for the same reason as the path tokens (RM-179).
 # ---------------------------------------------------------------------------
 _audit_map_content_regexes() {
-  local file="$1"
   awk '
+    FNR == 1            { in_section=0 }
     /^## Content regex/ { in_section=1; next }
     /^## /              { in_section=0 }
     in_section && /^[[:space:]]*-/ { print }
-  ' "$file" | sed 's/^[[:space:]]*-[[:space:]]*//' \
-            | sed 's/^`//; s/`.*$//'
+  ' "$@" | sed 's/^[[:space:]]*-[[:space:]]*//' \
+         | sed 's/^`//; s/`.*$//'
 }
 
 # ---------------------------------------------------------------------------
@@ -70,11 +78,19 @@ _audit_map_match_patterns() {
   local name="$1"
   local diff_file="$2"
 
-  local patterns_file
-  patterns_file="$(_audit_map_resolve_patterns "$name")" || {
+  # One path per line: the shipped default, plus the repo's override when it
+  # exists. No bash-4 features here (mapfile is 4.0+), so read the list into a
+  # plain array the old way.
+  local -a patterns_files=()
+  local pf
+  while IFS= read -r pf; do
+    [[ -n "$pf" ]] && patterns_files+=("$pf")
+  done < <(_audit_map_resolve_patterns "$name")
+
+  if [[ ${#patterns_files[@]} -eq 0 ]]; then
     echo "octopus:audit-map: WARNING: no patterns.md found for '$name' — skipping." >&2
     return 1
-  }
+  fi
 
   # Extract changed file paths from diff (--- and +++ lines).
   local changed_paths
@@ -86,7 +102,7 @@ _audit_map_match_patterns() {
     if echo "$changed_paths" | grep -qi "$token"; then
       return 0
     fi
-  done < <(_audit_map_path_tokens "$patterns_file")
+  done < <(_audit_map_path_tokens "${patterns_files[@]}")
 
   # Test content regexes against added/removed lines.
   local diff_content
@@ -97,7 +113,7 @@ _audit_map_match_patterns() {
     if echo "$diff_content" | grep -qE "$regex"; then
       return 0
     fi
-  done < <(_audit_map_content_regexes "$patterns_file")
+  done < <(_audit_map_content_regexes "${patterns_files[@]}")
 
   return 1
 }
