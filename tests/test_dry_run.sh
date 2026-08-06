@@ -59,9 +59,17 @@ grep -q "would inject boris-tip settings" "$SETUP" \
   || { echo "FAIL: dry-run guard missing from deliver_boris_settings"; exit 1; }
 echo "PASS"
 
-echo "Test 12: OCTOPUS_DRY_RUN guard present in deliver_git_hooks"
-grep -q "would install pre-push audit-suggest hook" "$SETUP" \
-  || { echo "FAIL: dry-run guard missing from deliver_git_hooks"; exit 1; }
+echo "Test 12: OCTOPUS_DRY_RUN guard present in the git-hook installer"
+# Setup delegates git hooks to cli/lib/hooks.sh (RM-180), which honours
+# OCTOPUS_DRY_RUN itself — asserted by running it, not by grepping for a string.
+_dr_repo="$(mktemp -d)"
+git -C "$_dr_repo" init -q
+_dr_out="$(cd "$_dr_repo" && OCTOPUS_DRY_RUN=true bash "$(dirname "$SETUP")/cli/lib/hooks.sh" install 2>&1)"
+echo "$_dr_out" | grep -q "would be written" \
+  || { echo "FAIL: dry-run guard missing from the git-hook installer"; exit 1; }
+[[ -e "$_dr_repo/.git/hooks/pre-push" ]] \
+  && { echo "FAIL: dry-run wrote a hook"; exit 1; }
+rm -rf "$_dr_repo"
 echo "PASS"
 
 echo "Test 13: OCTOPUS_DRY_RUN guard present in manage_env"

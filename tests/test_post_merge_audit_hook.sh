@@ -97,22 +97,30 @@ check "fresh install: deliver_git_hooks function defined in setup.sh" \
 # T9: opt-out — postMergeAuditHook: false skips install
 # ---------------------------------------------------------------------------
 check "setup.sh: postMergeAuditHook=false skips the audit hook (guarded)" bash -c '
-  grep -q "OCTOPUS_POST_MERGE_AUDIT_HOOK\" != \"false\"" "$1"
+  grep -q "OCTOPUS_POST_MERGE_AUDIT_HOOK\" == \"false\"" "$1"
 ' _ "$OCTOPUS_DIR/setup.sh"
 
 # ---------------------------------------------------------------------------
-# T10: chain mode — an existing pre-push hook is appended to, not overwritten
+# T10: an existing third-party pre-push hook is never overwritten (RM-180)
+#
+# This assertion used to require the opposite — that setup APPENDED its
+# delegation line to whatever hook was already there. That is what produced the
+# defect this repo shipped with: the line was appended after an inlined copy's
+# own `exit 0`, so it could never run, and appending to an arbitrary hook is
+# unsafe for the same reason in general. `hooks install` now leaves a foreign
+# hook alone and prints the line to add by hand; `--force` is the explicit
+# opt-in. The behaviour is covered end to end in tests/test_hooks_install.sh.
 # ---------------------------------------------------------------------------
-check "deliver_git_hooks appends to an existing hook (chain mode)" bash -c '
-  grep -A60 "deliver_git_hooks()" "$1" | grep -q ">> \"\$audit_target\""
-' _ "$OCTOPUS_DIR/setup.sh"
+check "a third-party pre-push hook is left alone, not appended to" bash -c '
+  grep -q "Never clobber someone else" "$1"
+' _ "$OCTOPUS_DIR/cli/lib/hooks.sh"
 
 # ---------------------------------------------------------------------------
-# T11: idempotent — already-installed hook is not duplicated
+# T11: idempotent — an already-installed hook is recognised by its marker
 # ---------------------------------------------------------------------------
-check "deliver_git_hooks is idempotent (checks for sentinel)" bash -c '
-  grep -A50 "deliver_git_hooks()" "$1" | grep -q "octopus:pre-push-audit-suggest"
-' _ "$OCTOPUS_DIR/setup.sh"
+check "the installer is idempotent (owns hooks by marker)" bash -c '
+  grep -q "octopus:\${script}" "$1"
+' _ "$OCTOPUS_DIR/cli/lib/hooks.sh"
 
 # ---------------------------------------------------------------------------
 # T12: hook sets OCTOPUS_SKIP_AUDIT_HOOK guard

@@ -1736,3 +1736,59 @@ different question from routing.
 **Rationale:** Small, and found by using the tooling rather than by reading it — the
 divergence had shipped through four releases without anyone noticing, because
 nothing compares the two files.
+
+### RM-180 — Install and refresh the git hooks
+
+- **Priority:** 🟡 Medium
+- **Effort:** low
+- **Status:** implemented — `octopus hooks`, #234
+- **Added:** 2026-08-06
+
+Found while checking whether RM-179's fix was live: it was not, and could not be.
+`.git/hooks/pre-push` in this repo was an **inlined copy** of the hook frozen at
+roughly v1.80.1 — eighteen versions and two fixed defects behind — with a dead
+trailing line pointing at a `/tmp` cache directory. `octopus update` did not
+refresh it. Neither did `setup`.
+
+`deliver_git_hooks` (RM-029) had three defects that compounded into "every git
+hook fix ships to nobody":
+
+- It installed the audit hook with `cp`, so the hook froze at the version that
+  installed it. The rules-sync hooks were installed as wrappers delegating to an
+  absolute path, which is why only those two ever self-updated.
+- It did nothing at all when the ownership marker was already present. Not "update
+  if stale" — nothing. Once installed, never refreshed.
+- Its chain-mode branch appended the delegation line to the end of an existing
+  hook, which for its own inlined copy meant appending after that copy's `exit 0`,
+  where it could never run. That is the dead line above, and appending to an
+  arbitrary third-party hook is unsafe for the same reason in general.
+
+**Fix.** `cli/lib/hooks.sh` — `octopus hooks status|install|uninstall` — writes a
+three-line wrapper, owns hooks by an `# octopus:<name>` marker, is idempotent, and
+reports `ok` / `stale` / `missing` / `foreign` per hook. A hook it did not write is
+never touched: it prints the delegation line to add by hand, with `--force` as the
+explicit opt-in. `setup` delegates to it, so `octopus update` — which re-runs
+setup — now refreshes every hook it owns.
+
+The load-bearing detail is **which path the wrapper names**: `~/.octopus-cli/current`,
+the symlink `octopus update` re-points, never the versioned directory behind it. A
+wrapper naming a version is the original bug. A repo carrying Octopus itself points
+at its own working tree instead, so a change under test is not shadowed by a release.
+
+- **Token cost:** none.
+- **Runtime:** none.
+- **External deps:** none.
+
+**Benefits:**
+
+- **Hook fixes reach users.** Before this, they reached `main` and stopped. RM-179's
+  hook fix shipped in v1.98.1 and was running nowhere, including here.
+- **Staleness becomes visible.** `octopus hooks status` answers "is what is
+  installed what is shipped?", which nothing could answer before.
+- **A third-party hook is safe.** The old chain mode appended blindly; the failure
+  was silent in both directions — the appended line might never run, and the host
+  hook might break.
+
+**Rationale:** Found by verifying rather than assuming. RM-179 was released,
+documented as implemented, and inert — the gap between "merged" and "running" had
+no test and no command that could even report it.

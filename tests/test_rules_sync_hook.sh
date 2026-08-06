@@ -30,10 +30,16 @@ check "rules-sync.sh exists"        test -f "$HOOK_SRC"
 check "rules-sync.sh is executable" test -x "$HOOK_SRC"
 check "rules-sync.sh references .octopus/rules" grep -q "\.octopus/rules" "$HOOK_SRC"
 
-# T4: setup.sh installs post-merge and post-checkout hooks
-check "setup.sh installs post-merge rules-sync"    grep -q "post-merge"    "$OCTOPUS_DIR/setup.sh"
-check "setup.sh installs post-checkout rules-sync" grep -q "post-checkout" "$OCTOPUS_DIR/setup.sh"
-check "setup.sh references rules-sync hook id"     grep -q "octopus:rules-sync" "$OCTOPUS_DIR/setup.sh"
+# T4: the installer wires rules-sync to both events git delivers it on.
+# Setup delegates to cli/lib/hooks.sh (RM-180), so the roster lives there — one
+# implementation shared by `octopus hooks install` and setup.
+HOOKS_CMD="$OCTOPUS_DIR/cli/lib/hooks.sh"
+check "the installer wires post-merge to rules-sync" \
+  grep -q "^post-merge rules-sync\$" "$HOOKS_CMD"
+check "the installer wires post-checkout to rules-sync" \
+  grep -q "^post-checkout rules-sync\$" "$HOOKS_CMD"
+check "setup delegates git hooks to the installer" \
+  grep -q "cli/lib/hooks.sh" "$OCTOPUS_DIR/setup.sh"
 
 # T5: deliver_git_hooks installs post-merge and post-checkout into a temp git repo
 TMPDIR=$(mktemp -d)
