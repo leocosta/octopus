@@ -49,14 +49,17 @@ the command appends the corresponding trailer to the commit body:
 
 ```
 Co-authored-by: claude <claude@anthropic.com>
-Co-authored-by: octopus[bot] <octopus[bot]@users.noreply.github.com>
 ```
 
 The human author stays the commit author; the assistant is the
 co-author. Trailers are not added for suggestion-only assistance.
-The `octopus[bot]` trailer is automatic for any commit message
-that came through this command — it marks tool participation,
-which is separate from AI authorship.
+
+Nothing is added for Octopus itself. Earlier versions appended an
+`octopus[bot]` trailer to every message the command formatted,
+which said nothing about who wrote the code — a hand-typed change
+carried it just as a generated one did — while adding a phantom
+contributor to `git shortlog`, the contributor graph and every
+`Co-authored-by` query. Attribution is for authorship, not tooling.
 
 ## What it refuses
 

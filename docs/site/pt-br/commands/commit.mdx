@@ -52,15 +52,19 @@ commit:
 
 ```
 Co-authored-by: claude <claude@anthropic.com>
-Co-authored-by: octopus[bot] <octopus[bot]@users.noreply.github.com>
 ```
 
 O humano permanece como autor do commit; o assistente fica como
 co-autor. Trailers não são adicionados em casos de assistência
-apenas com sugestões. O trailer `octopus[bot]` é automático para
-qualquer mensagem de commit que tenha passado por este comando —
-ele marca a participação da ferramenta, o que é separado da
-autoria de AI.
+apenas com sugestões.
+
+Nada é adicionado para o próprio Octopus. Versões anteriores
+anexavam um trailer `octopus[bot]` a toda mensagem formatada pelo
+comando, o que nada dizia sobre quem escreveu o código — uma
+mudança digitada à mão o carregava igual a uma gerada — e ainda
+criava um contribuidor fantasma no `git shortlog`, no gráfico de
+contribuidores e em qualquer consulta por `Co-authored-by`.
+Atribuição é sobre autoria, não sobre ferramenta.
 
 ## O que ele recusa
 
