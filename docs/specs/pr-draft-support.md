@@ -219,5 +219,3 @@ would bury the draft change in an unrelated rewrite; it deserves its own item.
 ## Changelog
 
 - **2026-08-07** — Initial draft
-</content>
-</invoke>
