@@ -27,6 +27,7 @@ if [[ "$1" == "pr" && "$2" == "create" ]]; then
     case "$1" in
       --body-file) echo "BODY_FILE_RECEIVED=$2" >> "$STUB_LOG"; shift 2 ;;
       --title)     echo "TITLE_RECEIVED=$2" >> "$STUB_LOG"; shift 2 ;;
+      --draft)     echo "DRAFT_RECEIVED=1" >> "$STUB_LOG"; shift ;;
       *) shift ;;
     esac
   done
@@ -93,3 +94,21 @@ PATH="$STUB_BIN:$PATH" "$CLI" pr-open --target main --body-file "$BODY" --title 
 grep -q 'TITLE_RECEIVED=🐛 Fix: stale release cache' "$STUB_LOG" \
   || { echo "FAIL: gh pr create did not receive the explicit --title"; cat "$STUB_LOG"; exit 1; }
 echo "PASS: --title flag passes through to gh pr create"
+
+echo "Test 5: --draft is passed through to gh pr create"
+: > "$STUB_LOG"
+PATH="$STUB_BIN:$PATH" "$CLI" pr-open --target main --body-file "$BODY" --title "✨ Feat: draft" --draft > "$TMPDIR/out5.txt" 2>&1
+grep -q "DRAFT_RECEIVED=1" "$STUB_LOG" \
+  || { echo "FAIL: gh pr create did not receive --draft"; cat "$STUB_LOG"; exit 1; }
+grep -q "OCTOPUS_PR_DRAFT=true" "$TMPDIR/out5.txt" \
+  || { echo "FAIL: draft marker line missing from output"; cat "$TMPDIR/out5.txt"; exit 1; }
+echo "PASS: --draft passes through and is reported"
+
+echo "Test 6: without --draft, gh pr create gets no draft flag"
+: > "$STUB_LOG"
+PATH="$STUB_BIN:$PATH" "$CLI" pr-open --target main --body-file "$BODY" --title "✨ Feat: normal" > "$TMPDIR/out6.txt" 2>&1
+! grep -q "DRAFT_RECEIVED" "$STUB_LOG" \
+  || { echo "FAIL: gh pr create received --draft without the flag"; cat "$STUB_LOG"; exit 1; }
+! grep -q "OCTOPUS_PR_DRAFT" "$TMPDIR/out6.txt" \
+  || { echo "FAIL: draft marker emitted for a non-draft PR"; cat "$TMPDIR/out6.txt"; exit 1; }
+echo "PASS: no --draft flag when not requested"

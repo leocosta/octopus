@@ -1,5 +1,5 @@
 # pr-open.sh — Open a PR following project conventions
-# Usage: octopus.sh pr-open --target <branch> --body-file <path> [--title <string>]
+# Usage: octopus.sh pr-open --target <branch> --body-file <path> [--title <string>] [--draft]
 #
 # The PR body is written by the agent via /octopus:pr-open (see
 # commands/pr-open.md and cli/pr-body-default.md). This script does
@@ -11,17 +11,19 @@
 TARGET=""
 BODY_FILE=""
 PR_TITLE_ARG=""
+DRAFT=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --target)    TARGET="$2"; shift 2 ;;
     --body-file) BODY_FILE="$2"; shift 2 ;;
     --title)     PR_TITLE_ARG="$2"; shift 2 ;;
+    --draft)     DRAFT=1; shift ;;
     *) echo "Unknown option: $1"; exit 1 ;;
   esac
 done
 
 if [[ -z "$TARGET" ]]; then
-  echo "Usage: octopus.sh pr-open --target <branch> --body-file <path>"
+  echo "Usage: octopus.sh pr-open --target <branch> --body-file <path> [--title <string>] [--draft]"
   echo ""
   echo "Available remote branches:"
   git branch -r | grep -v HEAD | sed 's/^ */  /'
@@ -54,7 +56,21 @@ else
   PR_TITLE="${PR_TYPE}: ${PR_DESC}"
 fi
 
-gh pr create --base "$TARGET" --title "$PR_TITLE" --body-file "$BODY_FILE"
+GH_ARGS=(--base "$TARGET" --title "$PR_TITLE" --body-file "$BODY_FILE")
+if [[ -n "$DRAFT" ]]; then
+  GH_ARGS+=(--draft)
+fi
+
+if ! gh pr create "${GH_ARGS[@]}"; then
+  if [[ -n "$DRAFT" ]]; then
+    echo "HINT: draft PRs require a paid GitHub plan on private repositories."
+    echo "      Re-run without --draft to open a regular PR."
+  fi
+  exit 1
+fi
 
 PR_NUMBER=$(gh pr view --json number -q '.number')
 echo "OCTOPUS_PR=$PR_NUMBER"
+if [[ -n "$DRAFT" ]]; then
+  echo "OCTOPUS_PR_DRAFT=true"
+fi
