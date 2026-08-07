@@ -54,8 +54,18 @@ case "$ACTION" in
     ;;
 
   continue)
+    IS_DRAFT=""
+    for arg in "$@"; do
+      if [[ "$arg" == "--draft" ]]; then
+        IS_DRAFT=1
+      fi
+    done
+
     source "$CLI_DIR/pr-open.sh" "$@"
     echo "PR is open. Next steps:"
+    if [[ -n "$IS_DRAFT" ]]; then
+      echo "  ./cli/octopus.sh dev-flow ready <pr-number>  # promote the draft before review"
+    fi
     echo "  ./cli/octopus.sh dev-flow review <pr-number>"
     echo "  ./cli/octopus.sh dev-flow comments <pr-number>  # when feedback arrives"
     ;;
