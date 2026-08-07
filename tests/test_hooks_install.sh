@@ -140,6 +140,41 @@ body2="$(cat "$REPO2/.git/hooks/pre-push")"
 assert_contains "without a local tree the wrapper names 'current'" "$CACHE/current/hooks/git" "$body2"
 assert_not_contains "the wrapper never names a version directory" "v9.9.9" "$body2"
 
+# --- the source is a property of the repo, not of the caller ---------------
+# The first version of _hooks_source_root asked whether the RUNNING code was an
+# Octopus tree, so the same repo got different hooks depending on which entry
+# point touched it last: `octopus hooks install` from a working tree pointed at
+# the tree, while `octopus update` — which re-runs setup from the cache —
+# pointed at the release. This repo ended up with two hooks on the release and
+# one on the working tree.
+
+REPO3="$WORK/repo3"
+mkdir -p "$REPO3/cli" "$REPO3/hooks/git"
+git -C "$REPO3" init -q
+touch "$REPO3/cli/octopus.sh"
+printf '#!/usr/bin/env bash\nexit 0\n' > "$REPO3/hooks/git/rules-sync.sh"
+printf '#!/usr/bin/env bash\nexit 0\n' > "$REPO3/hooks/git/pre-push-audit-suggest.sh"
+
+from_tree="$( (cd "$REPO3" && HOOKS_RELEASE_ROOT="$REPO3" OCTOPUS_CACHE_ROOT="$CACHE" \
+  bash "$CMD" status) | awk '/^source:/ { print $2 }')"
+from_cache="$( (cd "$REPO3" && HOOKS_RELEASE_ROOT="$CACHE/cache/v9.9.9" OCTOPUS_CACHE_ROOT="$CACHE" \
+  bash "$CMD" status) | awk '/^source:/ { print $2 }')"
+
+assert_eq "the source is the same whichever entry point runs" "$from_tree" "$from_cache"
+assert_eq "a repo carrying Octopus runs its own tree, not a release" "$REPO3" "$from_cache"
+
+# Octopus vendored at <toplevel>/octopus — the layout hooks/git/rules-sync.sh
+# assumes when it looks for "$repo_root/octopus/setup.sh".
+REPO4="$WORK/repo4"
+mkdir -p "$REPO4/octopus/cli" "$REPO4/octopus/hooks/git"
+git -C "$REPO4" init -q
+touch "$REPO4/octopus/cli/octopus.sh"
+printf '#!/usr/bin/env bash\nexit 0\n' > "$REPO4/octopus/hooks/git/rules-sync.sh"
+
+vendored="$( (cd "$REPO4" && HOOKS_RELEASE_ROOT="$CACHE/cache/v9.9.9" OCTOPUS_CACHE_ROOT="$CACHE" \
+  bash "$CMD" status) | awk '/^source:/ { print $2 }')"
+assert_eq "a vendored octopus/ checkout is found too" "$REPO4/octopus" "$vendored"
+
 # --- errors ----------------------------------------------------------------
 
 out="$(cd "$WORK" && bash "$CMD" status 2>&1)"; rc=$?
