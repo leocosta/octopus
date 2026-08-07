@@ -69,7 +69,12 @@ When an AI assistant **generated or substantially modified** the code, append a
 `Co-authored-by` trailer in the footer — the human stays the commit author.
 Human-only commits get no trailer.
 
-- `octopus[bot]` is added automatically by Octopus slash commands that author the
-  message: `Co-authored-by: octopus[bot] <octopus[bot]@users.noreply.github.com>`
-- Add the assistant's own trailer too when it wrote the code, e.g.
-  `Co-authored-by: claude <claude@anthropic.com>`.
+Name the assistant that wrote the code, e.g.
+`Co-authored-by: claude <claude@anthropic.com>`.
+
+Do **not** add a trailer for the tool that formatted the message. Octopus slash
+commands used to append `octopus[bot]` automatically; the trailer said nothing
+about who wrote the code — every commit made through a slash command carried it,
+whether the change was authored by an assistant or typed by hand — while adding a
+phantom contributor to `git shortlog`, the GitHub contributor graph and every
+`Co-authored-by` query. Attribution is for authorship, not for tooling.

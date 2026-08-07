@@ -64,8 +64,9 @@ Write a commit message following `.claude/core/commit-conventions.md`:
   lowercase, no trailing period.
 - Body (optional): one short paragraph explaining the *why*, wrapped at 72
   characters. Omit if the description is self-evident.
-- Footer: tracker references (if any), then always the Octopus co-author trailer:
-  `Co-authored-by: octopus[bot] <octopus[bot]@users.noreply.github.com>`
+- Footer: tracker references (if any), then a `Co-authored-by` trailer naming the
+  assistant that wrote the code, e.g. `Co-authored-by: claude <claude@anthropic.com>`.
+  Nothing is added for Octopus itself — formatting a message is not authorship.
 
 Show the full message in a code block, then ask:
 "Use this message? (y / edit / cancel)"
