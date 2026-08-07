@@ -3,7 +3,7 @@ title: dev-flow
 description: O ciclo de vida completo do PR em um comando orquestrado — branch / commit / pr-open / pr-review / pr-comments / pr-merge com pausas humanas explícitas entre as fases.
 sidebar:
   order: 8
-source_hash: "sha256:a4c29523c1f1bd7cbc37998e60a95f9ce624704e28a01ab963cafd97741b8e7c"
+source_hash: "sha256:c7e49d221fd1c0357e46409684140b04be4b530e58e8798d9eabb484f506e4af"
 needs_retranslation: false
 ---
 
@@ -39,6 +39,10 @@ decidir quando o PR está pronto.
 | 4 | (atribuir revisores) | Depois: aguarde a review |
 | 5 | `/octopus:pr-comments` | Execute a cada rodada de feedback; faça loop até aprovação |
 | 6 | `/octopus:pr-merge` | Final |
+
+Quando a fase 2 abre um draft (`--draft`), `dev-flow ready` fica
+entre ela e a fase 3 — a fase de review pressupõe um PR pronto para
+receber uma.
 
 O agent solicita o usuário em cada fronteira de pausa com uma
 frase como *"continue when ready"* — handoff explícito de volta

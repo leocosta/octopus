@@ -7,7 +7,8 @@ PR and branch automation commands powered by GitHub CLI (`gh`).
 | Command | What it does |
 |---|---|
 | `/octopus:branch-create` | Create a branch following naming conventions |
-| `/octopus:pr-open` | Push branch and create a PR |
+| `/octopus:pr-open` | Push branch and create a PR (`--draft` for a draft) |
+| `/octopus:pr-ready` | Mark a draft PR as ready for review |
 | `/octopus:pr-review` | Request review from configured reviewers |
 | `/octopus:pr-comments` | Handle PR comment feedback |
 | `/octopus:pr-merge` | Merge a PR |

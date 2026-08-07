@@ -40,6 +40,7 @@ end-to-end via `/octopus:dev-flow`.
 | `/octopus:branch-create` | Create a branch following Conventional Commits prefixes; infers a name from context. | [→](./branch-create/) |
 | `/octopus:commit` | Suggest a Conventional Commits message from the staged diff; commits after confirmation; adds AI co-authored trailer when applicable. | [→](./commit/) |
 | `/octopus:pr-open` | Open a PR with an agent-written title + body following Octopus PR conventions; pushes the branch if needed. | [→](./pr-open/) |
+| `/octopus:pr-ready` | Mark a draft PR as ready for review; idempotent, and the PR number falls back to the current branch. | [→](./pr-ready/) |
 | `/octopus:pr-review` | Self-review the PR diff against the project's correctness/design/readability/edge-case/security/tests checklist, then assign human reviewers. | [→](./pr-review/) |
 | `/octopus:pr-comments` | Walk the respond-to-review discipline against feedback on the PR — verify, ask for evidence, separate reasoned vs preference, never performative, clarify ambiguity. | [→](./pr-comments/) |
 | `/octopus:pr-merge` | Merge an approved PR with squash; deletes the branch; refuses if unapproved or checks failing. | [→](./pr-merge/) |

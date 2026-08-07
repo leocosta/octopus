@@ -1863,3 +1863,30 @@ that introduced the defect) — a separate item, and the honest limit of this on
 **Rationale:** RM-175's value was never in dispute, only its entry cost. Splitting
 off the half that needs no annotation turns "unfalsifiable" into "partially
 measured" for the price of a subcommand.
+
+### Cluster 33 — Draft PR support
+
+_Found on 2026-08-07. `pr-open` only ever opened ready-for-review PRs, so
+opening work-in-progress for CI feedback or an early architectural read meant
+dropping out of Octopus and running `gh pr create --draft` by hand — which
+forfeits the agent-written title and body that is the point of the command._
+
+### RM-182 — `pr-open --draft` and a `pr-ready` command
+
+- **Priority:** 🟡 Medium
+- **Effort:** low
+- **Status:** implemented
+- **Added:** 2026-08-07
+
+`--draft` on `cli/lib/pr-open.sh` passes through to `gh pr create`, with the
+agent forwarding it from `$ARGUMENTS`; the CLI reports it back as
+`OCTOPUS_PR_DRAFT=true`. Promotion is a first-class command rather than a side
+effect of `pr-review`: `octopus pr-ready [<n>]` reads `isDraft`, exits 0 when
+the PR is already ready, and otherwise runs `gh pr ready`. `dev-flow` gains a
+matching `ready` action.
+
+Draft is opt-in per invocation — no `.octopus.yml` default and no heuristic
+auto-draft from `wip/` branches or failing tests. Opening a PR is an
+outward-facing act; guessing its state is worse than being told.
+
+Spec: `docs/specs/pr-draft-support.md`.

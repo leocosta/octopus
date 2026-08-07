@@ -3,7 +3,7 @@ title: Commands
 description: Slash commands que encapsulam skills do Octopus e subcomandos da CLI em invocações de uma tecla — ciclo branch / commit / PR / merge, ciclo de vida de docs, auditorias, delegação e release.
 sidebar:
   order: 1
-source_hash: "sha256:632fe6cf011b59b4a38d7c64e6fb26b1cc21625c4028f21b5306fdc1a6f991cd"
+source_hash: "sha256:1e4aa2c997318d759e4846c6dd5ec3b680c98f9dd90d62c7d806ba320d370f59"
 needs_retranslation: false
 ---
 
@@ -44,6 +44,7 @@ ou de ponta a ponta via `/octopus:dev-flow`.
 | `/octopus:branch-create` | Cria uma branch seguindo os prefixos do Conventional Commits; infere um nome a partir do contexto. | [→](./branch-create/) |
 | `/octopus:commit` | Sugere uma mensagem Conventional Commits a partir do diff staged; faz commit após confirmação; adiciona o trailer AI co-authored quando aplicável. | [→](./commit/) |
 | `/octopus:pr-open` | Abre um PR com título + body escritos pelo agente seguindo as convenções de PR do Octopus; faz push da branch se necessário. | [→](./pr-open/) |
+| `/octopus:pr-ready` | Marca um PR draft como pronto para review; idempotente, e o número do PR cai de volta para a branch atual. | [→](./pr-ready/) |
 | `/octopus:pr-review` | Faz self-review do diff do PR contra o checklist do projeto de correctness/design/readability/edge-case/security/tests, e então atribui reviewers humanos. | [→](./pr-review/) |
 | `/octopus:pr-comments` | Aplica a disciplina de respond-to-review ao feedback do PR — verificar, pedir evidências, separar argumentos fundamentados de preferência, nunca performativo, esclarecer ambiguidades. | [→](./pr-comments/) |
 | `/octopus:pr-merge` | Faz merge de um PR aprovado com squash; deleta a branch; recusa se não estiver aprovado ou se os checks estiverem falhando. | [→](./pr-merge/) |

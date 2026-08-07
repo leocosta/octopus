@@ -38,6 +38,9 @@ ready.
 | 5 | `/octopus:pr-comments` | Run per round of feedback; loop until approved |
 | 6 | `/octopus:pr-merge` | Final |
 
+When phase 2 opens a draft (`--draft`), `dev-flow ready` sits between
+it and phase 3 — the review phase assumes a PR that is ready for one.
+
 The agent prompts the user at each pause boundary with a phrase
 like *"continue when ready"* — explicit handoff back to the human.
 The user resumes by saying "continue" or by invoking the next
