@@ -2,6 +2,7 @@
 # Usage:
 #   octopus.sh dev-flow start <type/name>
 #   octopus.sh dev-flow continue --target <branch> [--body-file <path>]
+#   octopus.sh dev-flow ready [<pr-number>]
 #   octopus.sh dev-flow review <pr-number>
 #   octopus.sh dev-flow comments <pr-number>
 #   octopus.sh dev-flow merge <pr-number>
@@ -15,6 +16,7 @@ usage() {
 Usage:
   octopus.sh dev-flow start <type/name>
   octopus.sh dev-flow continue --target <branch> [--body-file <path>]
+  octopus.sh dev-flow ready [<pr-number>]
   octopus.sh dev-flow review <pr-number>
   octopus.sh dev-flow comments <pr-number>
   octopus.sh dev-flow merge <pr-number>
@@ -23,6 +25,7 @@ Usage:
 Workflow:
   start     Create the branch for the feature
   continue  Push the current branch and open the PR
+  ready     Mark the draft PR as ready for review
   review    Run self-review on the PR
   comments  Address review comments on the PR
   merge     Merge the approved PR
@@ -55,6 +58,10 @@ case "$ACTION" in
     echo "PR is open. Next steps:"
     echo "  ./cli/octopus.sh dev-flow review <pr-number>"
     echo "  ./cli/octopus.sh dev-flow comments <pr-number>  # when feedback arrives"
+    ;;
+
+  ready)
+    source "$CLI_DIR/pr-ready.sh" "${1:-}"
     ;;
 
   review)
