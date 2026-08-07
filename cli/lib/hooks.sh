@@ -55,12 +55,26 @@ _hooks_usage() {
 # resolves to, so `octopus update` moves every installed hook at once.
 # ---------------------------------------------------------------------------
 _hooks_source_root() {
-  # A repo carrying Octopus itself (this repo, or a submodule checkout) runs its
-  # own working tree — a released copy would shadow the change under test.
-  if [[ -f "$HOOKS_RELEASE_ROOT/cli/octopus.sh" && -d "$HOOKS_RELEASE_ROOT/hooks/git" \
-        && "$HOOKS_RELEASE_ROOT" != "$HOOKS_CACHE_ROOT"/* ]]; then
-    printf '%s' "$HOOKS_RELEASE_ROOT"
-    return 0
+  # Decided from the TARGET REPO, never from where this code happens to be
+  # running. The first version asked whether $HOOKS_RELEASE_ROOT was an Octopus
+  # tree, which made the answer depend on the caller: run from the working tree
+  # it chose the working tree, run from the cache (as `octopus update` does when
+  # it re-runs setup) it chose the release. The same repo then got different
+  # hooks depending on which entry point touched it last, and this repo ended up
+  # with two hooks on the release and one on the working tree.
+  #
+  # A repo carrying Octopus runs its own copy: a release would shadow the very
+  # change under test. Both supported layouts count — the Octopus repo itself,
+  # and Octopus vendored at <toplevel>/octopus (the path rules-sync.sh assumes).
+  local top candidate
+  top="$(git rev-parse --show-toplevel 2>/dev/null)"
+  if [[ -n "$top" ]]; then
+    for candidate in "$top" "$top/octopus"; do
+      if [[ -f "$candidate/cli/octopus.sh" && -d "$candidate/hooks/git" ]]; then
+        printf '%s' "$candidate"
+        return 0
+      fi
+    done
   fi
   if [[ -L "$HOOKS_CACHE_ROOT/current" ]]; then
     printf '%s' "$HOOKS_CACHE_ROOT/current"

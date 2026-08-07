@@ -1741,7 +1741,7 @@ nothing compares the two files.
 
 - **Priority:** 🟡 Medium
 - **Effort:** low
-- **Status:** implemented — `octopus hooks`, #234
+- **Status:** implemented — `octopus hooks`, #234; source-resolution regression fixed in #236
 - **Added:** 2026-08-06
 
 Found while checking whether RM-179's fix was live: it was not, and could not be.
@@ -1792,6 +1792,16 @@ at its own working tree instead, so a change under test is not shadowed by a rel
 **Rationale:** Found by verifying rather than assuming. RM-179 was released,
 documented as implemented, and inert — the gap between "merged" and "running" had
 no test and no command that could even report it.
+
+**Follow-up (#236).** The first cut resolved the wrapper's target from where the
+*code* was running rather than from the *repo* being set up, so the same repo got
+different hooks depending on which entry point touched it last: `octopus hooks
+install` from a working tree pointed at the tree, while `octopus update` — which
+re-runs setup from the cache — pointed at the release. This repo ended up with two
+hooks on the release and one on the working tree, which is the mixed state the
+command exists to prevent. Resolution now reads the target repo's toplevel, and
+covers both supported layouts (the Octopus repo itself, and Octopus vendored at
+`<toplevel>/octopus`). Pinned by an assertion that both entry points agree.
 
 ### RM-181 — Human verdicts on review findings, and a precision score
 
