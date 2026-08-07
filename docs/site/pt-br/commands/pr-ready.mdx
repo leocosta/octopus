@@ -3,11 +3,11 @@ title: pr-ready
 description: Promove um PR draft a pronto para review — idempotente, e a única coisa no Octopus que muda o estado draft de um PR.
 sidebar:
   order: 5
-source_hash: "sha256:ec50207f97d1361a8cfa5f9892eb8268dd215656a13ea6e47555f3e13ef8c2a9"
+source_hash: "sha256:fcabca982631835a5a8d6076858cd9d8ae0fb2daf4efb21b8dc9d01cdb177954"
 needs_retranslation: false
 ---
 
-`/octopus:pr-ready` vira um pull request draft para pronto para
+`/octopus:pr-ready` converte um pull request draft em pronto para
 review. É a outra metade de [`pr-open --draft`](../pr-open/): um
 comando abre o trabalho cedo, o outro declara que está pronto.
 
@@ -27,8 +27,8 @@ Então a promoção é explícita. `pr-open --draft` abre, você trabalha,
 ## O número do PR é opcional
 
 ```bash
-octopus pr-ready        # o PR aberto da branch atual
-octopus pr-ready 238    # um PR explícito
+octopus pr-ready        # the PR open for the current branch
+octopus pr-ready 238    # an explicit PR
 ```
 
 Sem argumento, ele resolve o PR da branch em que você está, que é
@@ -38,9 +38,9 @@ acabou de abrir.
 ## A promoção é idempotente
 
 Rodar em um PR que já está pronto imprime um aviso e termina com
-sucesso. Não gera erro, e não chama o GitHub. Isso importa para
-encadeamento: `dev-flow ready` em um fluxo pela metade, ou uma
-segunda invocação depois que você esqueceu a primeira, nunca quebra
-uma sequência.
+sucesso. Não faz nenhuma escrita no GitHub — a chamada mutante `gh pr
+ready` nunca roda. Isso importa para encadeamento: `dev-flow ready`
+em um fluxo pela metade, ou uma segunda invocação depois que você
+esqueceu a primeira, nunca quebra uma sequência.
 
 [Fonte: `commands/pr-ready.md`](https://github.com/leocosta/octopus/blob/main/commands/pr-ready.md)

@@ -35,9 +35,9 @@ opened.
 ## Promotion is idempotent
 
 Running it on a PR that is already ready prints a notice and exits
-successfully. It does not error, and it does not call GitHub. That
-matters for chaining: `dev-flow ready` in a half-finished flow, or a
-second invocation after you forgot the first, never breaks a
-sequence.
+successfully. It makes no write to GitHub — the mutating `gh pr
+ready` call never runs. That matters for chaining: `dev-flow ready`
+in a half-finished flow, or a second invocation after you forgot the
+first, never breaks a sequence.
 
 [Source: `commands/pr-ready.md`](https://github.com/leocosta/octopus/blob/main/commands/pr-ready.md)
