@@ -1,0 +1,43 @@
+---
+title: pr-ready
+description: Promote a draft PR to ready for review — idempotent, and the only thing in Octopus that changes a PR's draft state.
+sidebar:
+  order: 5
+---
+
+`/octopus:pr-ready` flips a draft pull request to ready for review.
+It is the other half of [`pr-open --draft`](../pr-open/): one command
+opens work early, one declares it done.
+
+## Why promotion is its own command
+
+Requesting a review and being ready for review are different claims,
+and Octopus keeps them apart. `pr-review` could plausibly promote the
+PR on your behalf — you asked for a review, so surely you're ready —
+but that would make an outward-facing state change a side effect of
+a command whose job is reading a diff. Reviewers would get notified
+by something you didn't ask for.
+
+So the promotion is explicit. `pr-open --draft` opens, you work,
+`pr-ready` declares, `pr-review` reviews.
+
+## The PR number is optional
+
+```bash
+octopus pr-ready        # the PR open for the current branch
+octopus pr-ready 238    # an explicit PR
+```
+
+With no argument it resolves the PR for the branch you are on, which
+is how the command is actually used — right after the draft you just
+opened.
+
+## Promotion is idempotent
+
+Running it on a PR that is already ready prints a notice and exits
+successfully. It makes no write to GitHub — the mutating `gh pr
+ready` call never runs. That matters for chaining: `dev-flow ready`
+in a half-finished flow, or a second invocation after you forgot the
+first, never breaks a sequence.
+
+[Source: `commands/pr-ready.md`](https://github.com/leocosta/octopus/blob/main/commands/pr-ready.md)

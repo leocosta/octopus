@@ -69,4 +69,23 @@ self-reviews the PR diff against the correctness/design/readability
 checklist, then assigns human reviewers. `pr-comments` runs after
 feedback arrives; `pr-merge` runs after approval.
 
+## Opening a draft
+
+```bash
+/octopus:pr-open --draft
+/octopus:pr-open main --draft
+```
+
+`--draft` opens the PR as a draft instead of ready for review — for
+early CI feedback, an architectural read before the work is finished,
+or a stacked branch. The title and body are written exactly the same
+way; only the PR's state differs. The flag is positional-agnostic: the
+target branch is the first argument that isn't a flag.
+
+Draft PRs on private repositories require a paid GitHub plan. When
+`gh` refuses, the command says so and stops — it will not quietly open
+a regular PR in place of the draft you asked for.
+
+Promote it later with [`pr-ready`](../pr-ready/).
+
 [Source: `commands/pr-open.md`](https://github.com/leocosta/octopus/blob/main/commands/pr-open.md)

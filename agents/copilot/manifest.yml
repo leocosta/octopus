@@ -29,7 +29,7 @@ delivery:
     # list tight — only commands worth running from a shell — and the names must
     # match commands/<name>.md without colliding with role agents.
     cli_agents_target: .github/agents/
-    cli_agents_select: dev-flow,implement,debug,commit,branch-create,codereview,pr-open,pr-review,pr-comments,pr-merge,release
+    cli_agents_select: dev-flow,implement,debug,commit,branch-create,codereview,pr-open,pr-ready,pr-review,pr-comments,pr-merge,release
   mcp:
     method: vscode_json
     target: .vscode/mcp.json

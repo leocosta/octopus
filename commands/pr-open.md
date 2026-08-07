@@ -10,9 +10,14 @@ handles the mechanics (branch push + `gh pr create`).
 
 ## Arguments
 
-Use `$ARGUMENTS` to determine the target branch.
+Parse `$ARGUMENTS` as one positional and one flag, in any order:
 
-- Target branch: `$1` (default: `main`)
+- **Target branch** — the first token that does NOT start with `--`
+  (default: `main`).
+- **`--draft`** — open the PR as a draft instead of ready for review.
+
+Both `/octopus:pr-open --draft` and `/octopus:pr-open main --draft`
+must resolve to the same thing: target `main`, draft on.
 
 ## Emoji map — change-type → emoji
 
@@ -30,9 +35,11 @@ dominant commit type). One emoji per title, always at the start:
 
 ## Instructions
 
-1. **Resolve target branch.** If `$1` is empty, run
+1. **Resolve target branch.** Take the first `$ARGUMENTS` token that
+   does not start with `--`. If there is none, run
    `git branch -r | grep -v HEAD` and ask the user which branch to
-   target (default: `main`).
+   target (default: `main`). A `--`-prefixed token is never a branch
+   name.
 
 2. **Resolve the PR-body language** by consulting, in order:
    - `.octopus.yml` → `language.code` (per-scope form).
@@ -97,9 +104,11 @@ dominant commit type). One emoji per title, always at the start:
    The CLI aborts if `--body-file` is missing — always pass it.
    Pass `--title` even when it mirrors the fallback; that makes the
    shipped title explicit.
+   Append `--draft` to the command when the user asked for a draft.
 
 9. **Capture the PR number** from the output line
-   `OCTOPUS_PR=<number>`.
+   `OCTOPUS_PR=<number>`. A second line, `OCTOPUS_PR_DRAFT=true`, is
+   present when the PR was opened as a draft.
 
 10. **Show the submitted title + body.** Run:
     ```
@@ -108,5 +117,7 @@ dominant commit type). One emoji per title, always at the start:
     Display the full URL, title, and body so the user can verify
     what was submitted.
 
-11. **Close out.** Suggest `/octopus:pr-review <number>` as the next
-    step.
+11. **Close out.** For a draft PR, say so explicitly, then suggest
+    `/octopus:pr-ready <number>` for when the work is ready, followed
+    by `/octopus:pr-review <number>`. For a normal PR, suggest
+    `/octopus:pr-review <number>` directly.

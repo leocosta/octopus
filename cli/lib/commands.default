@@ -16,6 +16,7 @@ uninstall|Remove Octopus artifacts from the current repository
 branch-create|Create a development branch
 dev-flow|Run the guided development workflow
 pr-open|Open a PR following conventions
+pr-ready|Mark a draft PR as ready for review
 pr-review|Self-review a PR and assign reviewers
 pr-comments|Address PR review comments
 pr-merge|Merge an approved PR

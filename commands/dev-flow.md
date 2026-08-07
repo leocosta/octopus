@@ -18,9 +18,20 @@ for human interaction.
 
 ### Step 2: Open PR
 - When the user says "continue" or invokes this step:
-- Run /octopus:pr-open (will ask for target branch)
+- Run /octopus:pr-open (will ask for target branch). If the user asked
+  for a draft PR, pass `--draft`.
 - Capture the PR number from the output
 - Show the PR body that was submitted so the user can see what was proposed
+- If the PR was opened as a draft (`OCTOPUS_PR_DRAFT=true` in the
+  output), tell the user: "PR opened as a draft. Say 'ready' or invoke
+  /octopus:pr-ready <number> when it's ready for review." and proceed
+  to Step 2.5 before Step 3.
+
+### Step 2.5: Promote Draft (only if Step 2 opened a draft)
+- When the user says "ready" or invokes this step:
+- Run /octopus:pr-ready with the captured PR number
+- Requesting a review assigns human reviewers, so a draft must be
+  promoted here before Step 3 runs.
 
 ### Step 3: Self-Review (optional)
 - Self-review is a multi-agent fan-out — run it **once, when the PR is

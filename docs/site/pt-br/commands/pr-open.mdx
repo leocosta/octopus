@@ -3,7 +3,7 @@ title: pr-open
 description: Abre um PR com título e corpo escritos pelo agente — o agente escreve o texto, e a CLI cuida da mecânica de push da branch + gh pr create.
 sidebar:
   order: 4
-source_hash: "sha256:54eb7c66591f2d0a2033ac3d525c5b79cfb38203d13014402fd22f3fdf728eac"
+source_hash: "sha256:e22864e433337e3079d929e6d14bf6e0858030f15b1bc1699078bd38207cd0f1"
 needs_retranslation: false
 ---
 
@@ -70,5 +70,25 @@ O próximo passo após `pr-open` é `/octopus:pr-review` — o agente
 faz self-review do diff do PR contra o checklist de correção/design/legibilidade
 e então atribui reviewers humanos. `pr-comments` roda após
 o feedback chegar; `pr-merge` roda após a aprovação.
+
+## Abrindo um draft
+
+```bash
+/octopus:pr-open --draft
+/octopus:pr-open main --draft
+```
+
+`--draft` abre o PR como draft em vez de pronto para review — para
+feedback antecipado do CI, uma leitura arquitetural antes do trabalho
+estar terminado, ou uma branch stacked. O título e o corpo são
+escritos exatamente da mesma forma; só o estado do PR muda. A flag é
+agnóstica de posição: a branch de destino é o primeiro argumento que
+não é uma flag.
+
+PRs draft em repositórios privados exigem um plano pago do GitHub.
+Quando o `gh` recusa, o comando avisa e para — ele não abre
+silenciosamente um PR normal no lugar do draft que você pediu.
+
+Promova depois com [`pr-ready`](../pr-ready/).
 
 [Fonte: `commands/pr-open.md`](https://github.com/leocosta/octopus/blob/main/commands/pr-open.md)

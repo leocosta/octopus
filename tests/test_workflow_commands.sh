@@ -21,6 +21,7 @@ deliver_commands "claude"
 
 [[ -f "$TMPDIR/.claude/commands/octopus:branch-create.md" ]] || { echo "FAIL: octopus:branch-create.md not created"; exit 1; }
 [[ -f "$TMPDIR/.claude/commands/octopus:pr-open.md" ]] || { echo "FAIL: octopus:pr-open.md not created"; exit 1; }
+[[ -f "$TMPDIR/.claude/commands/octopus:pr-ready.md" ]] || { echo "FAIL: octopus:pr-ready.md not created"; exit 1; }
 [[ -f "$TMPDIR/.claude/commands/octopus:pr-review.md" ]] || { echo "FAIL: octopus:pr-review.md not created"; exit 1; }
 [[ -f "$TMPDIR/.claude/commands/octopus:pr-comments.md" ]] || { echo "FAIL: octopus:pr-comments.md not created"; exit 1; }
 [[ -f "$TMPDIR/.claude/commands/octopus:pr-merge.md" ]] || { echo "FAIL: octopus:pr-merge.md not created"; exit 1; }
