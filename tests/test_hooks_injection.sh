@@ -348,4 +348,44 @@ PYEOF
 rm -rf "$TMPDIR_UP"
 
 echo ""
+echo "Test: deliver_hooks warns once when the host environment drifts"
+TMPDIR_ENV=$(mktemp -d)
+mkdir -p "$TMPDIR_ENV/.claude"
+echo '{"permissions": {}, "hooks": {}, "mcpServers": {}}' > "$TMPDIR_ENV/.claude/settings.json"
+export OCTOPUS_HOOKS="true"
+export PROJECT_ROOT="$TMPDIR_ENV"
+MANIFEST_CAP_HOOKS="true"
+MANIFEST_DELIVERY_HOOKS_METHOD="settings_json"
+MANIFEST_DELIVERY_HOOKS_TARGET=".claude/settings.json"
+export OCTOPUS_DIR="$SCRIPT_DIR"
+unset OCTOPUS_DISABLED_HOOKS
+
+# First run, simulated as WSL: no prior marker, must not warn.
+unset MSYSTEM
+export WSL_DISTRO_NAME="Ubuntu"
+out1="$(deliver_hooks "claude")"
+[[ "$out1" != *"WARNING:"* ]] \
+  || { echo "FAIL: first-ever run warned with no prior marker: $out1"; exit 1; }
+[[ "$(cat "$TMPDIR_ENV/.octopus/setup-env")" == "wsl" ]] \
+  || { echo "FAIL: marker was not written as 'wsl'"; exit 1; }
+
+# Second run, simulated as Git Bash: environment drifted, must warn once.
+unset WSL_DISTRO_NAME
+export MSYSTEM="MINGW64"
+out2="$(deliver_hooks "claude")"
+[[ "$out2" == *"WARNING:"*"wsl"*"msys"* ]] \
+  || { echo "FAIL: drift from wsl to msys did not produce a WARNING mentioning both: $out2"; exit 1; }
+[[ "$(cat "$TMPDIR_ENV/.octopus/setup-env")" == "msys" ]] \
+  || { echo "FAIL: marker was not updated to 'msys'"; exit 1; }
+
+# Third run, same simulated environment: must stay quiet (idempotent).
+out3="$(deliver_hooks "claude")"
+[[ "$out3" != *"WARNING:"* ]] \
+  || { echo "FAIL: repeated run under the same environment warned again: $out3"; exit 1; }
+
+echo "PASS: host-environment drift is detected once and then quiet"
+unset MSYSTEM WSL_DISTRO_NAME
+rm -rf "$TMPDIR_ENV"
+
+echo ""
 echo "All hooks injection tests passed!"

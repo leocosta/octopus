@@ -33,6 +33,9 @@ HOOKS_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOOKS_RELEASE_ROOT="${HOOKS_RELEASE_ROOT:-$(cd "$HOOKS_LIB_DIR/../.." && pwd)}"
 HOOKS_CACHE_ROOT="${OCTOPUS_CACHE_ROOT:-$HOME/.octopus-cli}"
 
+# shellcheck source=cli/lib/ui.sh
+source "$HOOKS_LIB_DIR/ui.sh"
+
 # Managed hooks: "<git-hook-name> <script-basename>". One line per installed
 # hook — rules-sync deliberately appears twice, git calls it on both events.
 _HOOKS_MANAGED="
@@ -99,6 +102,29 @@ _hooks_dir() {
     return 0
   fi
   printf '%s' "$(git rev-parse --git-path hooks)"
+}
+
+# ---------------------------------------------------------------------------
+# _hooks_check_env_drift
+#
+# Shared concern with deliver_hooks() in setup.sh: _hooks_wrapper above bakes
+# an absolute POSIX path (the source-root) into each wrapper. That path is
+# tied to whichever shell ran `install` — a different shell reading the same
+# .git/hooks/* later (e.g. native Windows git after installing from WSL)
+# can't resolve it, and git's own hook invocation fails before this script
+# ever runs, so nothing here can report it after the fact. This is the only
+# reliable place to catch the drift — install always runs in a working shell.
+# ---------------------------------------------------------------------------
+_hooks_check_env_drift() {
+  local top env_marker current_env prev_env
+  top="$(git rev-parse --show-toplevel 2>/dev/null)" || return 0
+  env_marker="$top/.octopus/setup-env"
+  current_env="$(_octopus_host_env)"
+  prev_env="$(cat "$env_marker" 2>/dev/null || true)"
+  if [[ -n "$prev_env" && "$prev_env" != "$current_env" ]]; then
+    echo "WARNING: Git hooks were last installed for '$prev_env' and this run is under '$current_env' — wrapper scripts in $DIR now point at $current_env paths. If you also use git from $prev_env against this repo, its hooks will fail until you re-run 'octopus hooks install' from there too."
+  fi
+  mkdir -p "$(dirname "$env_marker")" && printf '%s' "$current_env" > "$env_marker"
 }
 
 # ---------------------------------------------------------------------------
@@ -215,6 +241,7 @@ case "$SUB" in
     done <<< "$_HOOKS_MANAGED"
 
     [[ $changed -eq 1 ]] && echo "" && echo "Hooks point at $ROOT — 'octopus update' moves them with it."
+    [[ "$DRY" == "true" ]] || _hooks_check_env_drift
     exit 0
     ;;
 

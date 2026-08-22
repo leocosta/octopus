@@ -15,6 +15,27 @@
 [[ -n "${_OCTOPUS_UI_LOADED:-}" ]] && return 0
 _OCTOPUS_UI_LOADED=1
 
+# ---------------------------------------------------------------------------
+# _octopus_host_env — coarse identifier for the shell environment Octopus is
+# running under. Used to detect when a repo's generated absolute paths (POSIX,
+# tied to whichever shell ran `octopus setup`) no longer match the shell that
+# will execute them — e.g. hooks installed from WSL, later read by the native
+# Windows build of Claude Code.
+# ---------------------------------------------------------------------------
+_octopus_host_env() {
+  if [[ -n "${WSL_DISTRO_NAME:-}" ]] || grep -qi microsoft /proc/version 2>/dev/null; then
+    printf 'wsl'
+  elif [[ "${OSTYPE:-}" == cygwin* ]]; then
+    printf 'cygwin'
+  elif [[ "${OSTYPE:-}" == msys* || -n "${MSYSTEM:-}" ]]; then
+    printf 'msys'
+  elif [[ "${OSTYPE:-}" == darwin* ]]; then
+    printf 'macos'
+  else
+    printf 'linux'
+  fi
+}
+
 UI_COLORS=1
 UI_UNICODE=1
 OCTOPUS_VERBOSE="${OCTOPUS_VERBOSE:-0}"
@@ -25,13 +46,15 @@ if [[ -n "${NO_COLOR:-}" || "${TERM:-}" == "dumb" ]] || ! [[ -t 1 ]]; then
 fi
 
 # Windows/Git Bash locale check: ASCII fallback when locale is not UTF-8
-if [[ "${OSTYPE:-}" == msys* || "${OSTYPE:-}" == cygwin || -n "${MSYSTEM:-}" ]]; then
-  _ui_locale="${LC_ALL:-}${LC_CTYPE:-}${LANG:-}"
-  if [[ "$_ui_locale" != *[Uu][Tt][Ff]* ]]; then
-    UI_UNICODE=0
-  fi
-  unset _ui_locale
-fi
+case "$(_octopus_host_env)" in
+  msys|cygwin)
+    _ui_locale="${LC_ALL:-}${LC_CTYPE:-}${LANG:-}"
+    if [[ "$_ui_locale" != *[Uu][Tt][Ff]* ]]; then
+      UI_UNICODE=0
+    fi
+    unset _ui_locale
+    ;;
+esac
 
 # ── Symbols ────────────────────────────────────────────────────────────────
 if (( UI_UNICODE )); then

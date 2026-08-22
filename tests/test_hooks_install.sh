@@ -175,6 +175,32 @@ vendored="$( (cd "$REPO4" && HOOKS_RELEASE_ROOT="$CACHE/cache/v9.9.9" OCTOPUS_CA
   bash "$CMD" status) | awk '/^source:/ { print $2 }')"
 assert_eq "a vendored octopus/ checkout is found too" "$REPO4/octopus" "$vendored"
 
+# --- host-environment drift (RM-183): shared with deliver_hooks() in setup.sh
+# The wrapper's source-root is an absolute POSIX path tied to whichever shell
+# ran install (WSL, Git Bash, ...). A different shell reading the same
+# .git/hooks/* later can't resolve it, and git's own hook invocation fails
+# before this script ever runs — so install-time is the only place to catch it.
+
+REPO5="$WORK/repo5"
+mkdir -p "$REPO5"
+git -C "$REPO5" init -q
+
+out="$(cd "$REPO5" && HOOKS_RELEASE_ROOT="$RELEASE" OCTOPUS_CACHE_ROOT="$CACHE" \
+  WSL_DISTRO_NAME="Ubuntu" bash "$CMD" install 2>&1)"
+assert_not_contains "first-ever install (wsl) does not warn" "WARNING:" "$out"
+assert_eq "marker records 'wsl'" "wsl" "$(cat "$REPO5/.octopus/setup-env")"
+
+out="$(cd "$REPO5" && HOOKS_RELEASE_ROOT="$RELEASE" OCTOPUS_CACHE_ROOT="$CACHE" \
+  MSYSTEM="MINGW64" bash "$CMD" install 2>&1)"
+assert_contains "install under a drifted environment (msys) warns" "WARNING:" "$out"
+assert_contains "the warning names both environments" "'wsl'" "$out"
+assert_contains "the warning names both environments (2)" "'msys'" "$out"
+assert_eq "marker updates to 'msys'" "msys" "$(cat "$REPO5/.octopus/setup-env")"
+
+out="$(cd "$REPO5" && HOOKS_RELEASE_ROOT="$RELEASE" OCTOPUS_CACHE_ROOT="$CACHE" \
+  MSYSTEM="MINGW64" bash "$CMD" install 2>&1)"
+assert_not_contains "repeated install under the same environment stays quiet" "WARNING:" "$out"
+
 # --- errors ----------------------------------------------------------------
 
 out="$(cd "$WORK" && bash "$CMD" status 2>&1)"; rc=$?
