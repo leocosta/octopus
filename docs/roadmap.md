@@ -1890,3 +1890,55 @@ auto-draft from `wip/` branches or failing tests. Opening a PR is an
 outward-facing act; guessing its state is worse than being told.
 
 Spec: `docs/specs/pr-draft-support.md`.
+
+### Cluster 34 — Cross-environment hook drift
+
+_Found on 2026-08-21. A user hit Claude Code hook errors after installing
+Octopus from WSL and then opening the same project with the native Windows
+build of Claude Code. `deliver_hooks` writes absolute POSIX paths into
+`.claude/settings.json`, tied to whichever shell ran `octopus setup` — a
+Windows-side shell can't resolve them, and the failure happens before any
+Octopus bash code runs, so no hook can self-report it. Auditing the rest of
+the delivery layer for the same bug class turned up a second, already-present
+instance: `cli/lib/hooks.sh` bakes the identical kind of absolute path into
+the git hooks it installs (`post-checkout`/`post-merge`/`pre-push`)._
+
+### RM-183 — Warn on host-environment drift when regenerating hooks
+
+- **Priority:** 🟡 Medium
+- **Effort:** low
+- **Status:** implemented
+- **Added:** 2026-08-21
+
+Simultaneous cross-platform support was ruled out: whichever binary executes a
+hook command decides how it's interpreted (bash with a shebang vs. `cmd.exe`
+for Claude Code hooks; the same split for git's own hook invocation), and
+that's fixed by the host running it, not by anything Octopus writes into the
+path. A hook that tries to warn about this at runtime — e.g. `session-start`,
+or the git hook itself — fails for the exact same reason as the hooks it
+would be warning about, at the same time, so nothing is left running to say
+so.
+
+The only point where the check is reliably executable is `octopus setup` /
+`octopus hooks install` itself, which always runs in a working shell. A new
+`_octopus_host_env()` helper (`cli/lib/ui.sh`) coarsely classifies the
+current shell (`wsl`, `msys`/Git Bash, `cygwin`, `macos`, `linux`). Two
+call sites bake an absolute POSIX path into a command another binary later
+execs, and both now record `_octopus_host_env()` to the same per-repo marker
+(`.octopus/setup-env`, gitignored) right after writing: `deliver_hooks()`
+(`setup.sh`) for Claude Code's `.claude/settings.json`, and
+`_hooks_check_env_drift()` (`cli/lib/hooks.sh`, called from `install`) for the
+git hooks `_hooks_wrapper()` installs. If a prior marker exists and disagrees
+with the current run, either one prints a `WARNING:` line naming both
+environments and pointing at the fix (re-run setup/hooks install from the
+other side too). Writing the marker in the same call that compares it makes
+repeated or multi-agent runs self-quieting — only the first mismatch in a run
+warns.
+
+Rules/skills/commands/mcp delivery were checked and ruled out as the same bug
+class: they either write no absolute executable path (mcp, commands) or fail
+a structurally different way (rules/skills symlinks) that this marker isn't
+built to catch.
+
+This doesn't make switching seamless — it makes the switch legible instead of
+a cryptic hook failure on the side that went stale.

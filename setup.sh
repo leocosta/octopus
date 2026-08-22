@@ -1573,6 +1573,20 @@ with open(settings_path, "w") as f:
     f.write("\n")
 PYEOF
     echo "  -> Hooks injected into $MANIFEST_DELIVERY_HOOKS_TARGET"
+
+    # Hook commands above are absolute POSIX paths tied to whichever shell ran
+    # this setup (WSL, Git Bash, native Linux/macOS...). A different shell
+    # reading the same settings.json later (e.g. native Windows Claude Code
+    # after installing from WSL) can't resolve them, and fails before any
+    # Octopus code runs — so this is the only reliable place to catch drift.
+    local env_marker="$(_install_root)/.octopus/setup-env"
+    local current_env prev_env
+    current_env="$(_octopus_host_env)"
+    prev_env="$(cat "$env_marker" 2>/dev/null || true)"
+    if [[ -n "$prev_env" && "$prev_env" != "$current_env" ]]; then
+      echo "WARNING: Hooks were last generated for '$prev_env' and this setup ran under '$current_env' — $MANIFEST_DELIVERY_HOOKS_TARGET now points at $current_env paths. If you also run Claude Code from $prev_env against this project, its hooks will fail until you re-run 'octopus setup' (or 'octopus hooks install') from there too."
+    fi
+    mkdir -p "$(dirname "$env_marker")" && printf '%s' "$current_env" > "$env_marker"
   fi
 }
 
