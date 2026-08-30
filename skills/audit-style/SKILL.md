@@ -3,13 +3,13 @@ name: audit-style
 model: haiku
 description: >
   Signal-only review flagging code that violates the team's design rules
-  (exceptions gate, patterns, coding-style, active stack rules) and over-
-  engineering (premature abstraction, speculative hierarchy, DRY-before-three)
-  — what a formatter or type-checker can't see. Never blocks; runs on demand
-  via codereview/pr-review/implement. The house-rules complement to native
-  simplify.
+  (exceptions gate, patterns, coding-style, active stack rules), over-
+  engineering (premature abstraction, DRY-before-three) and rigidity (measured
+  co-change) — what a formatter or type-checker can't see. Never blocks; runs
+  on demand via codereview/pr-review/implement. The house-rules complement to
+  native simplify.
 triggers:
-  keywords: ["audit style", "style check", "over-engineering", "rule violation", "design quality", "premature abstraction"]
+  keywords: ["audit style", "style check", "over-engineering", "rule violation", "design quality", "premature abstraction", "rigidity", "extensibility"]
 ---
 
 # Design-Rules Style Audit
@@ -40,6 +40,14 @@ ships and confronts the diff against them, emitting two kinds of finding:
   structurally cannot produce — it optimizes for *less code* and may itself
   introduce the abstraction the rules forbid. `audit-style` is the reader
   that knows when **not** to simplify.
+- **`rigidity`** — the opposite failure, invisible to the rules alone: a
+  concept spread across several files, so every extension edits all of them.
+  Never a judgment call — emitted only on measured evidence from
+  `octopus git-signals` (co-change over real git history).
+
+The last two are one ruler: **abstraction without co-change is premature
+abstraction; co-change without abstraction is rigidity.** One measurement
+decides both, which keeps the audit from arguing taste against taste.
 
 The skill is **signal-only**: it never blocks a commit, a task, or a merge.
 A design verdict is a judgment call, and blocking on a judgment call is
@@ -109,7 +117,20 @@ absence as an `info` note so the team knows the audit was partial.
    `over-engineering` finding. When in doubt, prefer flagging the
    abstraction over flagging its absence — the rules treat abstraction as
    the cost.
-5. **Report.** Emit findings in the same severity-tiered shape as
+5. **Measure rigidity.** Run
+   `octopus git-signals --base <base> --ref <ref>` — deterministic, git-only,
+   ~0 tokens. For each cluster returned, emit one `rigidity` finding carrying
+   **evidence only**: the cluster members with their churn, which of them the
+   diff touched, `support`, `cohesion`, `window_days`, and `enlarges`.
+
+   Anchor on **one** real diff line — the outsider path that enlarges the
+   cluster, or the touched member with the highest churn — and carry the other
+   members as evidence text; `pr-review` Phase 4.5 demotes what it cannot
+   anchor. **Do not name a principle or a pattern here** — that is `architect`'s
+   job (see Model tier). If `status:` is not `ok`, emit one `info` note naming
+   the reason and **no** finding: absence of evidence is never reported as
+   zero.
+6. **Report.** Emit findings in the same severity-tiered shape as
    `audit-all`, but capped at `warn`/`info` — **never `block`**. State
    explicitly in the report header that the audit is signal-only.
 
@@ -125,10 +146,44 @@ Mirror `audit-all`'s tiered report, with the blocking tier disabled:
   rules file missing).
 
 Each finding names the diff location, the finding type (`rule-violation` /
-`over-engineering`), the rule it was checked against (file + the specific
-clause), and a one-line "what to change". End with a trailer line:
+`over-engineering` / `rigidity`), the rule it was checked against (file + the
+specific clause) or, for `rigidity`, the measured evidence line, and a one-line
+"what to change". End with a trailer line:
 `audit-style: 0 block, N warn, N info`. The audit emits no `block` tier by
-design.
+design — including for `rigidity`, whose merge verdict belongs to `architect`.
+
+A `rigidity` finding reads:
+
+```
+warn · rigidity · payments/providers/pix.ts:14
+  cluster: 3 files, support:8 cohesion:0.86 window:90d enlarges:true
+    payments/providers/index.ts   churn:47  touched
+    payments/config/registry.ts   churn:39  touched
+    payments/providers/boleto.ts  churn:31
+  This diff touches 2 members of the cluster and adds a third path to it.
+```
+
+## Rigidity configuration
+
+The `rigidity` evidence comes from `octopus git-signals`, which needs no config
+to run — every value below has a built-in default. Tune per repo in
+`.octopus.yml`, with the same layering as `code_metrics:`
+(workspace < personal < project; the committed repo state wins):
+
+```yaml
+git_signals:
+  cochange:
+    window_days: 90           # git history lookback
+    min_support: 5            # a pair must co-occur at least this often
+    min_cohesion: 0.6         # Jaccard: support / (commits(a)+commits(b)-support)
+    min_cluster: 3            # a pair is not a cluster; three files are
+    max_files_per_commit: 25  # wider commits are mass renames, not evidence
+    max_findings: 1           # findings about THIS change, not ambient debt
+```
+
+`max_findings` is the noise control: clusters rank `enlarges` first, then
+support, then size, and only the top N are reported. Raising it is how this
+audit becomes a wall of ambient debt nobody reads.
 
 ## Anti-Patterns
 
@@ -140,7 +195,11 @@ design.
 - Manufacturing a violation when the rules do not cover the construct — say
   "not covered" (`info`), do not invent a `warn`.
 - Recommending an abstraction the rules call premature — this skill exists
-  partly to push back on over-abstraction, not to add it.
+  partly to push back on over-abstraction, not to add it. A `rigidity` finding
+  is not an exception: it reports measured co-change, it does not prescribe a
+  pattern.
+- Emitting a `rigidity` finding without a `git-signals` cluster behind it, or
+  reporting "no rigidity" when `status:` was not `ok`.
 - Editing the rules or the diff — the skill is read-only.
 
 ## Integration with Other Skills
@@ -168,3 +227,8 @@ checklist, not deep reasoning. Run it on the **cheapest model tier**
 (`--model haiku` / each assistant's cheapest). Reserve frontier models
 for the `architect`/`dba`/`security` roles that adjudicate the findings
 (RM-130).
+
+That split is why `rigidity` findings carry evidence and no vocabulary: naming
+the SOLID principle and the pattern is domain reasoning, so it belongs to
+`architect` on the frontier tier — which also stops the cheapest tier from
+inventing a pattern name that only loosely fits.

@@ -43,6 +43,8 @@ Most other roles run on sonnet.
 - Security audit (secrets, injection, auth, validation)
 - Architecture audit (no god objects, no premature abstractions,
   dependency direction)
+- Extensibility adjudication (deciding what a measured `rigidity`
+  finding means for this merge)
 - Test audit (do tests test behaviour, are critical paths covered)
 - ADR triggering (any change encoding a hard-to-reverse decision
   needs an ADR)
@@ -114,6 +116,39 @@ Approved / Request Changes / Escalate
 ## ADR Required?
 Yes / No — if yes, the decision to record.
 ```
+
+## Adjudicating extensibility
+
+`audit-style` measures rigidity; the architect decides what it means. The
+evidence is a **co-change cluster** — files that keep changing in the same
+commit, found by `octopus git-signals` over real git history — plus whether
+this diff *enlarges* it.
+
+| Evidence | Verdict |
+|---|---|
+| the diff enlarges the cluster (touches ≥2 members, adds a new path) | **BLOCKING** |
+| the diff touches the cluster without enlarging it | **ADVISORY** |
+| evidence unavailable (shallow clone, thin history) | **QUESTION** |
+
+The asymmetry is the point. Rigidity is usually debt the diff did not create —
+the cluster formed over months, often by other people — and blocking someone
+for passing through is how a gate loses a team's trust. But a diff that touches
+two members *and* pulls in a third is joining the cluster, and that new file
+will pay the same toll on every future change. That part is the author's, and
+it is fair to charge.
+
+This is the same standard the architect already applies to premature
+abstraction, read from the other end of one ruler: **abstraction without
+co-change is premature abstraction; co-change without abstraction is
+rigidity.** Both verdicts come from the same measurement, so the role is never
+arguing taste against taste.
+
+Naming is the architect's job too — `audit-style` runs on the cheapest tier and
+deliberately reports evidence with no vocabulary. The architect names the SOLID
+principle at stake and, where one genuinely applies, the design pattern that
+would create the seam. One rule binds it: **never name a pattern without the
+evidence line that justifies it.** Proposing a pattern also trips the ADR rule
+below — and the co-change evidence is what fills that ADR's Context.
 
 ## When to delegate to architect
 

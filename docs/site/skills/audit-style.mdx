@@ -1,6 +1,6 @@
 ---
 title: audit-style
-description: "Signal-only audit that confronts the working diff against your team's opinionated design rules — the custom-exception gate, the Result-over-throw rule, the no-boolean-parameter rule, the cost-of-abstraction rule — and flags two things a formatter and the generic simplify cannot: code that breaks a stated rule (rule-violation) and abstraction the rules call a cost (over-engineering). Never blocks; it reports and leaves the call to you."
+description: "Signal-only audit that confronts the working diff against your team's opinionated design rules — the custom-exception gate, the Result-over-throw rule, the no-boolean-parameter rule, the cost-of-abstraction rule — and flags three things a formatter and the generic simplify cannot: code that breaks a stated rule (rule-violation), abstraction the rules call a cost (over-engineering), and code so rigid that every extension edits the same files (rigidity). Never blocks; it reports and leaves the call to you."
 ---
 
 The native `simplify` has good taste, but it does not know *your* rules. It
@@ -30,7 +30,7 @@ instead." The generic `simplify` will never say "you extracted this at the
 second occurrence; the rule says wait for the third." `audit-style` is the
 side that reads the rules and reports where the diff diverges.
 
-## The two findings
+## The three findings
 
 - **`rule-violation`** — a construct the diff introduces that contradicts a
   stated rule: a custom exception that fails the gate, a throw where a typed
@@ -41,6 +41,54 @@ side that reads the rules and reports where the diff diverges.
   DRY applied before three occurrences, an indirection layer with no present
   caller. This is the dimension the generic `simplify` structurally cannot
   produce — `audit-style` is the reader that knows when **not** to simplify.
+- **`rigidity`** — the opposite failure: a concept spread across several
+  files, so every extension has to edit all of them. Unlike the other two,
+  this one is never a judgment call. It is emitted only on measured evidence.
+
+## One ruler, two directions
+
+Flagging over-abstraction and flagging under-abstraction in the same review
+is a good way to sound incoherent — unless both readings come from the same
+measurement. They do:
+
+> **Abstraction without co-change is premature abstraction.
+> Co-change without abstraction is rigidity.**
+
+The measurement is `octopus git-signals`: a deterministic pass over your git
+history that finds **co-change clusters** — files that keep changing in the
+same commit, which is what it looks like when one concept lives in three
+places. It is `git` and `awk`, nothing else: no language parser, no coverage
+tool, no CI, no baseline. It runs in any repo, in any language, and costs no
+model tokens.
+
+A cluster on its own is not a finding about your PR, though. What earns a
+finding is whether **this diff enlarges the cluster** — touching two or more
+members *and* pulling in a path that was not one. Passing through a cluster
+someone else created is information; adding a fourth file that will now pay
+the same toll forever is something you did.
+
+## Who measures, who decides
+
+`audit-style` runs on the cheapest model tier and stays signal-only, so it
+reports the evidence and stops there — deliberately naming no principle and
+no pattern. The `architect` role picks the finding up on the frontier tier and
+makes the call:
+
+| Evidence | Verdict |
+|---|---|
+| the diff enlarges the cluster | **BLOCKING** |
+| the diff touches it without enlarging | **ADVISORY** |
+| evidence unavailable (shallow clone, no history) | **QUESTION** |
+
+`architect` is also where the vocabulary comes in: the SOLID principle at
+stake, and the design pattern that would create the seam. One rule binds it —
+**a pattern is never named without the evidence line that justifies it.**
+"Consider a Strategy here" is cargo-cult. "Each new provider edits these three
+files, eight times in ninety days" is a claim you can argue with.
+
+Nothing is ever reported as a clean zero when it was not measured: a shallow
+clone or a repo without enough history returns *unavailable*, never "no
+rigidity found".
 
 ## The source of truth
 
@@ -78,5 +126,10 @@ hooks: true
 `audit-style` complements the native `simplify` rather than replacing it: the
 generic pass applies taste and edits the code, `audit-style` reads the house
 rules and signals — including the over-engineering the generic pass can miss.
+
+Rigidity thresholds live under `git_signals.cochange` in `.octopus.yml` and
+need no configuration to work. The one worth knowing is `max_findings`, which
+defaults to **1**: a mature repo has many co-change clusters, and reporting all
+of them is how a review becomes a wall of ambient debt nobody reads.
 
 [Source: `skills/audit-style/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/audit-style/SKILL.md)
