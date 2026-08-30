@@ -1,6 +1,6 @@
 ---
 title: audit-style
-description: "Auditoria signal-only que confronta o diff de trabalho com as regras de design opinativas do time — o gate de exceção customizada, a regra de Result-em-vez-de-throw, a regra de não-usar-parâmetro-booleano, a regra do custo da abstração — e sinaliza dois pontos que o formatter e o simplify genérico não enxergam: código que quebra uma regra declarada (rule-violation) e abstração que as regras consideram um custo (over-engineering). Nunca bloqueia; reporta e deixa a decisão com você."
+description: "Auditoria signal-only que confronta o diff de trabalho com as regras de design opinativas do time — o gate de exceção customizada, a regra de Result-em-vez-de-throw, a regra de não-usar-parâmetro-booleano, a regra do custo da abstração — e sinaliza três pontos que o formatter e o simplify genérico não enxergam: código que quebra uma regra declarada (rule-violation), abstração que as regras consideram um custo (over-engineering) e código tão rígido que toda extensão edita os mesmos arquivos (rigidity). Nunca bloqueia; reporta e deixa a decisão com você."
 ---
 
 O `simplify` nativo tem bom gosto, mas não conhece as *suas* regras. Ele não
@@ -30,7 +30,7 @@ genérico nunca vai dizer "você extraiu isto na segunda ocorrência; a regra ma
 esperar a terceira". O `audit-style` é o lado que lê as regras e reporta onde o
 diff diverge.
 
-## Os dois achados
+## Os três achados
 
 - **`rule-violation`** — um construto que o diff introduz e que contradiz uma
   regra declarada: uma exceção customizada que falha no gate, um throw onde se
@@ -43,6 +43,53 @@ diff diverge.
   consumidor presente. Esta é a dimensão que o `simplify` genérico
   estruturalmente não produz — o `audit-style` é o leitor que sabe a hora de
   **não** simplificar.
+- **`rigidity`** — a falha oposta: um conceito espalhado por vários arquivos,
+  de modo que toda extensão precisa editar todos eles. Diferente dos outros
+  dois, este nunca é um juízo de valor. Ele só é emitido sobre evidência
+  medida.
+
+## Uma régua, dois sentidos
+
+Sinalizar excesso e falta de abstração na mesma review é um bom jeito de soar
+incoerente — a menos que as duas leituras venham da mesma medição. E vêm:
+
+> **Abstração sem co-change é abstração prematura.
+> Co-change sem abstração é rigidez.**
+
+A medição é o `octopus git-signals`: uma passada determinística sobre o
+histórico do git que encontra **clusters de co-change** — arquivos que mudam
+sempre no mesmo commit, que é a cara de um conceito morando em três lugares. É
+`git` e `awk`, nada além disso: sem parser de linguagem, sem ferramenta de
+cobertura, sem CI, sem baseline. Roda em qualquer repositório, em qualquer
+linguagem, e não custa tokens de modelo.
+
+Só que um cluster, por si só, não é um achado sobre o seu PR. O que gera um
+achado é **este diff ampliar o cluster** — tocar dois ou mais membros *e* puxar
+para dentro um caminho que não era membro. Passar por um cluster que outra
+pessoa criou é informação; acrescentar um quarto arquivo que vai pagar o mesmo
+pedágio para sempre é algo que você fez.
+
+## Quem mede, quem decide
+
+O `audit-style` roda no tier de modelo mais barato e continua signal-only: ele
+reporta a evidência e para por aí, deliberadamente sem nomear princípio nem
+pattern. O role `architect` pega o achado no tier de fronteira e decide:
+
+| Evidência | Veredito |
+|---|---|
+| o diff amplia o cluster | **BLOCKING** |
+| o diff toca o cluster sem ampliá-lo | **ADVISORY** |
+| evidência indisponível (clone raso, sem histórico) | **QUESTION** |
+
+O `architect` é também onde entra o vocabulário: o princípio SOLID em jogo e o
+design pattern que criaria o seam. Uma regra o amarra — **um pattern nunca é
+nomeado sem a linha de evidência que o justifica.** "Considere um Strategy
+aqui" é cargo-cult. "Cada provedor novo edita estes três arquivos, oito vezes
+em noventa dias" é uma afirmação que se pode contestar.
+
+Nada é reportado como um zero limpo quando não foi medido: um clone raso ou um
+repositório sem histórico suficiente retorna *indisponível*, nunca "nenhuma
+rigidez encontrada".
 
 ## A fonte de verdade
 
@@ -81,5 +128,11 @@ hooks: true
 O `audit-style` complementa o `simplify` nativo em vez de substituí-lo: o passo
 genérico aplica gosto e edita o código, o `audit-style` lê as regras da casa e
 sinaliza — incluindo o over-engineering que o passo genérico pode deixar passar.
+
+Os limiares de rigidez ficam em `git_signals.cochange` no `.octopus.yml` e não
+precisam de configuração para funcionar. O que vale conhecer é o
+`max_findings`, cujo padrão é **1**: um repositório maduro tem muitos clusters
+de co-change, e reportar todos é como uma review vira um paredão de dívida
+ambiente que ninguém lê.
 
 [Source: `skills/audit-style/SKILL.md`](https://github.com/leocosta/octopus/blob/main/skills/audit-style/SKILL.md)

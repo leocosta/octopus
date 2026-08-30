@@ -45,11 +45,21 @@ cm_is_safe_filter() {
   [[ "$1" =~ $re ]]
 }
 
+# The git-only signal lib (RM-184). Sourced rather than duplicated: gs_churn is
+# the single implementation of per-path churn, used by hotspots and by the
+# co-change axis alike.
+_CM_LIB_SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=./git-signals-lib.sh
+source "$_CM_LIB_SELF_DIR/git-signals-lib.sh"
+
 # ---------------------------------------------------------------------------
 # Config resolver
 # ---------------------------------------------------------------------------
 
-# Read a single field from the code_metrics: block of a .octopus.yml file.
+# Read a single field from a .octopus.yml root block. The block defaults to
+# code_metrics: and is overridden via CM_CONFIG_ROOT, so a sibling feature
+# (RM-184 git-signals) reuses this resolver — and its numeric guard — instead of
+# adding a third parallel implementation. Collapsing all three is RM-185.
 #   $1 — file path
 #   $2 — metric name  (e.g. "coverage")
 #   $3 — field name   (e.g. "min")
@@ -59,8 +69,9 @@ cm_is_safe_filter() {
 cm_override() {
   local file="$1" metric="$2" field="$3"
   [[ -f "$file" ]] || return 0
-  awk -v metric="$metric" -v field="$field" '
-    /^[^ \t#]/ { in_qm = ($0 ~ /^code_metrics:[[:space:]]*$/); in_metric = 0; next }
+  local root="${CM_CONFIG_ROOT:-code_metrics}"
+  awk -v metric="$metric" -v field="$field" -v root="$root" '
+    /^[^ \t#]/ { in_qm = ($0 ~ "^" root ":[[:space:]]*$"); in_metric = 0; next }
     in_qm && /^  [^ \t]/ {
       cur = $0; sub(/^  /, "", cur); sub(/:.*$/, "", cur)
       in_metric = (cur == metric); next
@@ -439,12 +450,9 @@ cm_doc_ratio() {
 # numstat rows are: <added>\t<deleted>\t<path>; binary files show `-` and are
 # skipped. Repeated paths accumulate.
 # Reads stdin, emits one `<churn>\t<path>` line per file.
-cm_git_churn() {
-  awk '
-    NF == 3 && $1 != "-" { churn[$3] += $1 + $2 }
-    END { for (f in churn) printf "%d\t%s\n", churn[f], f }
-  '
-}
+# Moved to cli/lib/git-signals-lib.sh as gs_churn (RM-184) — the same signal now
+# serves both hotspots and the co-change axis, so it lives in the git-only lib.
+cm_git_churn() { gs_churn "$@"; }
 
 # Count files in the high-churn AND high-complexity quadrant.
 #   $1 — churn threshold (>=)

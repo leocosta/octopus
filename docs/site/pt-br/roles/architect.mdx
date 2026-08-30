@@ -46,6 +46,8 @@ das outras roles roda em sonnet.
 - Auditoria de segurança (secrets, injection, auth, validação)
 - Auditoria de arquitetura (sem god objects, sem abstrações
   prematuras, direção de dependências)
+- Adjudicação de extensibilidade (decidir o que um achado de
+  `rigidity` medido significa para este merge)
 - Auditoria de testes (os testes testam comportamento? caminhos
   críticos estão cobertos?)
 - Disparo de ADR (qualquer mudança que codifique uma decisão difícil
@@ -119,6 +121,38 @@ Approved / Request Changes / Escalate
 ## ADR Required?
 Yes / No — if yes, the decision to record.
 ```
+
+## Adjudicando extensibilidade
+
+O `audit-style` mede a rigidez; o architect decide o que ela significa. A
+evidência é um **cluster de co-change** — arquivos que mudam sempre no mesmo
+commit, encontrados pelo `octopus git-signals` sobre o histórico real do git —
+mais o dado de se este diff *amplia* o cluster.
+
+| Evidência | Veredito |
+|---|---|
+| o diff amplia o cluster (toca ≥2 membros e adiciona um caminho novo) | **BLOCKING** |
+| o diff toca o cluster sem ampliá-lo | **ADVISORY** |
+| evidência indisponível (clone raso, histórico curto) | **QUESTION** |
+
+A assimetria é o ponto. Rigidez costuma ser dívida que o diff não criou — o
+cluster se formou ao longo de meses, muitas vezes por outras pessoas — e
+bloquear alguém por estar apenas de passagem é como um gate perde a confiança
+do time. Mas um diff que toca dois membros *e* puxa um terceiro está entrando
+no cluster, e esse arquivo novo vai pagar o mesmo pedágio em toda mudança
+futura. Essa parte é de autoria de quem abriu o PR, e é justo cobrar.
+
+É o mesmo critério que o architect já aplica à abstração prematura, lido pela
+outra ponta de uma única régua: **abstração sem co-change é abstração
+prematura; co-change sem abstração é rigidez.** Os dois vereditos saem da mesma
+medição, então a role nunca fica discutindo gosto contra gosto.
+
+Nomear também é trabalho do architect — o `audit-style` roda no tier mais
+barato e deliberadamente reporta evidência sem vocabulário. O architect nomeia
+o princípio SOLID em jogo e, quando algum realmente se aplica, o design pattern
+que criaria o seam. Uma regra o amarra: **nunca nomear um pattern sem a linha
+de evidência que o justifica.** Propor um pattern também aciona a regra de ADR
+abaixo — e a evidência de co-change é o que preenche o Context desse ADR.
 
 ## Quando delegar para architect
 

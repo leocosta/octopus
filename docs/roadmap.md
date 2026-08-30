@@ -1942,3 +1942,83 @@ built to catch.
 
 This doesn't make switching seamless — it makes the switch legible instead of
 a cryptic hook failure on the side that went stale.
+
+### Cluster 35 — Extensibility axis (the other half of the design ruler)
+
+_Proposed (added 2026-08-29). Seeds from
+[research](research/2026-08-29-extensibility-axis.md). `audit-style` owns one
+half of a design ruler (`over-engineering`: premature abstraction, speculative
+hierarchy, DRY-before-three) and nothing owns the other: code so rigid that
+every extension costs a multi-file edit. The half was missing because the
+**evidence** was missing — judging rigidity by taste collides head-on with the
+repo's anti-over-engineering posture. The interview reframed the trigger as
+**rigidity under change**, not absence of a pattern, and resolved the governing
+constraint: it must run where the `quality` bundle, `lizard`/`madge` and CI are
+all absent, which rules out reusing `hotspots` (needs `lizard`) and any static
+import graph. Co-change beat static fan-out because `git log` alone answers it
+and because it proves the coupling repeatedly **cost** something. The unified
+ruler: abstraction without co-change is premature abstraction; co-change
+without abstraction is rigidity — one measurement, two opposite verdicts. Half
+the capability already exists (RM-149's `cm_git_churn`, whose nominal per-file
+data is computed and then discarded). Decision recorded in
+[ADR-012](adr/012-rigidity-evidence-measure-vs-gate.md). Build order: RM-184;
+RM-185 is independent._
+
+| RM | Item | Theme |
+|----|------|-------|
+| RM-184 | Extensibility axis — `git-signals` + `rigidity` finding + architect classification | measure vs. gate |
+| RM-185 | Extract the layered-config resolver shared by `kr_*`, `cm_*` and `gs_*` | follow-up / DRY |
+
+### RM-184 — Extensibility axis: `git-signals`, the `rigidity` finding, architect classification
+
+- **Priority:** 🔴 High
+- **Effort:** medium
+- **Status:** proposed
+- **Added:** 2026-08-29
+- **Research:** [extensibility-axis](research/2026-08-29-extensibility-axis.md)
+- **ADR:** [ADR-012](adr/012-rigidity-evidence-measure-vs-gate.md)
+
+Four moving parts. A new `cli/lib/git-signals.sh`, dispatched as
+`octopus git-signals`, computes per-path churn and co-change clusters — git
+only, stack-agnostic, ~0 LLM tokens. `cm_git_churn` moves there and
+`code-metrics` consumes it, leaving `hotspots` unchanged. `audit-style` gains a
+third finding type, `rigidity`, carrying cluster members, co-change count, and
+whether the diff *adds* a member; it stays signal-only. `architect` classifies:
+`ADVISORY` by default, `BLOCKING` only when the diff enlarges the cluster —
+symmetric with how premature abstraction is already charged. `mentor` names the
+principle (SOLID) and the pattern (GoF), always bound to the evidence.
+
+**Rationale:** Closes the only half of the design ruler nobody owned, and
+hardens the half that existed by moving it from taste to measurement.
+Maintainability outranks YAGNI here, but only where a measurement says so.
+
+**Open questions for the spec:** thresholds (window, minimum co-change count,
+minimum cluster size); ranking and a per-PR finding ceiling, since noise is the
+dominant failure risk; whether naming escalates above Haiku, or is left to
+`architect` on the frontier tier that already adjudicates audit findings
+(RM-130); explicit degradation — a shallow clone must report *unavailable*,
+never `0`; and the **finding shape**, because a `rigidity` finding names a
+cluster while `review-anchor` (`pr-review` Phase 4.5) verifies a single
+`path:line`. The working assumption is to anchor on the diff file that enlarges
+the cluster and carry the rest as evidence, or the finding is demoted to
+QUESTION/`unanchored` before it is ever posted.
+
+### RM-185 — Extract the layered-config resolver
+
+- **Priority:** 🟡 Medium
+- **Effort:** low
+- **Status:** proposed
+- **Added:** 2026-08-29
+- **Research:** [extensibility-axis](research/2026-08-29-extensibility-axis.md)
+
+`kr_override`/`kr_field` (`cli/lib/knowledge-root.sh:79-109`) and
+`cm_override`/`cm_field` (`cli/lib/code-metrics-lib.sh:125-137`) are two
+parallel implementations of the same layered `.octopus.yml` read. RM-184 makes
+it three. Extract a shared resolver, carrying over `cm_field`'s numeric guard —
+the security boundary that stops attacker-influenceable config from being read
+as awk program text (closed in the #175 review).
+
+**Rationale:** The third occurrence is exactly the threshold
+`rules/common/coding-style.md:9` sets for extraction — the same ruler RM-184
+builds, applied to Octopus itself. Deliberately kept out of RM-184's scope so
+the axis does not carry a refactor it does not need.

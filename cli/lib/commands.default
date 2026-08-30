@@ -35,3 +35,4 @@ review-reflect|Adversarially filter review findings before they are reported (pr
 audit-scope|Resolve an audit skill's scoped diff, cache hit, or early exit before any LLM call
 code-metrics|Local PR-time dual-delta read of coverage/complexity/module-size/deps vs. orphan-ref baseline; LLM curation only on breach
 hooks|Install, inspect and refresh the Octopus git hooks (post-checkout, post-merge, pre-push)
+git-signals|Churn and co-change clusters from git history, with a verdict on whether a diff enlarges one.

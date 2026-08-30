@@ -53,6 +53,58 @@ All of the following must hold before approving:
 - No god objects, no premature abstractions, no copy-paste programming in the diff
 - Dependencies flow in the right direction (no domain depending on infrastructure)
 - If a new pattern is introduced, it is justified and documented
+- The diff does not enlarge a co-change cluster (see Extensibility below)
+
+## 3b. Extensibility — adjudicating `rigidity` findings
+
+`audit-style` measures rigidity and never blocks; you classify it. A `rigidity`
+finding arrives with measured evidence from `octopus git-signals`: a cluster of
+files that repeatedly change in the same commit, their churn, and whether this
+diff **enlarges** the cluster (touches two or more members and adds a path that
+is not one).
+
+| Evidence | Classification |
+|---|---|
+| `enlarges:true` | **BLOCKING** |
+| cluster touched, `enlarges:false` | **ADVISORY** |
+| `status:` not `ok` | **QUESTION**, tagged `evidence-unavailable` |
+
+The asymmetry is deliberate. Rigidity is usually debt the diff did not create —
+the cluster formed over months, often by other people. Blocking someone for
+merely passing through is how a gate loses a team's trust. But a diff that
+touches two members *and* pulls in a third is not passing through: it is joining
+the cluster, and that new path will pay the same toll on every future change.
+That is the author's own contribution, and it is fair to charge.
+
+This is the same standard already applied to premature abstraction, on the other
+side of one ruler: **abstraction without co-change is premature abstraction;
+co-change without abstraction is rigidity.** Both verdicts read the same
+measurement, so you are never arguing taste against taste.
+
+### Naming the principle and the pattern
+
+Naming is your job, not the audit's — it runs on the cheapest tier and
+deliberately reports evidence with no vocabulary. When you classify a
+`rigidity` finding, name:
+
+1. the **SOLID principle** at stake (usually Open/Closed or Dependency
+   Inversion, sometimes Single Responsibility), and
+2. the **design pattern** that would create the seam, when one genuinely
+   applies.
+
+The binding rule: **never name a pattern without the evidence line that
+justifies it.** "Consider a Strategy here" is cargo-cult; "each new provider
+edits these three files, 8 times in 90 days — a Strategy with registration
+would make that one file" is a reviewable claim. If you cannot state the
+evidence, do not name the pattern.
+
+Vocabulary layers rather than competes: `refactor-deepen`'s lexicon (Module,
+Interface, Depth, Seam, Locality) describes the **structure**, SOLID describes
+the **force** acting on it, and the pattern describes the **form**. Do not drift
+between them mid-review.
+
+Proposing a pattern triggers the ADR rule below ("a new pattern is
+introduced") — and the co-change evidence is what populates that ADR's Context.
 
 ## 4. ADR compliance
 - If the change encodes a non-trivial decision, an ADR exists or is created as part of this PR
@@ -130,6 +182,7 @@ One paragraph: what the change does, what you found, your decision.
 | BLOCKING | `src/auth/middleware.ts:42` | Token expiry not checked before use |
 | ADVISORY | `src/users/service.ts` | `processData` is a god function — consider splitting |
 | QUESTION | `src/billing/invoice.ts:88` | Why is this rounded to ceiling instead of half-even? |
+| BLOCKING | `payments/providers/pix.ts:14` | Enlarges a 3-file co-change cluster (support 8, 90d) — Open/Closed; a Strategy with registration would confine a new provider to one file |
 
 ## Decision
 **Approved** / **Request Changes** / **Escalate**
