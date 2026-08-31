@@ -1,8 +1,23 @@
 name: Build Release Bundle
 
+# Triggered by the TAG PUSH, not by `release: published`.
+#
+# The release must not be visible until its assets exist. With a
+# `release: published` trigger there is a window — from the moment the release
+# is published to the moment this job finishes uploading — where the tag is
+# already "latest" but the tarball is not there yet, and any `install.sh` run
+# in that window fails with "Failed to download <version>". Promoting a draft
+# does not help: GitHub fires no workflow for draft-release activity, and
+# un-drafting fires `published`, which lands in the same window.
+#
+# So: the tag push starts the build, `octopus release create-gh-release`
+# creates the release as a DRAFT, and this job un-drafts it only after the
+# assets are attached. A failed build leaves the release invisible rather than
+# broken.
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - 'v*'
 
 jobs:
   package:
@@ -80,6 +95,25 @@ jobs:
             --detach-sign --armor \
             --output "${TARBALL}.asc" "$TARBALL"
 
+      # The tag push and `gh release create --draft` are two separate steps on
+      # the maintainer's machine, so the draft may not exist yet when this
+      # runner starts. Wait for it rather than racing it.
+      - name: Wait for the draft release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF##*/}"
+          for i in $(seq 1 60); do
+            if gh release view "$TAG" >/dev/null 2>&1; then
+              echo "Release $TAG found after ${i} attempt(s)."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::Release $TAG never appeared after 5 minutes. Create it with 'octopus release create-gh-release ${TAG#v} <notes-file>'."
+          exit 1
+
       - name: Upload release assets
         shell: bash
         env:
@@ -93,3 +127,15 @@ jobs:
             install.sh \
             install.ps1 \
             --clobber
+
+      # Only now is the release safe to show. Everything above must have
+      # succeeded — a failed build leaves a draft, which nobody can install
+      # by accident.
+      - name: Publish the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF##*/}"
+          gh release edit "$TAG" --draft=false
+          echo "Release $TAG published with assets attached.

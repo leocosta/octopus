@@ -1973,7 +1973,7 @@ RM-185 is independent._
 
 - **Priority:** 🔴 High
 - **Effort:** medium
-- **Status:** proposed
+- **Status:** implemented
 - **Added:** 2026-08-29
 - **Research:** [extensibility-axis](research/2026-08-29-extensibility-axis.md)
 - **ADR:** [ADR-012](adr/012-rigidity-evidence-measure-vs-gate.md)
@@ -2003,6 +2003,21 @@ cluster while `review-anchor` (`pr-review` Phase 4.5) verifies a single
 the cluster and carry the rest as evidence, or the finding is demoted to
 QUESTION/`unanchored` before it is ever posted.
 
+_**Cluster 35 partially implemented.** RM-184 landed via #240 (merged
+2026-08-30). Decisions resolved in build: cohesion is **Jaccard**, not
+`support / min(a,b)` — the first implementation used `min()` and a fixture
+caught it scoring a changelog 1.0 against every partner, which would have
+dragged a whole repo into one cluster; `enlarges` is defined mechanically
+(touches >=2 members AND adds >=1 outsider) so the gate never rests on
+judgment; `max_findings` defaults to 1, which is where the "findings about THIS
+change" criterion is enforced; and `unavailable` prints no cluster line at all,
+so absence of evidence can never be read as a clean bill of health. Config
+reuses the `code_metrics` layered resolver via a new `CM_CONFIG_ROOT`
+indirection rather than a third copy. Suite: `test_git_signals` 35/0,
+`test_code_metrics` unchanged at 106/0 (the regression net for the
+`cm_git_churn` move). `test_context_budget` keeps its three pre-existing
+failures from main, with a +2 token delta. RM-185 remains open._
+
 ### RM-185 — Extract the layered-config resolver
 
 - **Priority:** 🟡 Medium
@@ -2022,3 +2037,55 @@ as awk program text (closed in the #175 review).
 `rules/common/coding-style.md:9` sets for extraction — the same ruler RM-184
 builds, applied to Octopus itself. Deliberately kept out of RM-184's scope so
 the axis does not carry a refactor it does not need.
+
+### Cluster 36 — Release publishing gaps
+
+_Found on 2026-08-31, both during and immediately after the v1.102.0 release.
+A user installing on a second machine hit `Failed to download v1.102.0`
+(`install.sh:375`) while the release itself was intact — five assets, workflow
+green. The cause was ordering, not packaging: `gh release create` publishes
+instantly, `build-release.yml` fired on `release: published` and needed ~18s
+plus runner queue time to attach the tarball, and anything resolving `latest`
+in that window found a version whose tarball did not exist yet. Every release
+had this window; it just needed someone installing during it. The obvious fix —
+create a draft and promote it — does not work: GitHub fires no workflow for
+draft-release activity, and un-drafting fires `published`, landing in the same
+window. The second, smaller defect surfaced in the same release: the GitHub
+Release had an empty name, because `create-gh-release` never passed `--title`._
+
+| RM | Item | Theme |
+|----|------|-------|
+| RM-186 | Release assets must exist before the release is visible | fix / delivery |
+| RM-187 | GitHub Releases ship with an empty name | fix / polish |
+
+### RM-186 — Release assets must exist before the release is visible
+
+- **Priority:** 🔴 High
+- **Effort:** low
+- **Status:** proposed
+- **Added:** 2026-08-31
+
+Move `build-release.yml` from `release: published` to `push: tags: v*`, so the
+build starts at the tag push rather than at the release. `create-gh-release`
+creates the release as a **draft**; the workflow waits for that draft to exist
+(60 × 5s — the tag push and the release creation are separate steps on the
+maintainer's machine), attaches the assets, and only then runs
+`gh release edit --draft=false`.
+
+**Rationale:** The release becomes visible only once it is installable. A
+failed build now leaves an invisible draft instead of a published release that
+404s — the failure mode moves from the user's machine to the maintainer's
+dashboard.
+
+### RM-187 — GitHub Releases ship with an empty name
+
+- **Priority:** 🟡 Medium
+- **Effort:** low
+- **Status:** proposed
+- **Added:** 2026-08-31
+
+`create-gh-release` called `gh release create` without `--title`, so the release
+name was empty and GitHub fell back to displaying the raw tag. Every release up
+to v1.102.0 is nameless. The title now defaults to the version, with an
+optional third argument appending a short human theme
+(`v1.102.0 — The rigidity axis`).

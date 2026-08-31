@@ -62,6 +62,22 @@ Write a condensed version (2-3 sentences) of the CHANGELOG entry for the tag and
 3. Save the release notes summary to a temporary file
 4. Run: `octopus release create-tag <version> <temp-file>`
 5. Run: `git push && git push --tags`
+   - The tag push starts `build-release.yml`, which packages, signs, and
+     attaches the release assets.
 6. Ask the user: "Do you want to create a GitHub Release too?"
-   - If yes: `octopus release create-gh-release <version> <temp-file>`
+   - If yes: `octopus release create-gh-release <version> <temp-file> [title]`
    - If no: finish and report success
+
+   The optional third argument is a short human title appended after the
+   version (`v1.2.0 — The rigidity axis`). Without it the title is just the
+   version — pass something when the release has a theme worth naming.
+
+   The release is created as a **draft**, and `build-release.yml` publishes it
+   once the assets are attached. Do not un-draft it by hand: a release that is
+   visible before its tarball exists resolves as `latest` for `install.sh` and
+   then 404s, which is the failure mode this ordering exists to prevent. If the
+   workflow fails, the release correctly stays a draft — fix the build and
+   re-run the job rather than publishing manually.
+7. Confirm the workflow finished before reporting success: `gh run watch`, or
+   `gh release view v<version> --json isDraft,assets`. A release still in draft
+   means the assets never landed.

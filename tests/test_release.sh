@@ -218,5 +218,27 @@ output=$("$SCRIPT_DIR/cli/octopus.sh" release create-gh-release 2.2.0 "$NOTES_FI
 echo "$output" | grep -q "mock-release-created" || { echo "FAIL: should call gh release create"; echo "Got: $output"; exit 1; }
 echo "PASS: create-gh-release"
 
+# --- Test 12: the release always carries a title ---
+# Without --title, `gh release create` leaves the release name empty and GitHub
+# falls back to displaying the raw tag. Every release v1.101.0 and earlier
+# shipped nameless for this reason.
+echo "Test 12: create-gh-release passes a title"
+output=$("$SCRIPT_DIR/cli/octopus.sh" release create-gh-release 2.2.0 "$NOTES_FILE" 2>&1)
+echo "$output" | grep -q -- "--title v2.2.0" || { echo "FAIL: should default the title to the version"; echo "Got: $output"; exit 1; }
+echo "PASS: create-gh-release defaults the title to the version"
+
+output=$("$SCRIPT_DIR/cli/octopus.sh" release create-gh-release 2.2.0 "$NOTES_FILE" "The rigidity axis" 2>&1)
+echo "$output" | grep -q -- "--title v2.2.0 — The rigidity axis" || { echo "FAIL: should append a custom title"; echo "Got: $output"; exit 1; }
+echo "PASS: create-gh-release appends a custom title"
+
+# --- Test 13: the release is created as a draft ---
+# A published release with no assets yet is worse than no release: install.sh
+# resolves it as latest and 404s on the tarball. build-release.yml un-drafts it
+# after attaching the assets.
+echo "Test 13: create-gh-release creates a draft"
+output=$("$SCRIPT_DIR/cli/octopus.sh" release create-gh-release 2.2.0 "$NOTES_FILE" 2>&1)
+echo "$output" | grep -q -- "--draft" || { echo "FAIL: should create the release as a draft"; echo "Got: $output"; exit 1; }
+echo "PASS: create-gh-release creates a draft"
+
 echo ""
 echo "PASS: all release tests passed"

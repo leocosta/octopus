@@ -12,7 +12,7 @@ if [[ -z "$SUBCMD" ]]; then
   echo "  list-commits [from-ref]        List commits since last tag"
   echo "  create-tag <version> <file>    Create annotated tag"
   echo "  commit-changelog <version>     Commit CHANGELOG.md"
-  echo "  create-gh-release <ver> <file> Create GitHub Release"
+  echo "  create-gh-release <ver> <file> [title]  Create GitHub Release"
   exit 1
 fi
 
@@ -215,8 +215,9 @@ case "$SUBCMD" in
   create-gh-release)
     VERSION="${1:-}"
     NOTES_FILE="${2:-}"
+    TITLE_SUFFIX="${3:-}"
     if [[ -z "$VERSION" || -z "$NOTES_FILE" ]]; then
-      echo "Usage: octopus.sh release create-gh-release <version> <notes-file>"
+      echo "Usage: octopus.sh release create-gh-release <version> <notes-file> [title]"
       exit 1
     fi
     if [[ ! -f "$NOTES_FILE" ]]; then
@@ -224,8 +225,20 @@ case "$SUBCMD" in
       exit 1
     fi
     [[ "$VERSION" == v* ]] || VERSION="v$VERSION"
-    gh release create "$VERSION" --notes-file "$NOTES_FILE"
-    echo "GitHub Release $VERSION created."
+    # Always pass --title. Without it `gh release create` leaves the release
+    # name empty and GitHub falls back to displaying the raw tag, so the
+    # releases list reads as a column of version numbers with no theme. The
+    # optional third argument appends a short human title after the version.
+    RELEASE_TITLE="$VERSION"
+    [[ -n "$TITLE_SUFFIX" ]] && RELEASE_TITLE="$VERSION — $TITLE_SUFFIX"
+    # Created as a DRAFT on purpose. A published release with no assets is
+    # installable-looking but broken: `install.sh` resolves it as latest and
+    # then 404s on the tarball. build-release.yml (triggered by the tag push)
+    # attaches the assets and un-drafts it. If that job fails, the release
+    # stays invisible instead of shipping broken.
+    gh release create "$VERSION" --notes-file "$NOTES_FILE" --title "$RELEASE_TITLE" --draft
+    echo "GitHub Release $VERSION created as a draft."
+    echo "build-release.yml will attach the assets and publish it — watch: gh run watch"
     ;;
 
   *)
