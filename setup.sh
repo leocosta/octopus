@@ -1466,10 +1466,12 @@ deliver_hooks() {
     local local_hooks_arg=""
     [[ -f "$local_hooks_path" ]] && local_hooks_arg="$local_hooks_path"
 
-    python3 - "$settings_file" "$hooks_template" "${OCTOPUS_DISABLED_HOOKS:-}" "$OCTOPUS_DIR" "${OCTOPUS_RULES[*]:-}" "$local_hooks_arg" << 'PYEOF'
+    local cli_cache_root="${OCTOPUS_CLI_CACHE_ROOT:-$HOME/.octopus-cli}"
+
+    python3 - "$settings_file" "$hooks_template" "${OCTOPUS_DISABLED_HOOKS:-}" "$OCTOPUS_DIR" "${OCTOPUS_RULES[*]:-}" "$local_hooks_arg" "$cli_cache_root" << 'PYEOF'
 import json, os, sys
 
-settings_path, hooks_path, disabled, install_root, active_stacks_str, local_hooks_path = sys.argv[1:7]
+settings_path, hooks_path, disabled, install_root, active_stacks_str, local_hooks_path, cli_cache_root = sys.argv[1:8]
 active_stacks = set(active_stacks_str.split()) if active_stacks_str.strip() else set()
 
 with open(settings_path) as f:
@@ -1531,21 +1533,40 @@ for event_type, entries in hooks.items():
         for hook in entry.get("hooks", []):
             hook.pop("stacks", None)
 
-# Rewrite relative "octopus/hooks/..." paths to absolute install paths so
-# Claude Code can execute them regardless of its current working directory.
+# Rewrite relative "octopus/hooks/..." paths to absolute paths so Claude Code
+# can execute them regardless of its current working directory. Prefer the
+# version-independent `current` link over the versioned cache entry (RM-188):
+# a pinned path dies the moment that release leaves the cache, taking every
+# hook in the project with it, and only a re-run of `octopus setup` in that
+# repo would have healed it. Requires `current` to actually resolve to this
+# install root — a dev checkout, or a cache entry that `current` does not
+# name, keeps the literal path so the hooks match the tree that wrote them.
+def _resolve_hook_root():
+    if os.path.dirname(os.path.dirname(install_root)) != cli_cache_root:
+        return install_root
+    current = os.path.join(cli_cache_root, "current")
+    if os.path.realpath(current) != os.path.realpath(install_root):
+        return install_root
+    return current
+
+hook_root = _resolve_hook_root()
+
 for event_type, entries in hooks.items():
     for entry in entries:
         for hook in entry.get("hooks", []):
             cmd = hook.get("command", "")
             if cmd.startswith("octopus/hooks/"):
-                hook["command"] = install_root + "/" + cmd[len("octopus/"):]
+                hook["command"] = hook_root + "/" + cmd[len("octopus/"):]
 
-# Octopus owns any hook it installs. Its command path is version-pinned
-# (".../.octopus-cli/cache/vX.Y.Z/hooks/..."), so it goes stale on every update.
-# On each setup run we DROP previously-installed Octopus hooks and re-add the
-# current set, leaving user-added hooks untouched. Matching by cache-base prefix
-# (not just id) also prunes hooks that were removed/renamed between versions.
-cache_base = os.path.dirname(install_root)
+# Octopus owns any hook it installs. On each setup run we DROP previously-
+# installed Octopus hooks and re-add the current set, leaving user-added hooks
+# untouched. Matching by path prefix (not just id) also prunes hooks that were
+# removed or renamed between versions. Two prefixes are owned: the root this
+# setup delivers from, and the CLI cache root — the latter so a run from a dev
+# checkout still clears the ".../cache/vX.Y.Z/hooks/..." paths a released
+# install left behind, and so the pre-RM-188 pinned paths are cleaned up on the
+# first setup after the upgrade.
+owned_prefixes = tuple(p + os.sep for p in {os.path.dirname(install_root), cli_cache_root})
 incoming_ids = {
     h.get("id")
     for matchers in hooks.values()
@@ -1556,7 +1577,7 @@ incoming_ids = {
 
 def _is_octopus_hook(hook):
     cmd = hook.get("command", "")
-    return cmd.startswith(cache_base + os.sep) or hook.get("id") in incoming_ids
+    return cmd.startswith(owned_prefixes) or hook.get("id") in incoming_ids
 
 existing = settings.get("hooks", {})
 for event_type, new_matchers in hooks.items():

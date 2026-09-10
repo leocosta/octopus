@@ -388,4 +388,158 @@ unset MSYSTEM WSL_DISTRO_NAME
 rm -rf "$TMPDIR_ENV"
 
 echo ""
+echo "Test: deliver_hooks writes hook paths through 'current', not the versioned entry (RM-188)"
+TMPDIR_CUR=$(mktemp -d)
+mkdir -p "$TMPDIR_CUR/.claude"
+echo '{"permissions": {}, "hooks": {}, "mcpServers": {}}' > "$TMPDIR_CUR/.claude/settings.json"
+
+# Reproduce the real cache layout: <root>/cache/<version> plus the <root>/current link.
+# The whole hooks tree, not just hooks.json: the delivered commands name the
+# individual scripts, and this test asserts they still resolve after a bump.
+mkdir -p "$TMPDIR_CUR/cli/cache/v0.0.1" "$TMPDIR_CUR/cli/cache/v0.0.2"
+cp -r "$SCRIPT_DIR/hooks" "$TMPDIR_CUR/cli/cache/v0.0.1/hooks"
+cp -r "$SCRIPT_DIR/hooks" "$TMPDIR_CUR/cli/cache/v0.0.2/hooks"
+ln -s "$TMPDIR_CUR/cli/cache/v0.0.1" "$TMPDIR_CUR/cli/current"
+
+export OCTOPUS_HOOKS="true"
+export PROJECT_ROOT="$TMPDIR_CUR"
+MANIFEST_CAP_HOOKS="true"
+MANIFEST_DELIVERY_HOOKS_METHOD="settings_json"
+MANIFEST_DELIVERY_HOOKS_TARGET=".claude/settings.json"
+OCTOPUS_RULES=("common")
+unset OCTOPUS_DISABLED_HOOKS || true
+export OCTOPUS_CLI_CACHE_ROOT="$TMPDIR_CUR/cli"
+export OCTOPUS_DIR="$TMPDIR_CUR/cli/cache/v0.0.1"
+
+deliver_hooks "claude" >/dev/null
+
+grep -q "/cli/current/hooks/" "$TMPDIR_CUR/.claude/settings.json" \
+  || { echo "FAIL: hook paths were not written through 'current'"; exit 1; }
+if grep -q "/cli/cache/v0.0.1/hooks/" "$TMPDIR_CUR/.claude/settings.json"; then
+  echo "FAIL: a version-pinned path was written while 'current' names the same release"
+  exit 1
+fi
+
+# The point of the change: bumping the release repoints 'current' and every
+# delivered hook still resolves, with no setup re-run in this project.
+rm -f "$TMPDIR_CUR/cli/current"
+ln -s "$TMPDIR_CUR/cli/cache/v0.0.2" "$TMPDIR_CUR/cli/current"
+python3 - "$TMPDIR_CUR/.claude/settings.json" <<'PYEOF2'
+import json, os, sys
+with open(sys.argv[1]) as f:
+    settings = json.load(f)
+missing = [
+    h["command"]
+    for ev in settings.get("hooks", {}).values()
+    for m in ev
+    for h in m.get("hooks", [])
+    if "/cli/current/" in h.get("command", "") and not os.path.exists(h["command"])
+]
+if missing:
+    print(f"FAIL: {len(missing)} hook(s) stopped resolving after the version bump: {missing[0]}")
+    sys.exit(1)
+PYEOF2
+
+echo "PASS: hooks delivered through 'current' survive a version bump"
+
+echo ""
+echo "Test: the first setup after upgrading migrates legacy version-pinned paths"
+# Settings written by a pre-RM-188 Octopus: absolute paths into a cache entry
+# that no longer exists — the exact state that made every hook fail.
+python3 - "$TMPDIR_CUR/.claude/settings.json" <<'PYEOF2'
+import json, sys
+with open(sys.argv[1]) as f:
+    settings = json.load(f)
+settings["hooks"] = {
+    "PreToolUse": [{
+        "matcher": "Bash",
+        "hooks": [{
+            "type": "command",
+            "id": "block-no-verify",
+            "command": "/home/dev/.octopus-cli/cache/v0.0.0/hooks/pre-tool-use/block-no-verify.sh",
+        }],
+    }],
+    "PostToolUse": [{
+        "matcher": "Write|Edit",
+        "hooks": [{"type": "command", "command": "/usr/local/bin/my-hook.sh", "id": "my-custom-hook"}],
+    }],
+}
+with open(sys.argv[1], "w") as f:
+    json.dump(settings, f, indent=2)
+PYEOF2
+
+export OCTOPUS_DIR="$TMPDIR_CUR/cli/cache/v0.0.2"
+deliver_hooks "claude" >/dev/null
+
+if grep -q "cache/v0.0.0/" "$TMPDIR_CUR/.claude/settings.json"; then
+  echo "FAIL: legacy version-pinned path survived the migration"
+  exit 1
+fi
+grep -q "/cli/current/hooks/pre-tool-use/block-no-verify.sh" "$TMPDIR_CUR/.claude/settings.json" \
+  || { echo "FAIL: migrated hook was not rewritten through 'current'"; exit 1; }
+grep -q "/usr/local/bin/my-hook.sh" "$TMPDIR_CUR/.claude/settings.json" \
+  || { echo "FAIL: user-added hook was dropped during the migration"; exit 1; }
+
+echo "PASS: legacy pinned paths migrate to 'current', user hooks untouched"
+
+echo ""
+echo "Test: a hook retired between versions is pruned from the 'current' path"
+# Ids carry the prune for hooks that still exist in the template. A hook that
+# was REMOVED or RENAMED has no incoming id, so only the path prefix catches
+# it — and under RM-188 that path is <root>/current/..., which the install
+# root's parent (<root>/cache) does not cover.
+python3 - "$TMPDIR_CUR/.claude/settings.json" "$TMPDIR_CUR/cli" <<'PYEOF2'
+import json, sys
+settings_path, cli_root = sys.argv[1], sys.argv[2]
+with open(settings_path) as f:
+    settings = json.load(f)
+settings["hooks"].setdefault("PreToolUse", []).append({
+    "matcher": "Bash",
+    "hooks": [{
+        "type": "command",
+        "id": "retired-in-a-later-version",
+        "command": cli_root + "/current/hooks/pre-tool-use/gone.sh",
+    }],
+})
+with open(settings_path, "w") as f:
+    json.dump(settings, f, indent=2)
+PYEOF2
+
+deliver_hooks "claude" >/dev/null
+
+if grep -q "retired-in-a-later-version" "$TMPDIR_CUR/.claude/settings.json"; then
+  echo "FAIL: a retired Octopus hook under 'current' was not pruned"
+  exit 1
+fi
+grep -q "/usr/local/bin/my-hook.sh" "$TMPDIR_CUR/.claude/settings.json" \
+  || { echo "FAIL: user-added hook was dropped while pruning the retired one"; exit 1; }
+
+echo "PASS: retired hooks under 'current' are pruned, user hooks kept"
+
+echo ""
+echo "Test: deliver_hooks keeps the literal path when 'current' names another release"
+# A cache entry that 'current' does not point at must not borrow the link —
+# doing so would silently deliver a different tree's hooks.
+export OCTOPUS_DIR="$TMPDIR_CUR/cli/cache/v0.0.1"
+echo '{"permissions": {}, "hooks": {}, "mcpServers": {}}' > "$TMPDIR_CUR/.claude/settings.json"
+deliver_hooks "claude" >/dev/null
+grep -q "/cli/cache/v0.0.1/hooks/" "$TMPDIR_CUR/.claude/settings.json" \
+  || { echo "FAIL: mismatched install root did not fall back to the literal path"; exit 1; }
+if grep -q "/cli/current/hooks/" "$TMPDIR_CUR/.claude/settings.json"; then
+  echo "FAIL: borrowed 'current' while it named a different release"
+  exit 1
+fi
+
+# A dev checkout is outside the cache root entirely and keeps its own path.
+export OCTOPUS_DIR="$SCRIPT_DIR"
+echo '{"permissions": {}, "hooks": {}, "mcpServers": {}}' > "$TMPDIR_CUR/.claude/settings.json"
+deliver_hooks "claude" >/dev/null
+grep -q "$SCRIPT_DIR/hooks/" "$TMPDIR_CUR/.claude/settings.json" \
+  || { echo "FAIL: dev checkout did not keep its literal hook path"; exit 1; }
+
+echo "PASS: falls back to the literal path outside the cache-plus-current layout"
+unset OCTOPUS_CLI_CACHE_ROOT
+rm -rf "$TMPDIR_CUR"
+
+echo ""
 echo "All hooks injection tests passed!"
