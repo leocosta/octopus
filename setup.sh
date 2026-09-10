@@ -1538,9 +1538,19 @@ for event_type, entries in hooks.items():
 # version-independent `current` link over the versioned cache entry (RM-188):
 # a pinned path dies the moment that release leaves the cache, taking every
 # hook in the project with it, and only a re-run of `octopus setup` in that
-# repo would have healed it. Requires `current` to actually resolve to this
-# install root — a dev checkout, or a cache entry that `current` does not
-# name, keeps the literal path so the hooks match the tree that wrote them.
+# repo would have healed it.
+#
+# The link is used only when it actually resolves to this install root. Two
+# cases keep the literal path, and it is worth being precise about which:
+#   * A LOCKFILE-PINNED repo. install_root is cache/<pinned> while `current`
+#     names a different release, so borrowing the link would deliver another
+#     tree's hooks. This is the case that carries the guard.
+#   * An install root outside the cache entirely — `bash setup.sh` run from a
+#     working tree, which is the contributor path.
+# A dev checkout registered via `octopus install` does NOT keep the literal
+# path: it is cached as cache/<version> -> <working tree>, both sides of the
+# realpath comparison resolve to that tree, and the hooks are delivered
+# through `current`. They still reach the developer's tree, via two hops.
 def _resolve_hook_root():
     if os.path.dirname(os.path.dirname(install_root)) != cli_cache_root:
         return install_root

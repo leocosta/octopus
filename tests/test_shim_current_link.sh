@@ -81,6 +81,31 @@ check "current created on a fresh cache" \
   "$(cd "$checkout" && pwd -P)" "$(cd "$cache_c/current" && pwd -P)"
 
 echo ""
+echo "Test: a non-symlink 'current' warns and does not abort the install"
+# install.ps1 creates `current` as a Windows junction, which Git Bash/MSYS2
+# reports as a plain directory. `rm -f` on it fails, and under `set -e` that
+# killed install_release before metadata was ever written — with the warning
+# update_current already carried left unreachable. `rm -rf` is not the fix
+# either: MSYS2 recurses through a junction and would delete the release tree.
+cache_d="$tmp/cache-d"
+mkdir -p "$cache_d/current"
+marker="$cache_d/current/do-not-delete"
+touch "$marker"
+
+out="$(OCTOPUS_CLI_CACHE_ROOT="$cache_d" bash "$checkout/bin/octopus" install --version v9.9.9 2>&1)"
+rc=$?
+
+check "install still succeeds" "0" "$rc"
+check "metadata was written" "v9.9.9" \
+  "$(sed -n 's/.*"version": "\([^"]*\)".*/\1/p' "$cache_d/metadata.json" 2>/dev/null)"
+check "the non-symlink current is left in place" "yes" \
+  "$([[ -d "$cache_d/current" && ! -L "$cache_d/current" ]] && echo yes || echo no)"
+check "its contents are not deleted" "yes" \
+  "$([[ -e "$marker" ]] && echo yes || echo no)"
+check "the user is warned" "yes" \
+  "$(grep -q "is not a symlink" <<<"$out" && echo yes || echo no)"
+
+echo ""
 if [[ "$fail" -gt 0 ]]; then
   echo "FAILED: $fail test(s), $pass passed"
   exit 1

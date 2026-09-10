@@ -1998,9 +1998,15 @@ the link cannot be established.
   branches. `command_update` already installs before re-running setup, so the
   link is correct by the time hooks are written.
 - `setup.sh` — `_resolve_hook_root()` writes through `current`, but only when
-  the install root is a cache entry that `current` actually resolves to. A dev
-  checkout, or a cache entry the link does not name, keeps the literal path:
-  borrowing the link there would silently deliver a different tree's hooks.
+  the install root is a cache entry that `current` actually resolves to. The
+  case the guard carries is a **lockfile-pinned repo**: `install_root` is
+  `cache/<pinned>` while `current` names a different release, so borrowing the
+  link would deliver another tree's hooks. An install root outside the cache
+  (`bash setup.sh` from a working tree) keeps its path for the same reason.
+  A dev checkout registered through `octopus install` does *not* keep the
+  literal path — it is cached as `cache/<version> -> <tree>`, both sides of the
+  realpath comparison resolve to that tree, and the hooks go through `current`,
+  reaching the tree in two hops.
 - `setup.sh` — the prune now owns two prefixes, the delivery root *and* the CLI
   cache root. Ids carry the prune for hooks still in the template; a hook
   **retired** between versions has no incoming id, and under the new scheme its
@@ -2033,7 +2039,21 @@ place is still unknown — nothing prunes old versions, and only `--uninstall`
 (which wipes the whole cache) or manual removal deletes one. This change makes
 the disappearance survivable rather than explained.
 
-**Caught by review, and fixed before merge:** widening the delivered path made
+**Caught by the architect gate, and fixed before merge:** `update_current`
+shipped with unreachable error handling. `rm -f` on the link ran unguarded
+under `set -euo pipefail`, so a `current` that is a directory rather than a
+symlink — which is what `install.ps1`'s Windows junction looks like from Git
+Bash — aborted `install_release` before `write_metadata`, with the warning the
+function already carried never firing. Reproduced: `EXIT=1`, no metadata, a raw
+`rm` error. `rm -rf` is not the alternative — MSYS2 recurses *through* a
+junction and would delete the release tree it names. The fix drops the separate
+removal for `ln -sfn`, which replaces a symlink instead of writing through it,
+returns early with an actionable warning when the link is not a symlink, and
+checks success with `readlink` against the target rather than `-e` (an
+existence test is satisfied by a link still naming the previous release — the
+silent wrong-version state the function exists to prevent).
+
+**Also caught by review, and fixed before merge:** widening the delivered path made
 `_doctor_stale_hooks` blind to it — its pattern was scoped to
 `.octopus-cli/cache/`, so the check that diagnosed this very outage would have
 silently stopped seeing the paths it exists for. It now matches `.octopus-cli/`
@@ -2062,14 +2082,16 @@ the working tree either way, so a hook change under test is exercised by one
 half and shadowed by the other — the disagreement RM-188 set out to end,
 displaced onto a different axis rather than removed.
 
-Two reviewers disagreed on this and the disagreement is the reason it is a
-separate item rather than a silent edit: one holds that the running-tree guard
-is load-bearing, since this diff makes `current` resolve to a developer's own
-checkout once they `octopus install` it, and without the guard their hooks
-swing away from the tree they are editing on the next install. The other holds
-that the target-repo rule already covers that case correctly and more
-generally. Both are right about their case; picking one changes documented
-behaviour, which is why it is not folded into RM-188.
+Two reviewers disagreed on this during RM-188, and one side's premise turned
+out to be false — recorded here so whoever picks this up does not re-argue it.
+The claim was that the running-tree guard is load-bearing because `current`
+resolves to a developer's own checkout once they `octopus install` it, so
+without the guard their hooks would swing away from the tree they are editing.
+The architect gate reproduced the opposite: through the shim, that developer's
+hooks are *already* delivered through `current`, because both sides of the
+realpath comparison resolve to the same tree. The guard's real case is the
+lockfile-pinned repo. So the objection to adopting the target-repo rule is
+weaker than it looked, and the two halves disagreeing remains the live cost.
 
 The shape if adopted: one `octopus_hook_root()` in `cli/lib/ui.sh` — already
 sourced by both `setup.sh` and `cli/lib/hooks.sh`, and already the home of
