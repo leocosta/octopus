@@ -538,6 +538,21 @@ grep -q "$SCRIPT_DIR/hooks/" "$TMPDIR_CUR/.claude/settings.json" \
   || { echo "FAIL: dev checkout did not keep its literal hook path"; exit 1; }
 
 echo "PASS: falls back to the literal path outside the cache-plus-current layout"
+
+echo ""
+echo "Test: a trailing slash in the cache-root override still uses 'current'"
+# The override is compared against pwd-derived paths, so an unnormalized value
+# would silently revert delivery to pinned paths with nothing reporting it.
+export OCTOPUS_CLI_CACHE_ROOT="$TMPDIR_CUR/cli/"
+export OCTOPUS_DIR="$TMPDIR_CUR/cli/cache/v0.0.2"
+rm -f "$TMPDIR_CUR/cli/current"; ln -s "$TMPDIR_CUR/cli/cache/v0.0.2" "$TMPDIR_CUR/cli/current"
+echo '{"permissions": {}, "hooks": {}, "mcpServers": {}}' > "$TMPDIR_CUR/.claude/settings.json"
+deliver_hooks "claude" >/dev/null
+grep -q "/cli/current/hooks/" "$TMPDIR_CUR/.claude/settings.json" \
+  || { echo "FAIL: a trailing slash in the cache root silently reverted to pinned paths"; exit 1; }
+export OCTOPUS_CLI_CACHE_ROOT="$TMPDIR_CUR/cli"
+
+echo "PASS: cache-root override is normalized before comparison"
 unset OCTOPUS_CLI_CACHE_ROOT
 rm -rf "$TMPDIR_CUR"
 

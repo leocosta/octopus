@@ -1473,6 +1473,10 @@ import json, os, sys
 
 settings_path, hooks_path, disabled, install_root, active_stacks_str, local_hooks_path, cli_cache_root = sys.argv[1:8]
 active_stacks = set(active_stacks_str.split()) if active_stacks_str.strip() else set()
+# Normalized because it is compared against pwd-derived paths below: a trailing
+# slash or a "/./" in the env override would silently revert hook delivery to
+# pre-RM-188 pinned paths, with nothing reporting it.
+cli_cache_root = os.path.normpath(cli_cache_root)
 
 with open(settings_path) as f:
     settings = json.load(f)
