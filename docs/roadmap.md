@@ -1903,6 +1903,19 @@ the delivery layer for the same bug class turned up a second, already-present
 instance: `cli/lib/hooks.sh` bakes the identical kind of absolute path into
 the git hooks it installs (`post-checkout`/`post-merge`/`pre-push`)._
 
+_Second axis found on 2026-09-08. Same function, different variable:
+`deliver_hooks` pins not only the host but the **version**, writing
+`~/.octopus-cli/cache/vX.Y.Z/hooks/...`. A user's project was left on
+`v1.100.0` paths after that cache directory was gone; all ten Claude Code
+hooks — four `PreToolUse`, six `Stop` — failed `not found` on every tool call.
+They are non-blocking, so nothing stopped: a full `architect` + `security`
+review of a PR ran to completion with `detect-secrets`, `destructive-guard`,
+`grounding-check` and `verification-check` silently absent. Why the directory
+disappeared is unexplained — nothing in `install.sh` prunes old versions, and
+only `--uninstall` (which wipes the whole cache) or manual removal deletes
+one — but the pinning is what turns any such disappearance into a
+project-wide outage._
+
 ### RM-183 — Warn on host-environment drift when regenerating hooks
 
 - **Priority:** 🟡 Medium
@@ -1942,6 +1955,218 @@ built to catch.
 
 This doesn't make switching seamless — it makes the switch legible instead of
 a cryptic hook failure on the side that went stale.
+
+### RM-188 — Point delivered hook paths at `current`, not at a version
+
+- **Priority:** 🔴 High
+- **Effort:** low
+- **Status:** implemented
+- **Added:** 2026-09-08
+
+`deliver_hooks` (`setup.sh`) rewrote each relative `octopus/hooks/...` command
+into an absolute path rooted at the *versioned* cache entry. The comment above
+the prune block already conceded the consequence — "its command path is
+version-pinned, so it goes stale on every update" — and the compensation was
+that every `octopus setup` drops the previous Octopus hooks by prefix and
+re-adds the current set. That only fires in repos where `setup` is re-run;
+every other repo keeps naming a release the cache may no longer hold.
+
+**This was never a new idea.** The other half of the same delivery layer had
+already made the call, with the rationale written down at
+`cli/lib/hooks.sh:57`: the git hooks name the cached release "through the
+`current` symlink, never through the versioned directory it resolves to, so
+`octopus update` moves every installed hook at once". `octopus setup` even
+prints it — *"Hooks point at ~/.octopus-cli/current — 'octopus update' moves
+them with it."* Git hooks moved with the CLI; Claude Code hooks did not. The
+work was making the two halves agree, and `_resolve_hook_root` deliberately
+mirrors `_hooks_source_root`'s shape: a tree that is not a cache entry keeps
+its own path, everything else goes through the link.
+
+**The prerequisite, and the reason this was not a one-line change.** `current`
+was only repointed by `install.sh` (`update_symlink`). The shim's own
+`install_release` (`bin/octopus`) called `write_metadata` in all three branches
+and repointed `current` in none — bootstrap and dev-checkout both left it
+behind. Redirecting hooks through `current` before fixing that would trade a
+loud failure (`not found`, every hook, impossible to miss) for a silent one
+(hooks executing an *older* release's code with no signal), which is strictly
+worse. A new `update_current` now runs in every successful branch and warns if
+the link cannot be established.
+
+**What shipped:**
+
+- `bin/octopus` — `update_current()`, called from all three `install_release`
+  branches. `command_update` already installs before re-running setup, so the
+  link is correct by the time hooks are written.
+- `setup.sh` — `_resolve_hook_root()` writes through `current`, but only when
+  the install root is a cache entry that `current` actually resolves to. The
+  case the guard carries is a **lockfile-pinned repo**: `install_root` is
+  `cache/<pinned>` while `current` names a different release, so borrowing the
+  link would deliver another tree's hooks. An install root outside the cache
+  (`bash setup.sh` from a working tree) keeps its path for the same reason.
+  A dev checkout registered through `octopus install` does *not* keep the
+  literal path — it is cached as `cache/<version> -> <tree>`, both sides of the
+  realpath comparison resolve to that tree, and the hooks go through `current`,
+  reaching the tree in two hops.
+- `setup.sh` — the prune now owns two prefixes, the delivery root *and* the CLI
+  cache root. Ids carry the prune for hooks still in the template; a hook
+  **retired** between versions has no incoming id, and under the new scheme its
+  path is `<root>/current/...`, which the install root's parent (`<root>/cache`)
+  does not cover. Without the second prefix, retired hooks would accumulate
+  forever — caught by mutation testing, not by the first round of tests.
+- `bin/octopus` — `_doctor_current_link()`. The original write-up claimed
+  `_doctor_broken_symlinks` already covered the new single point of failure;
+  it does not. That check walks `<root>/cache/*` and `current` lives at
+  `<root>/current`, so the link had no coverage at all. It now reports missing,
+  dangling, and pointing-at-another-release. It compares resolved paths rather
+  than the link's basename, because a dev checkout is cached as
+  `cache/<version> -> <working tree>` and a name comparison would flag every
+  developer's install.
+
+**Verified end-to-end**, not only by unit tests: a real `octopus setup` driven
+through the shim against a fixture cache writes `<root>/current/hooks/...` and
+those paths resolve. Both production changes are mutation-checked — reverting
+`update_current`, `_resolve_hook_root`, the second prune prefix, or the doctor
+call each turns tests red.
+
+**What is given up.** A repo can no longer sit on an older Octopus while the
+CLI moves on. That was nominal rather than real: `octopus setup` already
+rewrote the paths to whatever version invoked it, so the pin survived only
+until the next setup in that repo, and it was never exposed as a supported
+option.
+
+**A third defect the gate surfaced, also fixed here:** the download branch of
+`install_release` removed `$target` *before* invoking the installer. When
+`current` already named that version the link dangled for the whole network
+fetch — and permanently if the fetch failed, which is exactly the outage this
+item exists to prevent, reintroduced by the installer itself. The removal was
+redundant besides: `install.sh` clears the destination in `download_release`,
+after the download and immediately before the `mv`. Dropping it makes a failed
+install a no-op instead of a broken one. The one remaining window is `ln
+-sfn`'s internal unlink-and-symlink, which is sub-millisecond and has no
+portable atomic replacement (`mv -T` is GNU-only).
+
+**Not addressed here.** Why the `v1.100.0` cache entry vanished in the first
+place is still unknown — nothing prunes old versions, and only `--uninstall`
+(which wipes the whole cache) or manual removal deletes one. This change makes
+the disappearance survivable rather than explained.
+
+**Caught by the architect gate, and fixed before merge:** `update_current`
+shipped with unreachable error handling. `rm -f` on the link ran unguarded
+under `set -euo pipefail`, so a `current` that is a directory rather than a
+symlink — which is what `install.ps1`'s Windows junction looks like from Git
+Bash — aborted `install_release` before `write_metadata`, with the warning the
+function already carried never firing. Reproduced: `EXIT=1`, no metadata, a raw
+`rm` error. `rm -rf` is not the alternative — MSYS2 recurses *through* a
+junction and would delete the release tree it names. The fix drops the separate
+removal for `ln -sfn`, which replaces a symlink instead of writing through it,
+returns early with an actionable warning when the link is not a symlink, and
+checks success with `readlink` against the target rather than `-e` (an
+existence test is satisfied by a link still naming the previous release — the
+silent wrong-version state the function exists to prevent).
+
+**Also caught by review, and fixed before merge:** widening the delivered path made
+`_doctor_stale_hooks` blind to it — its pattern was scoped to
+`.octopus-cli/cache/`, so the check that diagnosed this very outage would have
+silently stopped seeing the paths it exists for. It now matches `.octopus-cli/`
+and asks a question with no version in it. A second one: the new link check
+first took its version from `resolve_version()`, which is lockfile-first and
+therefore project-scoped, and would have reported the global link as wrong in
+every repo pinned through `.octopus/cli-lock.yaml`. It reads `metadata.json`
+instead — global question, global answer.
+
+### RM-189 — One hook-root resolution for both halves of the delivery layer
+
+- **Priority:** 🟡 Medium
+- **Effort:** low
+- **Status:** proposed
+- **Added:** 2026-09-08
+
+RM-188 left `deliver_hooks` and `octopus hooks install` answering "where do
+hooks point" with two different rules. `_hooks_source_root` (`cli/lib/hooks.sh`)
+decides from the **target repo** — RM-180 fixed it there precisely so the answer
+stops depending on which entry point ran, with `tests/test_hooks_install.sh`
+asserting both entry points agree. `_resolve_hook_root` (`setup.sh`) decides
+from the tree it is running in, which is the shape RM-180 rejected: `octopus
+setup` from a dev checkout writes the working tree into `settings.json`, while
+`octopus update` re-running the same setup writes `current`. Git hooks stay on
+the working tree either way, so a hook change under test is exercised by one
+half and shadowed by the other — the disagreement RM-188 set out to end,
+displaced onto a different axis rather than removed.
+
+Two reviewers disagreed on this during RM-188, and one side's premise turned
+out to be false — recorded here so whoever picks this up does not re-argue it.
+The claim was that the running-tree guard is load-bearing because `current`
+resolves to a developer's own checkout once they `octopus install` it, so
+without the guard their hooks would swing away from the tree they are editing.
+The architect gate reproduced the opposite: through the shim, that developer's
+hooks are *already* delivered through `current`, because both sides of the
+realpath comparison resolve to the same tree. The guard's real case is the
+lockfile-pinned repo. So the objection to adopting the target-repo rule is
+weaker than it looked, and the two halves disagreeing remains the live cost.
+
+The shape if adopted: one `octopus_hook_root()` in `cli/lib/ui.sh` — already
+sourced by both `setup.sh` and `cli/lib/hooks.sh`, and already the home of
+`_octopus_host_env()`, put there by RM-183 for this same pair of call sites.
+Computing it in bash lets the Python heredoc take a single `hook_root`
+argument and drop both the cache-root argument and its conditionals.
+
+**Second half of the same item, raised by the architect gate on RM-188's PR:**
+`current` is now read through three different predicates at four sites —
+`-L` in `_resolve_release_root` (`bin/octopus`) and `_hooks_source_root`
+(`cli/lib/hooks.sh`), `-e` in `_doctor_current_link` (`bin/octopus`), and a
+write in `update_current`. A Windows junction is invisible to the first two
+and visible to the others, so one object answers "does this link exist and is
+it usable" three ways. RM-188 is what promotes `current` from a convenience
+into the anchor every delivered hook resolves through, which is what makes the
+divergence matter — and a single accessor would have surfaced RM-188's
+blocking defect (an unguarded `rm -f` on a junction) at design time rather
+than in review. Folded in here rather than filed separately: the same edit
+that settles hook-root resolution should settle how the link is read.
+
+### RM-190 — One name for the CLI cache root
+
+- **Priority:** 🟢 Low
+- **Effort:** low
+- **Status:** proposed
+- **Added:** 2026-09-08
+
+The same directory is read through three different environment variables:
+`OCTOPUS_CLI_CACHE_ROOT` (`bin/octopus`), `OCTOPUS_CACHE_ROOT`
+(`cli/lib/hooks.sh`), and `OCTOPUS_CACHE_DIR` (`install.sh`, mirrored in
+`install.ps1`). All default to `$HOME/.octopus-cli`, so nothing is broken until
+someone overrides one — and RM-188 made that divergence load-bearing, because
+Claude Code hooks now resolve under the first name while git hooks resolve
+under the second. Observed directly while testing RM-188: a fixture cache root
+exported under one name sent the two hook families to two different trees, with
+nothing reporting it. The test suite already carries the split —
+`tests/test_hooks_injection.sh` exports one name and `tests/test_hooks_install.sh`
+the other to relocate the identical directory.
+
+`install.sh` and `install.ps1` are fetched and run standalone, so they cannot
+source anything and keep their own definition; the fix is to settle the two
+in-tree readers on one name, with the old one honoured as a fallback.
+
+### RM-191 — Mark Octopus-owned hooks instead of inferring ownership from paths
+
+- **Priority:** 🟢 Low
+- **Effort:** medium
+- **Status:** proposed
+- **Added:** 2026-09-08
+
+`deliver_hooks` decides which hooks in `settings.json` are Octopus's to replace
+by matching command-path prefixes. `cli/lib/hooks.sh` solved the same problem
+for git hooks with an explicit marker — *"a hook carrying `# octopus:<name>` is
+ours to rewrite"* — which is why that half needed no change when the path
+scheme moved and this half needed two: RM-188 had to add a second prefix, found
+by mutation testing rather than by the first round of tests.
+
+The path rule is also over-broad in one direction: for a dev checkout at
+`~/Projects/octopus` the owned prefix becomes `~/Projects/`, so a user-added
+hook whose script lives anywhere under that tree is pruned as Octopus-owned.
+Every template hook already carries an `id`; the only thing ids miss is a hook
+**retired** between versions, which a delivered-id list under `.octopus/`
+(beside the existing `setup-env` and `cli-lock.yaml`) closes exactly and
+path-independently.
 
 ### Cluster 35 — Extensibility axis (the other half of the design ruler)
 

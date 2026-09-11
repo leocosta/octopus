@@ -141,6 +141,50 @@ _download_release_via_installer() {
   return "$rc"
 }
 
+# Repoint the version-independent `current` link at the release just installed.
+# `install.sh` does this for the download path (update_symlink), but the shim's
+# own install branches — bootstrap and dev-checkout — never did, so `current`
+# could name an older tree than the one metadata.json claims. Everything that
+# resolves Octopus without knowing a version goes through this link (the
+# Windows shims, RELEASE_ROOT resolution, and the hook commands written into
+# .claude/settings.json), so a stale link is a silent wrong-version execution
+# rather than a visible failure. Warn if the link could not be established.
+update_current() {
+  local target="$1" link="$CACHE_ROOT/current"
+
+  # install.ps1 creates `current` as a Windows junction, which Git Bash/MSYS2
+  # reports as a plain directory: -L is false, -d is true. Neither removal is
+  # safe there — `rm -f` fails (and under `set -e` would abort the install
+  # before metadata is written), while `rm -rf` recurses THROUGH the junction
+  # and deletes the release tree it names. Leave it in place and say so.
+  if [[ -e "$link" && ! -L "$link" ]]; then
+    echo "  ⚠ $link is not a symlink (a Windows junction, or a real directory) — leaving it in place." >&2
+    echo "    Hooks and shims may resolve an older release; repoint it from the shell that created it." >&2
+    return 0
+  fi
+
+  # -n replaces an existing symlink instead of writing through it into the
+  # directory it names, so no separate rm is needed.
+  ln -sfn "$target" "$link" 2>/dev/null || true
+
+  # Compare the link's own target, not `-e`: a `current` still naming the
+  # PREVIOUS release passes an existence test while being exactly the silent
+  # wrong-version state this function exists to prevent.
+  [[ "$(readlink "$link" 2>/dev/null)" == "$target" ]] ||
+    echo "  ⚠ could not point $link at $target — hooks and shims may resolve an older release." >&2
+}
+
+# The shared epilogue of every successful install_release branch. The defect
+# RM-188 fixed was two of three branches diverging on exactly these lines, so
+# the invariant lives here rather than in a comment asking each branch to
+# remember it.
+_finish_install() {
+  local version="$1" target="$2" checksum="$3"
+  update_current "$target"
+  write_metadata "$version" "$checksum"
+  echo "Installed Octopus $version (cached at $target)"
+}
+
 install_release() {
   local version="$1"
   ensure_cache_dirs
@@ -151,8 +195,7 @@ install_release() {
     mkdir -p "$target"
     local checksum
     checksum="$(compute_release_checksum "$RELEASE_ROOT")"
-    write_metadata "$version" "$checksum"
-    echo "Installed Octopus $version (cached at $target)"
+    _finish_install "$version" "$target" "$checksum"
     return 0
   fi
 
@@ -162,14 +205,21 @@ install_release() {
     ln -s "$RELEASE_ROOT" "$target"
     local checksum
     checksum="$(compute_release_checksum "$target")"
-    write_metadata "$version" "$checksum"
-    echo "Installed Octopus $version (cached at $target)"
+    _finish_install "$version" "$target" "$checksum"
     return 0
   fi
 
   # RELEASE_ROOT is a different version — download the requested release
   # instead of stamping its name on the wrong tree.
-  [[ -L "$target" || -e "$target" ]] && rm -rf "$target"
+  #
+  # $target is deliberately NOT removed first. install.sh clears the
+  # destination itself, after the download and immediately before the mv
+  # (download_release), which is the right moment: removing it here instead
+  # leaves `current` dangling for the whole network fetch when the link
+  # already names this version, and leaves it dangling FOREVER if the
+  # download fails — the outage RM-188 exists to prevent, reintroduced by
+  # the installer. Leaving the old tree in place means a failed install is a
+  # no-op instead of a broken one.
   if ! _download_release_via_installer "$version"; then
     echo "Error: could not install Octopus $version." >&2
     echo "Try: curl -fsSL https://github.com/$RELEASE_OWNER/$RELEASE_REPO/releases/latest/download/install.sh | bash -s -- --version $version --force" >&2
@@ -181,8 +231,10 @@ install_release() {
   fi
   local checksum
   checksum="$(compute_release_checksum "$target")"
-  write_metadata "$version" "$checksum"
-  echo "Installed Octopus $version (cached at $target)"
+  # install.sh's update_symlink already repointed `current` on this path; going
+  # through the shared epilogue anyway costs one relink and keeps the invariant
+  # structural rather than dependent on which installer ran.
+  _finish_install "$version" "$target" "$checksum"
 }
 
 # `octopus update` invokes the installer with --no-shim-setup, so the freshly
@@ -288,9 +340,12 @@ ensure_release_for() {
   fi
 }
 
-# Hook commands in a project's settings.json are rewritten to version-pinned
-# cache paths; after an update those can point at a release that no longer
-# exists and error at session start. Flag any that are gone.
+# Hook commands in a project's settings.json are rewritten to absolute paths
+# under the CLI cache — historically a version-pinned entry, and since RM-188
+# the version-independent `current` link. Either can end up naming something
+# that no longer exists and error at session start. Matching on `.octopus-cli/`
+# rather than `.octopus-cli/cache/` is what keeps this check alive across that
+# change: it asks whether the path exists, with no version in the question.
 _doctor_stale_hooks() {
   local settings="$1" issues=0 cmd
   [[ -f "$settings" ]] || return 0
@@ -298,7 +353,7 @@ _doctor_stale_hooks() {
     [[ -n "$cmd" && ! -e "$cmd" ]] || continue
     echo "  ⚠ stale hook path: $cmd"
     issues=$((issues + 1))
-  done < <(grep -oE '"command"[[:space:]]*:[[:space:]]*"[^"]*\.octopus-cli/cache/[^"]*"' "$settings" 2>/dev/null \
+  done < <(grep -oE '"command"[[:space:]]*:[[:space:]]*"[^"]*\.octopus-cli/[^"]*"' "$settings" 2>/dev/null \
             | sed -E 's/.*:[[:space:]]*"([^"]*)".*/\1/')
   return "$issues"
 }
@@ -313,6 +368,40 @@ _doctor_broken_symlinks() {
     issues=$((issues + 1))
   done
   return "$issues"
+}
+
+# The `current` link is what version-independent callers resolve through — the
+# Windows shims, RELEASE_ROOT, and (since RM-188) every hook command in a
+# project's settings.json. `_doctor_broken_symlinks` only walks the versioned
+# entries under cache/, so the link itself needs its own check.
+#
+# The installed version comes from metadata.json, NOT resolve_version(): that
+# one is lockfile-first and therefore project-scoped, so a repo pinned via
+# .octopus/cli-lock.yaml would make this global link look wrong when it is
+# correct.
+_doctor_current_link() {
+  local link="$CACHE_ROOT/current"
+  if [[ ! -e "$link" ]]; then
+    local detail="is missing"
+    [[ -L "$link" ]] && detail="is dangling -> $(readlink "$link")"
+    echo "  ⚠ $link $detail — hooks resolving through it will fail; run 'octopus install'"
+    return 1
+  fi
+
+  local installed expected
+  installed="$(read_metadata_field "version" 2>/dev/null || true)"
+  [[ -n "$installed" ]] || return 0
+  expected="$(release_dir_for "$installed")"
+  [[ -e "$expected" ]] || return 0   # doctor already reports a missing release dir
+
+  # Compare resolved paths, not the link's basename: a dev checkout is cached
+  # as cache/<version> -> <working tree>, so the resolved path is the tree and
+  # a name comparison would flag every developer's install.
+  if [[ "$(cd "$link" 2>/dev/null && pwd -P)" != "$(cd "$expected" 2>/dev/null && pwd -P)" ]]; then
+    echo "  ⚠ $link points at $(readlink "$link" 2>/dev/null || echo "$link") but the installed version is $installed — run 'octopus install'"
+    return 1
+  fi
+  return 0
 }
 
 # Best-effort: a newer release than the one installed. Silent when offline.
@@ -343,6 +432,7 @@ doctor() {
   _doctor_stale_hooks "$(find_project_root)/.claude/settings.json" || issues=$((issues + $?))
   _doctor_stale_hooks "$HOME/.claude/settings.json"               || issues=$((issues + $?))
   _doctor_broken_symlinks                                          || issues=$((issues + $?))
+  _doctor_current_link                                              || issues=$((issues + $?))
   _doctor_version_drift "$version"                                 || issues=$((issues + $?))
   if [[ "$issues" -eq 0 ]]; then
     echo "  ✓ no issues found"
