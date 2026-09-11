@@ -211,7 +211,15 @@ install_release() {
 
   # RELEASE_ROOT is a different version — download the requested release
   # instead of stamping its name on the wrong tree.
-  [[ -L "$target" || -e "$target" ]] && rm -rf "$target"
+  #
+  # $target is deliberately NOT removed first. install.sh clears the
+  # destination itself, after the download and immediately before the mv
+  # (download_release), which is the right moment: removing it here instead
+  # leaves `current` dangling for the whole network fetch when the link
+  # already names this version, and leaves it dangling FOREVER if the
+  # download fails — the outage RM-188 exists to prevent, reintroduced by
+  # the installer. Leaving the old tree in place means a failed install is a
+  # no-op instead of a broken one.
   if ! _download_release_via_installer "$version"; then
     echo "Error: could not install Octopus $version." >&2
     echo "Try: curl -fsSL https://github.com/$RELEASE_OWNER/$RELEASE_REPO/releases/latest/download/install.sh | bash -s -- --version $version --force" >&2

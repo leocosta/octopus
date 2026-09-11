@@ -2034,6 +2034,17 @@ rewrote the paths to whatever version invoked it, so the pin survived only
 until the next setup in that repo, and it was never exposed as a supported
 option.
 
+**A third defect the gate surfaced, also fixed here:** the download branch of
+`install_release` removed `$target` *before* invoking the installer. When
+`current` already named that version the link dangled for the whole network
+fetch — and permanently if the fetch failed, which is exactly the outage this
+item exists to prevent, reintroduced by the installer itself. The removal was
+redundant besides: `install.sh` clears the destination in `download_release`,
+after the download and immediately before the `mv`. Dropping it makes a failed
+install a no-op instead of a broken one. The one remaining window is `ln
+-sfn`'s internal unlink-and-symlink, which is sub-millisecond and has no
+portable atomic replacement (`mv -T` is GNU-only).
+
 **Not addressed here.** Why the `v1.100.0` cache entry vanished in the first
 place is still unknown — nothing prunes old versions, and only `--uninstall`
 (which wipes the whole cache) or manual removal deletes one. This change makes

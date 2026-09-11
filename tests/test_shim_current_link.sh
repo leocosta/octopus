@@ -106,6 +106,40 @@ check "the user is warned" "yes" \
   "$(grep -q "is not a symlink" <<<"$out" && echo yes || echo no)"
 
 echo ""
+echo "Test: a failed download leaves 'current' and its target intact"
+# The shim used to rm -rf the target BEFORE invoking the installer. When the
+# link already named that version this dangled `current` for the whole network
+# fetch, and forever if the fetch failed — the outage RM-188 exists to prevent,
+# reintroduced by the installer itself. install.sh clears the destination
+# itself, after the download and right before the mv, which is the right
+# moment.
+cache_e="$tmp/cache-e"
+old_rel="$cache_e/cache/v1.0.0"
+doomed="$cache_e/cache/v2.0.0"
+mkdir -p "$old_rel/cli" "$old_rel/bin" "$doomed"
+echo '#!/usr/bin/env bash' > "$old_rel/cli/octopus.sh"
+cp "$SHIM" "$old_rel/bin/octopus"
+# No .git, so _release_matches_version fails and the flow reaches the download
+# branch; no install.sh in the tree, so the installer fallback cannot succeed.
+touch "$doomed/do-not-delete"
+ln -s "$doomed" "$cache_e/current"
+
+# Bogus release coordinates: the curl 404s (or fails outright offline), and
+# with no $RELEASE_ROOT/install.sh to fall back to the download must fail.
+# rc captured via `|| rc=$?` — this script runs under `set -e` and the command
+# is expected to fail.
+rc=0
+OCTOPUS_CLI_CACHE_ROOT="$cache_e" OCTOPUS_RELEASE_OWNER="octopus-no-such-owner" \
+  OCTOPUS_RELEASE_NAME="no-such-repo" \
+  bash "$old_rel/bin/octopus" install --version v2.0.0 >/dev/null 2>&1 || rc=$?
+
+check "the failed install reports failure" "1" "$rc"
+check "the existing release tree survives" "yes" \
+  "$([[ -e "$doomed/do-not-delete" ]] && echo yes || echo no)"
+check "current still resolves after the failure" "yes" \
+  "$([[ -e "$cache_e/current" ]] && echo yes || echo no)"
+
+echo ""
 if [[ "$fail" -gt 0 ]]; then
   echo "FAILED: $fail test(s), $pass passed"
   exit 1
