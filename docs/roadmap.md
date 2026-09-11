@@ -2110,6 +2110,19 @@ sourced by both `setup.sh` and `cli/lib/hooks.sh`, and already the home of
 Computing it in bash lets the Python heredoc take a single `hook_root`
 argument and drop both the cache-root argument and its conditionals.
 
+**Second half of the same item, raised by the architect gate on RM-188's PR:**
+`current` is now read through three different predicates at four sites —
+`-L` in `_resolve_release_root` (`bin/octopus`) and `_hooks_source_root`
+(`cli/lib/hooks.sh`), `-e` in `_doctor_current_link` (`bin/octopus`), and a
+write in `update_current`. A Windows junction is invisible to the first two
+and visible to the others, so one object answers "does this link exist and is
+it usable" three ways. RM-188 is what promotes `current` from a convenience
+into the anchor every delivered hook resolves through, which is what makes the
+divergence matter — and a single accessor would have surfaced RM-188's
+blocking defect (an unguarded `rm -f` on a junction) at design time rather
+than in review. Folded in here rather than filed separately: the same edit
+that settles hook-root resolution should settle how the link is read.
+
 ### RM-190 — One name for the CLI cache root
 
 - **Priority:** 🟢 Low
