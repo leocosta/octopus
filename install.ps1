@@ -61,6 +61,7 @@ if ($Uninstall) {
     $shims = @(
         Join-Path $BinDir "octopus.ps1"
         Join-Path $BinDir "octopus.cmd"
+        Join-Path $BinDir "octopus"
     )
     foreach ($s in $shims) { if (Test-Path $s) { Remove-Item $s -Force } }
     if (Test-Path $CacheRoot) { Remove-Item $CacheRoot -Recurse -Force }
@@ -70,24 +71,62 @@ if ($Uninstall) {
 
 # ── Prerequisites ──────────────────────────────────────────────────────────────
 
+# `wsl.exe` ships with every Windows 10/11 even when WSL is not installed — it
+# then only prints "The Windows Subsystem for Linux is not installed". WSL is a
+# usable executor only once a distribution is registered.
+function Test-WslDistro {
+    if (-not (Get-Command wsl.exe -ErrorAction SilentlyContinue)) { return $false }
+    # Registered distributions are the subkeys of Lxss. Reading the registry
+    # spawns nothing — `wsl.exe --list` can take seconds on a cold WSL service,
+    # and the shim runs this on every command.
+    $lxss = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Lxss"
+    return [bool](Get-ChildItem $lxss -ErrorAction SilentlyContinue | Where-Object { $_.GetValue("DistributionName") })
+}
+
+# Keep in sync with Find-Bash in bin/octopus.ps1.
 function Find-BashExecutable {
-    $bashOnPath = Get-Command bash -ErrorAction SilentlyContinue
-    $candidates = @(
+    $gitBash = @(
         "C:\Program Files\Git\bin\bash.exe",
         "C:\Program Files (x86)\Git\bin\bash.exe",
-        $(if ($bashOnPath) { $bashOnPath.Source } else { $null })
+        (Join-Path $env:LOCALAPPDATA "Programs\Git\bin\bash.exe")
     )
-    foreach ($c in $candidates) {
-        if ($c -and (Test-Path $c)) { return $c }
+    foreach ($c in $gitBash) { if ($c -and (Test-Path $c)) { return $c } }
+    # A bash.exe on PATH — except C:\Windows\System32\bash.exe and the
+    # WindowsApps alias: those are WSL launchers, not Git Bash.
+    foreach ($b in @(Get-Command bash.exe -All -ErrorAction SilentlyContinue)) {
+        $src = $b.Source
+        if ($src -like "$env:SystemRoot\*" -or $src -like "*\WindowsApps\*") { continue }
+        return $src
     }
-    if (Get-Command wsl -ErrorAction SilentlyContinue) { return "wsl" }
+    if (Test-WslDistro) { return "wsl" }
     return $null
+}
+
+# setup and the hooks run on Python 3. `python3` is usually the Microsoft Store
+# alias (…\WindowsApps\python3.exe, exits 9009) and python.org only ships
+# python.exe. The alias is skipped by location, as cli/lib/python.sh does — never
+# run: under the script-wide $ErrorActionPreference = "Stop", Windows PowerShell
+# 5.1 turns its stderr into a terminating NativeCommandError (even with 2>$null),
+# which aborted the installer right before its banner on a Win11 VM.
+function Test-Python {
+    $ErrorActionPreference = "Continue"
+    $probe = "import sys; sys.exit(0 if sys.version_info[0] == 3 else 1)"
+    foreach ($candidate in 'python3', 'python', 'py -3') {
+        $exe, $rest = $candidate -split ' '
+        $cmd = Get-Command $exe -CommandType Application -ErrorAction SilentlyContinue |
+            Where-Object { $_.Source -notlike "*\WindowsApps\*" } | Select-Object -First 1
+        if (-not $cmd) { continue }
+        & $cmd.Source @rest -c $probe 2>$null | Out-Null
+        if ($LASTEXITCODE -eq 0) { return $true }
+    }
+    return $false
 }
 
 $BashExe = Find-BashExecutable
 if (-not $BashExe) {
     Write-Err "No bash executor found."
-    Write-Host "Install Git for Windows (https://git-scm.com) or enable WSL to use Octopus CLI." -ForegroundColor Yellow
+    Write-Host "Install Git for Windows (https://git-scm.com/download/win), or WSL with a distribution" -ForegroundColor Yellow
+    Write-Host "(wsl --install), then open a new terminal and run this installer again." -ForegroundColor Yellow
     exit 1
 }
 
@@ -161,7 +200,7 @@ function Test-Signature {
     $gpg = Get-Command gpg -ErrorAction SilentlyContinue
     if (-not $gpg) {
         if ($env:OCTOPUS_REQUIRE_SIGNATURE -eq '1') {
-            Write-Err "gpg not found — install GnuPG or set OCTOPUS_SKIP_SIGNATURE=1 to bypass."
+            Write-Err "gpg not found - install GnuPG or set OCTOPUS_SKIP_SIGNATURE=1 to bypass."
             return $false
         }
         Write-Warn "gpg not found; continuing with checksum-only verification."
@@ -249,11 +288,11 @@ if ((Test-Path $DestDir) -and -not $Force) {
                 $DownloadedChecksum = $cachedSha
                 $NeedDownload = $false
             } else {
-                Write-Info "Cache integrity check failed for $Version — re-downloading."
+                Write-Info "Cache integrity check failed for $Version - re-downloading."
             }
         }
     } else {
-        Write-Info "Cache for $Version has no integrity marker — re-downloading."
+        Write-Info "Cache for $Version has no integrity marker - re-downloading."
     }
 }
 
@@ -353,7 +392,10 @@ $Timestamp    = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
 # installer. Both delegate to the version-independent `current` link, so they
 # need no per-version healing.
 $ShimSourceDir = Join-Path $DestDir "bin"
-$Shims = @("octopus.ps1", "octopus.cmd")
+# `octopus` (no extension) is the bash shim itself: Git Bash shares the Windows
+# PATH but cannot run .ps1/.cmd, so without it `octopus` is "command not found"
+# there. PowerShell and cmd ignore it (not in PATHEXT).
+$Shims = @("octopus.ps1", "octopus.cmd", "octopus")
 
 New-Item -ItemType Directory -Path $BinDir -Force | Out-Null
 foreach ($name in $Shims) {
@@ -381,8 +423,20 @@ if ([string]::IsNullOrEmpty($UserPath) -or ($UserPath -notlike "*$BinDir*")) {
             Write-Success "Added $BinDir to PATH. Restart your shell to apply."
         }
     } else {
-        Write-Warn "Add it manually, e.g.:  setx PATH `"%PATH%;$BinDir`""
+        # Not `setx PATH "%PATH%;…"`: that copies the MACHINE path into the user
+        # path and truncates it at 1024 characters.
+        Write-Warn "Add it to your user PATH, then open a new terminal:"
+        Write-Host "    [Environment]::SetEnvironmentVariable('PATH', [Environment]::GetEnvironmentVariable('PATH','User') + ';$BinDir', 'User')" -ForegroundColor Yellow
     }
+}
+
+# ── Python check ───────────────────────────────────────────────────────────────
+# Under WSL the distribution's own Python is used; Git Bash uses Windows Python.
+if ($BashExe -ne "wsl" -and -not (Test-Python)) {
+    Write-Warn "No working Python 3 found (tried python3, python, py -3)."
+    Write-Host "    'octopus setup' and the Claude Code hooks need it. Install Python 3 from" -ForegroundColor Yellow
+    Write-Host "    https://www.python.org/downloads/ (tick 'Add python.exe to PATH'), then open a new terminal." -ForegroundColor Yellow
+    Write-Host "    ('python3' on Windows is usually the Microsoft Store alias, not Python.)" -ForegroundColor Yellow
 }
 
 # ── Welcome banner ─────────────────────────────────────────────────────────────
@@ -400,5 +454,5 @@ Write-Host ""
 Write-Host "  Docs: https://github.com/leocosta/octopus"
 Write-Host ""
 Write-Host "  Note: Octopus CLI on Windows runs via Git Bash or WSL."
-Write-Host "  Requires: Git for Windows (https://git-scm.com) or WSL."
+Write-Host "  Requires: Git for Windows + Python 3, or WSL with a distribution."
 Write-Host ""

@@ -2,6 +2,8 @@
 set -euo pipefail
 
 CLI_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=cli/lib/python.sh
+source "$CLI_DIR/lib/python.sh"
 REGISTRY="$CLI_DIR/lib/commands.default"
 
 # Is "$1" a registered workflow command? The registry — not the mere existence

@@ -33,8 +33,23 @@ Both installers do the same four things:
 2. Download the latest release tarball from GitHub
 3. Verify the SHA-256 signature against the published checksum
 4. Extract to `~/.octopus-cli/v<version>/` and symlink
-   `octopus` into `~/.local/bin/` (or `~/.octopus-cli/bin/` on
-   Windows)
+   `octopus` into `~/.local/bin/` (on Windows: an NTFS junction for
+   `~\.octopus-cli\current` and `octopus` shims for PowerShell, cmd
+   and Git Bash in `~\.local\bin\`)
+
+**On Windows**, Octopus runs its CLI through bash, so it needs one of:
+
+- **Git for Windows** ([git-scm.com](https://git-scm.com/download/win))
+  **plus Python 3** from [python.org](https://www.python.org/downloads/)
+  (tick *Add python.exe to PATH*). `python3` on a stock Windows is the
+  Microsoft Store alias, not Python — Octopus detects it and uses
+  `python` / `py -3` instead, but one of them has to exist.
+- **WSL with a distribution** registered (`wsl --install`) — the
+  distribution's own Python is used.
+
+Using both on the same repository is supported: hook paths are written
+as `$HOME/.octopus-cli/current/…`, so Git Bash and WSL each run their
+own install. Install Octopus in each environment you use.
 
 After the installer finishes, run `octopus --version` to confirm.
 If the command isn't found, your `~/.local/bin/` is probably not
@@ -133,5 +148,10 @@ an issue with the version and platform.
 **Windows installer doesn't run** — PowerShell execution policy may
 be blocking it. Run `Set-ExecutionPolicy -Scope CurrentUser
 RemoteSigned` and retry.
+
+**`octopus setup` says "Python 3 is required"** (Windows) — only the
+Microsoft Store alias was found. Install Python 3 from python.org with
+*Add python.exe to PATH* ticked, open a new terminal, and run
+`octopus doctor` to confirm.
 
 Next: [Quick Start](/octopus/get-started/quickstart/).

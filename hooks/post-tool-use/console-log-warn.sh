@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+source "${BASH_SOURCE[0]%/*}/../../cli/lib/python.sh" 2>/dev/null || true
 # Warn about console.log/print statements added to files
 
 set -euo pipefail

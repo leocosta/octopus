@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+source "${BASH_SOURCE[0]%/*}/../../cli/lib/python.sh" 2>/dev/null || true
 set -euo pipefail
 
 # Read the JSON payload Claude Code feeds to PreToolUse hooks.

@@ -140,6 +140,38 @@ check "current still resolves after the failure" "yes" \
   "$([[ -e "$cache_e/current" ]] && echo yes || echo no)"
 
 echo ""
+echo "Test: metadata.json records the release just installed, not the running one"
+# release_path was written from $RELEASE_ROOT — the release RUNNING the update,
+# i.e. the previous one (and, on Windows, `current` itself).
+cache_f="$tmp/cache-f"
+OCTOPUS_CLI_CACHE_ROOT="$cache_f" bash "$checkout/bin/octopus" install --version v9.9.9 >/dev/null
+check "release_path names the installed cache entry" "$cache_f/cache/v9.9.9" \
+  "$(sed -n 's/.*"release_path": "\([^"]*\)".*/\1/p' "$cache_f/metadata.json" 2>/dev/null)"
+
+echo ""
+echo "Test: a mirror endpoint uses the release's own install.sh, not main's"
+# OCTOPUS_INSTALL_ENDPOINT is the offline/mirror contract — reaching GitHub for
+# main's installer broke it (and made a locally built release untestable).
+cache_g="$tmp/cache-g"
+rel_g="$cache_g/cache/v1.0.0"
+mkdir -p "$rel_g/cli" "$rel_g/bin"
+echo '#!/usr/bin/env bash' > "$rel_g/cli/octopus.sh"
+cp "$SHIM" "$rel_g/bin/octopus"
+# Stand-in installer: records it ran, then lays down the requested release.
+cat > "$rel_g/install.sh" <<'EOF'
+#!/usr/bin/env bash
+v=""; while [[ $# -gt 0 ]]; do [[ "$1" == --version ]] && v="$2"; shift; done
+echo "local-installer $v" > "$OCTOPUS_CACHE_DIR/installer.log"
+mkdir -p "$OCTOPUS_CACHE_DIR/cache/$v/cli" && echo '#!/usr/bin/env bash' > "$OCTOPUS_CACHE_DIR/cache/$v/cli/octopus.sh"
+EOF
+chmod +x "$rel_g/install.sh"
+ln -s "$rel_g" "$cache_g/current"
+OCTOPUS_CLI_CACHE_ROOT="$cache_g" OCTOPUS_INSTALL_ENDPOINT="file:///nowhere" \
+  OCTOPUS_RELEASE_OWNER="octopus-no-such-owner" OCTOPUS_RELEASE_NAME="no-such-repo" \
+  bash "$rel_g/bin/octopus" install --version v2.0.0 >/dev/null 2>&1
+check "the release's install.sh ran" "local-installer v2.0.0" "$(cat "$cache_g/installer.log" 2>/dev/null)"
+
+echo ""
 if [[ "$fail" -gt 0 ]]; then
   echo "FAILED: $fail test(s), $pass passed"
   exit 1

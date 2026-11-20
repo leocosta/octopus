@@ -79,11 +79,32 @@ _hooks_source_root() {
       fi
     done
   fi
-  if [[ -L "$HOOKS_CACHE_ROOT/current" ]]; then
+  # A symlink, or the Windows junction install.ps1 makes (Git Bash sees a plain
+  # directory there: -L is false).
+  if [[ -L "$HOOKS_CACHE_ROOT/current" || -f "$HOOKS_CACHE_ROOT/current/cli/octopus.sh" ]]; then
     printf '%s' "$HOOKS_CACHE_ROOT/current"
     return 0
   fi
   printf '%s' "$HOOKS_RELEASE_ROOT"
+}
+
+# ---------------------------------------------------------------------------
+# _hooks_portable_root <source-root>
+#
+# The default cache's `current` link is written as "$HOME/.octopus-cli/current",
+# expanded by the shell git runs the hook in. Git Bash, WSL and native shells
+# sharing one repo then each resolve their OWN install; a literal /home/u/... or
+# /c/Users/u/... path only works in the shell that ran `install` (reproduced:
+# hooks installed from WSL failed every `git checkout` made from Git Bash).
+# Any other root — a vendored checkout, a custom cache root — is literal. Same
+# rule as setup.sh's deliver_hooks, which writes the Claude Code hooks.
+# ---------------------------------------------------------------------------
+_hooks_portable_root() {
+  if [[ -z "${OCTOPUS_CACHE_ROOT:-}${OCTOPUS_CLI_CACHE_ROOT:-}" && "$1" == "$HOME/.octopus-cli/current" ]]; then
+    printf '%s' '$HOME/.octopus-cli/current'
+  else
+    printf '%s' "$1"
+  fi
 }
 
 # ---------------------------------------------------------------------------
@@ -133,7 +154,7 @@ _hooks_check_env_drift() {
 _hooks_wrapper() {
   printf '#!/usr/bin/env bash\n'
   printf '# octopus:%s\n' "$1"
-  printf 'bash "%s/hooks/git/%s.sh" "$@"\n' "$2" "$1"
+  printf 'bash "%s/hooks/git/%s.sh" "$@"\n' "$(_hooks_portable_root "$2")" "$1"
 }
 
 # ---------------------------------------------------------------------------
@@ -241,7 +262,8 @@ case "$SUB" in
     done <<< "$_HOOKS_MANAGED"
 
     [[ $changed -eq 1 ]] && echo "" && echo "Hooks point at $ROOT — 'octopus update' moves them with it."
-    [[ "$DRY" == "true" ]] || _hooks_check_env_drift
+    # A $HOME-relative wrapper resolves in every shell — there is no drift to warn about.
+    [[ "$DRY" == "true" || "$(_hooks_portable_root "$ROOT")" != "$ROOT" ]] || _hooks_check_env_drift
     exit 0
     ;;
 

@@ -106,6 +106,100 @@ check "honors OCTOPUS_SKIP_SIGNATURE / OCTOPUS_REQUIRE_SIGNATURE" t_sig_knobs
 t_basic_parsing() { grep -qF '-UseBasicParsing' "$PS1"; }
 check "web requests use -UseBasicParsing" t_basic_parsing
 
+# 7. Bash discovery — each assertion is a failure reproduced on a Windows 11 VM.
+# Body of a PowerShell function (from `function <name> {` to the next `^}`).
+ps_fn() { sed -n "/^function $2 {/,/^}/p" "$1"; }
+
+t_skips_wsl_launchers() {
+  # C:\Windows\System32\bash.exe and the WindowsApps alias are WSL launchers;
+  # picking them sent a Git-Bash /c/... path into WSL and every command failed.
+  local f
+  for f in "$PS1:Find-BashExecutable" "$SHIM_PS1:Find-Bash"; do
+    ps_fn "${f%%:*}" "${f##*:}" | grep -qF 'SystemRoot' || return 1
+    ps_fn "${f%%:*}" "${f##*:}" | grep -qF 'WindowsApps' || return 1
+  done
+}
+check "bash discovery skips the WSL launchers (System32 / WindowsApps)" t_skips_wsl_launchers
+
+t_wsl_needs_distro() {
+  # wsl.exe exists on every Windows even WITHOUT WSL; it is an executor only
+  # once a distribution is registered (a DistributionName under Lxss).
+  local f
+  for f in "$PS1" "$SHIM_PS1"; do
+    ps_fn "$f" Test-WslDistro | grep -qF 'Lxss' || return 1
+    ps_fn "$f" Test-WslDistro | grep -qF 'DistributionName' || return 1
+  done
+  ps_fn "$PS1" Find-BashExecutable | grep -qF 'Test-WslDistro' \
+    && ps_fn "$SHIM_PS1" Find-Bash | grep -qF 'Test-WslDistro'
+}
+check "WSL is only chosen when a distribution is registered" t_wsl_needs_distro
+
+t_same_discovery() {
+  # install.ps1 and the shim must agree on the executor, or install succeeds
+  # with one bash and every command runs with another.
+  diff <(ps_fn "$PS1" Test-WslDistro) <(ps_fn "$SHIM_PS1" Test-WslDistro) >/dev/null \
+    && diff <(ps_fn "$PS1" Find-BashExecutable | sed '1d;$d' | grep -vE '^[[:space:]]*#|return \$null') \
+            <(ps_fn "$SHIM_PS1" Find-Bash | sed '1d;$d' | grep -vE '^[[:space:]]*#|^    throw ') >/dev/null
+}
+check "install.ps1 and the shim share the same bash discovery" t_same_discovery
+
+t_wsl_passes_cache() {
+  # Inside WSL, $HOME is the Linux home: the Windows-side cache must be handed
+  # over, through WSLENV, or bin/octopus finds no install.
+  grep -qF 'WSLENV' "$SHIM_PS1" && grep -qF 'OCTOPUS_CLI_CACHE_ROOT' "$SHIM_PS1"
+}
+check "the WSL branch hands the Windows cache root to bin/octopus" t_wsl_passes_cache
+
+t_shim_exit_code() { grep -qE '^exit \$LASTEXITCODE' "$SHIM_PS1"; }
+check "the .ps1 shim propagates the CLI exit code" t_shim_exit_code
+
+# 8. Git Bash cannot run .ps1/.cmd: the extensionless bash shim is installed too.
+t_ships_bash_shim() { grep -qE '\$Shims = @\("octopus\.ps1", "octopus\.cmd", "octopus"\)' "$PS1"; }
+check "installs the extensionless 'octopus' shim for Git Bash" t_ships_bash_shim
+t_uninstall_bash_shim() { sed -n '/^if (\$Uninstall)/,/^}/p' "$PS1" | grep -qF 'Join-Path $BinDir "octopus"'; }
+check "uninstall removes the extensionless shim too" t_uninstall_bash_shim
+
+# 9. Python: probed by RUNNING it (the Store alias passes Get-Command).
+t_python_probe() {
+  ps_fn "$PS1" Test-Python | grep -qF "'py -3'" && ps_fn "$PS1" Test-Python | grep -qF -- '-c $probe'
+}
+
+# The Store alias must never be RUN: under $ErrorActionPreference = "Stop" its
+# stderr is a terminating error on PS 5.1 and the installer died before its banner.
+t_python_skips_alias() {
+  ps_fn "$PS1" Test-Python | grep -qF 'WindowsApps' \
+    && ps_fn "$PS1" Test-Python | grep -qE '\$ErrorActionPreference = "Continue"'
+}
+check "Python probe skips the Store alias instead of running it" t_python_skips_alias
+check "warns when no working Python 3 runs (python3 / python / py -3)" t_python_probe
+
+# 11. Windows PowerShell 5.1 reads a BOM-less .ps1 FILE as cp1252, where the
+#     UTF-8 bytes of "—" (E2 80 94) include 0x94 = ”, which PowerShell accepts as
+#     a quote: the string closes early and the whole script fails to parse
+#     ("Missing closing '}'"). Reproduced running .\install.ps1 on a Win11 VM;
+#     `irm | iex` hid it (irm decodes UTF-8). bin/octopus.ps1 ALWAYS runs as a
+#     file. Comments are safe; code lines must not decode to smart quotes.
+t_cp1252_safe() {
+  python3 - "$PS1" "$SHIM_PS1" <<'PY'
+import sys
+bad = []
+for path in sys.argv[1:]:
+    for n, raw in enumerate(open(path, 'rb').read().split(b'\n'), 1):
+        if raw.decode('utf-8').lstrip().startswith('#'):
+            continue
+        if any(c in '‘’“”' for c in raw.decode('cp1252', 'replace')):
+            bad.append(f"{path.rsplit('/', 1)[-1]}:{n}")
+if bad:
+    print("  smart-quote bytes on code lines:", ", ".join(bad))
+sys.exit(1 if bad else 0)
+PY
+}
+check "no code line turns into a smart quote when PS 5.1 reads the file as cp1252" t_cp1252_safe
+
+# 10. Never suggest `setx PATH "%PATH%;…"` (copies the machine PATH, truncates at 1024).
+t_no_setx() { ! grep -vE '^[[:space:]]*#' "$PS1" | grep -qE 'setx[[:space:]]+PATH'; }
+check "does not suggest the truncating 'setx PATH' recipe" t_no_setx
+
 echo ""
 echo "install.ps1 invariants: $PASS passed, $FAIL failed."
 [[ "$FAIL" -eq 0 ]]

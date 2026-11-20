@@ -3,7 +3,6 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CLI="$SCRIPT_DIR/bin/octopus"
-LOCKFILE="$SCRIPT_DIR/.octopus/cli-lock.yaml"
 
 TMP_HOME="$(mktemp -d)"
 cleanup() {
@@ -13,6 +12,16 @@ cleanup() {
 trap cleanup EXIT
 
 export HOME="$TMP_HOME"
+
+# Run every command from a throwaway project, never from this repo: `update`
+# re-runs setup when it finds a .octopus.yml, and from the repo root that
+# regenerated the working tree with an OLD release — and sync_shim renamed the
+# downloaded shim over the repo's own bin/octopus.
+TMP_PROJ="$TMP_HOME/project"
+mkdir -p "$TMP_PROJ"
+git -C "$TMP_PROJ" init -q
+LOCKFILE="$TMP_PROJ/.octopus/cli-lock.yaml"
+cd "$TMP_PROJ"
 
 rm -rf "$HOME/.octopus-cli"
 
@@ -25,11 +34,11 @@ echo "Test 2: doctor shows installed release"
 $CLI doctor >/dev/null
 
 echo "Test 3: update with pinfile"
-mkdir -p "$SCRIPT_DIR/.octopus"
+mkdir -p "$TMP_PROJ/.octopus"
 # Network-dependent: downloads the pinned release. Skip when it's unreachable
 # (offline, or the old release was removed) rather than failing the suite.
 if $CLI update --version v0.14.0 --pin >/dev/null 2>&1; then
-  grep -q '^version: v0.14.0' "$SCRIPT_DIR/.octopus/cli-lock.yaml" \
+  grep -q '^version: v0.14.0' "$LOCKFILE" \
     || { echo "FAIL: cli-lock.yaml not pinned to v0.14.0"; exit 1; }
   echo "PASS: pinfile written"
 else

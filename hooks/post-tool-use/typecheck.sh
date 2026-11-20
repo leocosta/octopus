@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+source "${BASH_SOURCE[0]%/*}/../../cli/lib/python.sh" 2>/dev/null || true
 # Run type checking after editing typed files.
 # On failure, returns JSON with decision:block so Claude Code injects the
 # error back into Claude's context and it self-corrects in the same turn.

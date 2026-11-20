@@ -3,7 +3,7 @@ title: Instalação
 description: Instale o Octopus no macOS, Linux ou Windows com um único comando. Atualize com o mesmo comando. Desinstale removendo dois diretórios.
 sidebar:
   order: 2
-source_hash: "sha256:c7f816e6bd5edb886bead8474ea029a8879562d00fa9d660e2aba54b76a6757d"
+source_hash: "sha256:353897594040fe8eb109b6fd46dc8d291c6bcba9d576902daf45cb04b575e14f"
 needs_retranslation: false
 ---
 
@@ -33,7 +33,14 @@ Os dois installers fazem as mesmas quatro coisas:
 1. Detectam seu OS e arquitetura
 2. Baixam o tarball do release mais recente do GitHub
 3. Verificam a assinatura SHA-256 contra o checksum publicado
-4. Extraem para `~/.octopus-cli/v<version>/` e criam um symlink de `octopus` em `~/.local/bin/` (ou `~/.octopus-cli/bin/` no Windows)
+4. Extraem para `~/.octopus-cli/v<version>/` e criam um symlink de `octopus` em `~/.local/bin/` (no Windows: uma junction NTFS em `~\.octopus-cli\current` e shims de `octopus` para PowerShell, cmd e Git Bash em `~\.local\bin\`)
+
+**No Windows**, o Octopus roda a CLI via bash, então precisa de um destes:
+
+- **Git for Windows** ([git-scm.com](https://git-scm.com/download/win)) **mais Python 3** do [python.org](https://www.python.org/downloads/) (marque *Add python.exe to PATH*). Num Windows padrão, `python3` é o atalho da Microsoft Store, não o Python — o Octopus detecta isso e usa `python` / `py -3`, mas um deles precisa existir.
+- **WSL com uma distribuição** registrada (`wsl --install`) — usa o Python da própria distribuição.
+
+Usar os dois no mesmo repositório é suportado: os caminhos dos hooks são gravados como `$HOME/.octopus-cli/current/…`, então Git Bash e WSL rodam cada um a sua própria instalação. Instale o Octopus em cada ambiente que você usa.
 
 Quando o installer terminar, rode `octopus --version` para confirmar. Se o comando não for encontrado, é provável que seu `~/.local/bin/` não esteja no `PATH` — adicione-o ao arquivo rc do seu shell e recarregue.
 
@@ -107,5 +114,7 @@ O script de setup faz o mesmo install atômico — copiando para `~/.octopus-cli
 **"SHA-256 mismatch"** — o installer é paranoico quanto à integridade do download. Se isso acontecer repetidamente, tente de novo; se persistir, abra uma issue com a versão e a plataforma.
 
 **O installer do Windows não roda** — a execution policy do PowerShell pode estar bloqueando. Rode `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` e tente novamente.
+
+**`octopus setup` diz "Python 3 is required"** (Windows) — só o atalho da Microsoft Store foi encontrado. Instale o Python 3 pelo python.org com *Add python.exe to PATH* marcado, abra um novo terminal e rode `octopus doctor` para confirmar.
 
 Próximo: [Quick Start](/octopus/get-started/quickstart/).

@@ -442,13 +442,59 @@ download_release() {
   success "Octopus $version cached at $dest"
 }
 
-# Update the "current" symlink
+# ── Windows `current` junction ────────────────────────────────────────────────
+# Kept byte-identical between bin/octopus and install.sh (enforced by
+# tests/test_current_junction.sh): install.sh runs standalone, before any
+# release tree exists to source.
+#
+# `current` lives on NTFS when the shell is Git Bash/MSYS, or WSL reaching a
+# Windows-side cache through /mnt/<drive>. There `ln -s` is not a link: MSYS
+# copies the tree, WSL makes a link Windows cannot follow. Use a junction — the
+# link install.ps1 creates — managed through PowerShell.
+_current_needs_junction() {
+  case "$(uname -s 2>/dev/null)" in MINGW* | MSYS* | CYGWIN*) return 0 ;; esac
+  [[ "$1" == /mnt/[a-z]/* ]] && command -v powershell.exe >/dev/null 2>&1
+}
+
+_win_path_of() {
+  if command -v cygpath >/dev/null 2>&1; then
+    cygpath -w "$1"
+  elif command -v wslpath >/dev/null 2>&1; then
+    wslpath -w "$1"
+  else
+    return 1
+  fi
+}
+
+# Replace <link> with a junction to <target>. An existing junction/symlink is
+# removed with Directory.Delete, which drops the link and never the tree behind
+# it; a REAL directory there is a copy an older `ln -s` left — safe to delete.
+_relink_junction() {
+  local link="$1" target="$2" wl wt
+  wl="$(_win_path_of "$link")" && wt="$(_win_path_of "$target")" || return 1
+  wl="${wl//\'/\'\'}"
+  wt="${wt//\'/\'\'}"
+  MSYS2_ARG_CONV_EXCL='*' powershell.exe -NoProfile -NonInteractive -Command "
+\$ErrorActionPreference = 'Stop'
+\$l = '$wl'; \$t = '$wt'
+\$i = Get-Item -LiteralPath \$l -Force -ErrorAction SilentlyContinue
+if (\$i) { if (\$i.LinkType) { [IO.Directory]::Delete(\$l) } else { Remove-Item -LiteralPath \$l -Recurse -Force } }
+New-Item -ItemType Junction -Path \$l -Target \$t | Out-Null" >/dev/null
+}
+
+# Update the "current" symlink (a junction on Windows — see above).
 update_symlink() {
   local version="$1"
   local target="$OCTOPUS_CACHE_DIR/cache/$version"
+  local link="$OCTOPUS_CACHE_DIR/current"
 
-  rm -f "$OCTOPUS_CACHE_DIR/current"
-  ln -sf "$target" "$OCTOPUS_CACHE_DIR/current"
+  if _current_needs_junction "$link"; then
+    _relink_junction "$link" "$target" ||
+      warn "could not point $link at $target — hooks and shims may resolve an older release."
+    return 0
+  fi
+  rm -f "$link"
+  ln -sf "$target" "$link"
 }
 
 # Write metadata.json so the shim can resolve the version without git

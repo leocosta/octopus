@@ -557,4 +557,45 @@ unset OCTOPUS_CLI_CACHE_ROOT
 rm -rf "$TMPDIR_CUR"
 
 echo ""
+echo "Test: the default cache writes \$HOME-relative hook paths (one settings.json, every shell)"
+# Reproduced on Windows: setup from WSL wrote /home/<u>/.octopus-cli/... and all
+# 18 hooks exited 127 for native Claude Code (Git Bash) on the same project.
+# "$HOME/.octopus-cli/current/..." lets each shell resolve its own install.
+TMPDIR_HOME=$(mktemp -d)
+mkdir -p "$TMPDIR_HOME/home/.octopus-cli/cache/v0.0.1" "$TMPDIR_HOME/proj/.claude"
+cp -r "$SCRIPT_DIR/hooks" "$SCRIPT_DIR/cli" "$TMPDIR_HOME/home/.octopus-cli/cache/v0.0.1/"
+ln -s "$TMPDIR_HOME/home/.octopus-cli/cache/v0.0.1" "$TMPDIR_HOME/home/.octopus-cli/current"
+echo '{"permissions": {}, "hooks": {"Stop": [{"hooks": [{"type": "command", "command": "my-own-hook.sh"}]}]}, "mcpServers": {}}' \
+  > "$TMPDIR_HOME/proj/.claude/settings.json"
+export PROJECT_ROOT="$TMPDIR_HOME/proj"
+export OCTOPUS_DIR="$TMPDIR_HOME/home/.octopus-cli/cache/v0.0.1"
+unset OCTOPUS_CLI_CACHE_ROOT
+SAVED_HOME="$HOME"; export HOME="$TMPDIR_HOME/home"
+deliver_hooks "claude" >/dev/null
+deliver_hooks "claude" >/dev/null   # idempotent: a re-run must not duplicate
+export HOME="$SAVED_HOME"
+python3 - "$TMPDIR_HOME/proj/.claude/settings.json" "$TMPDIR_HOME/home" <<'PYEOF2'
+import json, os, sys
+settings = json.load(open(sys.argv[1]))
+cmds = [h["command"] for ev in settings["hooks"].values() for m in ev for h in m.get("hooks", [])]
+ours = [c for c in cmds if ".octopus-cli" in c]
+assert ours, "no Octopus hooks written"
+bad = [c for c in ours if not c.startswith('"$HOME/.octopus-cli/current/hooks/')]
+assert not bad, f"not $HOME-relative: {bad[0]}"
+assert len(ours) == len(set(ours)), "a re-run duplicated Octopus hooks"
+assert "my-own-hook.sh" in cmds, "a user hook was dropped"
+# Each command, expanded the way the hook's shell will, must exist.
+home = sys.argv[2]
+missing = [c for c in ours if not os.path.exists(c.strip('"').replace("$HOME", home))]
+assert not missing, f"does not resolve once $HOME is expanded: {missing[0]}"
+PYEOF2
+# And a hook actually runs through a shell with that command line.
+cmd="$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(next(h["command"] for ev in d["hooks"].values() for m in ev for h in m["hooks"] if "session-start" in h["command"]))' "$TMPDIR_HOME/proj/.claude/settings.json")"
+(cd "$TMPDIR_HOME/proj" && echo '{}' | HOME="$TMPDIR_HOME/home" bash -c "$cmd" >/dev/null 2>&1)
+rc=$?
+[[ $rc -ne 126 && $rc -ne 127 ]] || { echo "FAIL: hook command did not execute through the shell (rc=$rc): $cmd"; exit 1; }
+echo "PASS: default cache → \$HOME-relative, idempotent, user hooks kept, executable"
+rm -rf "$TMPDIR_HOME"
+
+echo ""
 echo "All hooks injection tests passed!"

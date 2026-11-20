@@ -61,7 +61,9 @@ Start here:
 ## Requirements
 
 - Bash 4+ (Linux/macOS/WSL) or Git for Windows (PowerShell)
-- Python 3 (JSON merging — MCP injection and hooks)
+- Python 3 (JSON merging — MCP injection and hooks). On Windows, install it
+  from [python.org](https://www.python.org/downloads/): `python3` there is the
+  Microsoft Store alias, not Python (Octopus falls back to `python` / `py -3`)
 - `gh` (GitHub CLI) ≥ 2.0 — only if `workflow: true`
 
 ## Contributing
