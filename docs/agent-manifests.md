@@ -14,6 +14,9 @@ capabilities:
   native_commands: true         # Supports individual command files
   native_agents: true           # Supports individual agent/role files
   native_mcp: true              # Supports MCP server configuration
+  hooks_via_shell: true         # Runs hook commands through a shell, so
+                                # "$HOME/.octopus-cli/current/…" paths expand
+                                # (ADR-013). Omit it if the runner execs argv.
 
 delivery:
   rules:

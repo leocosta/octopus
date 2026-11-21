@@ -44,7 +44,9 @@ Windows 11 VM (PR #244):
      `OCTOPUS_CACHE_ROOT` is set;
    - the delivery goes through the `current` link;
    - the consumer runs commands through a shell. That is always true for git
-     hooks, and of the agents only Claude Code is known to do it.
+     hooks. An agent declares it with the `hooks_via_shell` manifest capability
+     (ADR-011: delivery is gated on capabilities, never on agent names); today
+     only Claude Code does.
 
    Everything else keeps the literal path: pinned lockfiles, vendored checkouts,
    custom cache roots, and other `settings_json` agents such as OpenCode.
@@ -104,7 +106,8 @@ Windows 11 VM (PR #244):
 
 ### Risks
 
-- If another agent's hook runner starts executing commands without a shell, it
-  must stay on literal paths. The gate is per agent in `deliver_hooks`.
+- An agent must declare `hooks_via_shell` only if its runner really goes
+  through a shell. One that execs argv would get an unexpanded `"$HOME/…"`
+  path. Agents without the capability keep literal paths.
 - The two copies of the junction helper could drift. Mitigated by
   `tests/test_current_junction.sh`.

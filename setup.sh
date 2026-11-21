@@ -558,6 +558,7 @@ MANIFEST_CAP_PROMPT_FILES="false"
 MANIFEST_CAP_CLI_AGENTS="false"
 MANIFEST_CAP_AGENTS="false"
 MANIFEST_CAP_MCP="false"
+MANIFEST_CAP_HOOKS_VIA_SHELL="false"
 MANIFEST_DELIVERY_RULES_METHOD=""
 MANIFEST_DELIVERY_RULES_TARGET=""
 MANIFEST_DELIVERY_RULES_INSTRUCTIONS_EXT="false"
@@ -601,6 +602,7 @@ load_manifest() {
   MANIFEST_CAP_CLI_AGENTS="false"
   MANIFEST_CAP_AGENTS="false"
   MANIFEST_CAP_MCP="false"
+  MANIFEST_CAP_HOOKS_VIA_SHELL="false"
   MANIFEST_DELIVERY_RULES_METHOD=""
   MANIFEST_DELIVERY_RULES_TARGET=""
   MANIFEST_DELIVERY_RULES_INSTRUCTIONS_EXT="false"
@@ -685,6 +687,7 @@ load_manifest() {
         native_cli_agents) MANIFEST_CAP_CLI_AGENTS="$cap_val" ;;
         native_agents)     MANIFEST_CAP_AGENTS="$cap_val" ;;
         native_mcp)        MANIFEST_CAP_MCP="$cap_val" ;;
+        hooks_via_shell)   MANIFEST_CAP_HOOKS_VIA_SHELL="$cap_val" ;;
         native_knowledge)  MANIFEST_CAP_KNOWLEDGE="$cap_val" ;;
       esac
       continue
@@ -1473,11 +1476,12 @@ deliver_hooks() {
 
     local cli_cache_root="${OCTOPUS_CLI_CACHE_ROOT:-$HOME/.octopus-cli}"
 
-    # Prints how the hook paths were written: "portable" or "literal". Only
-    # Claude Code is known to run hook commands through a shell (which is what
-    # expands "$HOME"), so other agents keep literal paths.
+    # Prints how the hook paths were written: "portable" or "literal". "$HOME"
+    # is only expanded by an agent that runs hook commands through a shell —
+    # declared in its manifest as `hooks_via_shell` (ADR-011: capabilities, not
+    # names); the others keep literal paths.
     local hook_paths
-    hook_paths="$(OCTOPUS_HOOKS_VIA_SHELL="$([[ "$agent" == claude ]] && echo 1)" python3 - "$settings_file" "$hooks_template" "${OCTOPUS_DISABLED_HOOKS:-}" "$OCTOPUS_DIR" "${OCTOPUS_RULES[*]:-}" "$local_hooks_arg" "$cli_cache_root" << 'PYEOF'
+    hook_paths="$(OCTOPUS_HOOKS_VIA_SHELL="$([[ "$MANIFEST_CAP_HOOKS_VIA_SHELL" == true ]] && echo 1)" python3 - "$settings_file" "$hooks_template" "${OCTOPUS_DISABLED_HOOKS:-}" "$OCTOPUS_DIR" "${OCTOPUS_RULES[*]:-}" "$local_hooks_arg" "$cli_cache_root" << 'PYEOF'
 import json, os, sys
 
 settings_path, hooks_path, disabled, install_root, active_stacks_str, local_hooks_path, cli_cache_root = sys.argv[1:8]

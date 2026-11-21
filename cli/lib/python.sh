@@ -29,7 +29,9 @@ OCTOPUS_PYTHON_MISSING=""
 case "${OSTYPE:-}" in
   msys* | cygwin*)
     # A python3 FUNCTION is a resolution inherited from the parent (exported
-    # below) — keep it. Children such as setup.sh re-source this file.
+    # below); children such as setup.sh re-source this file. Keeping it only
+    # saves the PATH lookups — re-resolving would reach the same answer, and
+    # the `${BASH_CMDS[$1]-}` read above is what keeps a re-source safe.
     if ! declare -F python3 >/dev/null && ! _octopus_real_cmd python3; then
       if _octopus_real_cmd python; then
         python3() { python "$@"; }

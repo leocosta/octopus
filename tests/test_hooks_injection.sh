@@ -570,6 +570,7 @@ echo '{"permissions": {}, "hooks": {"Stop": [{"hooks": [{"type": "command", "com
 export PROJECT_ROOT="$TMPDIR_HOME/proj"
 export OCTOPUS_DIR="$TMPDIR_HOME/home/.octopus-cli/cache/v0.0.1"
 unset OCTOPUS_CLI_CACHE_ROOT
+MANIFEST_CAP_HOOKS_VIA_SHELL="true"   # as agents/claude/manifest.yml declares
 SAVED_HOME="$HOME"; export HOME="$TMPDIR_HOME/home"
 deliver_hooks "claude" >/dev/null
 deliver_hooks "claude" >/dev/null   # idempotent: a re-run must not duplicate
@@ -596,8 +597,19 @@ rc=$?
 [[ $rc -ne 126 && $rc -ne 127 ]] || { echo "FAIL: hook command did not execute through the shell (rc=$rc): $cmd"; exit 1; }
 echo "PASS: default cache → \$HOME-relative, idempotent, user hooks kept, executable"
 
-# Only Claude Code is known to run hook commands through a shell, which is what
-# expands "$HOME". Other settings_json agents (OpenCode) keep literal paths.
+# "$HOME" is only expanded by an agent that runs hook commands through a shell.
+# That is a manifest capability (hooks_via_shell, ADR-011/ADR-013), never the
+# agent's name: Claude declares it, OpenCode does not.
+FAKE_RELEASE="$OCTOPUS_DIR"; OCTOPUS_DIR="$SCRIPT_DIR"   # the real manifests
+load_manifest claude >/dev/null 2>&1
+[[ "$MANIFEST_CAP_HOOKS_VIA_SHELL" == "true" ]] \
+  || { echo "FAIL: claude manifest does not declare hooks_via_shell"; exit 1; }
+load_manifest opencode >/dev/null 2>&1
+[[ "$MANIFEST_CAP_HOOKS_VIA_SHELL" == "false" ]] \
+  || { echo "FAIL: opencode inherited hooks_via_shell (load_manifest did not reset it)"; exit 1; }
+OCTOPUS_DIR="$FAKE_RELEASE"
+MANIFEST_CAP_HOOKS="true"
+MANIFEST_DELIVERY_HOOKS_METHOD="settings_json"
 mkdir -p "$TMPDIR_HOME/proj/.opencode"
 echo '{"permissions": {}, "hooks": {}, "mcpServers": {}}' > "$TMPDIR_HOME/proj/.opencode/settings.json"
 MANIFEST_DELIVERY_HOOKS_TARGET=".opencode/settings.json"
@@ -612,6 +624,18 @@ grep -qF "$TMPDIR_HOME/home/.octopus-cli/current/hooks/" "$TMPDIR_HOME/proj/.ope
   || { echo "FAIL: OpenCode hooks lost their literal 'current' path"; exit 1; }
 echo "PASS: non-Claude agents keep literal hook paths"
 
+# The decision follows the capability, not the name: an agent called anything
+# that declares hooks_via_shell gets portable paths.
+echo '{"permissions": {}, "hooks": {}, "mcpServers": {}}' > "$TMPDIR_HOME/proj/.claude/settings.json"
+MANIFEST_CAP_HOOKS_VIA_SHELL="true"
+export HOME="$TMPDIR_HOME/home"
+deliver_hooks "some-future-agent" >/dev/null
+export HOME="$SAVED_HOME"
+grep -qF '$HOME/.octopus-cli/current/' "$TMPDIR_HOME/proj/.claude/settings.json" \
+  || { echo "FAIL: hooks_via_shell did not drive portable paths for a non-claude agent name"; exit 1; }
+echo "PASS: portability is capability-gated, not name-gated"
+
+MANIFEST_CAP_HOOKS_VIA_SHELL="true"   # claude again for the cases below
 # The legacy OCTOPUS_CACHE_ROOT override is honoured exactly like
 # cli/lib/hooks.sh's _hooks_portable_root does: a custom cache → literal paths.
 echo '{"permissions": {}, "hooks": {}, "mcpServers": {}}' > "$TMPDIR_HOME/proj/.claude/settings.json"
