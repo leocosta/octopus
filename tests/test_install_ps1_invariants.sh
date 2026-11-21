@@ -250,6 +250,30 @@ t_windows_tar() {
 }
 check "extracts with System32\\tar.exe, never the first tar on PATH (MSYS GNU tar)" t_windows_tar
 
+# 15. The resolved version becomes a cache path that is later removed with
+#     Remove-Item -Recurse. A mirror (OCTOPUS_API_ENDPOINT, possibly http://)
+#     or -Version could otherwise answer `..\..\Documents` and get that folder
+#     deleted. It must match the same tag-or-SHA shape bin/octopus enforces on
+#     the lockfile, and be checked before $DestDir is built.
+t_version_validated() {
+  local check dest
+  check="$(grep -nF "'^v?[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?\$'" "$PS1" | head -1 | cut -d: -f1)"
+  dest="$(grep -nE '^\$DestDir +=' "$PS1" | head -1 | cut -d: -f1)"
+  [[ -n "$check" && -n "$dest" && "$check" -lt "$dest" ]] && grep -qF "'^[0-9a-f]{7,40}\$'" "$PS1"
+}
+check "version (-Version or mirror tag_name) is validated before it becomes a path" t_version_validated
+
+t_api_http_warns() { ps_fn "$PS1" Get-LatestVersion | grep -qE -- "-like 'http://\*'"; }
+check "warns when OCTOPUS_API_ENDPOINT is plain http://" t_api_http_warns
+
+# 16. Under `irm | iex` from inside a caller's script, no exit is taken — so a
+#     failed install must THROW once, or automation carries on after it.
+t_iex_failure_throws() { grep -qE '^if \(\$OctopusInstallCode -ne 0\) \{' "$PS1" && grep -qE '^ *throw "Octopus install failed' "$PS1"; }
+check "irm | iex inside a script: a failed install throws instead of passing silently" t_iex_failure_throws
+
+t_catch_position() { grep -qF '$_.InvocationInfo.PositionMessage' "$PS1"; }
+check "unexpected errors report where they happened" t_catch_position
+
 # 10. Never suggest `setx PATH "%PATH%;…"` (copies the machine PATH, truncates at 1024).
 t_no_setx() { ! grep -vE '^[[:space:]]*#' "$PS1" | grep -qE 'setx[[:space:]]+PATH'; }
 check "does not suggest the truncating 'setx PATH' recipe" t_no_setx

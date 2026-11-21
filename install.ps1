@@ -30,6 +30,9 @@ try {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+# The marker string has two jobs: it is the sentinel the outer catch recognises
+# as an orderly stop, and the text the exit guard at the end searches the running
+# file for to know it IS this installer. Rename it in all three places or neither.
 function Stop-Install ([int]$Code = 1) {
     $OctopusInstall.ExitCode = $Code
     throw "OCTOPUS_INSTALL_STOP"
@@ -269,6 +272,9 @@ function Test-Signature {
 # at a mirror (http(s), file:// or a path) instead of api.github.com.
 function Get-LatestVersion {
     $api = if ($env:OCTOPUS_API_ENDPOINT) { $env:OCTOPUS_API_ENDPOINT } else { "$GitHubApi/releases/latest" }
+    if ($api -like 'http://*') {
+        Write-Warn "OCTOPUS_API_ENDPOINT is plain http:// - the version lookup is not protected by TLS."
+    }
     $tmp = [System.IO.Path]::GetTempFileName()
     try {
         Get-RemoteFile -Url $api -Dest $tmp | Out-Null
@@ -284,6 +290,15 @@ function Get-LatestVersion {
 if (-not $Version) {
     Write-Info "Resolving latest version..."
     $Version = Get-LatestVersion
+}
+
+# $Version becomes $CacheDir\<version> (later removed with Remove-Item -Recurse)
+# and part of the download URL. Accept only the tag-or-SHA shape bin/octopus
+# enforces on the lockfile, so a mirror's tag_name or -Version cannot point the
+# install outside the cache (`..\..\Documents`).
+if ($Version -notmatch '^v?[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$' -and $Version -notmatch '^[0-9a-f]{7,40}$') {
+    Write-Err "Refusing malformed version '$Version' (expected a release tag such as v1.2.3)."
+    Stop-Install 1
 }
 
 Write-Success "Installing Octopus $Version"
@@ -492,6 +507,7 @@ Write-Host ""
 } catch {
     if ("$_" -ne "OCTOPUS_INSTALL_STOP") {
         Write-Host "x  $_" -ForegroundColor Red
+        Write-Host $_.InvocationInfo.PositionMessage -ForegroundColor DarkGray
         $OctopusInstall.ExitCode = 1
     }
 }
@@ -501,4 +517,12 @@ Write-Host ""
 # running file must be this installer (it carries the stop marker).
 if ($PSCommandPath -and (Select-String -LiteralPath $PSCommandPath -SimpleMatch 'OCTOPUS_INSTALL_STOP' -Quiet)) { exit $OctopusInstall.ExitCode }
 $global:LASTEXITCODE = $OctopusInstall.ExitCode
+$OctopusInstallCode = $OctopusInstall.ExitCode
 Remove-Variable OctopusInstall -ErrorAction SilentlyContinue
+# No exit was taken (irm | iex). A failure must still stop a caller's script, so
+# throw once: at an interactive prompt that is a red error and the window stays.
+if ($OctopusInstallCode -ne 0) {
+    Remove-Variable OctopusInstallCode -ErrorAction SilentlyContinue
+    throw "Octopus install failed (exit code $global:LASTEXITCODE)."
+}
+Remove-Variable OctopusInstallCode -ErrorAction SilentlyContinue
