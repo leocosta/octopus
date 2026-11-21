@@ -257,18 +257,31 @@ check "extracts with System32\\tar.exe, never the first tar on PATH (MSYS GNU ta
 #     the lockfile, and be checked before $DestDir is built.
 t_version_validated() {
   local check dest
-  check="$(grep -nF "'^v?[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?\$'" "$PS1" | head -1 | cut -d: -f1)"
+  check="$(grep -nF -- "-cnotmatch '^v?[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]*[0-9A-Za-z])?\z'" "$PS1" | head -1 | cut -d: -f1)"
   dest="$(grep -nE '^\$DestDir +=' "$PS1" | head -1 | cut -d: -f1)"
-  [[ -n "$check" && -n "$dest" && "$check" -lt "$dest" ]] && grep -qF "'^[0-9a-f]{7,40}\$'" "$PS1"
+  [[ -n "$check" && -n "$dest" && "$check" -lt "$dest" ]] && grep -qF -- "-cnotmatch '^[0-9a-f]{7,40}\z'" "$PS1"
 }
 check "version (-Version or mirror tag_name) is validated before it becomes a path" t_version_validated
+
+t_tag_name_string() { ps_fn "$PS1" Get-LatestVersion | grep -qF 'return [string]('; }
+check "mirror tag_name is coerced to a single string" t_tag_name_string
+
+t_refusal_strips_controls() { grep -qF "\$Version -replace '[\x00-\x1f\x7f]'" "$PS1"; }
+check "a refused version is echoed without control characters" t_refusal_strips_controls
 
 t_api_http_warns() { ps_fn "$PS1" Get-LatestVersion | grep -qE -- "-like 'http://\*'"; }
 check "warns when OCTOPUS_API_ENDPOINT is plain http://" t_api_http_warns
 
 # 16. Under `irm | iex` from inside a caller's script, no exit is taken — so a
 #     failed install must THROW once, or automation carries on after it.
-t_iex_failure_throws() { grep -qE '^if \(\$OctopusInstallCode -ne 0\) \{' "$PS1" && grep -qE '^ *throw "Octopus install failed' "$PS1"; }
+# The throw must come AFTER the exit guard, or file runs (.\install.ps1, CI)
+# would throw instead of exiting with the code.
+t_iex_failure_throws() {
+  local ex th
+  ex="$(grep -nE '\{ exit \$OctopusInstall\.ExitCode \}' "$PS1" | head -1 | cut -d: -f1)"
+  th="$(grep -nE '^ *throw "Octopus install failed' "$PS1" | head -1 | cut -d: -f1)"
+  grep -qE '^if \(\$OctopusInstallCode -ne 0\) \{' "$PS1" && [[ -n "$ex" && -n "$th" && "$th" -gt "$ex" ]]
+}
 check "irm | iex inside a script: a failed install throws instead of passing silently" t_iex_failure_throws
 
 t_catch_position() { grep -qF '$_.InvocationInfo.PositionMessage' "$PS1"; }
