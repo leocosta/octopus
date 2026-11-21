@@ -595,6 +595,33 @@ cmd="$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(next(h
 rc=$?
 [[ $rc -ne 126 && $rc -ne 127 ]] || { echo "FAIL: hook command did not execute through the shell (rc=$rc): $cmd"; exit 1; }
 echo "PASS: default cache → \$HOME-relative, idempotent, user hooks kept, executable"
+
+# Only Claude Code is known to run hook commands through a shell, which is what
+# expands "$HOME". Other settings_json agents (OpenCode) keep literal paths.
+mkdir -p "$TMPDIR_HOME/proj/.opencode"
+echo '{"permissions": {}, "hooks": {}, "mcpServers": {}}' > "$TMPDIR_HOME/proj/.opencode/settings.json"
+MANIFEST_DELIVERY_HOOKS_TARGET=".opencode/settings.json"
+export HOME="$TMPDIR_HOME/home"
+deliver_hooks "opencode" >/dev/null
+export HOME="$SAVED_HOME"
+MANIFEST_DELIVERY_HOOKS_TARGET=".claude/settings.json"
+if grep -qF '$HOME/' "$TMPDIR_HOME/proj/.opencode/settings.json"; then
+  echo "FAIL: OpenCode hooks were written \$HOME-relative (its runner may not use a shell)"; exit 1
+fi
+grep -qF "$TMPDIR_HOME/home/.octopus-cli/current/hooks/" "$TMPDIR_HOME/proj/.opencode/settings.json" \
+  || { echo "FAIL: OpenCode hooks lost their literal 'current' path"; exit 1; }
+echo "PASS: non-Claude agents keep literal hook paths"
+
+# The legacy OCTOPUS_CACHE_ROOT override is honoured exactly like
+# cli/lib/hooks.sh's _hooks_portable_root does: a custom cache → literal paths.
+echo '{"permissions": {}, "hooks": {}, "mcpServers": {}}' > "$TMPDIR_HOME/proj/.claude/settings.json"
+export HOME="$TMPDIR_HOME/home"
+OCTOPUS_CACHE_ROOT="$TMPDIR_HOME/elsewhere" deliver_hooks "claude" >/dev/null
+export HOME="$SAVED_HOME"
+if grep -qF '$HOME/' "$TMPDIR_HOME/proj/.claude/settings.json"; then
+  echo "FAIL: OCTOPUS_CACHE_ROOT set, yet hooks were written \$HOME-relative (git hooks would be literal)"; exit 1
+fi
+echo "PASS: same portability rule as the git-hook wrappers"
 rm -rf "$TMPDIR_HOME"
 
 echo ""

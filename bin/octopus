@@ -65,8 +65,17 @@ find_lockfile() {
 }
 
 read_lock_version() {
-  local lockfile="$1"
-  grep -E '^version:' "$lockfile" 2>/dev/null | awk '{print $2}' | head -n1
+  local lockfile="$1" version
+  version="$(grep -E '^version:' "$lockfile" 2>/dev/null | awk '{print $2}' | head -n1 || true)"
+  [[ -n "$version" ]] || return 0
+  # The lockfile is committed by the repo, and its version becomes
+  # $CACHE_DIR/<version> and an installer argument: accept a tag (v1.2.3,
+  # 1.2.3-rc.1) or a dev commit SHA, nothing that could leave the cache.
+  if [[ ! "$version" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$ && ! "$version" =~ ^[0-9a-f]{7,40}$ ]]; then
+    echo "  ⚠ ignoring malformed version '$version' in $lockfile" >&2
+    return 0
+  fi
+  echo "$version"
 }
 
 read_metadata_field() {
@@ -128,12 +137,13 @@ _download_release_via_installer() {
   local version="$1"
   local installer
   local installer_tmp=""
-  # Always prefer a fresh copy from the target release's install.sh so
-  # updates pick up installer improvements (e.g. banner removal) immediately.
+  # Normally fetch main's install.sh, so updates pick up installer fixes
+  # immediately; fall back to the RUNNING release's copy when offline.
   local url="https://raw.githubusercontent.com/$RELEASE_OWNER/$RELEASE_REPO/main/install.sh"
   if [[ -n "${OCTOPUS_INSTALL_ENDPOINT:-}" && -f "$RELEASE_ROOT/install.sh" ]]; then
     # A mirror/offline endpoint is a contract not to reach GitHub: use the
-    # installer shipped with this release, not main's copy.
+    # installer of the RUNNING release (already verified when it was installed)
+    # — not the target's, which is not downloaded yet, and not main's.
     installer="$RELEASE_ROOT/install.sh"
   elif installer_tmp="$(mktemp)" && curl -fsSL "$url" -o "$installer_tmp" 2>/dev/null; then
     installer="$installer_tmp"
@@ -217,20 +227,26 @@ _win_path_of() {
   fi
 }
 
-# Replace <link> with a junction to <target>. An existing junction/symlink is
-# removed with Directory.Delete, which drops the link and never the tree behind
-# it; a REAL directory there is a copy an older `ln -s` left — safe to delete.
+# Replace <link> with a junction to <target>. The paths reach PowerShell through
+# the environment, never through the command text: nothing to quote, so no path
+# (or lockfile-supplied version) can close a string and inject code — PowerShell
+# also ends '…' on U+2018–U+201B, which escaping ASCII ' alone does not cover.
+# WSLENV forwards them when the caller is WSL. An existing link is removed with
+# Directory.Delete($l), which drops the link, never the tree behind it; a REAL
+# directory there is a copy an older `ln -s` left, removed with
+# Directory.Delete($l, $true), which unlinks nested reparse points instead of
+# following them (Remove-Item -Recurse follows them on Windows PowerShell 5.1).
 _relink_junction() {
-  local link="$1" target="$2" wl wt
-  wl="$(_win_path_of "$link")" && wt="$(_win_path_of "$target")" || return 1
-  wl="${wl//\'/\'\'}"
-  wt="${wt//\'/\'\'}"
-  MSYS2_ARG_CONV_EXCL='*' powershell.exe -NoProfile -NonInteractive -Command "
-\$ErrorActionPreference = 'Stop'
-\$l = '$wl'; \$t = '$wt'
-\$i = Get-Item -LiteralPath \$l -Force -ErrorAction SilentlyContinue
-if (\$i) { if (\$i.LinkType) { [IO.Directory]::Delete(\$l) } else { Remove-Item -LiteralPath \$l -Recurse -Force } }
-New-Item -ItemType Junction -Path \$l -Target \$t | Out-Null" >/dev/null
+  local wl wt
+  wl="$(_win_path_of "$1")" && wt="$(_win_path_of "$2")" || return 1
+  OCTOPUS_JUNCTION_LINK="$wl" OCTOPUS_JUNCTION_TARGET="$wt" \
+    WSLENV="${WSLENV:+$WSLENV:}OCTOPUS_JUNCTION_LINK:OCTOPUS_JUNCTION_TARGET" \
+    MSYS2_ARG_CONV_EXCL='*' powershell.exe -NoProfile -NonInteractive -Command '
+$ErrorActionPreference = "Stop"
+$l = $env:OCTOPUS_JUNCTION_LINK; $t = $env:OCTOPUS_JUNCTION_TARGET
+$i = Get-Item -LiteralPath $l -Force -ErrorAction SilentlyContinue
+if ($i) { if ($i.LinkType) { [IO.Directory]::Delete($l) } else { [IO.Directory]::Delete($l, $true) } }
+New-Item -ItemType Junction -Path $l -Target $t | Out-Null' >/dev/null
 }
 
 # The shared epilogue of every successful install_release branch. The defect

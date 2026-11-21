@@ -33,7 +33,8 @@ fakes() {
   printf '#!/bin/sh\necho %s\n' "$1" > "$d/uname"
   # cygpath -w <p> -> C:\fake<p> (printf %s: sh's echo would eat the backslash)
   printf '#!/bin/sh\nprintf "%%s\\n" "C:\\\\fake$2"\n' > "$d/cygpath"
-  printf '#!/bin/sh\nprintf "%%s\\n" "$@" > "%s/ps.log"\n' "$tmp" > "$d/powershell.exe"
+  # Records its argv, then the environment it was handed (paths travel there).
+  printf '#!/bin/sh\nprintf "%%s\\n" "$@" > "%s/ps.log"\nenv | grep -E "^(OCTOPUS_JUNCTION_|WSLENV=)" > "%s/ps.env"\n' "$tmp" "$tmp" > "$d/powershell.exe"
   chmod +x "$d"/*
   echo "$d"
 }
@@ -59,19 +60,28 @@ check "macOS keeps ln -s" t_darwin
 check "WSL on a /mnt/<drive> cache uses a junction" t_wsl_mnt
 check "WSL without Windows interop keeps ln -s" t_wsl_mnt_no_interop
 
-# 3. The PowerShell it runs: removes a link non-recursively, makes a junction.
+# 3. The PowerShell it runs: removes a link non-recursively, makes a junction,
+#    and receives the paths through the environment — never in the command text.
 d="$(fakes MINGW64_NT-10.0)"
-PATH="$d:$PATH" bash -c "source '$tmp/helpers.sh'; _relink_junction /c/Users/o\\'brien/.octopus-cli/current /c/Users/o\\'brien/.octopus-cli/cache/v2"
+PATH="$d:$PATH" bash -c "source '$tmp/helpers.sh'; _relink_junction \"/c/Users/o'brien’x/.octopus-cli/current\" /c/Users/o\\'brien/.octopus-cli/cache/v2"
 ps="$(cat "$tmp/ps.log" 2>/dev/null)"
+psenv="$(cat "$tmp/ps.env" 2>/dev/null)"
 t_junction()   { grep -qF 'New-Item -ItemType Junction' <<<"$ps"; }
 t_link_safe()  { grep -qF '[IO.Directory]::Delete($l)' <<<"$ps"; }
-t_copy_heal()  { grep -qE 'else \{ Remove-Item -LiteralPath \$l -Recurse' <<<"$ps"; }
-t_paths()      { grep -qF "\$l = 'C:\\fake/c/Users/o''brien/.octopus-cli/current'" <<<"$ps"; }
+t_copy_heal()  { grep -qF 'else { [IO.Directory]::Delete($l, $true) }' <<<"$ps" && ! grep -qF 'Remove-Item' <<<"$ps"; }
+t_no_path_in_command() { ! grep -qF 'C:\fake' <<<"$ps"; }
+t_paths_in_env() {
+  grep -qxF "OCTOPUS_JUNCTION_LINK=C:\\fake/c/Users/o'brien’x/.octopus-cli/current" <<<"$psenv" \
+    && grep -qxF "OCTOPUS_JUNCTION_TARGET=C:\\fake/c/Users/o'brien/.octopus-cli/cache/v2" <<<"$psenv"
+}
+t_wslenv()     { grep -qE '^WSLENV=.*OCTOPUS_JUNCTION_LINK:OCTOPUS_JUNCTION_TARGET' <<<"$psenv"; }
 t_noninteractive() { grep -qx -- '-NonInteractive' <<<"$ps"; }
 check "creates an NTFS junction" t_junction
 check "drops an existing link with Directory.Delete (never recurses into the release)" t_link_safe
-check "only recurses into a real directory (a stale copy from ln -s)" t_copy_heal
-check "passes Windows paths, single quotes escaped" t_paths
+check "heals a stale copy with Directory.Delete(\$l, \$true), never Remove-Item -Recurse" t_copy_heal
+check "no path is interpolated into the PowerShell command text" t_no_path_in_command
+check "paths reach PowerShell verbatim through the environment (quotes, U+2019)" t_paths_in_env
+check "WSLENV forwards the paths when the caller is WSL" t_wslenv
 check "runs PowerShell non-interactively" t_noninteractive
 
 # 4. No `ln -s` reaches `current` on the Windows path of either file.

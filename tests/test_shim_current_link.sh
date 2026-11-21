@@ -172,6 +172,25 @@ OCTOPUS_CLI_CACHE_ROOT="$cache_g" OCTOPUS_INSTALL_ENDPOINT="file:///nowhere" \
 check "the release's install.sh ran" "local-installer v2.0.0" "$(cat "$cache_g/installer.log" 2>/dev/null)"
 
 echo ""
+echo "Test: a malformed version in the repo's lockfile is ignored, not used as a path"
+# .octopus/cli-lock.yaml is committed by the repo; its version becomes
+# $CACHE_DIR/<version> and reaches the installer. Only a tag (or dev SHA) shape
+# is accepted, which also closes ../ traversal out of the cache.
+cache_h="$tmp/cache-h"; proj_h="$tmp/proj-h"
+mkdir -p "$proj_h/.octopus"
+git -C "$proj_h" init -q
+printf 'version: ../../../etc\nchecksum: x\n' > "$proj_h/.octopus/cli-lock.yaml"
+OCTOPUS_CLI_CACHE_ROOT="$cache_h" bash "$checkout/bin/octopus" install --version v9.9.9 >/dev/null 2>&1
+out_h="$(cd "$proj_h" && OCTOPUS_CLI_CACHE_ROOT="$cache_h" bash "$checkout/bin/octopus" --version 2>&1)"
+check "the malformed pin is not used" "octopus v9.9.9" "$(tail -1 <<<"$out_h")"
+# `--version` hides stderr by design; `doctor` surfaces the warning.
+doctor_h="$(cd "$proj_h" && OCTOPUS_CLI_CACHE_ROOT="$cache_h" bash "$checkout/bin/octopus" doctor 2>&1)"
+check "the user is told why" "yes" "$(grep -q "ignoring malformed version" <<<"$doctor_h" && echo yes || echo no)"
+printf 'version: v9.9.9\nchecksum: x\n' > "$proj_h/.octopus/cli-lock.yaml"
+check "a well-formed pin is still honoured" "octopus v9.9.9" \
+  "$(cd "$proj_h" && OCTOPUS_CLI_CACHE_ROOT="$cache_h" bash "$checkout/bin/octopus" --version 2>/dev/null)"
+
+echo ""
 if [[ "$fail" -gt 0 ]]; then
   echo "FAILED: $fail test(s), $pass passed"
   exit 1

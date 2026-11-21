@@ -3,7 +3,7 @@ title: Instalação
 description: Instale o Octopus no macOS, Linux ou Windows com um único comando. Atualize com o mesmo comando. Desinstale removendo dois diretórios.
 sidebar:
   order: 2
-source_hash: "sha256:353897594040fe8eb109b6fd46dc8d291c6bcba9d576902daf45cb04b575e14f"
+source_hash: "sha256:7e74b857dd88eac2a9a51c269c2bb4d839a4fe817dc2ca3d9957d919cc87858b"
 needs_retranslation: false
 ---
 
@@ -40,7 +40,7 @@ Os dois installers fazem as mesmas quatro coisas:
 - **Git for Windows** ([git-scm.com](https://git-scm.com/download/win)) **mais Python 3** do [python.org](https://www.python.org/downloads/) (marque *Add python.exe to PATH*). Num Windows padrão, `python3` é o atalho da Microsoft Store, não o Python — o Octopus detecta isso e usa `python` / `py -3`, mas um deles precisa existir.
 - **WSL com uma distribuição** registrada (`wsl --install`) — usa o Python da própria distribuição.
 
-Usar os dois no mesmo repositório é suportado: os caminhos dos hooks são gravados como `$HOME/.octopus-cli/current/…`, então Git Bash e WSL rodam cada um a sua própria instalação. Instale o Octopus em cada ambiente que você usa.
+Usar os dois no mesmo repositório é suportado: os caminhos dos hooks do Claude Code e do git são gravados como `$HOME/.octopus-cli/current/…`, então Git Bash e WSL rodam cada um a sua própria instalação. Instale o Octopus em cada ambiente que você usa. Como o `$HOME` é resolvido quando o hook roda, um agente iniciado com outro home (`sudo`, um container) precisa do Octopus instalado lá também — o `octopus doctor` aponta caminhos de hook que não resolvem.
 
 Quando o installer terminar, rode `octopus --version` para confirmar. Se o comando não for encontrado, é provável que seu `~/.local/bin/` não esteja no `PATH` — adicione-o ao arquivo rc do seu shell e recarregue.
 

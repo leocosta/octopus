@@ -47,9 +47,12 @@ Both installers do the same four things:
 - **WSL with a distribution** registered (`wsl --install`) — the
   distribution's own Python is used.
 
-Using both on the same repository is supported: hook paths are written
-as `$HOME/.octopus-cli/current/…`, so Git Bash and WSL each run their
-own install. Install Octopus in each environment you use.
+Using both on the same repository is supported: Claude Code and git
+hook paths are written as `$HOME/.octopus-cli/current/…`, so Git Bash
+and WSL each run their own install. Install Octopus in each environment
+you use. Because `$HOME` is resolved when a hook runs, an agent started
+under a different home (`sudo`, a container) needs Octopus installed
+there too — `octopus doctor` flags hook paths that do not resolve.
 
 After the installer finishes, run `octopus --version` to confirm.
 If the command isn't found, your `~/.local/bin/` is probably not

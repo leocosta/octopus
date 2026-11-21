@@ -1473,9 +1473,11 @@ deliver_hooks() {
 
     local cli_cache_root="${OCTOPUS_CLI_CACHE_ROOT:-$HOME/.octopus-cli}"
 
-    # Prints how the hook paths were written: "portable" or "literal".
+    # Prints how the hook paths were written: "portable" or "literal". Only
+    # Claude Code is known to run hook commands through a shell (which is what
+    # expands "$HOME"), so other agents keep literal paths.
     local hook_paths
-    hook_paths="$(python3 - "$settings_file" "$hooks_template" "${OCTOPUS_DISABLED_HOOKS:-}" "$OCTOPUS_DIR" "${OCTOPUS_RULES[*]:-}" "$local_hooks_arg" "$cli_cache_root" << 'PYEOF'
+    hook_paths="$(OCTOPUS_HOOKS_VIA_SHELL="$([[ "$agent" == claude ]] && echo 1)" python3 - "$settings_file" "$hooks_template" "${OCTOPUS_DISABLED_HOOKS:-}" "$OCTOPUS_DIR" "${OCTOPUS_RULES[*]:-}" "$local_hooks_arg" "$cli_cache_root" << 'PYEOF'
 import json, os, sys
 
 settings_path, hooks_path, disabled, install_root, active_stacks_str, local_hooks_path, cli_cache_root = sys.argv[1:8]
@@ -1581,9 +1583,16 @@ hook_root = _resolve_hook_root()
 # setup — reproduced on Windows: a setup run from WSL wrote /home/<u>/... and
 # all 18 hooks failed (exit 127) for native Claude Code on the same project.
 # Quoted, because Windows home directories routinely contain spaces. Same rule
-# as cli/lib/hooks.sh's _hooks_portable_root, which writes the git hooks.
+# as cli/lib/hooks.sh's _hooks_portable_root (git hooks): default cache only —
+# neither cache-root override set — and only for an agent that runs hooks
+# through a shell.
 HOME_ROOT = '"$HOME/.octopus-cli/current'
-portable = not os.environ.get("OCTOPUS_CLI_CACHE_ROOT") and hook_root == os.path.join(cli_cache_root, "current")
+portable = (
+    os.environ.get("OCTOPUS_HOOKS_VIA_SHELL") == "1"
+    and not os.environ.get("OCTOPUS_CLI_CACHE_ROOT")
+    and not os.environ.get("OCTOPUS_CACHE_ROOT")
+    and hook_root == os.path.join(cli_cache_root, "current")
+)
 
 for event_type, entries in hooks.items():
     for entry in entries:

@@ -466,20 +466,26 @@ _win_path_of() {
   fi
 }
 
-# Replace <link> with a junction to <target>. An existing junction/symlink is
-# removed with Directory.Delete, which drops the link and never the tree behind
-# it; a REAL directory there is a copy an older `ln -s` left — safe to delete.
+# Replace <link> with a junction to <target>. The paths reach PowerShell through
+# the environment, never through the command text: nothing to quote, so no path
+# (or lockfile-supplied version) can close a string and inject code — PowerShell
+# also ends '…' on U+2018–U+201B, which escaping ASCII ' alone does not cover.
+# WSLENV forwards them when the caller is WSL. An existing link is removed with
+# Directory.Delete($l), which drops the link, never the tree behind it; a REAL
+# directory there is a copy an older `ln -s` left, removed with
+# Directory.Delete($l, $true), which unlinks nested reparse points instead of
+# following them (Remove-Item -Recurse follows them on Windows PowerShell 5.1).
 _relink_junction() {
-  local link="$1" target="$2" wl wt
-  wl="$(_win_path_of "$link")" && wt="$(_win_path_of "$target")" || return 1
-  wl="${wl//\'/\'\'}"
-  wt="${wt//\'/\'\'}"
-  MSYS2_ARG_CONV_EXCL='*' powershell.exe -NoProfile -NonInteractive -Command "
-\$ErrorActionPreference = 'Stop'
-\$l = '$wl'; \$t = '$wt'
-\$i = Get-Item -LiteralPath \$l -Force -ErrorAction SilentlyContinue
-if (\$i) { if (\$i.LinkType) { [IO.Directory]::Delete(\$l) } else { Remove-Item -LiteralPath \$l -Recurse -Force } }
-New-Item -ItemType Junction -Path \$l -Target \$t | Out-Null" >/dev/null
+  local wl wt
+  wl="$(_win_path_of "$1")" && wt="$(_win_path_of "$2")" || return 1
+  OCTOPUS_JUNCTION_LINK="$wl" OCTOPUS_JUNCTION_TARGET="$wt" \
+    WSLENV="${WSLENV:+$WSLENV:}OCTOPUS_JUNCTION_LINK:OCTOPUS_JUNCTION_TARGET" \
+    MSYS2_ARG_CONV_EXCL='*' powershell.exe -NoProfile -NonInteractive -Command '
+$ErrorActionPreference = "Stop"
+$l = $env:OCTOPUS_JUNCTION_LINK; $t = $env:OCTOPUS_JUNCTION_TARGET
+$i = Get-Item -LiteralPath $l -Force -ErrorAction SilentlyContinue
+if ($i) { if ($i.LinkType) { [IO.Directory]::Delete($l) } else { [IO.Directory]::Delete($l, $true) } }
+New-Item -ItemType Junction -Path $l -Target $t | Out-Null' >/dev/null
 }
 
 # Update the "current" symlink (a junction on Windows — see above).

@@ -32,13 +32,14 @@ make_bin() {
   chmod +x "$1/$2"
 }
 
-# run_with <bindir> <snippet>: source the lib under a PATH holding only <bindir>
-# plus the bare tools bash needs, then run <snippet>.
+# run_with <bindir> <snippet> [ostype]: source the lib under a PATH holding only
+# <bindir> plus the bare tools bash needs, then run <snippet>. The resolver only
+# acts under Git Bash/MSYS/Cygwin, so OSTYPE defaults to msys here.
 run_with() {
   local tools="$tmp/tools"
   mkdir -p "$tools"
   for t in sh cat env bash; do ln -sf "$(command -v $t)" "$tools/$t"; done
-  PATH="$1:$tools" "$BASH_BIN" -c "source '$LIB'; $2" 2>&1
+  PATH="$1:$tools" "$BASH_BIN" -c "OSTYPE=${3:-msys}; source '$LIB'; $2" 2>&1
 }
 
 # 1. Store alias as python3, real `python` present → python3 must work.
@@ -90,6 +91,35 @@ mkdir -p "$tmp/e"
 printf '#!/bin/sh\ntouch "%s/spawned"\nexec "%s" "$@"\n' "$tmp" "$REAL_PY" > "$tmp/e/python3"
 t_no_spawn() { rm -f "$tmp/spawned"; run_with "$tmp/e" 'true' >/dev/null; [[ ! -e "$tmp/spawned" ]]; }
 check "sourcing the resolver spawns no interpreter" t_no_spawn
+
+# 8. Off Windows the resolver is inert — and must survive bash 3.2 (stock macOS).
+#    bash < 4 has no BASH_CMDS; under `set -u` (bin/octopus, cli/octopus.sh) a
+#    lookup into it aborted EVERY octopus command with "python3: unbound
+#    variable". Unsetting BASH_CMDS in bash 5 reproduces exactly that.
+make_bin "$tmp/f" python3 real
+t_bash32_safe() {
+  [[ "$(PATH="$tmp/f:$PATH" "$BASH_BIN" -c "OSTYPE=darwin21; set -u; unset BASH_CMDS; source '$LIB'; echo survived" 2>&1)" == "survived" ]]
+}
+check "off Windows, sourcing under set -u without BASH_CMDS (bash 3.2) survives" t_bash32_safe
+t_inert_off_windows() {
+  make_bin "$tmp/g/WindowsApps" python3 stub; make_bin "$tmp/g/bin" python real
+  [[ "$(run_with "$tmp/g/WindowsApps:$tmp/g/bin" 'type -t python3' linux-gnu)" == "file" ]]
+}
+check "off Windows nothing is shadowed (Linux/macOS behaviour unchanged)" t_inert_off_windows
+
+# 8b. The real call chain: cli/octopus.sh resolves and exports python3, then
+#     setup.sh (a child, under set -u) sources the lib AGAIN with the function
+#     inherited. Caught only by the Windows E2E: `hash` of a name that is a
+#     function succeeds without a BASH_CMDS entry → "unbound variable".
+t_resource_in_child() {
+  [[ "$(run_with "$A" "export OSTYPE; bash -c 'set -u; source \"$LIB\"; python3 -c \"print(5)\"'")" == "5" ]]
+}
+check "a child re-sourcing under set -u with python3 inherited keeps working" t_resource_in_child
+
+# 9. A child that inherits a flag but not the function must still resolve:
+#    there is no cross-process "already resolved" flag to trust.
+t_no_resolved_flag() { ! grep -qE '^[^#]*OCTOPUS_PYTHON_RESOLVED' "$LIB"; }
+check "no exported 'resolved' flag can skip resolution in a child" t_no_resolved_flag
 
 # 7. Every shipped hook that calls python3 loads the resolver first.
 t_hooks_source_lib() {
