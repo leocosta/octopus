@@ -7,7 +7,8 @@ source "${BASH_SOURCE[0]%/*}/../../cli/lib/python.sh" 2>/dev/null || true
 set -euo pipefail
 
 input=$(cat)
-command=$(echo "$input" | python3 -c "import sys,json; print(json.load(sys.stdin).get('command',''))" 2>/dev/null || echo "")
+# Claude Code sends the Bash command as tool_input.command (#245).
+command=$(printf '%s' "$input" | python3 -c "import sys,json; print((json.load(sys.stdin).get('tool_input') or {}).get('command',''))" 2>/dev/null || echo "")
 
 # Only trigger on git commit
 [[ "$command" != *"git commit"* ]] && exit 0

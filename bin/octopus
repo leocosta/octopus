@@ -614,10 +614,10 @@ command_update() {
   echo "Updating to Octopus $version..."
   install_release "$version"
   sync_shim "$version"
-  local checksum
-  checksum="$(compute_release_checksum "$RELEASE_ROOT")"
   if [[ "$pin" == true ]]; then
-    pin_lockfile "$version" "$checksum"
+    # Hash the release just INSTALLED, not $RELEASE_ROOT — that is the release
+    # running this update (the previous one, or the `current` link) (#246).
+    pin_lockfile "$version" "$(compute_release_checksum "$(release_dir_for "$version")")"
   fi
   local project_root
   project_root="$(find_project_root)"
