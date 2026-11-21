@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+source "${BASH_SOURCE[0]%/*}/../../cli/lib/python.sh" 2>/dev/null || true
 # Auto-format files after Write/Edit based on file extension.
 #
 # Failures are reported to stderr but never fail the hook, so a broken

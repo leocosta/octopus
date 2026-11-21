@@ -17,8 +17,26 @@ param(
     [switch]$Uninstall
 )
 
+# `irm … | iex` — the README command — runs this script INSIDE the caller's
+# session. A bare `exit` there closes their PowerShell window before they can
+# read the error, and script-level StrictMode / ErrorActionPreference would
+# stay set in their shell afterwards. So the whole installer runs in a child
+# scope (`& { … }`, body deliberately not indented), failures throw through
+# Stop-Install, and the only `exit` is at the very end, taken only when this
+# runs as a file (.\install.ps1, CI) so the exit code is still reported.
+$OctopusInstall = @{ ExitCode = 0 }
+try {
+& {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+
+# The marker string has two jobs: it is the sentinel the outer catch recognises
+# as an orderly stop, and the text the exit guard at the end searches the running
+# file for to know it IS this installer. Rename it in all three places or neither.
+function Stop-Install ([int]$Code = 1) {
+    $OctopusInstall.ExitCode = $Code
+    throw "OCTOPUS_INSTALL_STOP"
+}
 
 # Windows PowerShell 5.1 still defaults SecurityProtocol to TLS 1.0/1.1, but
 # api.github.com and github.com require TLS 1.2+. Without this the very first
@@ -61,34 +79,73 @@ if ($Uninstall) {
     $shims = @(
         Join-Path $BinDir "octopus.ps1"
         Join-Path $BinDir "octopus.cmd"
+        Join-Path $BinDir "octopus"
     )
     foreach ($s in $shims) { if (Test-Path $s) { Remove-Item $s -Force } }
     if (Test-Path $CacheRoot) { Remove-Item $CacheRoot -Recurse -Force }
     Write-Success "Octopus CLI removed."
-    exit 0
+    Stop-Install 0
 }
 
 # ── Prerequisites ──────────────────────────────────────────────────────────────
 
+# `wsl.exe` ships with every Windows 10/11 even when WSL is not installed — it
+# then only prints "The Windows Subsystem for Linux is not installed". WSL is a
+# usable executor only once a distribution is registered.
+function Test-WslDistro {
+    if (-not (Get-Command wsl.exe -ErrorAction SilentlyContinue)) { return $false }
+    # Registered distributions are the subkeys of Lxss. Reading the registry
+    # spawns nothing — `wsl.exe --list` can take seconds on a cold WSL service,
+    # and the shim runs this on every command.
+    $lxss = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Lxss"
+    return [bool](Get-ChildItem $lxss -ErrorAction SilentlyContinue | Where-Object { $_.GetValue("DistributionName") })
+}
+
+# Keep in sync with Find-Bash in bin/octopus.ps1.
 function Find-BashExecutable {
-    $bashOnPath = Get-Command bash -ErrorAction SilentlyContinue
-    $candidates = @(
+    $gitBash = @(
         "C:\Program Files\Git\bin\bash.exe",
         "C:\Program Files (x86)\Git\bin\bash.exe",
-        $(if ($bashOnPath) { $bashOnPath.Source } else { $null })
+        (Join-Path $env:LOCALAPPDATA "Programs\Git\bin\bash.exe")
     )
-    foreach ($c in $candidates) {
-        if ($c -and (Test-Path $c)) { return $c }
+    foreach ($c in $gitBash) { if ($c -and (Test-Path $c)) { return $c } }
+    # A bash.exe on PATH — except C:\Windows\System32\bash.exe and the
+    # WindowsApps alias: those are WSL launchers, not Git Bash.
+    foreach ($b in @(Get-Command bash.exe -All -ErrorAction SilentlyContinue)) {
+        $src = $b.Source
+        if ($src -like "$env:SystemRoot\*" -or $src -like "*\WindowsApps\*") { continue }
+        return $src
     }
-    if (Get-Command wsl -ErrorAction SilentlyContinue) { return "wsl" }
+    if (Test-WslDistro) { return "wsl" }
     return $null
+}
+
+# setup and the hooks run on Python 3. `python3` is usually the Microsoft Store
+# alias (…\WindowsApps\python3.exe, exits 9009) and python.org only ships
+# python.exe. The alias is skipped by location, as cli/lib/python.sh does — never
+# run: under the script-wide $ErrorActionPreference = "Stop", Windows PowerShell
+# 5.1 turns its stderr into a terminating NativeCommandError (even with 2>$null),
+# which aborted the installer right before its banner on a Win11 VM.
+function Test-Python {
+    $ErrorActionPreference = "Continue"
+    $probe = "import sys; sys.exit(0 if sys.version_info[0] == 3 else 1)"
+    foreach ($candidate in 'python3', 'python', 'py -3') {
+        $exe, $rest = $candidate -split ' '
+        $cmd = Get-Command $exe -CommandType Application -ErrorAction SilentlyContinue |
+            Where-Object { $_.Source -notlike "*\WindowsApps\*" } | Select-Object -First 1
+        if (-not $cmd) { continue }
+        & $cmd.Source @rest -c $probe 2>$null | Out-Null
+        if ($LASTEXITCODE -eq 0) { return $true }
+    }
+    return $false
 }
 
 $BashExe = Find-BashExecutable
 if (-not $BashExe) {
     Write-Err "No bash executor found."
-    Write-Host "Install Git for Windows (https://git-scm.com) or enable WSL to use Octopus CLI." -ForegroundColor Yellow
-    exit 1
+    Write-Host "Install Git for Windows (https://git-scm.com/download/win), or WSL with a distribution" -ForegroundColor Yellow
+    Write-Host "(wsl --install), then open a new terminal and run this installer again." -ForegroundColor Yellow
+    Stop-Install 1
 }
 
 # ── Download helpers ────────────────────────────────────────────────────────────
@@ -154,6 +211,13 @@ function Get-Sha256Field ($path) {
 function Test-Signature {
     param([Parameter(Mandatory)][string]$Tarball, [Parameter(Mandatory)][string]$Signature)
 
+    # gpg reports progress on stderr ("gpg: Signature made …", "No public key"
+    # on a first install). Under the script-wide "Stop", Windows PowerShell 5.1
+    # turns that into a terminating NativeCommandError even with 2>$null, so
+    # every install with gpg on PATH died here. The verdict comes from the
+    # --status-fd output and exit codes below, never from stderr.
+    $ErrorActionPreference = "Continue"
+
     if ($env:OCTOPUS_SKIP_SIGNATURE -eq '1') {
         Write-Warn "Skipping GPG signature verification (OCTOPUS_SKIP_SIGNATURE=1)."
         return $true
@@ -161,7 +225,7 @@ function Test-Signature {
     $gpg = Get-Command gpg -ErrorAction SilentlyContinue
     if (-not $gpg) {
         if ($env:OCTOPUS_REQUIRE_SIGNATURE -eq '1') {
-            Write-Err "gpg not found — install GnuPG or set OCTOPUS_SKIP_SIGNATURE=1 to bypass."
+            Write-Err "gpg not found - install GnuPG or set OCTOPUS_SKIP_SIGNATURE=1 to bypass."
             return $false
         }
         Write-Warn "gpg not found; continuing with checksum-only verification."
@@ -204,19 +268,37 @@ function Test-Signature {
 
 # ── Version resolution ─────────────────────────────────────────────────────────
 
+# OCTOPUS_API_ENDPOINT — the knob bin/octopus already honours — points "latest"
+# at a mirror (http(s), file:// or a path) instead of api.github.com.
 function Get-LatestVersion {
+    $api = if ($env:OCTOPUS_API_ENDPOINT) { $env:OCTOPUS_API_ENDPOINT } else { "$GitHubApi/releases/latest" }
+    if ($api -like 'http://*') {
+        Write-Warn "OCTOPUS_API_ENDPOINT is plain http:// - the version lookup is not protected by TLS."
+    }
+    $tmp = [System.IO.Path]::GetTempFileName()
     try {
-        $response = Invoke-RestMethod -Uri "$GitHubApi/releases/latest" -UseBasicParsing -Headers @{ "User-Agent" = "octopus-installer" }
-        return $response.tag_name
+        Get-RemoteFile -Url $api -Dest $tmp | Out-Null
+        return (Get-Content -LiteralPath $tmp -Raw | ConvertFrom-Json).tag_name
     } catch {
-        Write-Err "Could not fetch latest version from GitHub."
-        exit 1
+        Write-Err "Could not fetch the latest version from $api."
+        Stop-Install 1
+    } finally {
+        Remove-Item $tmp -Force -ErrorAction SilentlyContinue
     }
 }
 
 if (-not $Version) {
     Write-Info "Resolving latest version..."
     $Version = Get-LatestVersion
+}
+
+# $Version becomes $CacheDir\<version> (later removed with Remove-Item -Recurse)
+# and part of the download URL. Accept only the tag-or-SHA shape bin/octopus
+# enforces on the lockfile, so a mirror's tag_name or -Version cannot point the
+# install outside the cache (`..\..\Documents`).
+if ($Version -notmatch '^v?[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$' -and $Version -notmatch '^[0-9a-f]{7,40}$') {
+    Write-Err "Refusing malformed version '$Version' (expected a release tag such as v1.2.3)."
+    Stop-Install 1
 }
 
 Write-Success "Installing Octopus $Version"
@@ -249,11 +331,11 @@ if ((Test-Path $DestDir) -and -not $Force) {
                 $DownloadedChecksum = $cachedSha
                 $NeedDownload = $false
             } else {
-                Write-Info "Cache integrity check failed for $Version — re-downloading."
+                Write-Info "Cache integrity check failed for $Version - re-downloading."
             }
         }
     } else {
-        Write-Info "Cache for $Version has no integrity marker — re-downloading."
+        Write-Info "Cache for $Version has no integrity marker - re-downloading."
     }
 }
 
@@ -269,7 +351,7 @@ if ($NeedDownload) {
         if (-not (Get-RemoteFile -Url $TarUrl -Dest $TarFile -Optional)) {
             Write-Err "Failed to download $Version from $TarUrl."
             Write-Host "Check that the tag exists: https://github.com/$GitHubRepo/releases" -ForegroundColor Yellow
-            exit 1
+            Stop-Install 1
         }
 
         # SHA-256 (mandatory) — fail closed on mismatch.
@@ -277,13 +359,13 @@ if ($NeedDownload) {
         $ShaFile = Join-Path $TmpDir "octopus.sha256"
         if (-not (Get-RemoteFile -Url $ChecksumUrl -Dest $ShaFile -Optional)) {
             Write-Err "Failed to download checksum from $ChecksumUrl."
-            exit 1
+            Stop-Install 1
         }
         $expected = Get-Sha256Field $ShaFile
         $actual   = (Get-FileHash -Algorithm SHA256 -LiteralPath $TarFile).Hash
         if ($expected.ToLower() -ne $actual.ToLower()) {
             Write-Err "Checksum mismatch for $Version (expected $expected, got $actual)."
-            exit 1
+            Stop-Install 1
         }
         $DownloadedChecksum = $actual.ToLower()
 
@@ -292,27 +374,31 @@ if ($NeedDownload) {
         $SigFile = Join-Path $TmpDir "octopus.tar.gz.asc"
         if (Get-RemoteFile -Url $SigUrl -Dest $SigFile -Optional) {
             Write-Info "Verifying GPG signature..."
-            if (-not (Test-Signature $TarFile $SigFile)) { exit 1 }
+            if (-not (Test-Signature $TarFile $SigFile)) { Stop-Install 1 }
         } elseif ($env:OCTOPUS_REQUIRE_SIGNATURE -eq '1') {
             Write-Err "No signature published at $SigUrl (OCTOPUS_REQUIRE_SIGNATURE=1)."
-            exit 1
+            Stop-Install 1
         }
 
         Write-Info "Extracting..."
-        # tar is available natively on Windows 10+.
+        # Windows' own tar.exe (bsdtar, Windows 10 1803+), by absolute path: with
+        # Git's "optional Unix tools" on PATH a bare `tar` is MSYS GNU tar,
+        # which reads C:\... as host:path ("Cannot connect to C: resolve failed").
+        $Tar = Join-Path $env:SystemRoot "System32\tar.exe"
+        if (-not (Test-Path $Tar)) { $Tar = "tar" }
         $ExtractDir = Join-Path $TmpDir "extract"
         New-Item -ItemType Directory -Path $ExtractDir | Out-Null
-        tar -xzf $TarFile -C $ExtractDir
+        & $Tar -xzf $TarFile -C $ExtractDir
         if ($LASTEXITCODE -ne 0) {
             Write-Err "Failed to extract the release tarball."
-            exit 1
+            Stop-Install 1
         }
 
         # Find extracted directory (octopus-<version>/).
         $ExtractedDir = Get-ChildItem $ExtractDir -Directory | Where-Object { $_.Name -like "octopus-*" } | Select-Object -First 1
         if (-not $ExtractedDir) {
             Write-Err "Unexpected tarball structure."
-            exit 1
+            Stop-Install 1
         }
 
         New-Item -ItemType Directory -Path $CacheDir -Force | Out-Null
@@ -353,14 +439,17 @@ $Timestamp    = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
 # installer. Both delegate to the version-independent `current` link, so they
 # need no per-version healing.
 $ShimSourceDir = Join-Path $DestDir "bin"
-$Shims = @("octopus.ps1", "octopus.cmd")
+# `octopus` (no extension) is the bash shim itself: Git Bash shares the Windows
+# PATH but cannot run .ps1/.cmd, so without it `octopus` is "command not found"
+# there. PowerShell and cmd ignore it (not in PATHEXT).
+$Shims = @("octopus.ps1", "octopus.cmd", "octopus")
 
 New-Item -ItemType Directory -Path $BinDir -Force | Out-Null
 foreach ($name in $Shims) {
     $src = Join-Path $ShimSourceDir $name
     if (-not (Test-Path $src)) {
         Write-Err "Shim not found in extracted release at $src"
-        exit 1
+        Stop-Install 1
     }
     Copy-Item -LiteralPath $src -Destination (Join-Path $BinDir $name) -Force
 }
@@ -381,8 +470,20 @@ if ([string]::IsNullOrEmpty($UserPath) -or ($UserPath -notlike "*$BinDir*")) {
             Write-Success "Added $BinDir to PATH. Restart your shell to apply."
         }
     } else {
-        Write-Warn "Add it manually, e.g.:  setx PATH `"%PATH%;$BinDir`""
+        # Not `setx PATH "%PATH%;…"`: that copies the MACHINE path into the user
+        # path and truncates it at 1024 characters.
+        Write-Warn "Add it to your user PATH, then open a new terminal:"
+        Write-Host "    [Environment]::SetEnvironmentVariable('PATH', [Environment]::GetEnvironmentVariable('PATH','User') + ';$BinDir', 'User')" -ForegroundColor Yellow
     }
+}
+
+# ── Python check ───────────────────────────────────────────────────────────────
+# Under WSL the distribution's own Python is used; Git Bash uses Windows Python.
+if ($BashExe -ne "wsl" -and -not (Test-Python)) {
+    Write-Warn "No working Python 3 found (tried python3, python, py -3)."
+    Write-Host "    'octopus setup' and the Claude Code hooks need it. Install Python 3 from" -ForegroundColor Yellow
+    Write-Host "    https://www.python.org/downloads/ (tick 'Add python.exe to PATH'), then open a new terminal." -ForegroundColor Yellow
+    Write-Host "    ('python3' on Windows is usually the Microsoft Store alias, not Python.)" -ForegroundColor Yellow
 }
 
 # ── Welcome banner ─────────────────────────────────────────────────────────────
@@ -400,5 +501,28 @@ Write-Host ""
 Write-Host "  Docs: https://github.com/leocosta/octopus"
 Write-Host ""
 Write-Host "  Note: Octopus CLI on Windows runs via Git Bash or WSL."
-Write-Host "  Requires: Git for Windows (https://git-scm.com) or WSL."
+Write-Host "  Requires: Git for Windows + Python 3, or WSL with a distribution."
 Write-Host ""
+}
+} catch {
+    if ("$_" -ne "OCTOPUS_INSTALL_STOP") {
+        Write-Host "x  $_" -ForegroundColor Red
+        Write-Host $_.InvocationInfo.PositionMessage -ForegroundColor DarkGray
+        $OctopusInstall.ExitCode = 1
+    }
+}
+# Exit only when THIS file is the running script (.\install.ps1, CI). Under
+# `irm | iex` from inside someone's script, $PSCommandPath is THEIR file —
+# exiting would end their script, even after a successful install — so the
+# running file must be this installer (it carries the stop marker).
+if ($PSCommandPath -and (Select-String -LiteralPath $PSCommandPath -SimpleMatch 'OCTOPUS_INSTALL_STOP' -Quiet)) { exit $OctopusInstall.ExitCode }
+$global:LASTEXITCODE = $OctopusInstall.ExitCode
+$OctopusInstallCode = $OctopusInstall.ExitCode
+Remove-Variable OctopusInstall -ErrorAction SilentlyContinue
+# No exit was taken (irm | iex). A failure must still stop a caller's script, so
+# throw once: at an interactive prompt that is a red error and the window stays.
+if ($OctopusInstallCode -ne 0) {
+    Remove-Variable OctopusInstallCode -ErrorAction SilentlyContinue
+    throw "Octopus install failed (exit code $global:LASTEXITCODE)."
+}
+Remove-Variable OctopusInstallCode -ErrorAction SilentlyContinue

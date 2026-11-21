@@ -9,6 +9,11 @@ OCTOPUS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$OCTOPUS_DIR/cli/lib/ui.sh"
 # shellcheck source=cli/lib/bundle-aliases.sh
 source "$OCTOPUS_DIR/cli/lib/bundle-aliases.sh"
+# Setup writes every agent config through python3 — resolve a working one (on
+# Windows `python3` is the Store alias) and stop here, loudly, if there is none.
+# shellcheck source=cli/lib/python.sh
+source "$OCTOPUS_DIR/cli/lib/python.sh"
+octopus_require_python || exit 1
 
 if [[ -z "${PROJECT_ROOT:-}" ]]; then
   # Self-setup path: running setup.sh inside the octopus repo itself.
@@ -553,6 +558,7 @@ MANIFEST_CAP_PROMPT_FILES="false"
 MANIFEST_CAP_CLI_AGENTS="false"
 MANIFEST_CAP_AGENTS="false"
 MANIFEST_CAP_MCP="false"
+MANIFEST_CAP_HOOKS_VIA_SHELL="false"
 MANIFEST_DELIVERY_RULES_METHOD=""
 MANIFEST_DELIVERY_RULES_TARGET=""
 MANIFEST_DELIVERY_RULES_INSTRUCTIONS_EXT="false"
@@ -596,6 +602,7 @@ load_manifest() {
   MANIFEST_CAP_CLI_AGENTS="false"
   MANIFEST_CAP_AGENTS="false"
   MANIFEST_CAP_MCP="false"
+  MANIFEST_CAP_HOOKS_VIA_SHELL="false"
   MANIFEST_DELIVERY_RULES_METHOD=""
   MANIFEST_DELIVERY_RULES_TARGET=""
   MANIFEST_DELIVERY_RULES_INSTRUCTIONS_EXT="false"
@@ -680,6 +687,7 @@ load_manifest() {
         native_cli_agents) MANIFEST_CAP_CLI_AGENTS="$cap_val" ;;
         native_agents)     MANIFEST_CAP_AGENTS="$cap_val" ;;
         native_mcp)        MANIFEST_CAP_MCP="$cap_val" ;;
+        hooks_via_shell)   MANIFEST_CAP_HOOKS_VIA_SHELL="$cap_val" ;;
         native_knowledge)  MANIFEST_CAP_KNOWLEDGE="$cap_val" ;;
       esac
       continue
@@ -1468,7 +1476,12 @@ deliver_hooks() {
 
     local cli_cache_root="${OCTOPUS_CLI_CACHE_ROOT:-$HOME/.octopus-cli}"
 
-    python3 - "$settings_file" "$hooks_template" "${OCTOPUS_DISABLED_HOOKS:-}" "$OCTOPUS_DIR" "${OCTOPUS_RULES[*]:-}" "$local_hooks_arg" "$cli_cache_root" << 'PYEOF'
+    # Prints how the hook paths were written: "portable" or "literal". "$HOME"
+    # is only expanded by an agent that runs hook commands through a shell —
+    # declared in its manifest as `hooks_via_shell` (ADR-011: capabilities, not
+    # names); the others keep literal paths.
+    local hook_paths
+    hook_paths="$(OCTOPUS_HOOKS_VIA_SHELL="$([[ "$MANIFEST_CAP_HOOKS_VIA_SHELL" == true ]] && echo 1)" python3 - "$settings_file" "$hooks_template" "${OCTOPUS_DISABLED_HOOKS:-}" "$OCTOPUS_DIR" "${OCTOPUS_RULES[*]:-}" "$local_hooks_arg" "$cli_cache_root" << 'PYEOF'
 import json, os, sys
 
 settings_path, hooks_path, disabled, install_root, active_stacks_str, local_hooks_path, cli_cache_root = sys.argv[1:8]
@@ -1556,7 +1569,9 @@ for event_type, entries in hooks.items():
 # realpath comparison resolve to that tree, and the hooks are delivered
 # through `current`. They still reach the developer's tree, via two hops.
 def _resolve_hook_root():
-    if os.path.dirname(os.path.dirname(install_root)) != cli_cache_root:
+    # normpath both sides: on Windows the args arrive as C:/... (MSYS converts
+    # them for native Python) and normpath flips the separators to backslashes.
+    if os.path.normpath(os.path.dirname(os.path.dirname(install_root))) != cli_cache_root:
         return install_root
     current = os.path.join(cli_cache_root, "current")
     if os.path.realpath(current) != os.path.realpath(install_root):
@@ -1565,12 +1580,31 @@ def _resolve_hook_root():
 
 hook_root = _resolve_hook_root()
 
+# Delivered through the DEFAULT cache's `current` link, a hook is written as
+# "$HOME/.octopus-cli/current/hooks/..." and expanded by the shell Claude Code
+# runs it in. Git Bash, WSL, Linux and macOS sharing one settings.json then each
+# resolve their OWN install. A literal path only works in the shell that ran
+# setup — reproduced on Windows: a setup run from WSL wrote /home/<u>/... and
+# all 18 hooks failed (exit 127) for native Claude Code on the same project.
+# Quoted, because Windows home directories routinely contain spaces. Same rule
+# as cli/lib/hooks.sh's _hooks_portable_root (git hooks): default cache only —
+# neither cache-root override set — and only for an agent that runs hooks
+# through a shell.
+HOME_ROOT = '"$HOME/.octopus-cli/current'
+portable = (
+    os.environ.get("OCTOPUS_HOOKS_VIA_SHELL") == "1"
+    and not os.environ.get("OCTOPUS_CLI_CACHE_ROOT")
+    and not os.environ.get("OCTOPUS_CACHE_ROOT")
+    and hook_root == os.path.join(cli_cache_root, "current")
+)
+
 for event_type, entries in hooks.items():
     for entry in entries:
         for hook in entry.get("hooks", []):
             cmd = hook.get("command", "")
             if cmd.startswith("octopus/hooks/"):
-                hook["command"] = hook_root + "/" + cmd[len("octopus/"):]
+                rel = cmd[len("octopus/"):]
+                hook["command"] = (HOME_ROOT + "/" + rel + '"') if portable else (hook_root + "/" + rel)
 
 # Octopus owns any hook it installs. On each setup run we DROP previously-
 # installed Octopus hooks and re-add the current set, leaving user-added hooks
@@ -1591,7 +1625,7 @@ incoming_ids = {
 
 def _is_octopus_hook(hook):
     cmd = hook.get("command", "")
-    return cmd.startswith(owned_prefixes) or hook.get("id") in incoming_ids
+    return cmd.startswith(owned_prefixes) or cmd.startswith(HOME_ROOT) or hook.get("id") in incoming_ids
 
 existing = settings.get("hooks", {})
 for event_type, new_matchers in hooks.items():
@@ -1606,7 +1640,9 @@ settings["hooks"] = existing
 with open(settings_path, "w") as f:
     json.dump(settings, f, indent=2)
     f.write("\n")
+print("portable" if portable else "literal")
 PYEOF
+)" || return $?
     echo "  -> Hooks injected into $MANIFEST_DELIVERY_HOOKS_TARGET"
 
     # Hook commands above are absolute POSIX paths tied to whichever shell ran
@@ -1618,7 +1654,8 @@ PYEOF
     local current_env prev_env
     current_env="$(_octopus_host_env)"
     prev_env="$(cat "$env_marker" 2>/dev/null || true)"
-    if [[ -n "$prev_env" && "$prev_env" != "$current_env" ]]; then
+    # $HOME-relative hook paths resolve in every shell, so there is no drift then.
+    if [[ "$hook_paths" != portable && -n "$prev_env" && "$prev_env" != "$current_env" ]]; then
       echo "WARNING: Hooks were last generated for '$prev_env' and this setup ran under '$current_env' — $MANIFEST_DELIVERY_HOOKS_TARGET now points at $current_env paths. If you also run Claude Code from $prev_env against this project, its hooks will fail until you re-run 'octopus setup' (or 'octopus hooks install') from there too."
     fi
     mkdir -p "$(dirname "$env_marker")" && printf '%s' "$current_env" > "$env_marker"

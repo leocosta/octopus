@@ -140,6 +140,57 @@ check "current still resolves after the failure" "yes" \
   "$([[ -e "$cache_e/current" ]] && echo yes || echo no)"
 
 echo ""
+echo "Test: metadata.json records the release just installed, not the running one"
+# release_path was written from $RELEASE_ROOT — the release RUNNING the update,
+# i.e. the previous one (and, on Windows, `current` itself).
+cache_f="$tmp/cache-f"
+OCTOPUS_CLI_CACHE_ROOT="$cache_f" bash "$checkout/bin/octopus" install --version v9.9.9 >/dev/null
+check "release_path names the installed cache entry" "$cache_f/cache/v9.9.9" \
+  "$(sed -n 's/.*"release_path": "\([^"]*\)".*/\1/p' "$cache_f/metadata.json" 2>/dev/null)"
+
+echo ""
+echo "Test: a mirror endpoint uses the release's own install.sh, not main's"
+# OCTOPUS_INSTALL_ENDPOINT is the offline/mirror contract — reaching GitHub for
+# main's installer broke it (and made a locally built release untestable).
+cache_g="$tmp/cache-g"
+rel_g="$cache_g/cache/v1.0.0"
+mkdir -p "$rel_g/cli" "$rel_g/bin"
+echo '#!/usr/bin/env bash' > "$rel_g/cli/octopus.sh"
+cp "$SHIM" "$rel_g/bin/octopus"
+# Stand-in installer: records it ran, then lays down the requested release.
+cat > "$rel_g/install.sh" <<'EOF'
+#!/usr/bin/env bash
+v=""; while [[ $# -gt 0 ]]; do [[ "$1" == --version ]] && v="$2"; shift; done
+echo "local-installer $v" > "$OCTOPUS_CACHE_DIR/installer.log"
+mkdir -p "$OCTOPUS_CACHE_DIR/cache/$v/cli" && echo '#!/usr/bin/env bash' > "$OCTOPUS_CACHE_DIR/cache/$v/cli/octopus.sh"
+EOF
+chmod +x "$rel_g/install.sh"
+ln -s "$rel_g" "$cache_g/current"
+OCTOPUS_CLI_CACHE_ROOT="$cache_g" OCTOPUS_INSTALL_ENDPOINT="file:///nowhere" \
+  OCTOPUS_RELEASE_OWNER="octopus-no-such-owner" OCTOPUS_RELEASE_NAME="no-such-repo" \
+  bash "$rel_g/bin/octopus" install --version v2.0.0 >/dev/null 2>&1
+check "the release's install.sh ran" "local-installer v2.0.0" "$(cat "$cache_g/installer.log" 2>/dev/null)"
+
+echo ""
+echo "Test: a malformed version in the repo's lockfile is ignored, not used as a path"
+# .octopus/cli-lock.yaml is committed by the repo; its version becomes
+# $CACHE_DIR/<version> and reaches the installer. Only a tag (or dev SHA) shape
+# is accepted, which also closes ../ traversal out of the cache.
+cache_h="$tmp/cache-h"; proj_h="$tmp/proj-h"
+mkdir -p "$proj_h/.octopus"
+git -C "$proj_h" init -q
+printf 'version: ../../../etc\nchecksum: x\n' > "$proj_h/.octopus/cli-lock.yaml"
+OCTOPUS_CLI_CACHE_ROOT="$cache_h" bash "$checkout/bin/octopus" install --version v9.9.9 >/dev/null 2>&1
+out_h="$(cd "$proj_h" && OCTOPUS_CLI_CACHE_ROOT="$cache_h" bash "$checkout/bin/octopus" --version 2>&1)"
+check "the malformed pin is not used" "octopus v9.9.9" "$(tail -1 <<<"$out_h")"
+# `--version` hides stderr by design; `doctor` surfaces the warning.
+doctor_h="$(cd "$proj_h" && OCTOPUS_CLI_CACHE_ROOT="$cache_h" bash "$checkout/bin/octopus" doctor 2>&1)"
+check "the user is told why" "yes" "$(grep -q "ignoring malformed version" <<<"$doctor_h" && echo yes || echo no)"
+printf 'version: v9.9.9\nchecksum: x\n' > "$proj_h/.octopus/cli-lock.yaml"
+check "a well-formed pin is still honoured" "octopus v9.9.9" \
+  "$(cd "$proj_h" && OCTOPUS_CLI_CACHE_ROOT="$cache_h" bash "$checkout/bin/octopus" --version 2>/dev/null)"
+
+echo ""
 if [[ "$fail" -gt 0 ]]; then
   echo "FAILED: $fail test(s), $pass passed"
   exit 1

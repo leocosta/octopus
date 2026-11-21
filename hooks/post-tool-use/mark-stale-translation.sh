@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+source "${BASH_SOURCE[0]%/*}/../../cli/lib/python.sh" 2>/dev/null || true
 # Mark the pt-BR counterpart of an edited English doc as stale.
 #
 # Fires on PostToolUse Write|Edit. If the touched file lives under

@@ -10,6 +10,8 @@ capabilities:
   native_agents: true
   native_mcp: true
   native_knowledge: true
+  # Runs hook commands through a shell, so "$HOME/…" paths expand (ADR-013).
+  hooks_via_shell: true
 
 delivery:
   rules:

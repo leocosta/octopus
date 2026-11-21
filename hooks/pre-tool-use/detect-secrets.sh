@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+source "${BASH_SOURCE[0]%/*}/../../cli/lib/python.sh" 2>/dev/null || true
 # Detect hardcoded secrets before git commit
 # Scans staged files for common secret patterns
 # Exit 2 = block the tool use

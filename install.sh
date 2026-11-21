@@ -442,13 +442,65 @@ download_release() {
   success "Octopus $version cached at $dest"
 }
 
-# Update the "current" symlink
+# ── Windows `current` junction ────────────────────────────────────────────────
+# Kept byte-identical between bin/octopus and install.sh (enforced by
+# tests/test_current_junction.sh): install.sh runs standalone, before any
+# release tree exists to source.
+#
+# `current` lives on NTFS when the shell is Git Bash/MSYS, or WSL reaching a
+# Windows-side cache through /mnt/<drive>. There `ln -s` is not a link: MSYS
+# copies the tree, WSL makes a link Windows cannot follow. Use a junction — the
+# link install.ps1 creates — managed through PowerShell.
+_current_needs_junction() {
+  case "$(uname -s 2>/dev/null)" in MINGW* | MSYS* | CYGWIN*) return 0 ;; esac
+  [[ "$1" == /mnt/[a-z]/* ]] && command -v powershell.exe >/dev/null 2>&1
+}
+
+_win_path_of() {
+  if command -v cygpath >/dev/null 2>&1; then
+    cygpath -w "$1"
+  elif command -v wslpath >/dev/null 2>&1; then
+    wslpath -w "$1"
+  else
+    return 1
+  fi
+}
+
+# Replace <link> with a junction to <target>. The paths reach PowerShell through
+# the environment, never through the command text: nothing to quote, so no path
+# (or lockfile-supplied version) can close a string and inject code — PowerShell
+# also ends '…' on U+2018–U+201B, which escaping ASCII ' alone does not cover.
+# WSLENV forwards them when the caller is WSL. An existing link is removed with
+# Directory.Delete($l), which drops the link, never the tree behind it; a REAL
+# directory there is a copy an older `ln -s` left, removed with
+# Directory.Delete($l, $true), which unlinks nested reparse points instead of
+# following them (Remove-Item -Recurse follows them on Windows PowerShell 5.1).
+_relink_junction() {
+  local wl wt
+  wl="$(_win_path_of "$1")" && wt="$(_win_path_of "$2")" || return 1
+  OCTOPUS_JUNCTION_LINK="$wl" OCTOPUS_JUNCTION_TARGET="$wt" \
+    WSLENV="${WSLENV:+$WSLENV:}OCTOPUS_JUNCTION_LINK:OCTOPUS_JUNCTION_TARGET" \
+    MSYS2_ARG_CONV_EXCL='*' powershell.exe -NoProfile -NonInteractive -Command '
+$ErrorActionPreference = "Stop"
+$l = $env:OCTOPUS_JUNCTION_LINK; $t = $env:OCTOPUS_JUNCTION_TARGET
+$i = Get-Item -LiteralPath $l -Force -ErrorAction SilentlyContinue
+if ($i) { if ($i.LinkType) { [IO.Directory]::Delete($l) } else { [IO.Directory]::Delete($l, $true) } }
+New-Item -ItemType Junction -Path $l -Target $t | Out-Null' >/dev/null
+}
+
+# Update the "current" symlink (a junction on Windows — see above).
 update_symlink() {
   local version="$1"
   local target="$OCTOPUS_CACHE_DIR/cache/$version"
+  local link="$OCTOPUS_CACHE_DIR/current"
 
-  rm -f "$OCTOPUS_CACHE_DIR/current"
-  ln -sf "$target" "$OCTOPUS_CACHE_DIR/current"
+  if _current_needs_junction "$link"; then
+    _relink_junction "$link" "$target" ||
+      warn "could not point $link at $target — hooks and shims may resolve an older release."
+    return 0
+  fi
+  rm -f "$link"
+  ln -sf "$target" "$link"
 }
 
 # Write metadata.json so the shim can resolve the version without git

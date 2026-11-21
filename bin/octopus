@@ -17,11 +17,20 @@ _resolve_release_root() {
     echo "$candidate"
   elif [[ -L "$CACHE_ROOT/current" ]]; then
     readlink "$CACHE_ROOT/current"
+  elif [[ -f "$CACHE_ROOT/current/cli/octopus.sh" ]]; then
+    # A Windows junction (what install.ps1 creates): Git Bash reports it as a
+    # plain directory, so -L is false — but it still names the installed release.
+    echo "$CACHE_ROOT/current"
   else
     echo "$candidate"
   fi
 }
 RELEASE_ROOT="$(_resolve_release_root)"
+
+# `python3` must be a working interpreter for everything downstream (setup, the
+# hooks). On Windows it is usually the Store alias — cli/lib/python.sh fixes that.
+# shellcheck source=cli/lib/python.sh
+[[ -f "$RELEASE_ROOT/cli/lib/python.sh" ]] && source "$RELEASE_ROOT/cli/lib/python.sh"
 
 LOCKFILE_NAME=".octopus/cli-lock.yaml"
 
@@ -56,8 +65,17 @@ find_lockfile() {
 }
 
 read_lock_version() {
-  local lockfile="$1"
-  grep -E '^version:' "$lockfile" 2>/dev/null | awk '{print $2}' | head -n1
+  local lockfile="$1" version
+  version="$(grep -E '^version:' "$lockfile" 2>/dev/null | awk '{print $2}' | head -n1 || true)"
+  [[ -n "$version" ]] || return 0
+  # The lockfile is committed by the repo, and its version becomes
+  # $CACHE_DIR/<version> and an installer argument: accept a tag (v1.2.3,
+  # 1.2.3-rc.1) or a dev commit SHA, nothing that could leave the cache.
+  if [[ ! "$version" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$ && ! "$version" =~ ^[0-9a-f]{7,40}$ ]]; then
+    echo "  ⚠ ignoring malformed version '$version' in $lockfile" >&2
+    return 0
+  fi
+  echo "$version"
 }
 
 read_metadata_field() {
@@ -119,11 +137,15 @@ _download_release_via_installer() {
   local version="$1"
   local installer
   local installer_tmp=""
-  # Always prefer a fresh copy from the target release's install.sh so
-  # updates pick up installer improvements (e.g. banner removal) immediately.
-  installer_tmp="$(mktemp)"
+  # Normally fetch main's install.sh, so updates pick up installer fixes
+  # immediately; fall back to the RUNNING release's copy when offline.
   local url="https://raw.githubusercontent.com/$RELEASE_OWNER/$RELEASE_REPO/main/install.sh"
-  if curl -fsSL "$url" -o "$installer_tmp" 2>/dev/null; then
+  if [[ -n "${OCTOPUS_INSTALL_ENDPOINT:-}" && -f "$RELEASE_ROOT/install.sh" ]]; then
+    # A mirror/offline endpoint is a contract not to reach GitHub: use the
+    # installer of the RUNNING release (already verified when it was installed)
+    # — not the target's, which is not downloaded yet, and not main's.
+    installer="$RELEASE_ROOT/install.sh"
+  elif installer_tmp="$(mktemp)" && curl -fsSL "$url" -o "$installer_tmp" 2>/dev/null; then
     installer="$installer_tmp"
   elif [[ -x "$RELEASE_ROOT/install.sh" ]]; then
     rm -f "$installer_tmp"
@@ -152,11 +174,18 @@ _download_release_via_installer() {
 update_current() {
   local target="$1" link="$CACHE_ROOT/current"
 
-  # install.ps1 creates `current` as a Windows junction, which Git Bash/MSYS2
-  # reports as a plain directory: -L is false, -d is true. Neither removal is
-  # safe there — `rm -f` fails (and under `set -e` would abort the install
-  # before metadata is written), while `rm -rf` recurses THROUGH the junction
-  # and deletes the release tree it names. Leave it in place and say so.
+  # Windows: `current` is an NTFS junction (install.ps1 makes it). `ln -s` must
+  # never touch it — under Git Bash it silently COPIES the whole release into
+  # `current` (rc 0), and the next update dies on `rm: Is a directory`.
+  if _current_needs_junction "$link"; then
+    _relink_junction "$link" "$target" ||
+      echo "  ⚠ could not point $link at $target — hooks and shims may resolve an older release." >&2
+    return 0
+  fi
+
+  # Off Windows a non-symlink `current` is unexpected (a copy, or a junction
+  # reached through a path we did not recognise). Neither removal is safe:
+  # `rm -rf` would recurse THROUGH a junction into the release tree it names.
   if [[ -e "$link" && ! -L "$link" ]]; then
     echo "  ⚠ $link is not a symlink (a Windows junction, or a real directory) — leaving it in place." >&2
     echo "    Hooks and shims may resolve an older release; repoint it from the shell that created it." >&2
@@ -174,6 +203,52 @@ update_current() {
     echo "  ⚠ could not point $link at $target — hooks and shims may resolve an older release." >&2
 }
 
+# ── Windows `current` junction ────────────────────────────────────────────────
+# Kept byte-identical between bin/octopus and install.sh (enforced by
+# tests/test_current_junction.sh): install.sh runs standalone, before any
+# release tree exists to source.
+#
+# `current` lives on NTFS when the shell is Git Bash/MSYS, or WSL reaching a
+# Windows-side cache through /mnt/<drive>. There `ln -s` is not a link: MSYS
+# copies the tree, WSL makes a link Windows cannot follow. Use a junction — the
+# link install.ps1 creates — managed through PowerShell.
+_current_needs_junction() {
+  case "$(uname -s 2>/dev/null)" in MINGW* | MSYS* | CYGWIN*) return 0 ;; esac
+  [[ "$1" == /mnt/[a-z]/* ]] && command -v powershell.exe >/dev/null 2>&1
+}
+
+_win_path_of() {
+  if command -v cygpath >/dev/null 2>&1; then
+    cygpath -w "$1"
+  elif command -v wslpath >/dev/null 2>&1; then
+    wslpath -w "$1"
+  else
+    return 1
+  fi
+}
+
+# Replace <link> with a junction to <target>. The paths reach PowerShell through
+# the environment, never through the command text: nothing to quote, so no path
+# (or lockfile-supplied version) can close a string and inject code — PowerShell
+# also ends '…' on U+2018–U+201B, which escaping ASCII ' alone does not cover.
+# WSLENV forwards them when the caller is WSL. An existing link is removed with
+# Directory.Delete($l), which drops the link, never the tree behind it; a REAL
+# directory there is a copy an older `ln -s` left, removed with
+# Directory.Delete($l, $true), which unlinks nested reparse points instead of
+# following them (Remove-Item -Recurse follows them on Windows PowerShell 5.1).
+_relink_junction() {
+  local wl wt
+  wl="$(_win_path_of "$1")" && wt="$(_win_path_of "$2")" || return 1
+  OCTOPUS_JUNCTION_LINK="$wl" OCTOPUS_JUNCTION_TARGET="$wt" \
+    WSLENV="${WSLENV:+$WSLENV:}OCTOPUS_JUNCTION_LINK:OCTOPUS_JUNCTION_TARGET" \
+    MSYS2_ARG_CONV_EXCL='*' powershell.exe -NoProfile -NonInteractive -Command '
+$ErrorActionPreference = "Stop"
+$l = $env:OCTOPUS_JUNCTION_LINK; $t = $env:OCTOPUS_JUNCTION_TARGET
+$i = Get-Item -LiteralPath $l -Force -ErrorAction SilentlyContinue
+if ($i) { if ($i.LinkType) { [IO.Directory]::Delete($l) } else { [IO.Directory]::Delete($l, $true) } }
+New-Item -ItemType Junction -Path $l -Target $t | Out-Null' >/dev/null
+}
+
 # The shared epilogue of every successful install_release branch. The defect
 # RM-188 fixed was two of three branches diverging on exactly these lines, so
 # the invariant lives here rather than in a comment asking each branch to
@@ -181,7 +256,7 @@ update_current() {
 _finish_install() {
   local version="$1" target="$2" checksum="$3"
   update_current "$target"
-  write_metadata "$version" "$checksum"
+  write_metadata "$version" "$checksum" "$target"
   echo "Installed Octopus $version (cached at $target)"
 }
 
@@ -251,6 +326,10 @@ sync_shim() {
 
   [[ -f "$source" ]] || return 0                # release ships no shim — nothing to sync
   [[ "$SELF_PATH" -ef "$source" ]] && return 0  # dev checkout / running from cache
+  # Running from an Octopus source checkout (or a vendored submodule): this file
+  # is source code, not a deploy target — renaming a release over it would wipe
+  # uncommitted edits in the working tree.
+  [[ -f "$SCRIPT_DIR/../cli/octopus.sh" && -e "$SCRIPT_DIR/../.git" ]] && return 0
   cmp -s "$SELF_PATH" "$source" && return 0     # already identical — no-op
 
   dir="$(dirname "$SELF_PATH")"
@@ -272,6 +351,9 @@ sync_shim() {
 write_metadata() {
   local version="$1"
   local checksum="$2"
+  # The release just installed — not $RELEASE_ROOT, which is the release that is
+  # RUNNING (the previous one during an update, or `current` itself on Windows).
+  local release_path="$3"
   local timestamp
   timestamp="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
   mkdir -p "$(dirname "$METADATA_FILE")"
@@ -280,7 +362,7 @@ write_metadata() {
   "version": "$version",
   "checksum": "$checksum",
   "installed_at": "$timestamp",
-  "release_path": "$RELEASE_ROOT"
+  "release_path": "$release_path"
 }
 EOF
 }
@@ -350,11 +432,15 @@ _doctor_stale_hooks() {
   local settings="$1" issues=0 cmd
   [[ -f "$settings" ]] || return 0
   while IFS= read -r cmd; do
+    # Portable commands are written "\"$HOME/.octopus-cli/...\"" — drop the
+    # JSON-escaped quotes and expand $HOME the way the hook's shell will.
+    cmd="${cmd//\\\"/}"
+    cmd="${cmd//\$HOME/$HOME}"
     [[ -n "$cmd" && ! -e "$cmd" ]] || continue
     echo "  ⚠ stale hook path: $cmd"
     issues=$((issues + 1))
-  done < <(grep -oE '"command"[[:space:]]*:[[:space:]]*"[^"]*\.octopus-cli/[^"]*"' "$settings" 2>/dev/null \
-            | sed -E 's/.*:[[:space:]]*"([^"]*)".*/\1/')
+  done < <(grep -oE '"command"[[:space:]]*:[[:space:]]*"(\\"|[^"])*\.octopus-cli/(\\"|[^"])*"' "$settings" 2>/dev/null \
+            | sed -E 's/^"command"[[:space:]]*:[[:space:]]*"(.*)"$/\1/')
   return "$issues"
 }
 
@@ -404,6 +490,15 @@ _doctor_current_link() {
   return 0
 }
 
+# setup and the hooks run on Python 3; cli/lib/python.sh (sourced above) already
+# looked for python3 / python / py and set OCTOPUS_PYTHON_MISSING if none exists.
+_doctor_python() {
+  [[ -z "${OCTOPUS_PYTHON_MISSING:-}" ]] && return 0
+  echo "  ⚠ 'octopus setup' and the hooks need Python 3:"
+  octopus_require_python 2>&1 | sed 's/^/    /'
+  return 1
+}
+
 # Best-effort: a newer release than the one installed. Silent when offline.
 _doctor_version_drift() {
   local installed="$1" latest
@@ -433,6 +528,7 @@ doctor() {
   _doctor_stale_hooks "$HOME/.claude/settings.json"               || issues=$((issues + $?))
   _doctor_broken_symlinks                                          || issues=$((issues + $?))
   _doctor_current_link                                              || issues=$((issues + $?))
+  _doctor_python                                                   || issues=$((issues + $?))
   _doctor_version_drift "$version"                                 || issues=$((issues + $?))
   if [[ "$issues" -eq 0 ]]; then
     echo "  ✓ no issues found"
@@ -530,7 +626,8 @@ command_update() {
     if run_subcommand setup --scope=repo; then
       echo "Setup complete — agent configs regenerated."
     else
-      echo "Setup failed — run 'octopus setup' manually to regenerate agent configs."
+      echo "Setup failed — run 'octopus setup' manually to regenerate agent configs." >&2
+      return 1
     fi
   else
     echo "No .octopus.yml found — skipping setup. Run 'octopus setup' manually."

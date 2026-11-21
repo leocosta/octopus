@@ -85,5 +85,24 @@ if grep -q "Refreshed shim" "$tmp/out2.log"; then
 fi
 echo "PASS: identical shim is a no-op"
 
+echo "Test 3: a shim running from an Octopus source checkout is never overwritten"
+# tests/test_global_cli.sh runs the repo's own bin/octopus `update`; sync_shim
+# then renamed the downloaded release's shim over the WORKING-TREE file,
+# silently wiping a developer's uncommitted edits to bin/octopus. A checkout is
+# source code, not a deploy target.
+src="$tmp/checkout"
+mkdir -p "$src/cli" "$src/bin"
+cp "$root/cli/octopus.sh" "$src/cli/octopus.sh"
+cp "$root/install.sh" "$src/install.sh"
+cp "$SHIM" "$src/bin/octopus"
+printf '# uncommitted local edit\n' >> "$src/bin/octopus"
+git -C "$src" init -q
+before="$(cat "$src/bin/octopus")"
+( cd "$tmp" && OCTOPUS_CLI_CACHE_ROOT="$tmp/cli-cache-3" "$src/bin/octopus" update --version v2.0.0 ) > "$tmp/out3.log" 2>&1 \
+  || { echo "FAIL: update from a checkout exited non-zero"; cat "$tmp/out3.log"; exit 1; }
+[[ "$(cat "$src/bin/octopus")" == "$before" ]] \
+  || { echo "FAIL: the checkout's bin/octopus was overwritten by the release shim"; exit 1; }
+echo "PASS: source checkout shim left untouched"
+
 echo ""
 echo "All shim_sync tests passed."

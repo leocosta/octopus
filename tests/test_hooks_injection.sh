@@ -557,4 +557,96 @@ unset OCTOPUS_CLI_CACHE_ROOT
 rm -rf "$TMPDIR_CUR"
 
 echo ""
+echo "Test: the default cache writes \$HOME-relative hook paths (one settings.json, every shell)"
+# Reproduced on Windows: setup from WSL wrote /home/<u>/.octopus-cli/... and all
+# 18 hooks exited 127 for native Claude Code (Git Bash) on the same project.
+# "$HOME/.octopus-cli/current/..." lets each shell resolve its own install.
+TMPDIR_HOME=$(mktemp -d)
+mkdir -p "$TMPDIR_HOME/home/.octopus-cli/cache/v0.0.1" "$TMPDIR_HOME/proj/.claude"
+cp -r "$SCRIPT_DIR/hooks" "$SCRIPT_DIR/cli" "$TMPDIR_HOME/home/.octopus-cli/cache/v0.0.1/"
+ln -s "$TMPDIR_HOME/home/.octopus-cli/cache/v0.0.1" "$TMPDIR_HOME/home/.octopus-cli/current"
+echo '{"permissions": {}, "hooks": {"Stop": [{"hooks": [{"type": "command", "command": "my-own-hook.sh"}]}]}, "mcpServers": {}}' \
+  > "$TMPDIR_HOME/proj/.claude/settings.json"
+export PROJECT_ROOT="$TMPDIR_HOME/proj"
+export OCTOPUS_DIR="$TMPDIR_HOME/home/.octopus-cli/cache/v0.0.1"
+unset OCTOPUS_CLI_CACHE_ROOT
+MANIFEST_CAP_HOOKS_VIA_SHELL="true"   # as agents/claude/manifest.yml declares
+SAVED_HOME="$HOME"; export HOME="$TMPDIR_HOME/home"
+deliver_hooks "claude" >/dev/null
+deliver_hooks "claude" >/dev/null   # idempotent: a re-run must not duplicate
+export HOME="$SAVED_HOME"
+python3 - "$TMPDIR_HOME/proj/.claude/settings.json" "$TMPDIR_HOME/home" <<'PYEOF2'
+import json, os, sys
+settings = json.load(open(sys.argv[1]))
+cmds = [h["command"] for ev in settings["hooks"].values() for m in ev for h in m.get("hooks", [])]
+ours = [c for c in cmds if ".octopus-cli" in c]
+assert ours, "no Octopus hooks written"
+bad = [c for c in ours if not c.startswith('"$HOME/.octopus-cli/current/hooks/')]
+assert not bad, f"not $HOME-relative: {bad[0]}"
+assert len(ours) == len(set(ours)), "a re-run duplicated Octopus hooks"
+assert "my-own-hook.sh" in cmds, "a user hook was dropped"
+# Each command, expanded the way the hook's shell will, must exist.
+home = sys.argv[2]
+missing = [c for c in ours if not os.path.exists(c.strip('"').replace("$HOME", home))]
+assert not missing, f"does not resolve once $HOME is expanded: {missing[0]}"
+PYEOF2
+# And a hook actually runs through a shell with that command line.
+cmd="$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(next(h["command"] for ev in d["hooks"].values() for m in ev for h in m["hooks"] if "session-start" in h["command"]))' "$TMPDIR_HOME/proj/.claude/settings.json")"
+(cd "$TMPDIR_HOME/proj" && echo '{}' | HOME="$TMPDIR_HOME/home" bash -c "$cmd" >/dev/null 2>&1)
+rc=$?
+[[ $rc -ne 126 && $rc -ne 127 ]] || { echo "FAIL: hook command did not execute through the shell (rc=$rc): $cmd"; exit 1; }
+echo "PASS: default cache → \$HOME-relative, idempotent, user hooks kept, executable"
+
+# "$HOME" is only expanded by an agent that runs hook commands through a shell.
+# That is a manifest capability (hooks_via_shell, ADR-011/ADR-013), never the
+# agent's name: Claude declares it, OpenCode does not.
+FAKE_RELEASE="$OCTOPUS_DIR"; OCTOPUS_DIR="$SCRIPT_DIR"   # the real manifests
+load_manifest claude >/dev/null 2>&1
+[[ "$MANIFEST_CAP_HOOKS_VIA_SHELL" == "true" ]] \
+  || { echo "FAIL: claude manifest does not declare hooks_via_shell"; exit 1; }
+load_manifest opencode >/dev/null 2>&1
+[[ "$MANIFEST_CAP_HOOKS_VIA_SHELL" == "false" ]] \
+  || { echo "FAIL: opencode inherited hooks_via_shell (load_manifest did not reset it)"; exit 1; }
+OCTOPUS_DIR="$FAKE_RELEASE"
+MANIFEST_CAP_HOOKS="true"
+MANIFEST_DELIVERY_HOOKS_METHOD="settings_json"
+mkdir -p "$TMPDIR_HOME/proj/.opencode"
+echo '{"permissions": {}, "hooks": {}, "mcpServers": {}}' > "$TMPDIR_HOME/proj/.opencode/settings.json"
+MANIFEST_DELIVERY_HOOKS_TARGET=".opencode/settings.json"
+export HOME="$TMPDIR_HOME/home"
+deliver_hooks "opencode" >/dev/null
+export HOME="$SAVED_HOME"
+MANIFEST_DELIVERY_HOOKS_TARGET=".claude/settings.json"
+if grep -qF '$HOME/' "$TMPDIR_HOME/proj/.opencode/settings.json"; then
+  echo "FAIL: OpenCode hooks were written \$HOME-relative (its runner may not use a shell)"; exit 1
+fi
+grep -qF "$TMPDIR_HOME/home/.octopus-cli/current/hooks/" "$TMPDIR_HOME/proj/.opencode/settings.json" \
+  || { echo "FAIL: OpenCode hooks lost their literal 'current' path"; exit 1; }
+echo "PASS: non-Claude agents keep literal hook paths"
+
+# The decision follows the capability, not the name: an agent called anything
+# that declares hooks_via_shell gets portable paths.
+echo '{"permissions": {}, "hooks": {}, "mcpServers": {}}' > "$TMPDIR_HOME/proj/.claude/settings.json"
+MANIFEST_CAP_HOOKS_VIA_SHELL="true"
+export HOME="$TMPDIR_HOME/home"
+deliver_hooks "some-future-agent" >/dev/null
+export HOME="$SAVED_HOME"
+grep -qF '$HOME/.octopus-cli/current/' "$TMPDIR_HOME/proj/.claude/settings.json" \
+  || { echo "FAIL: hooks_via_shell did not drive portable paths for a non-claude agent name"; exit 1; }
+echo "PASS: portability is capability-gated, not name-gated"
+
+MANIFEST_CAP_HOOKS_VIA_SHELL="true"   # claude again for the cases below
+# The legacy OCTOPUS_CACHE_ROOT override is honoured exactly like
+# cli/lib/hooks.sh's _hooks_portable_root does: a custom cache → literal paths.
+echo '{"permissions": {}, "hooks": {}, "mcpServers": {}}' > "$TMPDIR_HOME/proj/.claude/settings.json"
+export HOME="$TMPDIR_HOME/home"
+OCTOPUS_CACHE_ROOT="$TMPDIR_HOME/elsewhere" deliver_hooks "claude" >/dev/null
+export HOME="$SAVED_HOME"
+if grep -qF '$HOME/' "$TMPDIR_HOME/proj/.claude/settings.json"; then
+  echo "FAIL: OCTOPUS_CACHE_ROOT set, yet hooks were written \$HOME-relative (git hooks would be literal)"; exit 1
+fi
+echo "PASS: same portability rule as the git-hook wrappers"
+rm -rf "$TMPDIR_HOME"
+
+echo ""
 echo "All hooks injection tests passed!"

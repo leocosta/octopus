@@ -221,6 +221,39 @@ else
   fail "hooks is a registered command"
 fi
 
+# --- default cache: wrapper is $HOME-relative ------------------------------
+# Reproduced on Windows: hooks installed from WSL named /home/<u>/.octopus-cli/…
+# and every `git checkout` made from Git Bash failed on that path. With the
+# default cache the wrapper names "$HOME/.octopus-cli/current", so each shell
+# git runs the hook in resolves its own install.
+HOME2="$WORK/home2"
+mkdir -p "$HOME2/.octopus-cli/cache/v9.9.9/hooks/git" "$HOME2/.octopus-cli/cache/v9.9.9/cli"
+touch "$HOME2/.octopus-cli/cache/v9.9.9/cli/octopus.sh"
+printf '#!/usr/bin/env bash\necho ran-from-home\n' > "$HOME2/.octopus-cli/cache/v9.9.9/hooks/git/rules-sync.sh"
+printf '#!/usr/bin/env bash\nexit 0\n' > "$HOME2/.octopus-cli/cache/v9.9.9/hooks/git/pre-push-audit-suggest.sh"
+ln -s "$HOME2/.octopus-cli/cache/v9.9.9" "$HOME2/.octopus-cli/current"
+REPO2="$WORK/repo2"; mkdir -p "$REPO2"; git -C "$REPO2" init -q
+run_home() { (cd "$REPO2" && env -u OCTOPUS_CACHE_ROOT HOME="$HOME2" HOOKS_RELEASE_ROOT="$RELEASE" bash "$CMD" "$@" 2>&1); }
+
+out="$(run_home install)"
+hook="$(cat "$REPO2/.git/hooks/post-checkout" 2>/dev/null)"
+assert_contains "default cache: wrapper is \$HOME-relative" 'bash "$HOME/.octopus-cli/current/hooks/git/rules-sync.sh" "$@"' "$hook"
+assert_not_contains "default cache: no literal home path baked in" "$HOME2" "$hook"
+assert_eq "default cache: status reads the portable wrapper as ok" "0" "$(run_home status >/dev/null; echo $?)"
+assert_eq "default cache: re-install leaves it unchanged" "0" "$(run_home install | grep -c updated)"
+assert_eq "default cache: the wrapper runs under the caller's HOME" "ran-from-home" \
+  "$(cd "$REPO2" && HOME="$HOME2" bash .git/hooks/post-checkout 2>&1)"
+
+# Windows: `current` is a junction, which Git Bash reports as a plain
+# directory (-L false). It must still be chosen as the source root.
+HOME_J="$WORK/home-junction"
+mkdir -p "$HOME_J/.octopus-cli/current/hooks/git" "$HOME_J/.octopus-cli/current/cli"
+touch "$HOME_J/.octopus-cli/current/cli/octopus.sh"
+REPO_J="$WORK/repo-junction"; mkdir -p "$REPO_J"; git -C "$REPO_J" init -q
+(cd "$REPO_J" && env -u OCTOPUS_CACHE_ROOT HOME="$HOME_J" HOOKS_RELEASE_ROOT="$RELEASE" bash "$CMD" install >/dev/null 2>&1)
+assert_contains "a non-symlink 'current' (Windows junction) is still the source root" \
+  '$HOME/.octopus-cli/current/hooks/git/rules-sync.sh' "$(cat "$REPO_J/.git/hooks/post-checkout" 2>/dev/null)"
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [[ $FAIL -eq 0 ]]
