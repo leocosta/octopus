@@ -17,8 +17,23 @@ param(
     [switch]$Uninstall
 )
 
+# `irm … | iex` — the README command — runs this script INSIDE the caller's
+# session. A bare `exit` there closes their PowerShell window before they can
+# read the error, and script-level StrictMode / ErrorActionPreference would
+# stay set in their shell afterwards. So the whole installer runs in a child
+# scope (`& { … }`, body deliberately not indented), failures throw through
+# Stop-Install, and the only `exit` is at the very end, taken only when this
+# runs as a file (.\install.ps1, CI) so the exit code is still reported.
+$OctopusInstall = @{ ExitCode = 0 }
+try {
+& {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+
+function Stop-Install ([int]$Code = 1) {
+    $OctopusInstall.ExitCode = $Code
+    throw "OCTOPUS_INSTALL_STOP"
+}
 
 # Windows PowerShell 5.1 still defaults SecurityProtocol to TLS 1.0/1.1, but
 # api.github.com and github.com require TLS 1.2+. Without this the very first
@@ -66,7 +81,7 @@ if ($Uninstall) {
     foreach ($s in $shims) { if (Test-Path $s) { Remove-Item $s -Force } }
     if (Test-Path $CacheRoot) { Remove-Item $CacheRoot -Recurse -Force }
     Write-Success "Octopus CLI removed."
-    exit 0
+    Stop-Install 0
 }
 
 # ── Prerequisites ──────────────────────────────────────────────────────────────
@@ -127,7 +142,7 @@ if (-not $BashExe) {
     Write-Err "No bash executor found."
     Write-Host "Install Git for Windows (https://git-scm.com/download/win), or WSL with a distribution" -ForegroundColor Yellow
     Write-Host "(wsl --install), then open a new terminal and run this installer again." -ForegroundColor Yellow
-    exit 1
+    Stop-Install 1
 }
 
 # ── Download helpers ────────────────────────────────────────────────────────────
@@ -193,6 +208,13 @@ function Get-Sha256Field ($path) {
 function Test-Signature {
     param([Parameter(Mandatory)][string]$Tarball, [Parameter(Mandatory)][string]$Signature)
 
+    # gpg reports progress on stderr ("gpg: Signature made …", "No public key"
+    # on a first install). Under the script-wide "Stop", Windows PowerShell 5.1
+    # turns that into a terminating NativeCommandError even with 2>$null, so
+    # every install with gpg on PATH died here. The verdict comes from the
+    # --status-fd output and exit codes below, never from stderr.
+    $ErrorActionPreference = "Continue"
+
     if ($env:OCTOPUS_SKIP_SIGNATURE -eq '1') {
         Write-Warn "Skipping GPG signature verification (OCTOPUS_SKIP_SIGNATURE=1)."
         return $true
@@ -243,13 +265,19 @@ function Test-Signature {
 
 # ── Version resolution ─────────────────────────────────────────────────────────
 
+# OCTOPUS_API_ENDPOINT — the knob bin/octopus already honours — points "latest"
+# at a mirror (http(s), file:// or a path) instead of api.github.com.
 function Get-LatestVersion {
+    $api = if ($env:OCTOPUS_API_ENDPOINT) { $env:OCTOPUS_API_ENDPOINT } else { "$GitHubApi/releases/latest" }
+    $tmp = [System.IO.Path]::GetTempFileName()
     try {
-        $response = Invoke-RestMethod -Uri "$GitHubApi/releases/latest" -UseBasicParsing -Headers @{ "User-Agent" = "octopus-installer" }
-        return $response.tag_name
+        Get-RemoteFile -Url $api -Dest $tmp | Out-Null
+        return (Get-Content -LiteralPath $tmp -Raw | ConvertFrom-Json).tag_name
     } catch {
-        Write-Err "Could not fetch latest version from GitHub."
-        exit 1
+        Write-Err "Could not fetch the latest version from $api."
+        Stop-Install 1
+    } finally {
+        Remove-Item $tmp -Force -ErrorAction SilentlyContinue
     }
 }
 
@@ -308,7 +336,7 @@ if ($NeedDownload) {
         if (-not (Get-RemoteFile -Url $TarUrl -Dest $TarFile -Optional)) {
             Write-Err "Failed to download $Version from $TarUrl."
             Write-Host "Check that the tag exists: https://github.com/$GitHubRepo/releases" -ForegroundColor Yellow
-            exit 1
+            Stop-Install 1
         }
 
         # SHA-256 (mandatory) — fail closed on mismatch.
@@ -316,13 +344,13 @@ if ($NeedDownload) {
         $ShaFile = Join-Path $TmpDir "octopus.sha256"
         if (-not (Get-RemoteFile -Url $ChecksumUrl -Dest $ShaFile -Optional)) {
             Write-Err "Failed to download checksum from $ChecksumUrl."
-            exit 1
+            Stop-Install 1
         }
         $expected = Get-Sha256Field $ShaFile
         $actual   = (Get-FileHash -Algorithm SHA256 -LiteralPath $TarFile).Hash
         if ($expected.ToLower() -ne $actual.ToLower()) {
             Write-Err "Checksum mismatch for $Version (expected $expected, got $actual)."
-            exit 1
+            Stop-Install 1
         }
         $DownloadedChecksum = $actual.ToLower()
 
@@ -331,27 +359,31 @@ if ($NeedDownload) {
         $SigFile = Join-Path $TmpDir "octopus.tar.gz.asc"
         if (Get-RemoteFile -Url $SigUrl -Dest $SigFile -Optional) {
             Write-Info "Verifying GPG signature..."
-            if (-not (Test-Signature $TarFile $SigFile)) { exit 1 }
+            if (-not (Test-Signature $TarFile $SigFile)) { Stop-Install 1 }
         } elseif ($env:OCTOPUS_REQUIRE_SIGNATURE -eq '1') {
             Write-Err "No signature published at $SigUrl (OCTOPUS_REQUIRE_SIGNATURE=1)."
-            exit 1
+            Stop-Install 1
         }
 
         Write-Info "Extracting..."
-        # tar is available natively on Windows 10+.
+        # Windows' own tar.exe (bsdtar, Windows 10 1803+), by absolute path: with
+        # Git's "optional Unix tools" on PATH a bare `tar` is MSYS GNU tar,
+        # which reads C:\... as host:path ("Cannot connect to C: resolve failed").
+        $Tar = Join-Path $env:SystemRoot "System32\tar.exe"
+        if (-not (Test-Path $Tar)) { $Tar = "tar" }
         $ExtractDir = Join-Path $TmpDir "extract"
         New-Item -ItemType Directory -Path $ExtractDir | Out-Null
-        tar -xzf $TarFile -C $ExtractDir
+        & $Tar -xzf $TarFile -C $ExtractDir
         if ($LASTEXITCODE -ne 0) {
             Write-Err "Failed to extract the release tarball."
-            exit 1
+            Stop-Install 1
         }
 
         # Find extracted directory (octopus-<version>/).
         $ExtractedDir = Get-ChildItem $ExtractDir -Directory | Where-Object { $_.Name -like "octopus-*" } | Select-Object -First 1
         if (-not $ExtractedDir) {
             Write-Err "Unexpected tarball structure."
-            exit 1
+            Stop-Install 1
         }
 
         New-Item -ItemType Directory -Path $CacheDir -Force | Out-Null
@@ -402,7 +434,7 @@ foreach ($name in $Shims) {
     $src = Join-Path $ShimSourceDir $name
     if (-not (Test-Path $src)) {
         Write-Err "Shim not found in extracted release at $src"
-        exit 1
+        Stop-Install 1
     }
     Copy-Item -LiteralPath $src -Destination (Join-Path $BinDir $name) -Force
 }
@@ -456,3 +488,17 @@ Write-Host ""
 Write-Host "  Note: Octopus CLI on Windows runs via Git Bash or WSL."
 Write-Host "  Requires: Git for Windows + Python 3, or WSL with a distribution."
 Write-Host ""
+}
+} catch {
+    if ("$_" -ne "OCTOPUS_INSTALL_STOP") {
+        Write-Host "x  $_" -ForegroundColor Red
+        $OctopusInstall.ExitCode = 1
+    }
+}
+# Exit only when THIS file is the running script (.\install.ps1, CI). Under
+# `irm | iex` from inside someone's script, $PSCommandPath is THEIR file —
+# exiting would end their script, even after a successful install — so the
+# running file must be this installer (it carries the stop marker).
+if ($PSCommandPath -and (Select-String -LiteralPath $PSCommandPath -SimpleMatch 'OCTOPUS_INSTALL_STOP' -Quiet)) { exit $OctopusInstall.ExitCode }
+$global:LASTEXITCODE = $OctopusInstall.ExitCode
+Remove-Variable OctopusInstall -ErrorAction SilentlyContinue

@@ -196,6 +196,60 @@ PY
 }
 check "no code line turns into a smart quote when PS 5.1 reads the file as cp1252" t_cp1252_safe
 
+# 12. `irm … | iex` (the README command) runs the installer INSIDE the user's
+#     session. A bare `exit` there closes their PowerShell window before they
+#     can read the error, and script-level Set-StrictMode / ErrorActionPreference
+#     leak into their session. So: the body runs in a child scope, failures go
+#     through Stop-Install (a throw), and the single `exit` is guarded to fire
+#     only when the installer runs as a FILE (exit code for CI/tests).
+t_iex_no_bare_exit() {
+  local exits
+  exits="$(grep -vE '^[[:space:]]*#' "$PS1" | grep -cE '(^|[;{[:space:]])exit([[:space:]]|$)')"
+  [[ "$exits" == "1" ]] && grep -qE '^if \(\$PSCommandPath -and \(Select-String -LiteralPath \$PSCommandPath -SimpleMatch .OCTOPUS_INSTALL_STOP. -Quiet\)\) \{ exit ' "$PS1"
+}
+check "irm | iex: no bare exit — one exit, only when run as a file" t_iex_no_bare_exit
+
+t_iex_scoped_prefs() {
+  # Strict mode / EAP are set inside the child scope (after the `& {` line), not at top level.
+  local open strict
+  open="$(grep -nE '^& \{' "$PS1" | head -1 | cut -d: -f1)"
+  strict="$(grep -nE '^Set-StrictMode' "$PS1" | head -1 | cut -d: -f1)"
+  [[ -n "$open" && -n "$strict" && "$strict" -gt "$open" ]]
+}
+check "irm | iex: StrictMode/ErrorActionPreference scoped to the installer" t_iex_scoped_prefs
+
+t_iex_stop_install() { grep -qE '^function Stop-Install' "$PS1" && grep -qF 'Stop-Install 1' "$PS1"; }
+check "failures go through Stop-Install instead of exit" t_iex_stop_install
+
+t_latest_endpoint() { ps_fn "$PS1" Get-LatestVersion | grep -qF 'OCTOPUS_API_ENDPOINT'; }
+check "latest-version lookup honours OCTOPUS_API_ENDPOINT (parity with bin/octopus)" t_latest_endpoint
+
+# 13. Under the installer's ErrorActionPreference = "Stop", Windows PowerShell
+#     5.1 turns ANY stderr line from a native command into a terminating
+#     NativeCommandError — even with 2>$null. `gpg --verify` always writes to
+#     stderr ("gpg: Signature made …"), and `gpg --list-keys` does on a first
+#     install, so with gpg on PATH (Git's Unix tools, Gpg4win) every install
+#     died inside signature verification. Every function that runs a native
+#     tool whose stderr is expected must relax the preference locally.
+t_native_stderr_safe() {
+  local fn bad=0
+  for fn in Test-Signature Test-Python; do
+    ps_fn "$PS1" "$fn" | grep -qE '^\s+\$ErrorActionPreference = "Continue"' || { echo "  $fn runs native tools under EAP=Stop"; bad=1; }
+  done
+  return $bad
+}
+check "native tools with expected stderr (gpg, python probe) run with a local EAP=Continue" t_native_stderr_safe
+
+# 14. Extraction uses Windows' own tar.exe by absolute path. With Git's
+#     "optional Unix tools" on PATH, a bare `tar` is MSYS GNU tar, which reads
+#     `C:\…` as host:path and fails with "Cannot connect to C: resolve failed"
+#     — reproduced on a Win11 VM right after the gpg fix let installs get there.
+t_windows_tar() {
+  ! grep -vE '^[[:space:]]*#' "$PS1" | grep -qE '^[[:space:]]*tar[[:space:]]' \
+    && grep -qF 'System32\tar.exe' "$PS1"
+}
+check "extracts with System32\\tar.exe, never the first tar on PATH (MSYS GNU tar)" t_windows_tar
+
 # 10. Never suggest `setx PATH "%PATH%;…"` (copies the machine PATH, truncates at 1024).
 t_no_setx() { ! grep -vE '^[[:space:]]*#' "$PS1" | grep -qE 'setx[[:space:]]+PATH'; }
 check "does not suggest the truncating 'setx PATH' recipe" t_no_setx
