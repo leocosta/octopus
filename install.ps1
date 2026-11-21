@@ -278,7 +278,8 @@ function Get-LatestVersion {
     $tmp = [System.IO.Path]::GetTempFileName()
     try {
         Get-RemoteFile -Url $api -Dest $tmp | Out-Null
-        return (Get-Content -LiteralPath $tmp -Raw | ConvertFrom-Json).tag_name
+        # [string]: ConvertFrom-Json is untyped, and an array would slip past -notmatch.
+        return [string](Get-Content -LiteralPath $tmp -Raw | ConvertFrom-Json).tag_name
     } catch {
         Write-Err "Could not fetch the latest version from $api."
         Stop-Install 1
@@ -296,8 +297,13 @@ if (-not $Version) {
 # and part of the download URL. Accept only the tag-or-SHA shape bin/octopus
 # enforces on the lockfile, so a mirror's tag_name or -Version cannot point the
 # install outside the cache (`..\..\Documents`).
-if ($Version -notmatch '^v?[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$' -and $Version -notmatch '^[0-9a-f]{7,40}$') {
-    Write-Err "Refusing malformed version '$Version' (expected a release tag such as v1.2.3)."
+# Case-sensitive and anchored with \z (.NET `$` also matches before a final
+# newline); the suffix must end in an alphanumeric, since Win32 drops trailing
+# dots and `v1.2.3-rc.` would share the `v1.2.3-rc` cache dir.
+$Version = [string]$Version
+if ($Version -cnotmatch '^v?[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]*[0-9A-Za-z])?\z' -and $Version -cnotmatch '^[0-9a-f]{7,40}\z') {
+    $shown = $Version -replace '[\x00-\x1f\x7f]', '?'   # mirror-supplied: no terminal escapes
+    Write-Err "Refusing malformed version '$shown' (expected a release tag such as v1.2.3)."
     Stop-Install 1
 }
 
