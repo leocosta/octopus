@@ -328,6 +328,29 @@ _agent_toggle() {
   manifest="$(_agent_manifest)"
   [[ -f "$manifest" ]] || { echo "No .octopus.yml here — run 'octopus setup' first." >&2; return 2; }
 
+  # Turning off a GUARD (a hook that blocks) is the user's call, never the
+  # agent's: a blocked agent reads the hook's message and could otherwise run
+  # this to remove the guard that stopped it. An agent's shell has no
+  # terminal, so require one, and an explicit yes on it. There is
+  # deliberately no flag that skips this.
+  if [[ "$action" == "disable" ]]; then
+    local guards=()
+    for id in "${ids[@]}"; do
+      [[ "$(hook_catalog_group "$id")" == "guards" ]] && guards+=("$id")
+    done
+    if [[ ${#guards[@]} -gt 0 ]]; then
+      if [[ ! -t 0 || ! -t 1 ]] || ! { : </dev/tty; } 2>/dev/null; then
+        echo "Refusing to turn off ${guards[*]} without a terminal: a guard is the user's call." >&2
+        echo "Run 'octopus hooks disable ${guards[*]}' yourself, in a terminal; it asks to confirm." >&2
+        return 3
+      fi
+      local reply
+      printf 'Turn off %s? It removes a protection, for everyone who uses this repo. [y/N] ' "${guards[*]}" >/dev/tty
+      read -r reply </dev/tty
+      [[ "$reply" == [yY] || "$reply" == [yY][eE][sS] ]] || { echo "Nothing changed."; return 1; }
+    fi
+  fi
+
   off="$(_agent_disabled_ids "$manifest")"
   while IFS= read -r id; do
     [[ -n "$id" ]] || continue

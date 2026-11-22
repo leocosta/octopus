@@ -97,7 +97,7 @@ done <<< "$commit_dirs"
 if $found; then
   echo "" >&2
   echo "Remove secrets and use environment variables instead." >&2
-  echo "False positive? Turn this guard off for the repo: octopus hooks disable detect-secrets" >&2
+  echo "False positive? Tell the user: only they can turn this guard off (see the Octopus hooks docs)." >&2
   exit 2
 fi
 

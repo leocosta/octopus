@@ -101,8 +101,12 @@ the list.
 
 Turning off one of the three **guards** (`destructive-guard`,
 `detect-secrets`, `block-no-verify`) removes a protection, not a
-nuisance. For a single command, `destructive-guard` accepts
-`# destructive-guard-ok: <reason>` instead.
+nuisance, so it is your call alone. `octopus hooks disable` asks you
+to confirm a guard and refuses without a terminal. An agent's shell
+has none, so an agent a guard just blocked cannot switch the guard
+off itself, and the guards' messages tell it to ask you instead. For a
+single command, `destructive-guard` accepts
+`# destructive-guard-ok: <reason>`.
 
 ## What the guards can and cannot stop
 

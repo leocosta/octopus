@@ -189,16 +189,40 @@ t_picker_diff() {
 }
 check "unchecked hooks become disabledHooks; a hidden one already off stays off" t_picker_diff
 
-# ── the guards say how to turn them off, in a way that works ────────────────
+# ── a blocked AGENT reads the guard's message: it must never be handed the
+#    command that removes the guard, and the command must refuse an agent ────
 t_messages() {
   local f bad=0
   for f in detect-secrets block-no-verify destructive-guard; do
-    grep -q "octopus hooks disable $f" "$DIR/hooks/pre-tool-use/$f.sh" || { echo "  $f: no disable hint"; bad=1; }
+    grep -q "octopus hooks disable" "$DIR/hooks/pre-tool-use/$f.sh" && { echo "  $f: hands the agent a disable command"; bad=1; }
+    grep -q "only the user can\|only they can" "$DIR/hooks/pre-tool-use/$f.sh" || { echo "  $f: does not say it is the user's call"; bad=1; }
   done
-  ! grep -rq 'use OCTOPUS_DISABLED_HOOKS=' "$DIR/hooks/" || { echo "  a hook still suggests the runtime env var"; bad=1; }
+  ! grep -rq 'OCTOPUS_DISABLED_HOOKS=' "$DIR/hooks/" || { echo "  a hook still suggests the runtime env var"; bad=1; }
   return $bad
 }
-check "blocking hooks point at 'octopus hooks disable <id>'" t_messages
+check "guard messages say it is the user's call, without a disable command" t_messages
+
+guard_proj="$tmp/guard"; mkdir -p "$guard_proj"; git -C "$guard_proj" init -q
+printf 'agents:\n  - claude\nhooks: true\n' > "$guard_proj/.octopus.yml"
+
+t_guard_needs_tty() {
+  local before; before="$(cat "$guard_proj/.octopus.yml")"
+  (cd "$guard_proj" && bash "$CLI" hooks disable detect-secrets --no-apply </dev/null >/dev/null 2>&1); local rc=$?
+  [[ $rc -eq 3 && "$(cat "$guard_proj/.octopus.yml")" == "$before" ]]
+}
+check "disabling a guard without a terminal (an agent's shell) is refused" t_guard_needs_tty
+
+t_nonguard_no_tty() { (cd "$guard_proj" && bash "$CLI" hooks disable auto-format --no-apply </dev/null >/dev/null 2>&1) && grep -q 'auto-format' "$guard_proj/.octopus.yml"; }
+check "a non-blocking hook can still be disabled without a terminal" t_nonguard_no_tty
+
+t_guard_tty_confirm() {
+  command -v script >/dev/null || { echo "  (script(1) not available — skipped)"; return 0; }
+  printf 'n\n' | script -qec "cd '$guard_proj' && bash '$CLI' hooks disable detect-secrets --no-apply" /dev/null >/dev/null 2>&1
+  grep -q 'detect-secrets' "$guard_proj/.octopus.yml" && { echo "  'n' still disabled it"; return 1; }
+  printf 'y\n' | script -qec "cd '$guard_proj' && bash '$CLI' hooks disable detect-secrets --no-apply" /dev/null >/dev/null 2>&1
+  grep -q 'detect-secrets' "$guard_proj/.octopus.yml"
+}
+check "in a terminal, a guard is disabled only after an explicit yes" t_guard_tty_confirm
 
 echo ""
 echo "hook config: $PASS passed, $FAIL failed."

@@ -3,7 +3,7 @@ title: Hooks
 description: Hooks de ciclo de vida que envolvem cada tool call, fronteira de sessão e compactação — a camada de segurança e automação agnóstica de agente, abaixo de skills e rules.
 sidebar:
   order: 1
-source_hash: "sha256:1ff549f48de2d730404e8623ca1bf2bd60814c5de2f02502b80e1df337dfdb18"
+source_hash: "sha256:4ff96634877cc6e5fc5e7ede15d6799ab57e538409844aefbed33d6b1e4e6ebb"
 needs_retranslation: false
 ---
 
@@ -103,8 +103,12 @@ próxima vez que gravar a lista.
 
 Desligar um dos três **guards** (`destructive-guard`,
 `detect-secrets`, `block-no-verify`) remove uma proteção, não um
-incômodo. Para um único comando, o `destructive-guard` aceita
-`# destructive-guard-ok: <motivo>` no lugar disso.
+incômodo, então a decisão é só sua. O `octopus hooks disable` pede
+confirmação para um guard e recusa sem um terminal. O shell de um
+agent não tem terminal, então um agent que acabou de ser barrado por
+um guard não consegue desligá-lo sozinho, e as mensagens dos guards
+dizem a ele para pedir a você. Para um único comando, o
+`destructive-guard` aceita `# destructive-guard-ok: <motivo>`.
 
 ## O que os guards conseguem e não conseguem impedir
 
