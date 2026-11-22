@@ -29,7 +29,9 @@ assert 'notion' in servers, f'notion not in mcpServers: {list(servers.keys())}'
 assert 'github' in servers, f'github not in mcpServers: {list(servers.keys())}'
 assert servers['notion']['type'] == 'http', 'notion type should be http'
 assert servers['notion']['url'] == 'https://mcp.notion.com/mcp', 'notion url wrong'
-assert servers['github']['command'] == 'npx', 'github command wrong'
+assert servers['github']['type'] == 'http', 'github should be the hosted server'
+assert servers['github']['url'] == 'https://api.githubcopilot.com/mcp/', 'github url wrong'
+assert servers['github']['headers']['Authorization'] == 'Bearer \${GITHUB_TOKEN}', 'github auth header wrong'
 print('PASS: MCP injection verified')
 " || { echo "FAIL: MCP injection verification failed"; exit 1; }
 

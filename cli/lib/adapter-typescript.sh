@@ -115,7 +115,8 @@ cm_adapter_typescript_deps() {
   local cycles
   cycles="$(
     cd "$repo_root"
-    npx --yes madge --circular --extensions ts,tsx,js,jsx \
+    # Pinned: an unpinned `npx --yes` resolves whatever is newest on each run.
+    npx --yes madge@8.0.0 --circular --extensions ts,tsx,js,jsx \
       --ignore-path .gitignore \
       "$entry" 2>/dev/null \
       | grep -c "→\|->" || true

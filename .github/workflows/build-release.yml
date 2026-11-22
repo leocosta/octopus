@@ -26,7 +26,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Download fzf binaries
         shell: bash
@@ -37,11 +37,29 @@ jobs:
 
           mkdir -p bin/fzf/linux-amd64 bin/fzf/linux-arm64 bin/fzf/darwin-amd64 bin/fzf/darwin-arm64 bin/fzf/windows-amd64
 
-          curl -fsSL "${BASE}/fzf-${FZF_VER}-linux_amd64.tar.gz"  | tar -xz -C bin/fzf/linux-amd64 fzf
-          curl -fsSL "${BASE}/fzf-${FZF_VER}-linux_arm64.tar.gz"  | tar -xz -C bin/fzf/linux-arm64 fzf
-          curl -fsSL "${BASE}/fzf-${FZF_VER}-darwin_amd64.tar.gz" | tar -xz -C bin/fzf/darwin-amd64 fzf
-          curl -fsSL "${BASE}/fzf-${FZF_VER}-darwin_arm64.tar.gz" | tar -xz -C bin/fzf/darwin-arm64 fzf
-          curl -fsSL "${BASE}/fzf-${FZF_VER}-windows_amd64.zip" -o /tmp/fzf-windows-amd64.zip && unzip -q /tmp/fzf-windows-amd64.zip -d bin/fzf/windows-amd64
+          # Expected SHA-256 of each archive, taken from fzf's published
+          # fzf_${FZF_VER}_checksums.txt and kept here, so the build verifies
+          # against a value reviewed in this repo. Bump together with
+          # FZF_VERSION.
+          DL="$(mktemp -d)"
+          cat > "$DL/SHA256SUMS" <<'SUMS'
+          561c9db95cc1f75c8ad7e1d4461b2da0c8461189041f610ff1205f6303b84634  fzf-0.72.0-darwin_amd64.tar.gz
+          4cbf87e8e8a342614c1e3e74670ceb18c2af998c4d4d0c379cfee9b520774e90  fzf-0.72.0-darwin_arm64.tar.gz
+          0e58e4bd0b3c5d68c56b54c460a6863d0de79633ed18d388575a960ab447b006  fzf-0.72.0-linux_amd64.tar.gz
+          a0a5b50730f568c5f08b8dbba1e6e598db253e1856d371290086786b889b996b  fzf-0.72.0-linux_arm64.tar.gz
+          cce66ae7e442030334927bfbfd917690713e63d215aba93027f99807828fe239  fzf-0.72.0-windows_amd64.zip
+          SUMS
+          sed -i 's/^ *//' "$DL/SHA256SUMS"
+          for f in $(awk '{print $2}' "$DL/SHA256SUMS"); do
+            curl -fsSL "${BASE}/${f}" -o "$DL/$f"
+          done
+          (cd "$DL" && sha256sum -c --strict SHA256SUMS)
+
+          tar -xzf "$DL/fzf-${FZF_VER}-linux_amd64.tar.gz"  -C bin/fzf/linux-amd64 fzf
+          tar -xzf "$DL/fzf-${FZF_VER}-linux_arm64.tar.gz"  -C bin/fzf/linux-arm64 fzf
+          tar -xzf "$DL/fzf-${FZF_VER}-darwin_amd64.tar.gz" -C bin/fzf/darwin-amd64 fzf
+          tar -xzf "$DL/fzf-${FZF_VER}-darwin_arm64.tar.gz" -C bin/fzf/darwin-arm64 fzf
+          unzip -q "$DL/fzf-${FZF_VER}-windows_amd64.zip" -d bin/fzf/windows-amd64
 
           chmod +x bin/fzf/linux-amd64/fzf bin/fzf/linux-arm64/fzf bin/fzf/darwin-amd64/fzf bin/fzf/darwin-arm64/fzf || true
           echo "fzf binaries ready for packaging"
