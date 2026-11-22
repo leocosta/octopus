@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 source "${BASH_SOURCE[0]%/*}/../../cli/lib/python.sh" 2>/dev/null || true
+source "${BASH_SOURCE[0]%/*}/../../cli/lib/hook_scope.sh" 2>/dev/null || exit 0
 # Auto-format files after Write/Edit based on file extension.
 #
 # Failures are reported to stderr but never fail the hook, so a broken
@@ -11,6 +12,9 @@ input=$(cat)
 file_path=$(echo "$input" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('tool_input',{}).get('file_path','') or d.get('file_path',''))" 2>/dev/null || echo "")
 
 [[ -z "$file_path" || ! -f "$file_path" ]] && exit 0
+# Formatters run project code (eslint/prettier configs, MSBuild): only for
+# files inside the open project. See cli/lib/hook_scope.sh.
+octopus_in_project "$file_path" || exit 0
 
 has() { command -v "$1" &>/dev/null; }
 
@@ -46,22 +50,18 @@ case "$ext" in
       has eslint   && run_formatter eslint   eslint --fix "$file_path"
       has prettier && run_formatter prettier prettier --write "$file_path"
     elif has npx; then
-      run_formatter prettier npx --yes prettier --write "$file_path"
+      # --no-install: only a prettier the project already has. Never fetch
+      # and run a package from the registry on an edit.
+      run_formatter prettier npx --no-install prettier --write "$file_path"
     fi
     ;;
   cs|csx)
     if has csharpier; then
       run_formatter csharpier csharpier format "$file_path"
     elif has dotnet; then
-      # Walk up from the file to find the nearest .sln or .csproj
-      proj_dir=$(dirname "$file_path")
-      while [[ "$proj_dir" != "/" ]]; do
-        if compgen -G "$proj_dir"/*.sln &>/dev/null || compgen -G "$proj_dir"/*.csproj &>/dev/null; then
-          break
-        fi
-        proj_dir=$(dirname "$proj_dir")
-      done
-      [[ "$proj_dir" == "/" ]] && proj_dir=$(dirname "$file_path")
+      # The nearest .sln or .csproj, never above the project root.
+      proj_dir=$(octopus_nearest_project "$file_path" '*.sln' '*.csproj')
+      [[ -z "$proj_dir" ]] && proj_dir=$(dirname "$file_path")
       # --include requires a path relative to the project root; absolute paths are silently ignored
       rel_path="${file_path#"$proj_dir"/}"
       # --severity info: apply fixes for analyzers configured at :suggestion / :info in
