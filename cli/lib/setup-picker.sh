@@ -11,6 +11,8 @@ _PICKER_RELEASE_ROOT="$(cd "$_PICKER_DIR/../.." && pwd)"
 source "$_PICKER_DIR/ui.sh"
 # shellcheck source=./bundle-aliases.sh
 source "$_PICKER_DIR/bundle-aliases.sh"
+# shellcheck source=./hook-catalog.sh
+source "$_PICKER_DIR/hook-catalog.sh"
 
 # Defaults (overwritten by run_picker)
 PICKER_AGENTS=("claude")
@@ -21,6 +23,7 @@ PICKER_REVIEWERS=""
 PICKER_MCP_ENABLED="false"
 PICKER_CUSTOMIZE="false"
 PICKER_EXCLUDE=()
+PICKER_DISABLED_HOOKS=()
 
 # Current-state mirror for agents (populated by _picker_load_current_state);
 # declared here so `${#_CURRENT_AGENTS[@]}` is safe under `set -u`.
@@ -88,7 +91,7 @@ _picker_load_bundles
 
 _PICKER_FEATURES=(hooks workflow reviewers mcp)
 _PICKER_FEATURE_DESCS=(
-  "destructive-guard, session-start"
+  "guards, edit automation, session context — fine-tune next"
   "pr-open, pr-merge, release"
   "→ prompted after install"
   "→ prompted after install"
@@ -105,6 +108,7 @@ _CURRENT_HOOKS=""
 _CURRENT_WORKFLOW=""
 _CURRENT_MCP=""
 _CURRENT_EXCLUDES=()
+_CURRENT_DISABLED_HOOKS=()
 
 _picker_load_current_state() {
   _CURRENT_BUNDLES=()
@@ -113,17 +117,35 @@ _picker_load_current_state() {
   _CURRENT_WORKFLOW=""
   _CURRENT_MCP=""
   _CURRENT_EXCLUDES=()
+  _CURRENT_DISABLED_HOOKS=()
 
   local manifest="${MANIFEST_PATH:-${PROJECT_ROOT:-$PWD}/.octopus.yml}"
   [[ -f "$manifest" ]] || return 0
 
-  local in_bundles=0 in_mcp=0 in_agents=0
+  local in_bundles=0 in_mcp=0 in_agents=0 in_dhooks=0 _dh
   while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line%$'\r'}"   # CRLF manifest (saved on Windows)
     # New top-level key resets list-tracking
     if [[ "$line" =~ ^[a-zA-Z] ]]; then
       in_bundles=0
       in_mcp=0
       in_agents=0
+      in_dhooks=0
+    fi
+    # disabledHooks: — inline [a, b] or a block list (same forms setup reads).
+    if [[ "$line" =~ ^disabledHooks:[[:space:]]*\[(.*)\] ]]; then
+      for _dh in ${BASH_REMATCH[1]//,/ }; do
+        _dh="${_dh//[\"\']/}"; [[ -n "$_dh" ]] && _CURRENT_DISABLED_HOOKS+=("$_dh")
+      done
+      continue
+    fi
+    if [[ "$line" =~ ^disabledHooks:[[:space:]]*$ ]]; then
+      in_dhooks=1
+      continue
+    fi
+    if [[ $in_dhooks -eq 1 && "$line" =~ ^[[:space:]]+-[[:space:]]*([a-zA-Z][a-zA-Z0-9_-]*) ]]; then
+      _CURRENT_DISABLED_HOOKS+=("${BASH_REMATCH[1]}")
+      continue
     fi
     if [[ "$line" =~ ^agents:[[:space:]]*$ ]]; then
       in_agents=1
@@ -340,6 +362,37 @@ _picker_member_rows() {
   done
 }
 
+# Screen-2 rows for the agent hooks, one group per catalog group (guards,
+# edits, session). Checked unless already in _CURRENT_DISABLED_HOOKS. Same 4
+# columns as the member rows; ids prefixed `k:`. Pure / testable.
+_picker_hook_rows() {
+  local g id desc last="" def
+  while IFS=$'\t' read -r g id desc; do
+    [[ -n "$id" ]] || continue
+    if [[ "$g" != "$last" ]]; then
+      printf 'h:hooks-%s\t  ── hooks: %s ──\t0\t\n' "$g" "$(hook_catalog_group_title "$g")"
+      last="$g"
+    fi
+    def=1
+    [[ ${#_CURRENT_DISABLED_HOOKS[@]} -gt 0 ]] && _picker_array_contains "$id" "${_CURRENT_DISABLED_HOOKS[@]}" && def=0
+    printf 'k:%s\t      %s\t%s\t%s\n' "$id" "$id" "$def" "$desc"
+  done < <(hook_catalog_rows)
+}
+
+# Pure: the visible hooks NOT in the kept set (file $1, ids one per line), plus
+# any internal hook the manifest already had off — the picker never shows
+# those, so it must not silently turn them back on.
+_picker_disabled_from_kept() {
+  local kept_f="$1" id
+  while IFS= read -r id; do
+    [[ -n "$id" ]] || continue
+    grep -qxF -- "$id" "$kept_f" 2>/dev/null || printf '%s\n' "$id"
+  done < <(hook_catalog_visible_ids)
+  for id in "${_CURRENT_DISABLED_HOOKS[@]+"${_CURRENT_DISABLED_HOOKS[@]}"}"; do
+    [[ "$_HOOK_CATALOG_INTERNAL" == *" $id "* ]] && printf '%s\n' "$id"
+  done
+}
+
 # Pure: echo the union members (file $1, one per line) absent from the kept set
 # (file $2). Used to turn "what stayed checked" into the manifest exclude:.
 _picker_diff_union_kept() {
@@ -463,10 +516,14 @@ _picker_run_fzf() {
     _CURRENT_HOOKS="$PICKER_HOOKS"; _CURRENT_WORKFLOW="$PICKER_WORKFLOW"
     _CURRENT_MCP="$PICKER_MCP_ENABLED"
 
-    # --- Screen 2: fine-tune members of the chosen bundles ----------------
+    # --- Screen 2: fine-tune members of the chosen bundles, and the hooks --
     PICKER_EXCLUDE=()
+    PICKER_DISABLED_HOOKS=("${_CURRENT_DISABLED_HOOKS[@]+"${_CURRENT_DISABLED_HOOKS[@]}"}")
     memrows="$(_picker_member_rows "${PICKER_BUNDLES[@]}")"
-    [[ -z "$memrows" ]] && break   # no members to tune → done
+    if [[ "$PICKER_HOOKS" == "true" ]]; then
+      memrows="${memrows:+$memrows$'\n'}$(_picker_hook_rows)"
+    fi
+    [[ -z "$memrows" ]] && break   # nothing to tune → done
 
     # set -e-safe rc capture: ESC returns 2 (back); without the if-guard, set -e
     # would abort `octopus setup` on that non-zero before the case runs — which
@@ -488,6 +545,13 @@ _picker_run_fzf() {
     while IFS= read -r ex; do
       [[ -n "$ex" ]] && PICKER_EXCLUDE+=("$ex")
     done < <(_picker_diff_union_kept "$tmp2/union" "$tmp2/kept")
+    if [[ "$PICKER_HOOKS" == "true" ]]; then
+      printf '%s\n' "$kept" | sed -n 's/^k://p' | sort -u > "$tmp2/kept-hooks"
+      PICKER_DISABLED_HOOKS=()
+      while IFS= read -r ex; do
+        [[ -n "$ex" ]] && PICKER_DISABLED_HOOKS+=("$ex")
+      done < <(_picker_disabled_from_kept "$tmp2/kept-hooks")
+    fi
     rm -rf "$tmp2"
     break
   done
@@ -659,8 +723,10 @@ _picker_run_bash() {
 
   echo ""
   echo "  Features (Enter = keep current, y/n = change):"
-  _picker_bash_yn "  Hooks (destructive-guard, session-start)" "$hooks_default" \
+  _picker_bash_yn "  Hooks (guards, edit automation, session context)" "$hooks_default" \
     && PICKER_HOOKS="true" || PICKER_HOOKS="false"
+  PICKER_DISABLED_HOOKS=("${_CURRENT_DISABLED_HOOKS[@]+"${_CURRENT_DISABLED_HOOKS[@]}"}")
+  [[ "$PICKER_HOOKS" == "true" ]] && _picker_hooks_deselect_bash
   _picker_bash_yn "  Workflow commands (pr-open, pr-merge, release)" "$workflow_default" \
     && PICKER_WORKFLOW="true" || PICKER_WORKFLOW="false"
   _picker_bash_yn "  Configure reviewers" "n" \
@@ -674,6 +740,46 @@ _picker_run_bash() {
     _picker_member_deselect_bash
   fi
   echo ""
+}
+
+# Bash-fallback parity with the fzf hooks group: list the hooks by group (✓ =
+# on), read the numbers to turn OFF. Enter keeps the current selection.
+_picker_hooks_deselect_bash() {
+  local ids=() g id desc last="" n=0 mark cur_off=() i
+  echo ""
+  echo "  Hooks (✓ = on). Turning a guard off removes a protection:"
+  while IFS=$'\t' read -r g id desc; do
+    [[ -n "$id" ]] || continue
+    [[ "$g" != "$last" ]] && { printf "    %s\n" "$(hook_catalog_group_title "$g")"; last="$g"; }
+    n=$((n + 1)); ids+=("$id")
+    mark="✓"
+    if [[ ${#_CURRENT_DISABLED_HOOKS[@]} -gt 0 ]] && _picker_array_contains "$id" "${_CURRENT_DISABLED_HOOKS[@]}"; then
+      mark=" "; cur_off+=("$n")
+    fi
+    printf "      %2d. [%s] %-26s %s\n" "$n" "$mark" "$id" "$desc"
+  done < <(hook_catalog_rows)
+  local def="${cur_off[*]:-}" raw tok invalid picks
+  while true; do
+    printf "  Numbers to turn OFF — space or comma-separated, '-' for none [%s]: " "${def:-none}"
+    read -r raw </dev/tty
+    raw="${raw:-$def}"
+    [[ "$raw" == "-" ]] && raw=""
+    invalid=(); picks=()
+    for tok in $(printf '%s' "$raw" | tr ',\t' '  '); do
+      if [[ "$tok" =~ ^[1-9][0-9]*$ ]] && (( tok >= 1 && tok <= n )); then
+        picks+=("${ids[$((tok-1))]}")
+      else
+        invalid+=("$tok")
+      fi
+    done
+    [[ ${#invalid[@]} -gt 0 ]] && { printf "  Invalid: %s — enter numbers 1–%d\n" "${invalid[*]}" "$n"; continue; }
+    break
+  done
+  PICKER_DISABLED_HOOKS=("${picks[@]+"${picks[@]}"}")
+  # Internal hooks the manifest already had off stay off (never listed here).
+  for i in "${_CURRENT_DISABLED_HOOKS[@]+"${_CURRENT_DISABLED_HOOKS[@]}"}"; do
+    [[ "$_HOOK_CATALOG_INTERNAL" == *" $i "* ]] && PICKER_DISABLED_HOOKS+=("$i")
+  done
 }
 
 _picker_bash_yn() {

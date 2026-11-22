@@ -108,7 +108,9 @@ check "web requests use -UseBasicParsing" t_basic_parsing
 
 # 7. Bash discovery — each assertion is a failure reproduced on a Windows 11 VM.
 # Body of a PowerShell function (from `function <name> {` to the next `^}`).
-ps_fn() { sed -n "/^function $2 {/,/^}/p" "$1"; }
+# CR stripped: .gitattributes checks bin/octopus.ps1 out with CRLF, install.ps1
+# with LF, so comparing the two raw would fail on every fresh clone.
+ps_fn() { tr -d '\r' < "$1" | sed -n "/^function $2 {/,/^}/p"; }
 
 t_skips_wsl_launchers() {
   # C:\Windows\System32\bash.exe and the WindowsApps alias are WSL launchers;

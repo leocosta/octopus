@@ -130,7 +130,7 @@ _detect_stack() {
 # Manifest generation
 # ---------------------------------------------------------------------------
 _setup_generate_manifest() {
-  local bundles_str="$1" hooks="$2" workflow="$3" reviewers="$4" profiles="$5" excludes="${6:-}" agents_str="${7:-}"
+  local bundles_str="$1" hooks="$2" workflow="$3" reviewers="$4" profiles="$5" excludes="${6:-}" agents_str="${7:-}" disabled_hooks="${8:-}"
 
   mkdir -p "$(dirname "$MANIFEST_PATH")"
 
@@ -176,6 +176,18 @@ _setup_generate_manifest() {
     fi
 
     [[ "$hooks" == "true" ]]    && printf 'hooks: true\n'
+    # Hooks unchecked in the picker. Persisted here, so every setup run —
+    # including the one `octopus update` triggers — keeps them off.
+    if [[ "$hooks" == "true" && "$disabled_hooks" == *[![:space:]]* ]]; then
+      printf 'disabledHooks:\n'
+      local _hrest="$disabled_hooks" _h _hseen=" "
+      while [[ "$_hrest" == *[![:space:]]* ]]; do
+        _hrest="${_hrest#"${_hrest%%[![:space:]]*}"}"
+        _h="${_hrest%%[[:space:]]*}"
+        _hrest="${_hrest#"$_h"}"
+        case "$_hseen" in *" $_h "*) ;; *) _hseen+="$_h "; printf '  - %s\n' "$_h" ;; esac
+      done
+    fi
     [[ "$workflow" == "true" ]] && printf 'workflow: true\n'
 
     if [[ -n "$reviewers" ]]; then
@@ -250,7 +262,8 @@ if [[ ! -f "$MANIFEST_PATH" ]]; then
       "${SETUP_REVIEWERS:-}" \
       "" \
       "${PICKER_EXCLUDE[*]:-}" \
-      "${PICKER_AGENTS[*]:-claude}"
+      "${PICKER_AGENTS[*]:-claude}" \
+      "${PICKER_DISABLED_HOOKS[*]:-}"
   else
     # Non-interactive (CI/pipe): starter + detected profiles, silently.
     _setup_generate_manifest "starter" "true" "true" "" "$SETUP_PROFILES"
@@ -268,7 +281,8 @@ elif [[ " ${_setup_remaining_args[*]:-} " == *" --reconfigure "* ]]; then
       "${SETUP_REVIEWERS:-}" \
       "" \
       "${PICKER_EXCLUDE[*]:-}" \
-      "${PICKER_AGENTS[*]:-claude}"
+      "${PICKER_AGENTS[*]:-claude}" \
+      "${PICKER_DISABLED_HOOKS[*]:-}"
   fi
 fi
 

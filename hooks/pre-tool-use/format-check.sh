@@ -5,7 +5,9 @@ source "${BASH_SOURCE[0]%/*}/../../cli/lib/python.sh" 2>/dev/null || true
 set -euo pipefail
 
 input=$(cat)
-file_path=$(echo "$input" | python3 -c "import sys,json; print(json.load(sys.stdin).get('file_path',''))" 2>/dev/null || echo "")
+# Claude Code sends the path as tool_input.file_path; the top-level field this
+# used to read never exists, so the hook never fired (same class as #245).
+file_path=$(printf '%s' "$input" | python3 -c "import sys,json; print((json.load(sys.stdin).get('tool_input') or {}).get('file_path',''))" 2>/dev/null || echo "")
 
 # Warn if creating doc files outside docs/ directory
 if [[ "$file_path" == *.md && "$file_path" != */docs/* && "$file_path" != */README.md && "$file_path" != */.claude/* && "$file_path" != *CHANGELOG* ]]; then

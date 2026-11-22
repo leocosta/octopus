@@ -10,8 +10,9 @@ the conversation: before a tool runs, after a tool succeeds, when a
 tool fails, when the session starts, when context is compacted, when
 the conversation stops. Octopus ships a curated set of hooks that
 attach automatically in any repo with `hooks: true` in
-`.octopus.yml` (the default for the `quality` bundle and common in
-`starter`).
+`.octopus.yml`. `octopus setup` asks whether you want them, then lists
+each one so you can leave out the ones that don't fit the repo — see
+[Turning hooks off](#turning-hooks-off).
 
 ## Why hooks live below skills
 
@@ -51,8 +52,8 @@ in the table). The rest are listed for completeness.
 |---|---|---|---|
 | `destructive-guard` | pre-tool-use | Blocks `rm -rf`, `git push --force`, `DROP TABLE`, `DELETE FROM` without `WHERE`, `chmod -R 777`, `curl \| bash`, etc. Bypass via `# destructive-guard-ok: <reason>` marker. | [→](./destructive-guard/) |
 | `detect-secrets` | pre-tool-use | Scans staged files for hardcoded API keys, JWTs, Stripe/SendGrid/Slack/GitHub tokens before commit. Exits 2 to block. | [→](./detect-secrets/) |
-| `block-no-verify` | pre-tool-use | Refuses `git commit --no-verify` and `git push --no-verify`. Pre-commit hooks exist for a reason. | — |
-| `format-check` | pre-tool-use | Verifies the project formatter would not reformat the file the agent is about to write. | — |
+| `block-no-verify` | pre-tool-use | Refuses commands that skip git hooks: `--no-verify`, `git commit -n`, `core.hooksPath`, `HUSKY=0`, rewriting `.git/hooks`. Reads the command the way git does, so a commit message that only mentions the flag goes through. | — |
+| `format-check` | pre-tool-use | Notes when a design or spec document is written outside `docs/`. | — |
 | `git-push-reminder` | pre-tool-use | One-time reminder to self-review the diff before pushing. | — |
 | `auto-format` | post-tool-use | Auto-runs the project formatter on every `Write`/`Edit` based on file extension. Idempotent; never fails the hook. | [→](./auto-format/) |
 | `typecheck` | post-tool-use | Runs `tsc --noEmit`, `dotnet build`, `mypy`, etc. after edits to surface type regressions before the next prompt. | [→](./auto-format/#typecheck) |
@@ -68,23 +69,59 @@ in the table). The rest are listed for completeness.
 | `rules-sync` | git pre-push (custom) | Verifies the project's rules tree matches the manifest before pushing. | — |
 | `pre-push-audit-suggest` | git pre-push | Advisory: inspects the diff and prints which Octopus audit skills (`audit-security`, `audit-money`, etc.) are relevant. Never blocks the push. | [→](./pre-push-audit-suggest/) |
 
-## Opting out
+## Turning hooks off
 
-Two levels of granularity:
+The whole layer goes with `hooks: false` in `.octopus.yml`. One hook
+at a time:
 
-```yaml
-# Disable the whole hooks layer
-hooks: false
-
-# Keep hooks but disable the destructive guard specifically
-hooks: true
-destructiveGuard: false
+```bash
+octopus hooks list                     # every hook, grouped, on or off
+octopus hooks disable detect-secrets   # saved and applied now
+octopus hooks enable detect-secrets
 ```
 
-Other hooks can be removed individually by editing the generated
-`.claude/settings.json` after `octopus setup`, but that drifts from
-the manifest — prefer asking for a manifest opt-out flag if you
-find yourself doing it repeatedly.
+`disable` and `enable` write the choice to `disabledHooks` in
+`.octopus.yml` and re-run `octopus setup` (`--no-apply` only edits the
+file). Because the list lives in the manifest, `octopus update` keeps
+it, and it reaches the rest of the team with the commit. You can also
+edit it directly:
+
+```yaml
+hooks: true
+disabledHooks:
+  - auto-format
+  - typecheck
+```
+
+`octopus setup` offers the same choice. Once you keep hooks on, the
+fine-tune screen lists every hook by group, all checked; uncheck what
+you don't want. `destructiveGuard: false` still works, and
+`octopus hooks` folds it into `disabledHooks` the next time it writes
+the list.
+
+Turning off one of the three **guards** (`destructive-guard`,
+`detect-secrets`, `block-no-verify`) removes a protection, not a
+nuisance, so it is your call alone. `octopus hooks disable` asks you
+to confirm a guard and refuses without a terminal. An agent's shell
+has none, so an agent a guard just blocked cannot switch the guard
+off itself, and the guards' messages tell it to ask you instead. For a
+single command, `destructive-guard` accepts
+`# destructive-guard-ok: <reason>`.
+
+## What the guards can and cannot stop
+
+A pre-tool-use hook reads the command text before it runs. The guards
+stop the agent's careless or default behaviour and the common ways
+around it: flags, aliases, wrappers, heredoc scripts, environment
+overrides. They are not a sandbox. An agent set on bypassing them can
+still find a way, for instance a script it writes and then runs. A
+guarantee belongs where it cannot be skipped: native git hooks via
+[pre-commit](../bundles/guardrails/) and a required CI job
+(`qualityWorkflow: true`).
+
+The edit hooks (`auto-format`, `typecheck`) run project tooling, and
+that tooling executes project code. They only act on files inside the
+project you opened, and they never download a package to do it.
 
 ## Agent coverage
 

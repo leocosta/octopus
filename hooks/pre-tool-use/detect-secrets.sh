@@ -1,20 +1,30 @@
 #!/usr/bin/env bash
 source "${BASH_SOURCE[0]%/*}/../../cli/lib/python.sh" 2>/dev/null || true
 # Detect hardcoded secrets before git commit
-# Scans staged files for common secret patterns
+# Scans the staged files of the repository each `git commit` runs in — after
+# `cd`, `git -C <dir>`, `&&` chains — as parsed by cli/lib/hook_git.py (#249).
 # Exit 2 = block the tool use
 
 set -euo pipefail
 
+HOOK_GIT="${BASH_SOURCE[0]%/*}/../../cli/lib/hook_git.py"
 input=$(cat)
-command=$(echo "$input" | python3 -c "import sys,json; print(json.load(sys.stdin).get('command',''))" 2>/dev/null || echo "")
 
-# Only trigger on git commit
-[[ "$command" != *"git commit"* ]] && exit 0
+# Fail open — blocking every Bash call on a machine without Python would make
+# it unusable — but never silently: a quiet no-op guard is how #245 hid.
+if [[ -n "${OCTOPUS_PYTHON_MISSING:-}" ]]; then
+  echo "WARNING: detect-secrets disabled: no Python 3 to parse the command." >&2
+  exit 0
+fi
 
-# Get staged files
-staged_files=$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null || echo "")
-[[ -z "$staged_files" ]] && exit 0
+rc=0
+commit_dirs=$(printf '%s' "$input" | python3 "$HOOK_GIT" commit-dirs 2>&1) || rc=$?
+if [[ $rc -ne 0 ]]; then
+  echo "WARNING: detect-secrets could not check this command: ${commit_dirs:-exit $rc}" >&2
+  exit 0
+fi
+commit_dirs=${commit_dirs//$'\r'/}    # a native Windows Python may still emit CRLF
+[[ -z "$commit_dirs" ]] && exit 0
 
 # Secret patterns to detect
 patterns=(
@@ -34,34 +44,60 @@ patterns=(
   'api[_-]?key\s*[:=]\s*["\x27][^"\x27]{8,}'     # Hardcoded API keys
 )
 
+# The directories come from a command the user has not approved yet, and may be
+# an untrusted clone: never let its config run code here (core.fsmonitor, the
+# system config), and never run its hooks.
+safe_git() {
+  GIT_CONFIG_NOSYSTEM=1 git -c core.fsmonitor=false -c core.hooksPath=/dev/null "$@"
+}
+
 found=false
-while IFS= read -r file; do
-  [[ -f "$file" ]] || continue
+# scan_repo <toplevel> — check the files staged in that repository.
+scan_repo() {
+  local top="$1" staged_files file ext pattern matches
+  staged_files=$(safe_git -C "$top" diff --cached --name-only --diff-filter=ACM 2>/dev/null || echo "")
+  [[ -z "$staged_files" ]] && return 0
+  while IFS= read -r file; do
+    [[ -f "$top/$file" ]] || continue
 
-  # Skip binary files and known safe files
-  ext="${file##*.}"
-  case "$ext" in
-    png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|lock|sum) continue ;;
-  esac
-  case "$file" in
-    *.example|*.template|*.md) continue ;;
-    *test*|*spec*|*mock*|*fixture*) continue ;;
-  esac
+    # Skip binary files and known safe files
+    ext="${file##*.}"
+    case "$ext" in
+      png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|lock|sum) continue ;;
+    esac
+    case "$file" in
+      *.example|*.template|*.md) continue ;;
+      *test*|*spec*|*mock*|*fixture*) continue ;;
+    esac
 
-  for pattern in "${patterns[@]}"; do
-    matches=$(grep -nP "$pattern" "$file" 2>/dev/null || true)
-    if [[ -n "$matches" ]]; then
-      echo "BLOCKED: Potential secret detected in $file:" >&2
-      echo "$matches" | head -3 | sed 's/^/  /' >&2
-      found=true
-    fi
-  done
-done <<< "$staged_files"
+    for pattern in "${patterns[@]}"; do
+      matches=$(grep -nP "$pattern" "$top/$file" 2>/dev/null || true)
+      if [[ -n "$matches" ]]; then
+        echo "BLOCKED: Potential secret detected in $file:" >&2
+        echo "$matches" | head -3 | sed 's/^/  /' >&2
+        found=true
+      fi
+    done
+  done <<< "$staged_files"
+}
+
+# One scan per repository, however many commits the command chains
+# (a newline-separated list, not an associative array: bash 3.2 on macOS).
+scanned=$'\n'
+while IFS= read -r dir; do
+  # A directory that does not resolve to a repository falls back to the one
+  # the command runs in, rather than leaving the commit unscanned.
+  top=$(safe_git -C "$dir" rev-parse --show-toplevel 2>/dev/null) \
+    || top=$(safe_git rev-parse --show-toplevel 2>/dev/null) || continue
+  [[ "$scanned" == *$'\n'"$top"$'\n'* ]] && continue
+  scanned+="$top"$'\n'
+  scan_repo "$top"
+done <<< "$commit_dirs"
 
 if $found; then
   echo "" >&2
   echo "Remove secrets and use environment variables instead." >&2
-  echo "If this is a false positive, use OCTOPUS_DISABLED_HOOKS=detect-secrets" >&2
+  echo "False positive? Tell the user: only they can turn this guard off (see the Octopus hooks docs)." >&2
   exit 2
 fi
 

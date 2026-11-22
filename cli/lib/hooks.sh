@@ -1,9 +1,17 @@
-# hooks.sh — Install, inspect and remove Octopus git hooks.
+# hooks.sh — Octopus hooks: the agent hooks (Claude Code & co.) and the git hooks.
 #
 # Usage:
-#   octopus.sh hooks status
+#   octopus.sh hooks list                     agent hooks and whether each is on
+#   octopus.sh hooks disable <id>... [--no-apply]
+#   octopus.sh hooks enable <id>...  [--no-apply]
+#   octopus.sh hooks status                   git hooks
 #   octopus.sh hooks install [--force]
 #   octopus.sh hooks uninstall
+#
+# disable/enable persist the choice in .octopus.yml (disabledHooks:) and re-run
+# `octopus setup` so it takes effect; --no-apply only edits the file. Because it
+# lives in the manifest, `octopus update` keeps it — the OCTOPUS_DISABLED_HOOKS
+# env var alone lasted one setup run.
 #
 # Octopus ships three git hooks (hooks/git/), and until now nothing installed or
 # refreshed them. `post-checkout` and `post-merge` had been wired as three-line
@@ -44,7 +52,10 @@ post-merge rules-sync
 pre-push pre-push-audit-suggest"
 
 _hooks_usage() {
-  echo "Usage: octopus.sh hooks status"
+  echo "Usage: octopus.sh hooks list"
+  echo "       octopus.sh hooks disable <id>... [--no-apply]"
+  echo "       octopus.sh hooks enable <id>...  [--no-apply]"
+  echo "       octopus.sh hooks status"
   echo "       octopus.sh hooks install [--force]"
   echo "       octopus.sh hooks uninstall"
 }
@@ -180,6 +191,201 @@ _hooks_state() {
 
 SUB="${1:-}"
 shift 2>/dev/null || true
+
+# ---------------------------------------------------------------------------
+# Agent hooks: list / disable / enable. Handled before the git-repository
+# check below — they edit .octopus.yml, not .git/hooks.
+# ---------------------------------------------------------------------------
+# shellcheck source=cli/lib/hook-catalog.sh
+source "$HOOKS_LIB_DIR/hook-catalog.sh"
+
+_agent_manifest() {
+  local root
+  root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  printf '%s/.octopus.yml\n' "$root"
+}
+
+# The ids .octopus.yml turns off: disabledHooks (inline or block list), plus
+# destructive-guard when the older `destructiveGuard: false` is set.
+_agent_disabled_ids() {
+  python3 - "$1" <<'PYEOF'
+import re, sys
+off, in_list = [], False
+for line in open(sys.argv[1], encoding="utf-8"):
+    s = line.rstrip("\r\n")
+    m = re.match(r"disabledHooks:\s*\[(.*)\]", s)
+    if m:
+        off += [x.strip().strip("'\"") for x in m.group(1).split(",") if x.strip()]
+        in_list = False
+        continue
+    if re.match(r"disabledHooks:\s*(#.*)?$", s):
+        in_list = True
+        continue
+    if in_list and re.match(r"\s+-\s*", s):
+        off.append(re.sub(r"\s+#.*$", "", s.split("-", 1)[1]).strip().strip("'\""))
+        continue
+    if re.match(r"[A-Za-z]", s):
+        in_list = False
+    if re.match(r"destructiveGuard:\s*false\b", s):
+        off.append("destructive-guard")
+seen = []
+for x in off:
+    if x and x not in seen:
+        seen.append(x)
+print("\n".join(seen))
+PYEOF
+}
+
+# _agent_write_disabled <manifest> <id>... — rewrite disabledHooks: with exactly
+# these ids (removed when empty), right after `hooks:` when present. The older
+# `destructiveGuard: false` is folded into the list, so the list is the single
+# source of truth.
+_agent_write_disabled() {
+  local manifest="$1"; shift
+  python3 - "$manifest" "$@" <<'PYEOF'
+import re, sys
+path, ids = sys.argv[1], sys.argv[2:]
+raw = open(path, encoding="utf-8", newline="").read()
+# Keep the file's own line ending, and never let Windows' text mode turn \n
+# into \r\n behind our back (setup would then read "typecheck\r").
+eol = "\r\n" if "\r\n" in raw else "\n"
+lines = raw.replace("\r\n", "\n").split("\n")
+out, skip = [], False
+for s in lines:
+    if skip and re.match(r"\s+-", s):
+        continue
+    skip = False
+    if re.match(r"disabledHooks:\s*\[", s):
+        continue
+    if re.match(r"disabledHooks:\s*(#.*)?$", s):
+        skip = True
+        continue
+    if re.match(r"destructiveGuard:\s*false\b", s):
+        continue
+    out.append(s)
+block = (["disabledHooks:"] + ["  - " + i for i in ids]) if ids else []
+at = next((k + 1 for k, s in enumerate(out) if re.match(r"hooks:\s", s)), None)
+if block:
+    if at is None:
+        while out and out[-1] == "":
+            out.pop()
+        out += block + [""]
+    else:
+        out[at:at] = block
+open(path, "w", encoding="utf-8", newline="").write(eol.join(out))
+PYEOF
+}
+
+_agent_hooks_on() { grep -qE '^hooks:[[:space:]]*true\b' "$1"; }
+
+_agent_list() {
+  local manifest off g id desc last="" state
+  manifest="$(_agent_manifest)"
+  if [[ ! -f "$manifest" ]]; then
+    echo "No .octopus.yml here — run 'octopus setup' first." >&2
+    return 2
+  fi
+  off="$(_agent_disabled_ids "$manifest")"
+  if _agent_hooks_on "$manifest"; then
+    echo "Agent hooks (.octopus.yml: hooks: true)"
+  else
+    echo "Agent hooks — OFF for this repo: none of these run."
+    echo "Turn them on with 'hooks: true' in .octopus.yml, then 'octopus setup'."
+  fi
+  while IFS=$'\t' read -r g id desc; do
+    [[ -n "$id" ]] || continue
+    if [[ "$g" != "$last" ]]; then
+      echo ""
+      echo "  $(hook_catalog_group_title "$g")"
+      last="$g"
+    fi
+    state="on "
+    grep -qxF -- "$id" <<<"$off" && state="off"
+    printf '    %s  %-26s %s\n' "$state" "$id" "$desc"
+  done < <(hook_catalog_rows)
+  echo ""
+  echo "Turn one off: octopus hooks disable <id>   ·   back on: octopus hooks enable <id>"
+}
+
+# _agent_toggle disable|enable <id>... [--no-apply]
+_agent_toggle() {
+  local action="$1"; shift
+  local apply=1 ids=() id manifest off new=()
+  for id in "$@"; do
+    case "$id" in
+      --no-apply) apply=0 ;;
+      -*) echo "hooks $action: unknown option '$id'" >&2; return 2 ;;
+      *) ids+=("$id") ;;
+    esac
+  done
+  if [[ ${#ids[@]} -eq 0 ]]; then
+    echo "Usage: octopus hooks $action <id>... (see 'octopus hooks list')" >&2
+    return 2
+  fi
+  for id in "${ids[@]}"; do
+    hook_catalog_known "$id" || { echo "hooks: unknown hook '$id' — see 'octopus hooks list'" >&2; return 2; }
+  done
+  manifest="$(_agent_manifest)"
+  [[ -f "$manifest" ]] || { echo "No .octopus.yml here — run 'octopus setup' first." >&2; return 2; }
+
+  # Turning off a GUARD (a hook that blocks) is the user's call, never the
+  # agent's: a blocked agent reads the hook's message and could otherwise run
+  # this to remove the guard that stopped it. An agent's shell has no
+  # terminal, so require one, and an explicit yes on it. There is
+  # deliberately no flag that skips this.
+  if [[ "$action" == "disable" ]]; then
+    local guards=()
+    for id in "${ids[@]}"; do
+      [[ "$(hook_catalog_group "$id")" == "guards" ]] && guards+=("$id")
+    done
+    if [[ ${#guards[@]} -gt 0 ]]; then
+      if [[ ! -t 0 || ! -t 1 ]] || ! { : </dev/tty; } 2>/dev/null; then
+        echo "Refusing to turn off ${guards[*]} without a terminal: a guard is the user's call." >&2
+        echo "Run 'octopus hooks disable ${guards[*]}' yourself, in a terminal; it asks to confirm." >&2
+        return 3
+      fi
+      local reply
+      printf 'Turn off %s? It removes a protection, for everyone who uses this repo. [y/N] ' "${guards[*]}" >/dev/tty
+      read -r reply </dev/tty
+      [[ "$reply" == [yY] || "$reply" == [yY][eE][sS] ]] || { echo "Nothing changed."; return 1; }
+    fi
+  fi
+
+  off="$(_agent_disabled_ids "$manifest")"
+  while IFS= read -r id; do
+    [[ -n "$id" ]] || continue
+    if [[ "$action" == "enable" ]] && printf '%s\n' "${ids[@]}" | grep -qxF -- "$id"; then
+      continue
+    fi
+    new+=("$id")
+  done <<<"$off"
+  if [[ "$action" == "disable" ]]; then
+    for id in "${ids[@]}"; do
+      printf '%s\n' "${new[@]+"${new[@]}"}" | grep -qxF -- "$id" || new+=("$id")
+    done
+  fi
+  _agent_write_disabled "$manifest" "${new[@]+"${new[@]}"}" || return 2
+  if [[ "$action" == "disable" ]]; then
+    echo "Disabled: ${ids[*]} (saved in .octopus.yml)"
+  else
+    echo "Enabled: ${ids[*]} (saved in .octopus.yml)"
+  fi
+  _agent_hooks_on "$manifest" \
+    || echo "Note: hooks are off for this repo (no 'hooks: true') — nothing runs until it is set."
+
+  if [[ $apply -eq 1 ]]; then
+    echo "Applying with 'octopus setup'..."
+    (cd "$(dirname "$manifest")" && bash "$HOOKS_LIB_DIR/../octopus.sh" setup) || return $?
+  else
+    echo "Run 'octopus setup' to apply."
+  fi
+}
+
+case "$SUB" in
+  list)    _agent_list; exit $? ;;
+  disable) _agent_toggle disable "$@"; exit $? ;;
+  enable)  _agent_toggle enable "$@"; exit $? ;;
+esac
 
 FORCE=""
 SKIP=""

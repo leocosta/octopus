@@ -102,7 +102,7 @@ for entry in "${patterns[@]}"; do
       printf '  matched rule: %s\n' "$desc"
       printf '  bypass: add `# destructive-guard-ok: <reason>` to the command\n'
       printf '  e.g. `rm -rf node_modules  # destructive-guard-ok: regenerated from package.json`\n'
-      printf '  off: set `destructiveGuard: false` in .octopus.yml\n'
+      printf '  only the user can turn this guard off for the repo (see the Octopus hooks docs)\n'
     } >&2
     exit 2
   fi
