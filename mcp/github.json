@@ -1,9 +1,9 @@
 {
   "github": {
-    "command": "npx",
-    "args": ["@anthropic/mcp-github"],
-    "env": {
-      "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+    "type": "http",
+    "url": "https://api.githubcopilot.com/mcp/",
+    "headers": {
+      "Authorization": "Bearer ${GITHUB_TOKEN}"
     }
   }
 }

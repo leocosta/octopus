@@ -25,9 +25,9 @@ export default defineConfig({
         alt: 'Octopus',
         replacesTitle: true,
       },
-      social: {
-        github: `https://github.com/${ghUser}/${repoSlug}`,
-      },
+      social: [
+        { icon: 'github', label: 'GitHub', href: `https://github.com/${ghUser}/${repoSlug}` },
+      ],
       editLink: {
         baseUrl: `https://github.com/${ghUser}/${repoSlug}/edit/main/`,
       },
@@ -61,44 +61,44 @@ export default defineConfig({
         {
           label: 'Bundles',
           translations: { 'pt-BR': 'Bundles' },
-          autogenerate: { directory: 'bundles' },
           collapsed: true,
+          items: [{ autogenerate: { directory: 'bundles' } }],
         },
         {
           label: 'Skills',
           translations: { 'pt-BR': 'Skills' },
-          autogenerate: { directory: 'skills' },
           collapsed: true,
+          items: [{ autogenerate: { directory: 'skills' } }],
         },
         {
           label: 'Commands',
           translations: { 'pt-BR': 'Comandos' },
-          autogenerate: { directory: 'commands' },
           collapsed: true,
+          items: [{ autogenerate: { directory: 'commands' } }],
         },
         {
           label: 'Hooks',
           translations: { 'pt-BR': 'Hooks' },
-          autogenerate: { directory: 'hooks' },
           collapsed: true,
+          items: [{ autogenerate: { directory: 'hooks' } }],
         },
         {
           label: 'Rules',
           translations: { 'pt-BR': 'Regras' },
-          autogenerate: { directory: 'rules' },
           collapsed: true,
+          items: [{ autogenerate: { directory: 'rules' } }],
         },
         {
           label: 'Roles',
           translations: { 'pt-BR': 'Roles' },
-          autogenerate: { directory: 'roles' },
           collapsed: true,
+          items: [{ autogenerate: { directory: 'roles' } }],
         },
         {
           label: 'Architecture',
           translations: { 'pt-BR': 'Arquitetura' },
-          autogenerate: { directory: 'architecture' },
           collapsed: true,
+          items: [{ autogenerate: { directory: 'architecture' } }],
         },
         {
           label: 'Reference',

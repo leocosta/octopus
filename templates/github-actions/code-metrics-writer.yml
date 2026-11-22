@@ -72,7 +72,7 @@ jobs:
 
     steps:
       - name: Checkout full history
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0   # hotspots churn needs history
           # (The push step resolves the existing orphan ref via `git ls-remote
@@ -107,7 +107,7 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Setup .NET
         if: steps.stack.outputs.name == 'csharp'
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           dotnet-version: '8.x'
 
@@ -125,7 +125,7 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Setup Node
         if: steps.stack.outputs.name == 'typescript'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '20'
 
@@ -135,7 +135,7 @@ jobs:
 
       - name: Install madge
         if: steps.stack.outputs.name == 'typescript'
-        run: npm install --global madge 2>/dev/null || npx --yes madge --version 2>/dev/null || true
+        run: npm install --global madge@8.0.0 2>/dev/null || npx --yes madge@8.0.0 --version 2>/dev/null || true
 
       # -----------------------------------------------------------------------
       # Compute baseline.json via the shared adapters (single source of truth)

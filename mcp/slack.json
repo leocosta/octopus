@@ -1,10 +1,6 @@
 {
   "slack": {
-    "command": "npx",
-    "args": ["@anthropic/mcp-slack"],
-    "env": {
-      "SLACK_BOT_TOKEN": "${SLACK_BOT_TOKEN}",
-      "SLACK_TEAM_ID": "${SLACK_TEAM_ID}"
-    }
+    "type": "http",
+    "url": "https://mcp.slack.com/mcp"
   }
 }

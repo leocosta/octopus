@@ -1,8 +1,8 @@
 # MCP Servers
 
-External tool integrations (Notion, GitHub, Slack, PostgreSQL) configured from a single source.
+External tool integrations (Notion, GitHub, Slack) configured from a single source. Each one is the vendor's own hosted MCP server.
 
-**Available servers:** `notion`, `github`, `slack`, `postgres`
+**Available servers:** `notion`, `github`, `slack`
 
 ## How it works
 
@@ -14,9 +14,8 @@ External tool integrations (Notion, GitHub, Slack, PostgreSQL) configured from a
    ```
 2. Add required environment variables to `.env.octopus`:
    - `notion` — uses OAuth (no env vars needed)
-   - `github` — `GITHUB_TOKEN`
-   - `slack` — `SLACK_BOT_TOKEN`, `SLACK_TEAM_ID`
-   - `postgres` — `DATABASE_URL`
+   - `github` — `GITHUB_TOKEN`, sent to GitHub's MCP server as a bearer token
+   - `slack` — uses OAuth: sign in with `/mcp` in Claude Code (a workspace admin may need to approve the app)
 3. Run `octopus setup`
 4. Delivery varies per agent (see [Capability Matrix](../capability-matrix.md)):
    - **Claude Code**: merged into `.claude/settings.json` under `mcpServers`
@@ -26,8 +25,9 @@ External tool integrations (Notion, GitHub, Slack, PostgreSQL) configured from a
 ## Adding custom MCP servers
 
 1. Create `octopus/mcp/<name>.json` following the template in `mcp/_template.json`
-2. Use `${VAR_NAME}` for secrets — they'll be read from `.env.octopus`
-3. Add `- <name>` to the `mcp:` list in `.octopus.yml`
+2. Prefer the vendor's hosted server (`"type": "http"`). For a package run with `npx`/`uvx`, pin an exact version (`name@1.2.3`) from a publisher you have checked — an unpinned package is fetched fresh on every start
+3. Use `${VAR_NAME}` for secrets — they'll be read from `.env.octopus`
+4. Add `- <name>` to the `mcp:` list in `.octopus.yml`
 
 ## Social publishing note
 
