@@ -66,6 +66,7 @@ declare -a OCTOPUS_BUNDLES=()
 declare -a OCTOPUS_EXCLUDE=()
 OCTOPUS_HOOKS="false"
 OCTOPUS_DESTRUCTIVE_GUARD="true"   # RM-033: default enabled when hooks are on
+declare -a OCTOPUS_DISABLED_HOOKS_CFG=()   # disabledHooks: in .octopus.yml
 declare -a OCTOPUS_AGENTS=()
 declare -A OCTOPUS_AGENT_OUTPUT=()
 declare -a OCTOPUS_MCP=()
@@ -341,6 +342,23 @@ _apply_excludes() {
   done
 }
 
+# disabledHooks: from .octopus.yml joins OCTOPUS_DISABLED_HOOKS (which an env
+# override can still extend), so deliver_hooks filters them on EVERY run — the
+# env var alone lasted one setup and the hooks came back on `octopus update`.
+_merge_disabled_hooks_cfg() {
+  local _id _known
+  [[ ${#OCTOPUS_DISABLED_HOOKS_CFG[@]} -gt 0 ]] || return 0
+  # shellcheck source=cli/lib/hook-catalog.sh
+  source "$OCTOPUS_DIR/cli/lib/hook-catalog.sh" 2>/dev/null || true
+  for _id in "${OCTOPUS_DISABLED_HOOKS_CFG[@]}"; do
+    if declare -F hook_catalog_known >/dev/null && ! hook_catalog_known "$_id"; then
+      ui_warn "disabledHooks: unknown hook '$_id' (see 'octopus hooks list')"
+      continue
+    fi
+    OCTOPUS_DISABLED_HOOKS="${OCTOPUS_DISABLED_HOOKS:+$OCTOPUS_DISABLED_HOOKS,}$_id"
+  done
+  export OCTOPUS_DISABLED_HOOKS
+}
 parse_octopus_yml() {
   local file="$1"
   local current_section=""
@@ -364,8 +382,31 @@ parse_octopus_yml() {
   }
 
   while IFS= read -r line || [[ -n "$line" ]]; do
+    # A manifest saved on Windows (Notepad, or Python's text mode) has CRLF:
+    # every value would end in \r ("typecheck\r" is not a hook id).
+    line="${line%$'\r'}"
     # Skip empty lines and comments
     [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+
+    # disabledHooks: — the agent hooks this repo turns off, persisted so every
+    # setup run (including the one `octopus update` triggers) honours it.
+    # Inline `disabledHooks: [a, b]` or a block list below the key.
+    if [[ "$line" =~ ^disabledHooks:[[:space:]]*\[(.*)\][[:space:]]*(#.*)?$ ]]; then
+      local _dh _dhs="${BASH_REMATCH[1]}"
+      while [[ -n "$_dhs" ]]; do
+        _dh="${_dhs%%,*}"
+        [[ "$_dhs" == *,* ]] && _dhs="${_dhs#*,}" || _dhs=""
+        _dh="${_dh//[[:space:]\"\']/}"
+        [[ -n "$_dh" ]] && OCTOPUS_DISABLED_HOOKS_CFG+=("$_dh")
+      done
+      current_section=""
+      continue
+    fi
+    if [[ "$line" =~ ^disabledHooks:[[:space:]]*(#.*)?$ ]]; then
+      _flush_pending_cmd
+      current_section="disabledHooks"
+      continue
+    fi
 
     # Handle inline boolean: workflow: true/false
     if [[ "$line" =~ ^([a-zA-Z]+):[[:space:]]+(true|false)[[:space:]]*$ ]]; then
@@ -500,6 +541,7 @@ parse_octopus_yml() {
         mcp)       OCTOPUS_MCP+=("$value") ;;
         roles)     OCTOPUS_ROLES+=("$value") ;;
         reviewers) OCTOPUS_REVIEWERS+=("$value") ;;
+        disabledHooks) OCTOPUS_DISABLED_HOOKS_CFG+=("${value//[\"\']/}") ;;
         knowledge)
           if [[ "$current_knowledge_subsection" == "roles" && -n "$current_knowledge_role" ]]; then
             if [[ -n "${OCTOPUS_KNOWLEDGE_ROLES[$current_knowledge_role]:-}" ]]; then
@@ -2909,6 +2951,8 @@ _replay_captured_diagnostics() {
   done < "$log"
 }
 
+_merge_disabled_hooks_cfg
+
 # Opt-out for destructive-action guard (RM-033): append to
 # OCTOPUS_DISABLED_HOOKS so the existing filter in deliver_hooks
 # removes the hook from the rendered settings.json.
@@ -2926,7 +2970,14 @@ _setup_print_summary() {
   [[ "$config_rel" == "$CONFIG_FILE" ]] && config_rel="$CONFIG_FILE"
   ui_success "manifest ready      ($config_rel)"
   [[ ${#OCTOPUS_SKILLS[@]} -gt 0 ]] && ui_success "skills installed    (${OCTOPUS_SKILLS[*]})"
-  [[ "$OCTOPUS_HOOKS" == "true" ]]  && ui_success "hooks configured    (destructive-guard, session-start)"
+  if [[ "$OCTOPUS_HOOKS" == "true" ]]; then
+    local _off="${OCTOPUS_DISABLED_HOOKS:-}"
+    if [[ -n "$_off" ]]; then
+      ui_success "hooks configured    (off: ${_off//,/, } — 'octopus hooks list')"
+    else
+      ui_success "hooks configured    (all on — 'octopus hooks list' to review)"
+    fi
+  fi
   ui_success "permissions written (.claude/settings.json)"
 }
 

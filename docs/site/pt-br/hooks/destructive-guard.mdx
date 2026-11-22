@@ -3,7 +3,7 @@ title: Guard de ações destrutivas
 description: Hook PreToolUse que bloqueia comandos Bash irreversíveis — rm -rf, git push --force, DROP TABLE, DELETE FROM sem WHERE — com um marcador de bypass visível.
 sidebar:
   order: 2
-source_hash: "sha256:9784e6c864aa0fdcf681774ab602d637f80af6f4f128dc309662609f7f56e683"
+source_hash: "sha256:7f7a3c85249f287ccccadf3842e81e8d84d1d7a04fdce35b04adca19872cf1b6"
 needs_retranslation: false
 ---
 
@@ -112,14 +112,16 @@ de uma variável de ambiente ou um toggle de configuração?
 
 Para repos com proteções out-of-band mais fortes (produção
 read-only, sandboxes efêmeros, branch protection que já proíbe
-force-push), opte por sair em `.octopus.yml`:
+force-push), desligue para o repo:
 
-```yaml
-hooks: true
-destructiveGuard: false
+```bash
+octopus hooks disable destructive-guard
 ```
 
-Desabilitar o guard não afeta nenhum outro hook.
+Isso grava o hook em `disabledHooks` no `.octopus.yml` e reaplica o
+setup. A chave antiga `destructiveGuard: false` continua valendo.
+Desabilitar o guard não afeta nenhum outro hook. Veja
+[Desligando hooks](../#desligando-hooks).
 
 ## Limites conhecidos
 

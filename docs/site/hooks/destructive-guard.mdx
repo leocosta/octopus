@@ -111,14 +111,16 @@ env var or a config toggle?
 
 For repos with stronger out-of-band protections (read-only
 production, ephemeral sandboxes, branch protection that already
-forbids force-push), opt out in `.octopus.yml`:
+forbids force-push), turn it off for the repo:
 
-```yaml
-hooks: true
-destructiveGuard: false
+```bash
+octopus hooks disable destructive-guard
 ```
 
-Disabling the guard does not affect any other hook.
+That writes it to `disabledHooks` in `.octopus.yml` and re-applies
+setup. The older `destructiveGuard: false` key still works. Disabling
+the guard does not affect any other hook. See
+[Turning hooks off](../#turning-hooks-off).
 
 ## Known limits
 

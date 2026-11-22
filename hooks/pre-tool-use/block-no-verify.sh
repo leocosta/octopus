@@ -25,6 +25,8 @@ case $rc in
   0) exit 0 ;;
   2)
     echo "BLOCKED: $reason. Do not bypass pre-commit hooks." >&2
+    echo "  If the hook itself is wrong, fix or skip it in its own config; to turn" >&2
+    echo "  this guard off for the repo: octopus hooks disable block-no-verify" >&2
     exit 2
     ;;
   *)
